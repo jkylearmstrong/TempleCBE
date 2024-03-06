@@ -23,7 +23,7 @@
 
 
 SumNa <- function(col, na_list = NULL) {
-  if_else(
+  dplyr::if_else(
     is.null(na_list),
     sum(is.na(col)), # only R version of NA
     sum(is.na(col) | col %in% na_list)) # allows user to pass in list of other NA values
