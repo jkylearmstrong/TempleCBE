@@ -10,6 +10,9 @@
 #'
 #' @return a tibble (data frame) with columns: feature, SumNa (sum of NA entries), SumComp, PctNa, PctComp
 #'
+#' @examples
+#' features_percent_miss(mtcars,  na_list = c(""," ","NA"))
+#'
 #' @import dplyr tibble
 #'
 #' @export features_percent_miss

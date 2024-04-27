@@ -2,8 +2,9 @@ Package: TempleCBE
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Authors@R: 
+    person("J Kyle", "Armstrong", , "j.kyle.armstrong@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4269-0121"))
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: MIT + file LICENSE

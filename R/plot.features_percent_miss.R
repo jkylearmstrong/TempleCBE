@@ -9,7 +9,7 @@
 #' @return A ggplot object representing the bar plot.
 #'
 #' @examples
-#' features_percent_miss(qp232sum2,  na_list = c(""," ","NA")) |>
+#' features_percent_miss(mtcars,  na_list = c(""," ","NA")) |>
 #'    plot()
 #'
 #' @import dplyr ggplot2
