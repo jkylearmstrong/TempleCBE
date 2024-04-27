@@ -34,7 +34,9 @@ This function creates a bar plot showing the percentage of complete values
 for each feature in a data frame or tibble.
 }
 \examples{
-features_percent_miss(qp232sum2,  na_list = c(""," ","NA")) |>
+features_percent_miss(mtcars,  na_list = c(""," ","NA"))
+
+features_percent_miss(mtcars,  na_list = c(""," ","NA")) |>
    plot()
 
 }
