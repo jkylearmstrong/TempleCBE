@@ -11,16 +11,18 @@
 #'
 #' @examples
 #' mtcars |> 
-#'   group_by(cyl) |> 
+#'   dplyr::group_by(cyl) |> 
 #'   my_summary_table(mpg)
 #'   
 #' mtcars |> 
-#'   group_by(cyl) |> 
+#'   dplyr::group_by(cyl) |> 
 #'   my_summary_table(mpg, table.output = TRUE)
 #'   
 #'  
 #'
 #' @import dplyr
+#' @importFrom stats sd
+#' @importFrom rlang .data
 #'
 #' @export my_summary_table
 
@@ -40,7 +42,7 @@ my_summary_table <- function(data, var, na.rm=FALSE, data.output = TRUE, table.o
       summarise(
         N = sum(!is.na({{var}})),
         Mean = mean({{var}}, na.rm = TRUE),
-        SD = sd({{var}}, na.rm = TRUE),
+        SD = stats::sd({{var}}, na.rm = TRUE),
         min = min({{var}}, na.rm = TRUE),
         Max = max({{var}}, na.rm = TRUE),
         SD_Error = sd.error({{var}}, na.rm = TRUE)) %>%
@@ -49,7 +51,7 @@ my_summary_table <- function(data, var, na.rm=FALSE, data.output = TRUE, table.o
           summarise(
             N = length({{var}}),
             Mean = mean({{var}}, na.rm = FALSE),
-            SD = sd({{var}}, na.rm = FALSE),
+            SD = stats::sd({{var}}, na.rm = FALSE),
             min = min({{var}}, na.rm = FALSE),
             Max = max({{var}}, na.rm = FALSE),
             SD_Error = sd.error({{var}}, na.rm = FALSE)) %>%
@@ -58,9 +60,9 @@ my_summary_table <- function(data, var, na.rm=FALSE, data.output = TRUE, table.o
   
   result <- if(data.output){T1} else {
     T1 %>%
-      mutate(`Mean (SD)` = paste0(round(Mean, 2), " (", round(SD, 2), ")")) %>%
-      mutate(Range = paste0(round(min, 2), " to ", round(Max, 2))) %>%
-      select(-Mean, -SD, -min, -Max) 
+      mutate(`Mean (SD)` = paste0(round(.data$Mean, 2), " (", round(.data$SD, 2), ")")) %>%
+      mutate(Range = paste0(round(.data$min, 2), " to ", round(.data$Max, 2))) %>%
+      select(-"Mean", -"SD", -"min", -"Max") 
   }
   
   return(result)

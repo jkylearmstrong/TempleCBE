@@ -1,43 +1,46 @@
-#' Features Percent Missing
+#' Calculate Percentage of Missing Data Per Feature
 #'
-#' Count the number of missing elements of each column in a data frame.
-#' Allows for threshold setting to easily find columns with higher percent missing data.
-#' Allows users to supply list of things that might also be be considered missing.
+#' Computes the count and percentage of missing (`NA`) and complete values for each column in a dataset.
 #'
-#' @param data a data frame or tibble or something that could become one
-#' @param percent_miss numeric between 0 an 1 will filter out any columns that are missing more than this value
-#' @inheritParams SumNa
-#'
-#' @return a tibble (data frame) with columns: feature, SumNa (sum of NA entries), SumComp, PctNa, PctComp
-#'
+#' @param data A data frame or tibble.
+#' @return A tibble with columns `feature`, `SumNa`, `SumComp`, `PctNa`, `PctComp` sorted descending by `PctNa`.
+#' @importFrom tidyr pivot_longer
+#' @export
 #' @examples
-#' features_percent_miss(mtcars,  na_list = c(""," ","NA"))
-#'
-#' @import dplyr tibble
-#'
-#' @export features_percent_miss
+#' df <- data.frame(a = c(1, 2, NA, 4), b = c(NA, NA, 3, 4))
+#' features_percent_miss(df)
+features_percent_miss <- function(data) {
+  if (!is.data.frame(data)) {
+    stop("Input 'data' must be a data frame or tibble.")
+  }
+  
+  n_rows <- nrow(data)
+  if (n_rows == 0) {
+    return(tibble::tibble(
+      feature = character(),
+      SumNa = integer(),
+      SumComp = integer(),
+      PctNa = double(),
+      PctComp = double()
+    ))
+  }
 
-features_percent_miss <- function(data, percent_miss = 0, na_list = NULL){
-
-  if(is.data.frame(data) | tibble::is_tibble(data)){
-    data <- data
-  } else if( !(is.data.frame(data) | tibble::is_tibble(data)) ){
-    data <- try(tibble::as_tibble(data, .name_repair = "universal"))
-  } else( stop("Error: data must be coerceable into a tibble") )
-
-  na_sums <- data %>%
-    summarise(across(everything(), \(x){SumNa(x, na_list)})) %>%
-    tidyr::pivot_longer(everything() ,names_to = 'feature', values_to = 'SumNa') %>%
-    arrange(desc(SumNa)) %>%
-    mutate(SumComp = nrow(data) - SumNa) %>%
-    mutate(PctNa = SumNa/nrow(data)) %>%
-    mutate(PctComp = (1 - PctNa))
-
-  data_out <- na_sums %>%
-    filter(PctNa >= percent_miss) %>%
-    arrange(desc(PctNa))
-
-  class(data_out) <- c("features_percent_miss", class(data_out))
-
-  return(data_out)
+  res <- purrr::map_dfr(names(data), function(col) {
+    vec <- data[[col]]
+    s_na <- sum(is.na(vec))
+    s_comp <- n_rows - s_na
+    pct_na <- s_na / n_rows
+    pct_comp <- s_comp / n_rows
+    tibble::tibble(
+      feature = col,
+      SumNa = as.integer(s_na),
+      SumComp = as.integer(s_comp),
+      PctNa = pct_na,
+      PctComp = pct_comp
+    )
+  })
+  
+  res <- dplyr::arrange(res, dplyr::desc(.data$PctNa))
+  class(res) <- c("features_percent_miss", class(res))
+  res
 }

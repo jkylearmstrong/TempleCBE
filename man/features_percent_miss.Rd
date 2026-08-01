@@ -4,39 +4,35 @@
 \name{features_percent_miss}
 \alias{features_percent_miss}
 \alias{plot.features_percent_miss}
-\title{Features Percent Missing}
+\title{Calculate Percentage of Missing Data Per Feature}
 \usage{
-features_percent_miss(data, percent_miss = 0, na_list = NULL)
+features_percent_miss(data)
 
-\method{plot}{features_percent_miss}(x)
+\method{plot}{features_percent_miss}(x, ...)
 }
 \arguments{
-\item{data}{a data frame or tibble or something that could become one}
-
-\item{percent_miss}{numeric between 0 an 1 will filter out any columns that are missing more than this value}
-
-\item{na_list}{list of elements to allow SumNa to think of as NA}
+\item{data}{A data frame or tibble.}
 
 \item{x}{An object of class 'features_percent_miss' returned by the
 \code{\link{features_percent_miss}} function.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
-a tibble (data frame) with columns: feature, SumNa (sum of NA entries), SumComp, PctNa, PctComp
+A tibble with columns `feature`, `SumNa`, `SumComp`, `PctNa`, `PctComp` sorted descending by `PctNa`.
 
 A ggplot object representing the bar plot.
 }
 \description{
-Count the number of missing elements of each column in a data frame.
-Allows for threshold setting to easily find columns with higher percent missing data.
-Allows users to supply list of things that might also be be considered missing.
+Computes the count and percentage of missing (`NA`) and complete values for each column in a dataset.
 
 This function creates a bar plot showing the percentage of complete values
 for each feature in a data frame or tibble.
 }
 \examples{
-features_percent_miss(mtcars,  na_list = c(""," ","NA"))
-
-features_percent_miss(mtcars,  na_list = c(""," ","NA")) |>
-   plot()
+df <- data.frame(a = c(1, 2, NA, 4), b = c(NA, NA, 3, 4))
+features_percent_miss(df)
+res <- features_percent_miss(mtcars)
+plot(res)
 
 }

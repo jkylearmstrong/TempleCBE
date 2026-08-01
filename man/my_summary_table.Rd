@@ -31,11 +31,11 @@ Summary Table Function
 }
 \examples{
 mtcars |> 
-  group_by(cyl) |> 
+  dplyr::group_by(cyl) |> 
   my_summary_table(mpg)
   
 mtcars |> 
-  group_by(cyl) |> 
+  dplyr::group_by(cyl) |> 
   my_summary_table(mpg, table.output = TRUE)
   
  
