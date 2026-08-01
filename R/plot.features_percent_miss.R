@@ -5,23 +5,25 @@
 #'
 #' @param x An object of class 'features_percent_miss' returned by the
 #'   \code{\link{features_percent_miss}} function.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A ggplot object representing the bar plot.
 #'
 #' @examples
-#' features_percent_miss(mtcars,  na_list = c(""," ","NA")) |>
-#'    plot()
+#' res <- features_percent_miss(mtcars)
+#' plot(res)
 #'
 #' @import dplyr ggplot2
 #' @importFrom stats reorder
+#' @importFrom rlang .data
 #'
 #' @export
 #' @rdname features_percent_miss
 
-plot.features_percent_miss <- function(x){
+plot.features_percent_miss <- function(x, ...){
   plot_obj <- x %>%
-    mutate(feature = reorder(feature, PctComp)) %>%
-    ggplot(aes(x=feature, y = PctComp, fill = feature)) +
+    mutate(feature = stats::reorder(.data$feature, .data$PctComp)) %>%
+    ggplot(aes(x = .data$feature, y = .data$PctComp, fill = .data$feature)) +
     geom_bar(stat = "identity") +
     coord_flip() +
     theme(legend.position = "none")

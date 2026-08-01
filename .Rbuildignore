@@ -1,8 +1,8 @@
-^renv$
-^renv\.lock$
-^.*\.Rproj$
+^README\.qmd$
 ^\.Rproj\.user$
+^TempleCBE\.Rproj$
 ^_pkgdown\.yml$
 ^docs$
-^pkgdown$
 ^LICENSE\.md$
+^renv$
+^renv\.lock$

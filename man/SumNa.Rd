@@ -2,29 +2,20 @@
 % Please edit documentation in R/SumNa.R
 \name{SumNa}
 \alias{SumNa}
-\title{Count the number of missing elements of a vector}
+\title{Count Total Missing (NA) Values}
 \usage{
-SumNa(col, na_list = NULL)
+SumNa(x)
 }
 \arguments{
-\item{col}{column or vector of data}
-
-\item{na_list}{list of elements to allow SumNa to think of as NA}
+\item{x}{A vector, matrix, or data frame.}
 }
 \value{
-numeric value representing number of missing values
+An integer representing the total count of missing values.
 }
 \description{
-Count the number of missing elements of a vector,
-allows user to define what should count as \code{NA} in R
-The function is vectorized.
+Calculates the total number of `NA` values across a vector, matrix, or data frame.
 }
 \examples{
-data <- data.frame(
-   col1 = c(1, NA, 3, "NA"),
-   col2 = c("A", "B", "C", "D")
-   )
-SumNa(data$col1)
-SumNa(data$col1, na_list = c("NA"))
-
+SumNa(c(1, 2, NA, 4, NA))
+SumNa(data.frame(a = c(1, NA), b = c(NA, 2)))
 }

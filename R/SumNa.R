@@ -1,30 +1,13 @@
-#' Count the number of missing elements of a vector
+#' Count Total Missing (NA) Values
 #'
-#' Count the number of missing elements of a vector,
-#' allows user to define what should count as \code{NA} in R
-#' The function is vectorized.
+#' Calculates the total number of `NA` values across a vector, matrix, or data frame.
 #'
-#' @param col column or vector of data
-#' @param na_list list of elements to allow SumNa to think of as NA
-#'
-#' @return numeric value representing number of missing values
-#'
+#' @param x A vector, matrix, or data frame.
+#' @return An integer representing the total count of missing values.
+#' @export
 #' @examples
-#' data <- data.frame(
-#'    col1 = c(1, NA, 3, "NA"),
-#'    col2 = c("A", "B", "C", "D")
-#'    )
-#' SumNa(data$col1)
-#' SumNa(data$col1, na_list = c("NA"))
-#'
-#' @importFrom dplyr if_else
-#'
-#' @export SumNa
-
-
-SumNa <- function(col, na_list = NULL) {
-  dplyr::if_else(
-    is.null(na_list),
-    sum(is.na(col)), # only R version of NA
-    sum(is.na(col) | col %in% na_list)) # allows user to pass in list of other NA values
+#' SumNa(c(1, 2, NA, 4, NA))
+#' SumNa(data.frame(a = c(1, NA), b = c(NA, 2)))
+SumNa <- function(x) {
+  sum(is.na(x))
 }
