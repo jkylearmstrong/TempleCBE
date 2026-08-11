@@ -1,14 +1,14 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: 
     person("J Kyle", "Armstrong", email = "j.kyle.armstrong@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4269-0121"))
 Description: An open-source R package developed for Temple University's Center for Biostatistics and Epidemiology (CBE). Provides domain-agnostic biostatistical testing, data quality and missingness visualizations, normalization functions, custom Tidymodels recipe steps, and clinical survival metrics.
 License: GPL-3 | MIT + file LICENSE
 Encoding: UTF-8
-URL: https://github.com/jkylearmstrong/TempleCBE
+URL: https://github.com/jkylearmstrong/TempleCBE, https://jkylearmstrong.github.io/TempleCBE/
 BugReports: https://github.com/jkylearmstrong/TempleCBE/issues
 Depends:
     R (>= 4.1.0)
@@ -49,6 +49,7 @@ Suggests:
     testthat (>= 3.0.0),
     tidymodels (>= 1.1.0),
     withr,
+    writexl,
     zip
 VignetteBuilder: knitr
 Config/testthat/edition: 3

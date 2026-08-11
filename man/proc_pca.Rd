@@ -4,12 +4,10 @@
 \alias{proc_pca}
 \title{Process and Plot Principal Component Analysis (PCA)}
 \usage{
-proc_pca(pca_obj, data = NULL)
+proc_pca(pca_obj)
 }
 \arguments{
 \item{pca_obj}{A `prcomp` object.}
-
-\item{data}{Data frame used for PCA.}
 }
 \value{
 Summary statistics or ggplot biplot object.

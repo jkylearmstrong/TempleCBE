@@ -10,11 +10,29 @@ is_poisson(col)
 \item{col}{A numeric vector.}
 }
 \value{
-A tibble of test results.
+A one-row tibble of test results (empty if \code{col} isn't
+  valid count data, e.g. it has negative values).
 }
 \description{
-Runs a Kolmogorov-Smirnov and a chi-squared test against a Poisson
-distribution matched on the mean.
+Runs a chi-squared goodness-of-fit test: observed counts (binned at
+roughly equal-probability quantiles of the fitted Poisson distribution,
+so expected counts stay adequate regardless of where the data sits) vs.
+Poisson-expected counts, with one degree of freedom subtracted for the
+estimated rate. The test is deterministic — no simulated comparison
+sample is drawn.
+}
+\details{
+A Kolmogorov-Smirnov test is deliberately *not* used here: the KS
+statistic's null distribution assumes a continuous CDF, and the Poisson
+distribution is discrete with real point masses, which inflates the KS
+statistic (and deflates its p-value) regardless of true fit — the
+chi-squared test is the standard, correctly-calibrated tool for
+discrete/count goodness-of-fit. \code{\link{is_normal}} uses a
+Kolmogorov-Smirnov test because the normal distribution is continuous.
+
+Since the Poisson distribution's support is the non-negative integers,
+this returns an empty tibble for vectors containing negative values or
+fewer than 2 observations.
 }
 \examples{
 is_poisson(rpois(n = 1000, lambda = 2))

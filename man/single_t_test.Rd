@@ -8,6 +8,7 @@ single_t_test(
   .data,
   .var,
   .class,
+  .id = NULL,
   alternative = "two.sided",
   conf.level = 0.95,
   paired = FALSE,
@@ -20,6 +21,14 @@ single_t_test(
 \item{.var}{Name (string) of the continuous column to test.}
 
 \item{.class}{Name (string) of a binary (2-level) classification column.}
+
+\item{.id}{Name (string, optional) of a subject/record identifier column.
+When \code{paired = TRUE}, pass this to pair observations by matching
+\code{.id} across the two groups rather than by row position — every id
+must have exactly one observation in each group. If \code{paired = TRUE}
+and \code{.id} is omitted, observations are paired by row order within
+each group, which silently produces meaningless results if the two
+groups aren't already sorted into corresponding order.}
 
 \item{alternative}{One of \code{"two.sided"} (default), \code{"greater"}, or \code{"less"}.}
 

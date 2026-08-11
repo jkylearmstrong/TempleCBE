@@ -54,10 +54,16 @@ get_dataset_info <- function(df) {
     sd_tbl <- tibble::tibble(columns = character(), sd = numeric())
   }
 
+  most_freq_val <- function(x) {
+    tab <- table(x)
+    if (length(tab) == 0) return(NA_character_)
+    names(which.max(tab))
+  }
+
   mf_cols <- names(dplyr::select(df, dplyr::where(is.factor) | dplyr::where(is.character) |
                                     dplyr::where(is.logical) | dplyr::where(is.numeric)))
   most_freq <- if (length(mf_cols) > 0) {
-    dplyr::summarise(df, dplyr::across(dplyr::all_of(mf_cols), \(x) names(which.max(table(x))))) |>
+    dplyr::summarise(df, dplyr::across(dplyr::all_of(mf_cols), most_freq_val)) |>
       tidyr::pivot_longer(dplyr::everything(), names_to = "columns", values_to = "most_freq")
   } else {
     tibble::tibble(columns = character(), most_freq = character())

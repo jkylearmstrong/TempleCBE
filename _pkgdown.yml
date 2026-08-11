@@ -50,6 +50,8 @@ reference:
       - distribution_plot
       - is_normal
       - is_poisson
+      - is.int
+      - significance_stars
 
   - title: PCA & Dimensionality Reduction
     desc: Principal Component Analysis utilities, loadings, and biplots.
@@ -61,6 +63,7 @@ reference:
       - pca_feature_loading_heatmap
       - plot_pca_bi
       - rotation_matrix
+      - plot.prcomp
 
   - title: Visualization & Reporting
     desc: Manhattan/volcano plots, report generation, and document conversions.
@@ -81,6 +84,13 @@ reference:
       - R_names
       - make_excel_names
       - keep_only
+      - delete_nul_files
       - find_code
       - sd.error
-      - has_concept("%like%", "%ilike%", "%flike%", "%plike%", "%notin%", "%!in%")
+      - install.packages.no_lock
+      - "%like%"
+      - "%ilike%"
+      - "%flike%"
+      - "%plike%"
+      - "%notin%"
+      - "%!in%"
