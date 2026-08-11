@@ -31,8 +31,9 @@ is.int <- function(col) {
 #' Test Whether a Vector Looks Normally Distributed
 #'
 #' Runs a Shapiro-Wilk test (for n <= 5000, on a random subsample above that)
-#' and a Kolmogorov-Smirnov test against a normal distribution matched on
-#' mean/sd.
+#' and a one-sample Kolmogorov-Smirnov test against the normal distribution
+#' with mean/sd estimated from \code{col} (deterministic — no simulated
+#' comparison sample is drawn, so results are reproducible without seeding).
 #'
 #' @param col A numeric vector.
 #' @return A tibble of test results.
@@ -42,10 +43,9 @@ is.int <- function(col) {
 #' is_normal(runif(1000, min = 2, max = 4))
 is_normal <- function(col) {
   temp_col <- stats::na.omit(col)
-  mu <- mean(temp_col, na.rm = TRUE)
-  sd_ <- stats::sd(temp_col, na.rm = TRUE)
+  mu <- mean(temp_col)
+  sd_ <- stats::sd(temp_col)
   n <- length(temp_col)
-  y <- stats::rnorm(n, mu, sd_)
 
   shapiro_result <- data.frame()
   if (n > 3 && n <= 5000) {
@@ -57,7 +57,7 @@ is_normal <- function(col) {
   }
 
   ks_result <- suppressWarnings(
-    broom::tidy(stats::ks.test(temp_col, y)) |>
+    broom::tidy(stats::ks.test(temp_col, "pnorm", mean = mu, sd = sd_)) |>
       dplyr::mutate(distribution.test = .data$p.value >= 0.1)
   )
 
@@ -66,13 +66,67 @@ is_normal <- function(col) {
     dplyr::mutate(distribution = "normal")
 }
 
+#' @keywords internal
+#' @noRd
+poisson_gof_chisq <- function(x, mu) {
+  x_int <- round(x)
+  if (any(x_int < 0)) return(NULL)
+  n <- length(x_int)
+
+  # Bin edges are placed at (roughly) equal-probability quantiles of the
+  # null Poisson(mu) distribution, not at raw integer values — this keeps
+  # expected counts adequate regardless of where the *observed* data sits
+  # (unlike tail-only pooling, which fails when the data is concentrated
+  # somewhere the null distribution considers rare, e.g. overdispersed data).
+  n_bins <- max(2L, min(10L, floor(n / 5)))
+  interior_probs <- seq(0, 1, length.out = n_bins + 1)[-c(1, n_bins + 1)]
+  edges <- unique(stats::qpois(interior_probs, lambda = mu))
+  breaks <- c(-Inf, edges, Inf)
+  if (length(breaks) < 4) return(NULL) # need >= 3 bins for >= 1 residual df
+
+  obs <- as.integer(table(cut(x_int, breaks = breaks, include.lowest = TRUE)))
+  exp_probs <- diff(stats::ppois(breaks, lambda = mu))
+  exp_probs <- exp_probs / sum(exp_probs)
+
+  chi_raw <- suppressWarnings(stats::chisq.test(obs, p = exp_probs, rescale.p = TRUE))
+  # one degree of freedom subtracted for the estimated rate parameter (mu)
+  df <- length(obs) - 1L - 1L
+  if (df < 1) return(NULL)
+  p_value <- stats::pchisq(unname(chi_raw$statistic), df = df, lower.tail = FALSE)
+
+  tibble::tibble(
+    statistic = unname(chi_raw$statistic),
+    parameter = df,
+    p.value = p_value,
+    method = "Chi-squared test for Poisson goodness-of-fit (rate estimated)",
+    distribution.test = p_value >= 0.1
+  )
+}
+
 #' Test Whether a Vector Looks Poisson-Distributed
 #'
-#' Runs a Kolmogorov-Smirnov and a chi-squared test against a Poisson
-#' distribution matched on the mean.
+#' Runs a chi-squared goodness-of-fit test: observed counts (binned at
+#' roughly equal-probability quantiles of the fitted Poisson distribution,
+#' so expected counts stay adequate regardless of where the data sits) vs.
+#' Poisson-expected counts, with one degree of freedom subtracted for the
+#' estimated rate. The test is deterministic — no simulated comparison
+#' sample is drawn.
+#'
+#' A Kolmogorov-Smirnov test is deliberately *not* used here: the KS
+#' statistic's null distribution assumes a continuous CDF, and the Poisson
+#' distribution is discrete with real point masses, which inflates the KS
+#' statistic (and deflates its p-value) regardless of true fit — the
+#' chi-squared test is the standard, correctly-calibrated tool for
+#' discrete/count goodness-of-fit. \code{\link{is_normal}} uses a
+#' Kolmogorov-Smirnov test because the normal distribution is continuous.
+#'
+#' Since the Poisson distribution's support is the non-negative integers,
+#' this returns an empty tibble for vectors containing negative values or
+#' fewer than 2 observations.
 #'
 #' @param col A numeric vector.
-#' @return A tibble of test results.
+#' @return A one-row tibble of test results (empty if \code{col} isn't
+#'   valid count data, e.g. it has negative values).
 #' @export
 #' @examples
 #' is_poisson(rpois(n = 1000, lambda = 2))
@@ -80,25 +134,18 @@ is_normal <- function(col) {
 is_poisson <- function(col) {
   is_int_col <- is.int(col)
   temp_col <- stats::na.omit(col)
-  mu <- mean(temp_col, na.rm = TRUE)
   n <- length(temp_col)
-  y <- if (mu >= 0) stats::rpois(n, mu) else -stats::rpois(n, abs(mu))
 
-  ks_result <- tryCatch(
-    suppressWarnings(
-      broom::tidy(stats::ks.test(temp_col, y)) |>
-        dplyr::mutate(distribution.test = .data$p.value >= 0.1)
-    ),
-    error = function(e) NULL
-  )
-  if (is.null(ks_result)) return(data.frame())
+  if (n < 2 || min(temp_col) < 0) {
+    return(data.frame())
+  }
 
-  chi_result <- suppressWarnings(
-    broom::tidy(stats::chisq.test(table(sort(temp_col), sort(y)))) |>
-      dplyr::mutate(distribution.test = .data$p.value < 0.1)
-  )
+  mu <- mean(temp_col)
 
-  dplyr::bind_rows(ks_result, chi_result) |>
+  chi_result <- tryCatch(poisson_gof_chisq(temp_col, mu), error = function(e) NULL)
+  if (is.null(chi_result)) return(data.frame())
+
+  chi_result |>
     dplyr::mutate(p_value_sig = significance_stars(.data$p.value)) |>
     dplyr::mutate(distribution = "poisson", is_int = is_int_col)
 }

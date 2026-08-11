@@ -24,17 +24,13 @@ create_toc_from_sas_pdf <- function(input, collapse = FALSE, top_margin_height =
   input_base <- sub(paste0("\\.", file_extension, "$"), "", base)
   output_base <- paste0("TOC_", input_base)
 
-  extract_top_titles <- function(page_data) {
-    top_text <- page_data |>
-      dplyr::filter(.data$y < top_margin_height) |>
-      dplyr::arrange(.data$y, .data$x) |>
-      dplyr::pull("text")
-    paste(top_text, collapse = " ")
-  }
-
   pdf_data_info <- pdftools::pdf_data(input)
-  top_titles <- vapply(pdf_data_info, extract_top_titles, character(1))
-  top_titles <- top_titles[top_titles != "" & !grepl("^\\s*$", top_titles)]
+  extracted <- toc_titles_with_pages(pdf_data_info, top_margin_height)
+  top_titles <- extracted$titles
+  # true PDF page number for each surviving entry -- kept aligned with
+  # `top_titles` through the blank-page filter above, so page numbers in
+  # the output TOC reflect real pages, not positions in the filtered vector
+  true_pages <- extracted$pages
 
   is_duplicate <- if (isTRUE(collapse)) {
     function(title, seen_titles) {
@@ -55,7 +51,7 @@ create_toc_from_sas_pdf <- function(input, collapse = FALSE, top_margin_height =
     clean_title <- gsub("^[0-9]+\\s*", "", title)
     if (!grepl("Title\\s*Page", clean_title, ignore.case = TRUE) && !is_duplicate(clean_title, seen_titles)) {
       filtered_titles <- c(filtered_titles, clean_title)
-      page_numbers <- c(page_numbers, i)
+      page_numbers <- c(page_numbers, true_pages[i])
       seen_titles <- c(seen_titles, clean_title)
     }
   }
@@ -73,4 +69,30 @@ create_toc_from_sas_pdf <- function(input, collapse = FALSE, top_margin_height =
     r2rtf::write_rtf(output_rtf)
 
   invisible(paste0("TOC saved as RTF: ", output_rtf))
+}
+
+#' Extract Top-Margin Page Titles, Paired With Their True PDF Page Numbers
+#'
+#' @param pdf_data_info A list of per-page data frames as returned by
+#'   \code{\link[pdftools]{pdf_data}} (each with \code{x}, \code{y}, \code{text}).
+#' @param top_margin_height How far down the page to look for titles.
+#' @return A list with \code{titles} (character vector of non-blank
+#'   top-margin text, one per page that has any) and \code{pages} (the
+#'   1-based PDF page number each entry in \code{titles} actually came
+#'   from — NOT its position in \code{titles}, since pages with no
+#'   top-margin text are dropped and would otherwise shift the count).
+#' @keywords internal
+#' @noRd
+toc_titles_with_pages <- function(pdf_data_info, top_margin_height) {
+  extract_top_titles <- function(page_data) {
+    top_text <- page_data |>
+      dplyr::filter(.data$y < top_margin_height) |>
+      dplyr::arrange(.data$y, .data$x) |>
+      dplyr::pull("text")
+    paste(top_text, collapse = " ")
+  }
+
+  raw <- vapply(pdf_data_info, extract_top_titles, character(1))
+  has_title <- raw != "" & !grepl("^\\s*$", raw)
+  list(titles = raw[has_title], pages = seq_along(raw)[has_title])
 }

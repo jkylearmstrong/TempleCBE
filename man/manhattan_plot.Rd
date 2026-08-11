@@ -4,7 +4,7 @@
 \alias{manhattan_plot}
 \title{Manhattan Plot}
 \usage{
-manhattan_plot(.data, var, log_p, highlight_significant = TRUE)
+manhattan_plot(.data, var, log_p, alpha = 0.05, highlight_significant = TRUE)
 }
 \arguments{
 \item{.data}{A data frame, e.g. the output of \code{\link{multiple_t_test}}.}
@@ -13,8 +13,11 @@ manhattan_plot(.data, var, log_p, highlight_significant = TRUE)
 
 \item{log_p}{Unquoted column of \code{-log10(p.value)}.}
 
+\item{alpha}{Significance threshold for the reference line/shading
+(default \code{0.05}).}
+
 \item{highlight_significant}{Logical (default \code{TRUE}); shade the
-region above the p < 0.05 line.}
+region above the \code{p < alpha} line.}
 }
 \value{
 A ggplot object.

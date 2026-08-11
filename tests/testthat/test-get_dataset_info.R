@@ -78,6 +78,25 @@ test_that("proc_contents handles edge cases (no numeric, date only, logical only
   expect_equal(nrow(res_empty), 0)
 })
 
+test_that("get_dataset_info handles all-NA columns without crashing", {
+  # Regression test: `names(which.max(table(x)))` returns a zero-length
+  # character vector when x is entirely NA (table() drops NAs by default),
+  # which crashed dplyr::summarise(across()) since it requires every column
+  # in one across() call to return a length-1 result.
+  df <- data.frame(
+    all_na_num = c(NA_real_, NA_real_, NA_real_),
+    all_na_chr = c(NA_character_, NA_character_, NA_character_),
+    ok = c(1, 2, 3)
+  )
+
+  res <- get_dataset_info(df)
+  expect_s3_class(res, "data.frame")
+  expect_equal(nrow(res), 3)
+
+  na_rows <- res |> dplyr::filter(columns %in% c("all_na_num", "all_na_chr"))
+  expect_true(all(is.na(na_rows$most_freq)))
+})
+
 test_that("proc_contents handles incompatible numeric S3 classes (e.g. chron::times)", {
   # Simulate a 'times' class that is numeric but incompatible with double in pivot_longer
   # chron::times is numeric but has class "times"
