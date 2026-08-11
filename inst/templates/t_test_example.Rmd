@@ -1,0 +1,162 @@
+---
+title: "Example"
+author:
+  - J Kyle Armstrong, PhD^[Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology, johnathon.armstrong@temple.edu]
+  - Example Author^[Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology, example@temple.edu]
+date: "`r format(Sys.time(), '%d-%b-%Y')`"
+fontsize: 10pt
+bibliography:
+  - bib.bib
+  - grateful-refs.bib
+output:
+  bookdown::pdf_document2:
+    toc: true
+    number_sections: true
+  word_document:
+    toc: true
+    number_sections: true
+  html_document:
+    toc: true
+    number_sections: true
+    theme: flatly
+---
+
+
+```{r, echo=FALSE, results='asis'}
+#cat('
+#\usepackage[noblocks]{authblk}
+#\renewcommand*{\Authsep}{, }
+#\renewcommand*{\Authand}{, }
+#\renewcommand*{\Authands}{, }
+#\renewcommand\Affilfont{\small}
+#')
+```
+
+```{r setup, echo = FALSE, include=TRUE, message=FALSE}
+knitr::opts_chunk$set(include = TRUE) 
+knitr::opts_chunk$set(echo = FALSE) 
+knitr::opts_chunk$set(message = FALSE) 
+knitr::opts_chunk$set(warning = FALSE) 
+```
+
+
+```{r}
+library('ggplot2')
+library('datasci')
+library('purrr')
+library('dplyr')
+library('gtsummary')
+library('gt')
+```
+
+```{r}
+data(input_parameters_raw)
+```
+
+\pagebreak
+
+# Quarto Example 
+
+This is an example of an Rmarkdown. This package comes with several common R packages, it is also recommended to install:  
+
+```{r, echo=TRUE, eval=FALSE}
+install.packages(c('gt', # general table formatting
+                   'gtsummary', # for univariate and regression tables
+                   'here', # where you are working (better when working with git)
+                   'knitr', # r package for working with documents 
+                   'quarto', # R package for working with quarto 
+                   'rmarkdown', # creating documents
+                   'tidymodels', # modern interface for fitting models 
+                   'tidyverse', # modern R language 
+                   'tinytex', # needed for pdf documents 
+                   'devtools' # package creation development tools
+                   ))
+
+
+remotes::install_github("Pakillo/grateful") # for package citation
+```
+
+To create pdf documents it is also recommended to run
+
+```{r, echo=TRUE, eval=FALSE}
+tinytex::install_tinytex()
+```
+
+```{r knitr-example, tab.cap="first 5 records and 5 columns of the data"}
+input_parameters_raw %>%
+  head(n = 5) %>%
+  select(arl_number, head_shape, orientation, nom_velocity_m_sec, init_strike_velocity_m_s) %>%
+  knitr::kable()
+```
+
+# Table One
+
+```{r table1, tab.cap="An example of a Table 1"}
+input_parameters_raw %>%
+  select(-arl_number, -pp_chest_wall, -pp_to_spine, -pp_neither) %>%
+  tbl_summary(by = "head_shape",
+              type = all_continuous() ~ "continuous2",
+              statistic = list(
+                all_continuous() ~ c("{mean} ({sd})","{median} ({p25}, {p75})","{median} ({min} - {max})")
+                )
+  ) %>%
+  add_p(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
+  add_overall(last = TRUE, col_label = "**Overall**") %>%
+  separate_p_footnotes() %>% 
+  as_gt() %>%
+  gt::as_latex() # for pdf documents 
+```
+
+
+# Cross Refrence 
+You can cross-reference tables, listings, figures and page numbers 
+
+You can use the `label`s you created to reference the tables like \@ref(tab:table1) or items in the `bib.bib` file such as @Al-Helali2021-as. 
+
+You can even reference later items such as @fig-2 or sections like \@ref(software) or even the page number that something happens on like page \pageref{fig-3}.
+
+
+# Pairwise t-tests
+
+Suppose we wanted to visualize all pairwise t-tests (we will only do first four but you get the idea). There are other ways to do this but this is a good enough example of repeated analysis. 
+
+
+```{r}
+features_numeric <- input_parameters_raw %>%
+  select(-arl_number) %>%
+  select(where(is.numeric)) %>%
+  colnames()
+
+
+pairs <- combn(features_numeric,2) |> 
+  t() %>%
+  as_tibble() %>%
+  mutate(pair_number = row_number()) 
+
+pair_number_list <- pairs %>% filter(pair_number <= 4) %>% pull(pair_number)
+```
+
+
+```{r, label='t_test_child', results='asis'}
+if(!interactive()){
+  src <- lapply(pair_number_list,
+                function(pair_number){knitr::knit_expand('t_test_child.Rmd')})
+  res = knitr::knit_child(text = unlist(src), quiet = TRUE)
+  cat(res, sep = '\n')
+}
+```
+
+
+\pagebreak
+# Software {#sec:software}
+
+```{r}
+grateful::cite_packages(output = "paragraph",
+                        out.dir = getwd(),
+                        omit = NULL,
+                        include.RStudio = F,
+                        passive.voice = T)
+```
+
+
+# Refrences 

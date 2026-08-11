@@ -2,30 +2,55 @@
 % Please edit documentation in R/infix_helpers.R
 \name{infix_helpers}
 \alias{infix_helpers}
-\alias{\%notin\%}
+\alias{like}
 \alias{\%like\%}
+\alias{ilike}
 \alias{\%ilike\%}
+\alias{flike}
 \alias{\%flike\%}
-\title{Pattern Matching and Infix Operator Utilities}
+\alias{plike}
+\alias{\%plike\%}
+\alias{notin}
+\alias{\%!in\%}
+\alias{\%notin\%}
+\title{Pattern Matching and Logical-Negation Infix Operators}
 \usage{
+like(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE)
+
+vector \%like\% pattern
+
+ilike(vector, pattern)
+
+vector \%ilike\% pattern
+
+flike(vector, pattern)
+
+vector \%flike\% pattern
+
+plike(vector, pattern)
+
+vector \%plike\% pattern
+
+notin(x, table)
+
+x \%!in\% table
+
 x \%notin\% table
-
-x \%like\% pattern
-
-x \%ilike\% pattern
-
-x \%flike\% pattern
 }
 \arguments{
-\item{x}{Vector to test.}
+\item{pattern}{Pattern to match (for the \code{like} family).}
 
-\item{table}{Vector of values to test against (for \code{\%notin\%}).}
+\item{ignore.case, fixed, perl}{Logical flags controlling how \code{pattern}
+is matched, as in \code{\link{grepl}}.}
 
-\item{pattern}{Pattern to match (for \code{\%like\%}, \code{\%flike\%}, \code{\%ilike\%}).}
+\item{x, vector}{A vector to test.}
+
+\item{table}{Vector of values to test against (for \code{notin()}/\code{\%notin\%}/\code{\%!in\%}).}
 }
 \value{
 A logical vector.
 }
 \description{
-Useful infix operators for string matching and logical negation.
+A small family of \code{grepl()}/\code{\%in\%} wrappers as base functions
+and matching infix operators.
 }

@@ -1,0 +1,159 @@
+---
+title: "Example"
+geometry: margin=1in
+author:
+- name: J Kyle Armstrong, PhD
+  orcid: 0000-0002-4269-0121
+  email: johnathon.armstrong@temple.edu
+  affiliation: Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology
+- name: Author 2
+  email: example@temple.edu
+  affiliation: Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology
+date: today
+date-format: medium
+fontsize: 10pt
+bibliography:
+  - bib.bib
+  - grateful-refs.bib
+format:
+  html:
+    smooth-scroll: true
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+    section-divs: true
+    toc-location: left
+    toc-expand: true
+  docx:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+  pdf:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 8
+    toc-depth: 4
+    standalone: true
+    number-sections: true
+    template-partials:
+      - title.tex
+    include-in-header:
+      text: |
+        \usepackage[noblocks]{authblk}
+        \renewcommand*{\Authsep}{, }
+        \renewcommand*{\Authand}{, }
+        \renewcommand*{\Authands}{, }
+        \renewcommand\Affilfont{\small}
+        \usepackage{lscape}
+        \newcommand{\blandscape}{\begin{landscape}}
+        \newcommand{\elandscape}{\end{landscape}}
+---
+
+
+```{r setup, echo= FALSE, message=FALSE}
+knitr::opts_chunk$set(include = TRUE) 
+knitr::opts_chunk$set(echo = FALSE) 
+knitr::opts_chunk$set(message = FALSE) 
+knitr::opts_chunk$set(warning = FALSE) 
+```
+
+```{r}
+library('ggplot2')
+library('datasci')
+library('purrr')
+library('dplyr')
+library('gtsummary')
+library('gt')
+```
+
+```{r}
+data(input_parameters_raw)
+```
+
+# Table One
+
+```{r}
+#| label: tbl-table1
+#| tbl-cap: An example of a Table 1
+
+input_parameters_raw %>%
+  select(-arl_number, -pp_chest_wall, -pp_to_spine, -pp_neither) %>%
+  tbl_summary(by = "head_shape",
+              type = all_continuous() ~ "continuous2",
+              statistic = list(
+                all_continuous() ~ c("{mean} ({sd})","{median} ({p25}, {p75})","{median} ({min} - {max})")
+                )
+  ) %>%
+  add_p(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
+  add_overall(last = TRUE, col_label = "**Overall**") %>%
+  separate_p_footnotes() %>% 
+  as_gt() %>%
+  gt::as_latex() # for pdf documents 
+```
+
+
+## Cross Refrence 
+You can cross-reference tables, listings, figures and page numbers 
+
+You can use the labels you created to reference the tables like @tbl-table1 or items in the `bib.bib` file such as @Al-Helali2021-as. 
+
+You can even reference later figures such as @fig-2 or sections like @sec-software or even the page number that something happens on \pageref{fig-3}.
+
+
+## Pairwise t-tests
+
+Suppose we wanted to visualize all pairwise t-tests (we will only do first four but you get the idea).
+
+
+```{r}
+features_numeric <- input_parameters_raw %>%
+  select(-arl_number) %>%
+  select(where(is.numeric)) %>%
+  colnames()
+
+
+pairs <- combn(features_numeric,2) |> 
+  t() %>%
+  as_tibble() %>%
+  mutate(pair_number = row_number()) 
+
+pair_number_list <- pairs %>% filter(pair_number <= 4) %>% pull(pair_number)
+```
+
+
+
+
+```{r}
+#| label: t_test_child
+#| results: 'asis'
+
+if(!interactive()){
+  src <- lapply(pair_number_list,
+                function(pair_number){knitr::knit_expand('t_test_child.qmd')})
+  res = knitr::knit_child(text = unlist(src), quiet = TRUE)
+  cat(res, sep = '\n')
+}
+```
+
+
+\pagebreak
+# Software {#sec-software}
+
+```{r}
+grateful::cite_packages(output = "paragraph",
+                            out.dir = here::here('inst','templates'),
+                            omit = NULL,
+                            include.RStudio = F,
+                            passive.voice = T)
+```
+
+
+# Refrences 
