@@ -13,7 +13,7 @@ z_norm <- function(x, na.rm = TRUE) {
     m <- mean(x, na.rm = na.rm)
     s <- stats::sd(x, na.rm = na.rm)
     if (is.na(s) || s == 0) {
-      return(rep(0, length(x)))
+      return(ifelse(is.na(x), NA_real_, 0))
     }
     return((x - m) / s)
   } else if (is.data.frame(x)) {

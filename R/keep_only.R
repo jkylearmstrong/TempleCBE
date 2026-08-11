@@ -61,8 +61,7 @@ delete_nul_files <- function(path = here::here(), .dontask = FALSE, .verify_comm
 
   message(paste0("Files to delete:\n", paste("\t", nul_files, collapse = "\n")))
 
-  win_paths <- gsub("/", "\\\\", nul_files)
-  delete_commands <- paste0("del \"\\\\.\\", win_paths, "\"")
+  delete_commands <- nul_delete_commands(nul_files)
 
   if (isTRUE(.verify_command)) {
     return(delete_commands)
@@ -78,4 +77,11 @@ delete_nul_files <- function(path = here::here(), .dontask = FALSE, .verify_comm
 
   for (cmd in delete_commands) shell(cmd)
   invisible(nul_files)
+}
+
+#' @keywords internal
+#' @noRd
+nul_delete_commands <- function(nul_files) {
+  win_paths <- gsub("/", "\\\\", nul_files)
+  paste0("del ", shQuote(paste0("\\\\.\\", win_paths), type = "cmd"))
 }

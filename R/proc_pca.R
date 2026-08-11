@@ -3,10 +3,9 @@
 #' Helper functions for extracting component variances, feature loadings, and generating biplots.
 #'
 #' @param pca_obj A `prcomp` object.
-#' @param data Data frame used for PCA.
 #' @return Summary statistics or ggplot biplot object.
 #' @export
-proc_pca <- function(pca_obj, data = NULL) {
+proc_pca <- function(pca_obj) {
   if (!inherits(pca_obj, "prcomp")) {
     stop("Input 'pca_obj' must be a 'prcomp' object.")
   }

@@ -8,6 +8,7 @@ one_vs_rest_t_test(
   .data,
   .var,
   .class,
+  .id = NULL,
   paired = FALSE,
   alternative = "two.sided",
   conf.level = 0.95
@@ -19,6 +20,9 @@ one_vs_rest_t_test(
 \item{.var}{Name (string) of the continuous column to test.}
 
 \item{.class}{Name (string) of a classification column (2+ levels).}
+
+\item{.id}{Name (string, optional) of a subject/record identifier column;
+see \code{\link{single_t_test}}. Only meaningful when \code{paired = TRUE}.}
 
 \item{paired}{Logical; paired t-test.}
 

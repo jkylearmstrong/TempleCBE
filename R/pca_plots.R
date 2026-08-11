@@ -45,6 +45,11 @@ plot_pca_bi <- function(pca_model, newdata, column, x = 1, y = 2) {
   projection <- stats::predict(pca_model, newdata)
   n_components <- ncol(projection)
 
+  if (n_components < 2) {
+    stop("plot_pca_bi() requires at least 2 principal components to plot; ",
+         "pca_model only has ", n_components, ".")
+  }
+
   if (x > n_components) { message("x exceeds available components; using 1."); x <- 1 }
   if (y > n_components) { message("y exceeds available components; using 1."); y <- 1 }
   if (x == y) {

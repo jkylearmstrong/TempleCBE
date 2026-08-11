@@ -25,7 +25,8 @@ numeric column in \code{.data}).}
 
 \item{conf.level}{Confidence level for the interval.}
 
-\item{...}{Additional arguments passed to \code{\link[stats]{t.test}}.}
+\item{...}{Additional arguments passed to \code{\link{single_t_test}} (and
+on to \code{\link[stats]{t.test}}) — e.g. \code{paired} and \code{.id}.}
 }
 \value{
 A tibble with one row per tested variable.

@@ -29,11 +29,18 @@ step_famd(
 
 \item{trained}{Logical indicating if step has been trained.}
 
-\item{num_comp}{Number of components to extract (default 2).}
+\item{num_comp}{Number of components to extract (default 2). Ignored if
+\code{threshold} is set.}
 
-\item{threshold}{Cumulative percentage of variance threshold.}
+\item{threshold}{A fraction of the total variance that should be covered
+by the components (a number in \code{(0, 1]}). When set (non-\code{NA}),
+the step extracts the smallest number of components whose cumulative
+variance meets this threshold, overriding \code{num_comp}.}
 
-\item{options}{Options passed to underlying FAMD algorithm.}
+\item{options}{A named list of additional arguments passed on to
+\code{\link[FactoMineR]{FAMD}} (e.g. \code{list(row.w = ...)}); merged
+over the step's own defaults (\code{ncp} and \code{graph = FALSE}), so
+\code{options} can override those defaults too if desired.}
 
 \item{res}{FAMD object.}
 

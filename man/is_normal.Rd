@@ -14,8 +14,9 @@ A tibble of test results.
 }
 \description{
 Runs a Shapiro-Wilk test (for n <= 5000, on a random subsample above that)
-and a Kolmogorov-Smirnov test against a normal distribution matched on
-mean/sd.
+and a one-sample Kolmogorov-Smirnov test against the normal distribution
+with mean/sd estimated from \code{col} (deterministic — no simulated
+comparison sample is drawn, so results are reproducible without seeding).
 }
 \examples{
 is_normal(rnorm(1000, mean = 5, sd = 3))

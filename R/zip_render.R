@@ -115,7 +115,7 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   withr::local_dir(build_dir)
   quarto::quarto_render(input = basename(copied_main), output_format = formats, execute_dir = build_dir)
 
-  out_glob <- list.files(build_dir, pattern = paste0("^", input_stem, "\\.(html|pdf|docx)$"), full.names = TRUE, ignore.case = TRUE)
+  out_glob <- list.files(build_dir, pattern = paste0("^", input_stem, "\\.(", output_format_extensions(formats), ")$"), full.names = TRUE, ignore.case = TRUE)
   include_in_zip <- unique(c(out_glob, if (include_sources) c(file.path(build_dir, basename(input)), copied_resources) else character(0)))
   include_in_zip <- include_in_zip[file.exists(include_in_zip)]
 
@@ -138,4 +138,34 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
 
   invisible(list(build_dir = build_dir, input = input, formats = formats,
                  copied_resources = copied_resources, outputs = out_glob, zip = dest_zip))
+}
+
+#' Quarto Output Format Name -> File Extension
+#'
+#' Maps Quarto output format names to the file extension(s) they actually
+#' produce (several formats share an extension, and some don't match their
+#' own name, e.g. \code{revealjs} produces \code{.html} and \code{beamer}
+#' produces \code{.pdf}). \code{"all"} expands to every known extension.
+#'
+#' @param formats Character vector of Quarto output format names.
+#' @return A single regex-alternation string of file extensions (no dot),
+#'   suitable for a \code{list.files()} pattern.
+#' @keywords internal
+#' @noRd
+output_format_extensions <- function(formats) {
+  format_ext_map <- c(
+    html = "html", revealjs = "html", slidy = "html", s5 = "html",
+    pdf = "pdf", beamer = "pdf", pdflatex = "pdf", latex = "pdf",
+    docx = "docx", pptx = "pptx", odt = "odt", rtf = "rtf",
+    epub = "epub", epub3 = "epub", ipynb = "ipynb",
+    gfm = "md", md = "md", markdown = "md", commonmark = "md",
+    typst = "pdf", context = "pdf", docbook = "xml"
+  )
+
+  if ("all" %in% formats) {
+    exts <- unique(format_ext_map)
+  } else {
+    exts <- unique(ifelse(formats %in% names(format_ext_map), format_ext_map[formats], formats))
+  }
+  paste(exts, collapse = "|")
 }
