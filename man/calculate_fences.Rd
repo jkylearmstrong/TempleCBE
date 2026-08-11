@@ -2,22 +2,21 @@
 % Please edit documentation in R/detect_outliers.R
 \name{calculate_fences}
 \alias{calculate_fences}
-\title{Interquartile Range (IQR) Outlier Fences}
+\title{Calculate Inner and Outer IQR Fences}
 \usage{
-calculate_fences(x, k = 1.5, na.rm = TRUE)
+calculate_fences(col)
 }
 \arguments{
-\item{x}{A numeric vector.}
-
-\item{k}{Multiplier for IQR (default 1.5).}
-
-\item{na.rm}{Logical; whether to ignore NAs (default TRUE).}
+\item{col}{A numeric vector or column.}
 }
 \value{
-A named vector containing `lower` and `upper` bounds.
+A one-row tibble with columns \code{lower_inner_fence},
+  \code{upper_inner_fence} (at 1.5 x IQR — conventional "mild" outlier
+  boundary) and \code{lower_outer_fence}, \code{upper_outer_fence} (at
+  3 x IQR — "extreme" outlier boundary).
 }
 \description{
-Computes lower and upper IQR fences for detecting numerical outliers.
+Calculate Inner and Outer IQR Fences
 }
 \examples{
 calculate_fences(c(1, 2, 3, 4, 5, 100))

@@ -4,18 +4,24 @@
 \alias{SumNa}
 \title{Count Total Missing (NA) Values}
 \usage{
-SumNa(x)
+SumNa(x, na_list = NULL)
 }
 \arguments{
 \item{x}{A vector, matrix, or data frame.}
+
+\item{na_list}{Optional vector of additional values to treat as missing,
+beyond actual \code{NA}.}
 }
 \value{
 An integer representing the total count of missing values.
 }
 \description{
-Calculates the total number of `NA` values across a vector, matrix, or data frame.
+Calculates the total number of missing values across a vector, matrix, or
+data frame, optionally treating additional values (e.g. \code{"NA"} as a
+literal string, or \code{""}) as missing too.
 }
 \examples{
 SumNa(c(1, 2, NA, 4, NA))
 SumNa(data.frame(a = c(1, NA), b = c(NA, 2)))
+SumNa(c(1, NA, "NA", 4), na_list = "NA")
 }
