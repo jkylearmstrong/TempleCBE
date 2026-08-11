@@ -2,22 +2,20 @@
 % Please edit documentation in R/detect_outliers.R
 \name{flag_outliers}
 \alias{flag_outliers}
-\title{Flag Numerical Outliers}
+\title{Flag and Classify Outliers}
 \usage{
-flag_outliers(x, k = 1.5, na.rm = TRUE)
+flag_outliers(col)
 }
 \arguments{
-\item{x}{A numeric vector.}
-
-\item{k}{IQR multiplier (default 1.5).}
-
-\item{na.rm}{Logical; whether to ignore NAs (default TRUE).}
+\item{col}{A numeric vector or column.}
 }
 \value{
-Logical vector of length `length(x)`.
+A one-column-input-turned-tibble with \code{value}, \code{.outlier}
+  (logical) and \code{.outlier_type} (factor: \code{"NONE"}, \code{"MILD"},
+  or \code{"EXTREME"}).
 }
 \description{
-Returns a logical vector indicating whether each value falls outside the IQR fences.
+Flag and Classify Outliers
 }
 \examples{
 flag_outliers(c(1, 2, 3, 4, 5, 100))

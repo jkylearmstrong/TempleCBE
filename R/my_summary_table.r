@@ -1,6 +1,5 @@
 #' Summary Table Function
 #'
-#'
 #' @param data a dataframe or tibble
 #' @param var variable to summarize
 #' @param na.rm should NA values be removed, TRUE or FALSE, default is FALSE
@@ -17,16 +16,12 @@
 #' mtcars |> 
 #'   dplyr::group_by(cyl) |> 
 #'   my_summary_table(mpg, table.output = TRUE)
-#'   
-#'  
 #'
 #' @import dplyr
 #' @importFrom stats sd
 #' @importFrom rlang .data
 #'
-#' @export my_summary_table
-
-
+#' @export
 my_summary_table <- function(data, var, na.rm=FALSE, data.output = TRUE, table.output = FALSE){
   if(table.output == TRUE){
     data.output <- FALSE

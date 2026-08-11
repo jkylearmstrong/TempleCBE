@@ -6,9 +6,9 @@
 # TempleCBE <img src="inst/templates/Temple_Logo.png" align="right" height="138" />
 
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
-[![License:
-MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/jkylearmstrong/TempleCBE)
+[![License: GPL-3 \|
+MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](LICENSE.md)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/jkylearmstrong/TempleCBE)
 
 **TempleCBE** is an open-source R package developed for Temple
 University’s **Center for Biostatistics and Epidemiology (CBE)**. It
@@ -86,8 +86,8 @@ min_max_norm(df$age)
 # Z-Score Standardization (mean = 0, sd = 1)
 z_norm(df$age)
 
-# Detect numerical outliers via IQR fences
-detect_outliers(c(1, 2, 3, 4, 5, 100))
+# Detect numerical outliers via IQR fences (MILD vs EXTREME, by inner/outer fence)
+detect_outliers(data.frame(measurement = c(1, 2, 3, 4, 5, 100)))
 ```
 
 ### 3. Infix Helper Operators
@@ -126,16 +126,43 @@ head(baked_data)
 
 ## 🏛️ Ecosystem Architecture
 
-`TempleCBE` is part of Temple CBE’s open-source biostatistics framework:
+`TempleCBE` is the public layer of Temple CBE’s biostatistics framework
+— general-purpose code that private, protected-data repos import and
+re-export, so they can be validated against something publicly auditable
+instead of each maintaining their own private, unreviewed copy.
 
-- **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**:
-  Open-source biostatistical, EDA, testing, and modeling utilities.
+**Public** (this layer):
+
+- **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**: this
+  package — biostatistical, EDA, testing, and modeling utilities.
 - **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
-  Longitudinal propensity score simulation framework for generating
-  synthetic clinical trial datasets.
+  longitudinal propensity score simulation, and the designated source of
+  synthetic example/test data across the ecosystem.
+- **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
+  OMOP CDM database creation/querying (DuckDB).
+- **`ML-PScore`**: propensity score / cohort ML tooling (private today,
+  pending PI approval to go public — already licensed to match this
+  layer).
+- **`quarto_temple_brand`**: Quarto branding/report templates.
+
+**Private, imports from the public layer** (never the reverse):
+
+- **`datasci`**: Temple CBE’s protected data store and internal DB
+  access layer. Re-exports every function it used to own locally
+  straight from `TempleCBE` (`datasci/R/reexports.R`), so nothing that
+  calls `datasci::<function>()` needed to change.
+- **`Wolfson`**: Dr. Marla Wolfson’s injury-phenotype research project —
+  the original source of `step_famd`, `glmnet_IBS`, `proc_pca`, and
+  `corr_test_all`, which were copied here (not moved — see `NOTES.md`
+  for why) and are now maintained as two deliberately separate copies.
+- **`kyle_out_zip`**: the Rubin eDerri project codebase; may hold
+  protected multi-site clinical data.
+
+See `NOTES.md` for how this split came about and what’s still open.
 
 ------------------------------------------------------------------------
 
 ## 📄 License
 
-This package is licensed under the [MIT License](LICENSE).
+Dual-licensed at your option under GPL-3 or MIT — see
+[LICENSE.md](LICENSE.md) and [LICENSE](LICENSE).

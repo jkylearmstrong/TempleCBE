@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 docs
+.claude
+secret_internal_NOTES_keep_local.md

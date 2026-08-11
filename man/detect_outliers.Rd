@@ -2,22 +2,25 @@
 % Please edit documentation in R/detect_outliers.R
 \name{detect_outliers}
 \alias{detect_outliers}
-\title{Detect Outliers Across Features}
+\title{Detect Outliers Across a Data Frame's Numeric Columns}
 \usage{
-detect_outliers(data, k = 1.5)
+detect_outliers(data, outliers_only = TRUE)
 }
 \arguments{
-\item{data}{A data frame or tibble.}
+\item{data}{A matrix, data frame, or tibble.}
 
-\item{k}{IQR multiplier (default 1.5).}
+\item{outliers_only}{Logical (default \code{TRUE}); if \code{TRUE}, only
+rows actually flagged as outliers are returned.}
 }
 \value{
-A summary tibble listing variable names, outlier counts, and fence boundaries.
+A tibble with a \code{column} identifying which feature each row
+  came from, plus \code{value}, \code{.outlier}, and \code{.outlier_type}.
 }
 \description{
-Identifies outliers in a data frame using IQR fence thresholding.
+Runs \code{\link{flag_outliers}} on every numeric column of \code{data}.
 }
 \examples{
 df <- data.frame(a = c(1, 2, 3, 4, 100), b = c(10, 12, 11, 9, 8))
 detect_outliers(df)
+detect_outliers(df, outliers_only = FALSE)
 }

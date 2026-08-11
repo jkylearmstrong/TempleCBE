@@ -4,19 +4,35 @@
 \alias{glmnet_IBS}
 \title{Integrated Brier Score (IBS) Evaluation for Regularized Survival Models}
 \usage{
-glmnet_IBS(object, alpha = 1, formula = NULL)
+glmnet_IBS(object, alpha = 1, formula = NULL, cox.ties = "efron")
 }
 \arguments{
-\item{object}{A resampling fold object (e.g. from `rsample`).}
+\item{object}{A resampling fold object (e.g. `rsplit` from `rsample`) or a data frame/tibble.}
 
 \item{alpha}{The elastic net mixing parameter: 1 for Lasso, 0 for Ridge (default 1).}
 
-\item{formula}{Optional formula specifying features to include.}
+\item{formula}{Optional formula specifying target survival response and predictor features.}
+
+\item{cox.ties}{Method for handling ties in Cox model, passed to `glmnet::cv.glmnet` (default `"efron"`).}
 }
 \value{
-A tibble containing `IBS`, optimal `lambda`, feature terms, and `alpha`.
+A tibble containing `IBS`, optimal `lambda`, and `alpha`.
 }
 \description{
 Computes the Integrated Brier Score (IBS) for regularized Cox proportional hazards models
-fit via cross-validated `glmnet`.
+fit via cross-validated `glmnet`. Supports resampling split objects (e.g., `rsplit` from `rsample`)
+as well as data frames.
+}
+\examples{
+\dontrun{
+if (requireNamespace("glmnet", quietly = TRUE) && requireNamespace("survival", quietly = TRUE)) {
+  df <- data.frame(
+    time = runif(60, 5, 100),
+    status = rbinom(60, 1, 0.7),
+    age = rnorm(60, 50, 10),
+    bmi = rnorm(60, 25, 4)
+  )
+  glmnet_IBS(df)
+}
+}
 }

@@ -1,4 +1,86 @@
-url: ~
+url: https://jkylearmstrong.github.io/TempleCBE/
 template:
   bootstrap: 5
+  params:
+    bootswatch: zephyr
 
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [github]
+
+reference:
+  - title: Data Quality & Missingness Analysis
+    desc: Functions for missing data auditing, summary tables, and visualizations.
+    contents:
+      - SumNa
+      - features_percent_miss
+      - plot_features_percent_miss
+      - missmap
+      - my_summary_table
+      - get_dataset_info
+      - proc_contents
+
+  - title: Normalization & Outlier Detection
+    desc: Functions for scaling numeric features and flagging statistical outliers.
+    contents:
+      - min_max_norm
+      - z_norm
+      - range_norm
+      - detect_outliers
+      - calculate_fences
+      - flag_outliers
+
+  - title: Tidymodels Recipe Steps & Modeling Utilities
+    desc: Recipe steps and modeling evaluation metrics.
+    contents:
+      - step_famd
+      - glmnet_IBS
+
+  - title: Statistical Testing & EDA
+    desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
+    contents:
+      - single_t_test
+      - multiple_t_test
+      - one_vs_rest_t_test
+      - corr_test_all
+      - correlation_plot
+      - find_correlation
+      - distribution_test
+      - distribution_plot
+      - is_normal
+      - is_poisson
+
+  - title: PCA & Dimensionality Reduction
+    desc: Principal Component Analysis utilities, loadings, and biplots.
+    contents:
+      - proc_pca
+      - pca_loadings
+      - pca_eqns
+      - pca_percent_var_explained
+      - pca_feature_loading_heatmap
+      - plot_pca_bi
+      - rotation_matrix
+
+  - title: Visualization & Reporting
+    desc: Manhattan/volcano plots, report generation, and document conversions.
+    contents:
+      - manhattan_plot
+      - volcano_plot
+      - create_report
+      - zip_render
+      - pdf_to_rtf
+      - create_toc_from_sas_pdf
+      - read_excel_multiple_headers
+      - read_workbook
+
+  - title: Helper & Infix Operators
+    desc: Clean column naming, string matching, and vector manipulation.
+    contents:
+      - clean_names
+      - R_names
+      - make_excel_names
+      - keep_only
+      - find_code
+      - sd.error
+      - has_concept("%like%", "%ilike%", "%flike%", "%plike%", "%notin%", "%!in%")

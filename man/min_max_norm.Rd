@@ -2,28 +2,25 @@
 % Please edit documentation in R/min_max_norm.R
 \name{min_max_norm}
 \alias{min_max_norm}
-\alias{range_norm}
 \title{Min-Max Data Normalization}
 \usage{
-min_max_norm(x, min_val = 0, max_val = 1, na.rm = TRUE)
-
-range_norm(x, min_val = 0, max_val = 1, na.rm = TRUE)
+min_max_norm(obj)
 }
 \arguments{
-\item{x}{A numeric vector, matrix, or data frame.}
-
-\item{min_val}{Lower bound of target range (default 0).}
-
-\item{max_val}{Upper bound of target range (default 1).}
-
-\item{na.rm}{Logical; whether to remove NA values when computing min and max (default TRUE).}
+\item{obj}{A numeric vector, matrix, data frame, or tibble.}
 }
 \value{
-Normalized object of same dimensions and class.
+A normalized object: a numeric vector stays a vector; a matrix
+  stays a matrix; a data frame or tibble is reduced to just its (now
+  normalized) numeric columns.
 }
 \description{
-Normalizes numerical values into a fixed range `[min_val, max_val]`, by default `[0, 1]`.
+Normalizes numerical values into \code{[0, 1]}. For a data frame, matrix,
+or tibble, each numeric column is normalized independently against its
+own min/max, and \strong{non-numeric columns are dropped} — matching the
+original implementation this was migrated from.
 }
 \examples{
 min_max_norm(c(10, 20, 30, 40, 50))
+min_max_norm(data.frame(x = c(1, 2, 3), y = c(-10, 0, 10), id = c("a", "b", "c")))
 }

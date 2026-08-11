@@ -6,3 +6,7 @@
 ^LICENSE\.md$
 ^renv$
 ^renv\.lock$
+^\.claude$
+^\.github$
+^NOTES\.md$
+^secret_internal_NOTES_keep_local\.md$
