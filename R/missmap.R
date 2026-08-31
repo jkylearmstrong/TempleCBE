@@ -74,6 +74,6 @@ missmap <- function(df, by_column = NULL, na_list = NULL, row_order = FALSE) {
     dplyr::mutate(Missing = factor(ifelse(.data$is_na, "Missing", "Present"), levels = c("Missing", "Present"))) |>
     ggplot2::ggplot(ggplot2::aes(x = .data$.row, y = .data$feature, fill = .data$Missing)) +
     ggplot2::geom_tile() +
-    ggplot2::labs(x = "Row", y = "Column", fill = "Missing") +
+    ggplot2::labs(x = "Row", y = "Column", fill = "Data Status") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 6))
 }
