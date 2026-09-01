@@ -1,0 +1,10 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  eda_and_missingness: eda_and_missingness.html
+  nested_survival_cv: nested_survival_cv.html
+last_built: 2026-09-01T02:44Z
+urls:
+  reference: https://jkylearmstrong.github.io/TempleCBE/reference
+  article: https://jkylearmstrong.github.io/TempleCBE/articles
