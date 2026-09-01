@@ -154,7 +154,7 @@
 <h2 id="classical_building-ecosystem-architecture">🏛️ Ecosystem Architecture<a class="anchor" aria-label="anchor" href="#classical_building-ecosystem-architecture"></a>
 </h2>
 <p><code>TempleCBE</code> is the public layer of Temple CBE’s biostatistics framework — general-purpose code that private, protected-data repos import and re-export, so they can be validated against something publicly auditable instead of each maintaining their own private, unreviewed copy.</p>
-<p><strong>Public</strong> (this layer):</p>
+<p><strong>Public</strong>:</p>
 <ul>
 <li>
 <strong><a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link"><code>TempleCBE</code></a></strong>: this package — biostatistical, EDA, testing, and modeling utilities.</li>
@@ -163,20 +163,9 @@
 <li>
 <strong><a href="https://github.com/jkylearmstrong/omop-duck-db" class="external-link"><code>omop-duck-db</code></a></strong>: OMOP CDM database creation/querying (DuckDB).</li>
 <li>
-<strong><code>ML-PScore</code></strong>: propensity score / cohort ML tooling (private today, pending PI approval to go public — already licensed to match this layer).</li>
-<li>
 <strong><code>quarto_temple_brand</code></strong>: Quarto branding/report templates.</li>
 </ul>
-<p><strong>Private, imports from the public layer</strong> (never the reverse):</p>
-<ul>
-<li>
-<strong><code>datasci</code></strong>: Temple CBE’s protected data store and internal DB access layer. Re-exports every function it used to own locally straight from <code>TempleCBE</code> (<code>datasci/R/reexports.R</code>), so nothing that calls <code>datasci::&lt;function&gt;()</code> needed to change.</li>
-<li>
-<strong><code>Wolfson</code></strong>: Dr. Marla Wolfson’s injury-phenotype research project — the original source of <code>step_famd</code>, <code>glmnet_IBS</code>, <code>proc_pca</code>, and <code>corr_test_all</code>, which were copied here (not moved — see <code>NOTES.md</code> for why) and are now maintained as two deliberately separate copies.</li>
-<li>
-<strong><code>kyle_out_zip</code></strong>: the Rubin eDerri project codebase; may hold protected multi-site clinical data.</li>
-</ul>
-<p>See <code>NOTES.md</code> for how this split came about and what’s still open.</p>
+<p>Several other Temple Center for Biostatistics and Epidemiology (CBE) PI studies and analyses import <code>TempleCBE</code> for their own private, protected-data work — keeping study-specific code and data private while validating the general-purpose statistics they depend on against this public, auditable layer.</p>
 <hr>
 </div>
 <div class="section level2">
