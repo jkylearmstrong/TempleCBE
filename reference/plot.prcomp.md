@@ -6,7 +6,7 @@ Generic Plot Method for `prcomp` Objects
 
 ``` r
 # S3 method for class 'prcomp'
-plot(x, type = c("variance", "heatmap", "bi"), ...)
+plot(x, type = c("variance", "heatmap", "bi", "biplot"), ...)
 ```
 
 ## Arguments
@@ -21,13 +21,16 @@ plot(x, type = c("variance", "heatmap", "bi"), ...)
   ([`pca_percent_var_explained`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md)),
   `"heatmap"`
   ([`pca_feature_loading_heatmap`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)),
-  or `"bi"`
-  ([`plot_pca_bi`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)).
+  `"bi"`
+  ([`plot_pca_bi`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)),
+  or `"biplot"`
+  ([`pca_biplot`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)).
 
 - ...:
 
   Passed on to the underlying plot function (needed for `type = "bi"`,
-  which requires `newdata` and `column`).
+  which requires `newdata` and `column`; and optionally used by
+  `type = "biplot"` to pass `x`/`y`).
 
 ## Value
 

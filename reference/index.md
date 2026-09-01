@@ -62,6 +62,12 @@ tests.
   : Pairwise Correlation Matrix and Significance Testing
 - [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
   : Correlation Plot
+- [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md)
+  : Correlation Plot, Split Into Legible Sub-Plots
+- [`correlation_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff.md)
+  : Difference in Correlation Matrices Between Two Datasets
+- [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md)
+  : Heatmap of Correlation Differences Between Two Datasets
 - [`find_correlation()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_correlation.md)
   : Find Highly Correlated Columns
 - [`distribution_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_test.md)
@@ -99,6 +105,15 @@ Principal Component Analysis utilities, loadings, and biplots.
 
 - [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
   : PCA Biplot
+
+- [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
+  : PCA Loadings Biplot
+
+- [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md)
+  : Difference in PCA Loadings Between Two Fits
+
+- [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md)
+  : Heatmap of PCA Loading Differences Between Two Fits
 
 - [`plot(`*`<prcomp>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.md)
   :

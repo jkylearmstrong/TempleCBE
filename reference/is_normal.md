@@ -29,14 +29,14 @@ is_normal(rnorm(1000, mean = 5, sd = 3))
 #> # A tibble: 2 × 7
 #>   statistic p.value method             alternative distribution.test p_value_sig
 #>       <dbl>   <dbl> <chr>              <chr>       <lgl>             <chr>      
-#> 1    0.0227   0.682 Asymptotic one-sa… two-sided   TRUE              ""         
-#> 2    0.998    0.494 Shapiro-Wilk norm… NA          TRUE              ""         
+#> 1    0.0198   0.826 Asymptotic one-sa… two-sided   TRUE              ""         
+#> 2    0.997    0.101 Shapiro-Wilk norm… NA          TRUE              ""         
 #> # ℹ 1 more variable: distribution <chr>
 is_normal(runif(1000, min = 2, max = 4))
 #> # A tibble: 2 × 7
 #>   statistic  p.value method            alternative distribution.test p_value_sig
 #>       <dbl>    <dbl> <chr>             <chr>       <lgl>             <chr>      
-#> 1    0.0726 5.22e- 5 Asymptotic one-s… two-sided   FALSE             ***        
-#> 2    0.956  7.85e-17 Shapiro-Wilk nor… NA          FALSE             ***        
+#> 1    0.0636 6.07e- 4 Asymptotic one-s… two-sided   FALSE             ***        
+#> 2    0.956  7.91e-17 Shapiro-Wilk nor… NA          FALSE             ***        
 #> # ℹ 1 more variable: distribution <chr>
 ```

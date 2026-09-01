@@ -9,7 +9,7 @@ numeric vector, or against every numeric column of a data frame."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,9 +68,9 @@ numeric vector, or against every numeric column of a data frame.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 9</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   statistic parameter  p.value method distribution.test p_value_sig distribution</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1.32          4 8.58<span style="color: #949494;">e</span><span style="color: #BB0000;">- 1</span> Chi-s… TRUE              <span style="color: #949494;">""</span>          poisson     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>     0.179        <span style="color: #BB0000;">NA</span> 2.39<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span> Asymp… FALSE             <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span>       normal      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>     0.921        <span style="color: #BB0000;">NA</span> 2.06<span style="color: #949494;">e</span><span style="color: #BB0000;">-22</span> Shapi… FALSE             <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span>       normal      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10.1           4 3.81<span style="color: #949494;">e</span><span style="color: #BB0000;">- 2</span> Chi-s… FALSE             *           poisson     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>     0.167        <span style="color: #BB0000;">NA</span> 1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">-24</span> Asymp… FALSE             ***         normal      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>     0.923        <span style="color: #BB0000;">NA</span> 3.09<span style="color: #949494;">e</span><span style="color: #BB0000;">-22</span> Shapi… FALSE             ***         normal      </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 2 more variables: is_int &lt;lgl&gt;, alternative &lt;chr&gt;</span></span>
 <span class="r-in"><span><span class="fu">distribution_test</span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 33 × 10</span></span>

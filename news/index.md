@@ -1,5 +1,129 @@
 # Changelog
 
+## TempleCBE 0.1.5
+
+### `correlation_plot()` rendering fixes
+
+- `corrplot()` was never given any top margin, so `title` collided with
+  the 45-degree diagonal variable-name labels sitting just below it in
+  every rendered plot. Added a `mar` argument (default `c(0, 0, 2, 0)`,
+  the standard `par("mar")` `c(bottom, left, top, right)` form that
+  `corrplot()` already accepts) so the title clears the labels by
+  default, while still letting callers override it for longer titles or
+  larger `tl.cex`.
+- Coefficient numbers were hardcoded on (`addCoef.col = "black"`) with
+  no clean way to turn them off. On a correlation matrix with many
+  variables the numbers overlap the ellipses and labels; the only
+  workaround was shrinking `tl.cex`/`number.cex` toward zero, which
+  doesn’t fix the crowding – it just deletes every label, leaving an
+  unreadable, unlabeled plot. Added a `show_coef = TRUE` argument;
+  setting it to `FALSE` omits the coefficients cleanly while keeping the
+  diagonal variable labels intact. The default is unchanged, so existing
+  small-matrix callers see no behavior difference.
+
+### New correlation functions
+
+- [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md):
+  for a correlation matrix with too many variables to stay legible in
+  one
+  [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
+  call (e.g. ~40 clinical parameters), automatically groups variables
+  via hierarchical clustering on `as.dist(1 - abs(cor_mat))` – the same
+  correlation-based distance `corrplot`’s own `order = "hclust"` uses –
+  and draws one within-group
+  [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)-style
+  plot per group (default target size 12 variables per group, via
+  `ceiling(n_vars / group_size)` groups from
+  [`stats::cutree()`](https://rdrr.io/r/stats/cutree.html)). Each
+  sub-plot’s title is suffixed `"(Group i of n)"` so the sub-plots can
+  be told apart. Returns the per-group correlation matrices invisibly,
+  as a named list, since it is called (like
+  [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md))
+  for its plotting side effect.
+- [`correlation_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff.md)
+  /
+  [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md):
+  compare the correlation matrix of a comparison dataset against a
+  baseline dataset, matching numeric variables by column name (falling
+  back to the intersection if the two datasets’ numeric columns differ).
+  Unlike
+  [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md),
+  no sign-alignment step is needed – correlation coefficients, unlike
+  PCA loadings, have no sign ambiguity. Returns/renders only one
+  triangle of the (symmetric) difference matrix, with the (always-zero)
+  diagonal dropped.
+  [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md)
+  uses the same diverging, zero-centered fill scale as
+  [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md).
+
+## TempleCBE 0.1.4
+
+### New PCA functions
+
+- [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md):
+  a real PCA loadings biplot. Unlike
+  [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
+  (which draws each *observation* as an arrow to its PC score, labeled
+  by an id column),
+  [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
+  draws the observation scores as a muted point cloud and overlays the
+  variable loading vectors (from `pca_model$rotation`) as labeled arrows
+  from the origin – the classic two-panel-in-one biplot. Loadings are
+  rescaled so their max extent is 80% of the score cloud’s max extent,
+  since raw (unit-scale) loadings would otherwise be invisible next to
+  the scores. Works directly off a fitted `prcomp` object; no `newdata`
+  argument needed. Added as a new `type = "biplot"` option in
+  [`plot.prcomp()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.md).
+- [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md):
+  compares variable loadings between two independently-fit `prcomp`
+  objects on the same variables (e.g. the same domain at baseline vs. a
+  later timepoint). Handles PCA’s arbitrary component sign by
+  sign-aligning each shared component of the comparison fit to the
+  baseline before differencing, so a component that’s merely flipped
+  (not truly changed) reads as ~0 difference instead of a spurious ~2x
+  jump. Matches variables by name and falls back to the intersection if
+  the two fits’ variable sets differ.
+- [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md):
+  renders
+  [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md)’s
+  output as a feature-by-component heatmap with a diverging,
+  zero-centered fill scale, matching
+  [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)’s
+  visual style.
+
+### Styling
+
+- [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md):
+  tightened the top margin above the variance bars by adding
+  `expand = ggplot2::expansion(mult = c(0, 0.01))` to the
+  percent-of-variance y scale.
+
+## TempleCBE 0.1.3
+
+### `missmap()` improvements
+
+- `by_column` mode now respects the `row_order` argument: when
+  `row_order = FALSE` (default), groups (x-axis) and features (y-axis)
+  are each ordered by descending total missingness, matching the
+  ordering already applied in the default per-row/column view.
+  Previously features stayed in whatever order `pivot_longer()` produced
+  (alphabetical), ignoring `row_order` entirely.
+- `by_column` mode now auto-detects when the aggregated missingness is
+  effectively binary – i.e. every group has at most one contributing row
+  (checked from actual group sizes via
+  [`dplyr::n()`](https://dplyr.tidyverse.org/reference/context.html),
+  not just the resulting sums) – and in that case renders with the same
+  discrete “Missing”/“Present” two-level fill and “Data Status” legend
+  used in the default view, instead of a continuous black-to-red “#
+  missing” gradient that is misleading when every value is 0 or 1
+  (e.g. `by_column` set to a unique subject/site id with one row per
+  group). Groups with more than one contributing row keep the existing
+  continuous gradient, since a real count is meaningful there
+  (e.g. multiple readings per site over time).
+- Added a `fill = c("auto", "binary", "count")` argument to
+  [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
+  to override the auto-detected fill behavior explicitly when needed.
+
 ## TempleCBE 0.1.2
 
 ### Statistical correctness fixes
