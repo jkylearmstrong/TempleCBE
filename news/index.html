@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,52 @@
       <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.5" id="templecbe-015">TempleCBE 0.1.5<a class="anchor" aria-label="anchor" href="#templecbe-015"></a></h2>
+<div class="section level3">
+<h3 id="correlation_plot-rendering-fixes-0-1-5">
+<code>correlation_plot()</code> rendering fixes<a class="anchor" aria-label="anchor" href="#correlation_plot-rendering-fixes-0-1-5"></a></h3>
+<ul><li>
+<code>corrplot()</code> was never given any top margin, so <code>title</code> collided with the 45-degree diagonal variable-name labels sitting just below it in every rendered plot. Added a <code>mar</code> argument (default <code>c(0, 0, 2, 0)</code>, the standard <code>par("mar")</code> <code>c(bottom, left, top, right)</code> form that <code>corrplot()</code> already accepts) so the title clears the labels by default, while still letting callers override it for longer titles or larger <code>tl.cex</code>.</li>
+<li>Coefficient numbers were hardcoded on (<code>addCoef.col = "black"</code>) with no clean way to turn them off. On a correlation matrix with many variables the numbers overlap the ellipses and labels; the only workaround was shrinking <code>tl.cex</code>/<code>number.cex</code> toward zero, which doesn’t fix the crowding – it just deletes every label, leaving an unreadable, unlabeled plot. Added a <code>show_coef = TRUE</code> argument; setting it to <code>FALSE</code> omits the coefficients cleanly while keeping the diagonal variable labels intact. The default is unchanged, so existing small-matrix callers see no behavior difference.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-correlation-functions-0-1-5">New correlation functions<a class="anchor" aria-label="anchor" href="#new-correlation-functions-0-1-5"></a></h3>
+<ul><li>
+<code><a href="../reference/correlation_plot_split.html">correlation_plot_split()</a></code>: for a correlation matrix with too many variables to stay legible in one <code><a href="../reference/correlation_plot.html">correlation_plot()</a></code> call (e.g. ~40 clinical parameters), automatically groups variables via hierarchical clustering on <code>as.dist(1 - abs(cor_mat))</code> – the same correlation-based distance <code>corrplot</code>’s own <code>order = "hclust"</code> uses – and draws one within-group <code><a href="../reference/correlation_plot.html">correlation_plot()</a></code>-style plot per group (default target size 12 variables per group, via <code>ceiling(n_vars / group_size)</code> groups from <code><a href="https://rdrr.io/r/stats/cutree.html" class="external-link">stats::cutree()</a></code>). Each sub-plot’s title is suffixed <code>"(Group i of n)"</code> so the sub-plots can be told apart. Returns the per-group correlation matrices invisibly, as a named list, since it is called (like <code><a href="../reference/correlation_plot.html">correlation_plot()</a></code>) for its plotting side effect.</li>
+<li>
+<code><a href="../reference/correlation_diff.html">correlation_diff()</a></code> / <code><a href="../reference/correlation_diff_heatmap.html">correlation_diff_heatmap()</a></code>: compare the correlation matrix of a comparison dataset against a baseline dataset, matching numeric variables by column name (falling back to the intersection if the two datasets’ numeric columns differ). Unlike <code><a href="../reference/pca_loading_diff.html">pca_loading_diff()</a></code>, no sign-alignment step is needed – correlation coefficients, unlike PCA loadings, have no sign ambiguity. Returns/renders only one triangle of the (symmetric) difference matrix, with the (always-zero) diagonal dropped. <code><a href="../reference/correlation_diff_heatmap.html">correlation_diff_heatmap()</a></code> uses the same diverging, zero-centered fill scale as <code><a href="../reference/pca_loading_diff_heatmap.html">pca_loading_diff_heatmap()</a></code>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.4" id="templecbe-014">TempleCBE 0.1.4<a class="anchor" aria-label="anchor" href="#templecbe-014"></a></h2>
+<div class="section level3">
+<h3 id="new-pca-functions-0-1-4">New PCA functions<a class="anchor" aria-label="anchor" href="#new-pca-functions-0-1-4"></a></h3>
+<ul><li>
+<code><a href="../reference/pca_biplot.html">pca_biplot()</a></code>: a real PCA loadings biplot. Unlike <code><a href="../reference/plot_pca_bi.html">plot_pca_bi()</a></code> (which draws each <em>observation</em> as an arrow to its PC score, labeled by an id column), <code><a href="../reference/pca_biplot.html">pca_biplot()</a></code> draws the observation scores as a muted point cloud and overlays the variable loading vectors (from <code>pca_model$rotation</code>) as labeled arrows from the origin – the classic two-panel-in-one biplot. Loadings are rescaled so their max extent is 80% of the score cloud’s max extent, since raw (unit-scale) loadings would otherwise be invisible next to the scores. Works directly off a fitted <code>prcomp</code> object; no <code>newdata</code> argument needed. Added as a new <code>type = "biplot"</code> option in <code><a href="../reference/plot.prcomp.html">plot.prcomp()</a></code>.</li>
+<li>
+<code><a href="../reference/pca_loading_diff.html">pca_loading_diff()</a></code>: compares variable loadings between two independently-fit <code>prcomp</code> objects on the same variables (e.g. the same domain at baseline vs. a later timepoint). Handles PCA’s arbitrary component sign by sign-aligning each shared component of the comparison fit to the baseline before differencing, so a component that’s merely flipped (not truly changed) reads as ~0 difference instead of a spurious ~2x jump. Matches variables by name and falls back to the intersection if the two fits’ variable sets differ.</li>
+<li>
+<code><a href="../reference/pca_loading_diff_heatmap.html">pca_loading_diff_heatmap()</a></code>: renders <code><a href="../reference/pca_loading_diff.html">pca_loading_diff()</a></code>’s output as a feature-by-component heatmap with a diverging, zero-centered fill scale, matching <code><a href="../reference/pca_feature_loading_heatmap.html">pca_feature_loading_heatmap()</a></code>’s visual style.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="styling-0-1-4">Styling<a class="anchor" aria-label="anchor" href="#styling-0-1-4"></a></h3>
+<ul><li>
+<code><a href="../reference/pca_percent_var_explained.html">pca_percent_var_explained()</a></code>: tightened the top margin above the variance bars by adding <code>expand = ggplot2::expansion(mult = c(0, 0.01))</code> to the percent-of-variance y scale.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.3" id="templecbe-013">TempleCBE 0.1.3<a class="anchor" aria-label="anchor" href="#templecbe-013"></a></h2>
+<div class="section level3">
+<h3 id="missmap-improvements-0-1-3">
+<code>missmap()</code> improvements<a class="anchor" aria-label="anchor" href="#missmap-improvements-0-1-3"></a></h3>
+<ul><li>
+<code>by_column</code> mode now respects the <code>row_order</code> argument: when <code>row_order = FALSE</code> (default), groups (x-axis) and features (y-axis) are each ordered by descending total missingness, matching the ordering already applied in the default per-row/column view. Previously features stayed in whatever order <code>pivot_longer()</code> produced (alphabetical), ignoring <code>row_order</code> entirely.</li>
+<li>
+<code>by_column</code> mode now auto-detects when the aggregated missingness is effectively binary – i.e. every group has at most one contributing row (checked from actual group sizes via <code><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">dplyr::n()</a></code>, not just the resulting sums) – and in that case renders with the same discrete “Missing”/“Present” two-level fill and “Data Status” legend used in the default view, instead of a continuous black-to-red “# missing” gradient that is misleading when every value is 0 or 1 (e.g. <code>by_column</code> set to a unique subject/site id with one row per group). Groups with more than one contributing row keep the existing continuous gradient, since a real count is meaningful there (e.g. multiple readings per site over time).</li>
+<li>Added a <code>fill = c("auto", "binary", "count")</code> argument to <code><a href="../reference/missmap.html">missmap()</a></code> to override the auto-detected fill behavior explicitly when needed.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.2" id="templecbe-012">TempleCBE 0.1.2<a class="anchor" aria-label="anchor" href="#templecbe-012"></a></h2>
 <div class="section level3">

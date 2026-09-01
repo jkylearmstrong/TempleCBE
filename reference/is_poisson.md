@@ -47,12 +47,12 @@ is_poisson(rpois(n = 1000, lambda = 2))
 #> # A tibble: 1 × 8
 #>   statistic parameter p.value method  distribution.test p_value_sig distribution
 #>       <dbl>     <int>   <dbl> <chr>   <lgl>             <chr>       <chr>       
-#> 1      2.39         4   0.665 Chi-sq… TRUE              ""          poisson     
+#> 1      2.33         4   0.675 Chi-sq… TRUE              ""          poisson     
 #> # ℹ 1 more variable: is_int <lgl>
 is_poisson(runif(1000, min = 2, max = 4))
 #> # A tibble: 1 × 8
 #>   statistic parameter   p.value method             distribution.test p_value_sig
 #>       <dbl>     <int>     <dbl> <chr>              <lgl>             <chr>      
-#> 1      740.         4 6.35e-159 Chi-squared test … FALSE             ***        
+#> 1      725.         4 1.41e-155 Chi-squared test … FALSE             ***        
 #> # ℹ 2 more variables: distribution <chr>, is_int <lgl>
 ```

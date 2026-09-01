@@ -35,11 +35,11 @@ A ggplot object.
 ``` r
 df <- data.frame(normal_dist = rnorm(1000, -10, .5), poisson_dist = rpois(1000, 5))
 distribution_plot(df)
-#> Picking joint bandwidth of 0.0124
+#> Picking joint bandwidth of 0.0118
 
 distribution_plot(df, method = "z")
-#> Picking joint bandwidth of 0.226
+#> Picking joint bandwidth of 0.225
 
 distribution_plot(df, method = "none")
-#> Picking joint bandwidth of 0.303
+#> Picking joint bandwidth of 0.312
 ```

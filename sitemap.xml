@@ -13,7 +13,10 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/clean_names.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/corr_test_all.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/create_report.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/create_toc_from_sas_pdf.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.html</loc></url>
@@ -40,8 +43,11 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/multiple_t_test.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/my_summary_table.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/one_vs_rest_t_test.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_eqns.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pdf_to_rtf.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.html</loc></url>

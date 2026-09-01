@@ -31,9 +31,9 @@ distribution_test(rpois(n = 1000, lambda = 2))
 #> # A tibble: 3 × 9
 #>   statistic parameter  p.value method distribution.test p_value_sig distribution
 #>       <dbl>     <int>    <dbl> <chr>  <lgl>             <chr>       <chr>       
-#> 1     1.32          4 8.58e- 1 Chi-s… TRUE              ""          poisson     
-#> 2     0.179        NA 2.39e-28 Asymp… FALSE             "***"       normal      
-#> 3     0.921        NA 2.06e-22 Shapi… FALSE             "***"       normal      
+#> 1    10.1           4 3.81e- 2 Chi-s… FALSE             *           poisson     
+#> 2     0.167        NA 1.36e-24 Asymp… FALSE             ***         normal      
+#> 3     0.923        NA 3.09e-22 Shapi… FALSE             ***         normal      
 #> # ℹ 2 more variables: is_int <lgl>, alternative <chr>
 distribution_test(mtcars)
 #> # A tibble: 33 × 10

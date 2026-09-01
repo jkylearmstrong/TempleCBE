@@ -9,7 +9,7 @@ using corrplot."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,6 +57,8 @@ using <span class="pkg">corrplot</span>.</p>
 <span>  tl.cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  number.cex <span class="op">=</span> <span class="fl">0.75</span>,</span>
 <span>  tl.srt <span class="op">=</span> <span class="fl">45</span>,</span>
+<span>  mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  show_coef <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -108,6 +110,31 @@ among the numeric columns before computing correlations.</p></dd>
 to <code><a href="https://rdrr.io/pkg/corrplot/man/corrplot.html" class="external-link">corrplot</a></code>.</p></dd>
 
 
+<dt id="arg-mar">mar<a class="anchor" aria-label="anchor" href="#arg-mar"></a></dt>
+<dd><p>Plot margin, passed to <code><a href="https://rdrr.io/pkg/corrplot/man/corrplot.html" class="external-link">corrplot</a></code> in the
+standard <code>par("mar")</code> form <code>c(bottom, left, top, right)</code>
+(default <code>c(0, 0, 2, 0)</code>). <code>corrplot()</code> does not otherwise
+reserve any extra space above the matrix for <code>title</code>, so with the
+default (zero) margin the title text collides with the 45-degree
+diagonal column labels sitting just below it; the default here adds two
+lines of top margin so the title clears the labels. Increase further if
+using a long title or a larger <code>tl.cex</code>.</p></dd>
+
+
+<dt id="arg-show-coef">show_coef<a class="anchor" aria-label="anchor" href="#arg-show-coef"></a></dt>
+<dd><p>Logical (default <code>TRUE</code>); whether to draw the
+correlation coefficient inside each cell. On a small matrix the numbers
+add useful precision on top of the visual encoding, but on a large
+matrix (many variables) they quickly overlap each other and the
+diagonal labels. Set to <code>FALSE</code> to omit them entirely – this is
+the clean way to declutter a large matrix; shrinking <code>tl.cex</code> and
+<code>number.cex</code> down to near-zero to visually "hide" the numbers (as
+earlier callers did) also erases the variable name labels and should be
+avoided. See <code><a href="correlation_plot_split.html">correlation_plot_split</a></code> for an alternative
+that keeps coefficients readable by splitting a large matrix into
+several smaller plots instead of hiding them.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to <code><a href="https://rdrr.io/pkg/corrplot/man/corrplot.html" class="external-link">corrplot</a></code>.</p></dd>
 
@@ -121,6 +148,8 @@ to <code><a href="https://rdrr.io/pkg/corrplot/man/corrplot.html" class="externa
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">correlation_plot</span><span class="op">(</span><span class="va">mtcars</span>, tl.cex <span class="op">=</span> <span class="fl">.7</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="correlation_plot-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="fu">correlation_plot</span><span class="op">(</span><span class="va">mtcars</span>, tl.cex <span class="op">=</span> <span class="fl">.7</span>, show_coef <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="correlation_plot-2.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
