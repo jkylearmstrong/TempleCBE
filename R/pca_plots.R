@@ -72,6 +72,65 @@ plot_pca_bi <- function(pca_model, newdata, column, x = 1, y = 2) {
     ggplot2::coord_fixed()
 }
 
+#' PCA Loadings Biplot
+#'
+#' A classic PCA biplot: the observation scores (\code{pca_model$x}) as a
+#' muted point cloud, overlaid with the variable loading vectors
+#' (\code{pca_model$rotation}) drawn as labeled arrows from the origin.
+#' Unlike \code{\link{plot_pca_bi}}, no separate \code{newdata} is required --
+#' a fitted \code{\link[stats]{prcomp}} object already carries both the
+#' scores and the loadings needed to draw the biplot.
+#'
+#' Loading vectors are unit-scale by construction and would be invisible
+#' next to the score cloud if plotted as-is, so they are rescaled so that
+#' their maximum extent is 80% of the score cloud's maximum extent (a
+#' standard biplot convention) before being drawn.
+#'
+#' @param pca_model A \code{\link[stats]{prcomp}} object.
+#' @param x,y Which principal components to plot on the x/y axes (default 1, 2).
+#' @return A ggplot object.
+#' @export
+#' @examples
+#' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
+#' pca_biplot(pca_model, x = 1, y = 2)
+pca_biplot <- function(pca_model, x = 1, y = 2) {
+  rotation <- pca_model$rotation
+  n_components <- ncol(rotation)
+
+  if (x > n_components || y > n_components) {
+    stop("pca_biplot() requires components up to ", max(x, y), "; ",
+         "pca_model only has ", n_components, ".")
+  }
+
+  x_col <- paste0("PC", x)
+  y_col <- paste0("PC", y)
+
+  scores <- tibble::as_tibble(pca_model$x)
+
+  loadings <- tibble::as_tibble(rotation, rownames = "feature") |>
+    dplyr::select("feature", dplyr::all_of(c(x_col, y_col)))
+
+  score_extent <- max(abs(c(scores[[x_col]], scores[[y_col]])))
+  loading_extent <- max(abs(c(loadings[[x_col]], loadings[[y_col]])))
+  scale_factor <- (score_extent / loading_extent) * 0.8
+
+  loadings <- loadings |>
+    dplyr::mutate(dplyr::across(dplyr::all_of(c(x_col, y_col)), \(v) v * scale_factor))
+
+  ggplot2::ggplot() +
+    ggplot2::geom_point(data = scores, ggplot2::aes(x = .data[[x_col]], y = .data[[y_col]]),
+                         alpha = 0.5, color = "grey40") +
+    ggplot2::geom_segment(data = loadings,
+                           ggplot2::aes(x = 0, y = 0, xend = .data[[x_col]], yend = .data[[y_col]]),
+                           arrow = grid::arrow(angle = 20, type = "closed", length = grid::unit(8, "pt")),
+                           color = "#904C2F") +
+    ggplot2::geom_text(data = loadings,
+                        ggplot2::aes(x = .data[[x_col]], y = .data[[y_col]], label = .data$feature),
+                        color = "#904C2F", hjust = -0.1, vjust = -0.1) +
+    ggplot2::labs(x = paste0("PC", x), y = paste0("PC", y), title = "PCA Biplot") +
+    ggplot2::coord_fixed()
+}
+
 #' PCA Rotation Matrix (Loadings)
 #'
 #' @param PC_mod A \code{\link[stats]{prcomp}} object.
@@ -150,30 +209,135 @@ pca_percent_var_explained <- function(pca_model) {
     ggplot2::geom_bar(stat = "identity", position = "identity") +
     ggplot2::scale_fill_manual(values = c(cumulative = "#56B4E9", percent = "black")) +
     ggplot2::scale_x_continuous(breaks = seq_len(n_comp)) +
-    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format()) +
+    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(),
+                                 expand = ggplot2::expansion(mult = c(0, 0.01))) +
     ggplot2::scale_alpha_manual(values = c(.75, 1)) +
     ggplot2::labs(x = "Principal Component", y = "Percent of Variance Explained",
                   title = "Variance Explained by Principal Component")
+}
+
+#' Difference in PCA Loadings Between Two Fits
+#'
+#' Compares the variable loadings of two independently-fit
+#' \code{\link[stats]{prcomp}} objects on the same set of variables (e.g. the
+#' same domain's data fit at baseline vs. at a later timepoint), matching
+#' components positionally (both fits' PC1, both fits' PC2, ...).
+#'
+#' PCA loading vectors are only unique up to sign: a component can flip
+#' orientation between two otherwise-equivalent fits without changing the
+#' pattern it represents. Naively differencing loadings would then show a
+#' spuriously large change (up to roughly double the loading) for a
+#' component that hasn't meaningfully changed at all. To avoid this, for
+#' each shared component \code{pca_comparison}'s loading vector is sign-
+#' aligned to \code{pca_baseline}'s: it is flipped (multiplied by -1) if
+#' doing so reduces the total absolute difference across variables relative
+#' to leaving it as-is. The difference is then computed as
+#' (sign-aligned comparison) minus baseline.
+#'
+#' Variables are matched by name (the rownames of \code{$rotation}). If the
+#' two fits were built on different variable sets, only the intersection is
+#' used; no error is raised.
+#'
+#' @param pca_baseline A \code{\link[stats]{prcomp}} object treated as the reference.
+#' @param pca_comparison A \code{\link[stats]{prcomp}} object to compare against
+#'   \code{pca_baseline}, fit on the same (or overlapping) variables.
+#' @param n_components Number of leading components to compare. Defaults to
+#'   \code{NULL}, meaning all components shared by both fits.
+#' @return A tibble with one row per shared variable (\code{feature} column)
+#'   and one column per compared component (\code{PC1}, \code{PC2}, ...)
+#'   holding the sign-aligned difference (comparison minus baseline).
+#' @export
+#' @examples
+#' set.seed(1)
+#' baseline <- prcomp(mtcars, center = TRUE, scale. = TRUE)
+#' comparison <- prcomp(mtcars[sample(nrow(mtcars)), ], center = TRUE, scale. = TRUE)
+#' pca_loading_diff(baseline, comparison)
+pca_loading_diff <- function(pca_baseline, pca_comparison, n_components = NULL) {
+  rot_baseline <- pca_baseline$rotation
+  rot_comparison <- pca_comparison$rotation
+
+  shared_features <- intersect(rownames(rot_baseline), rownames(rot_comparison))
+  rot_baseline <- rot_baseline[shared_features, , drop = FALSE]
+  rot_comparison <- rot_comparison[shared_features, , drop = FALSE]
+
+  n_shared <- min(ncol(rot_baseline), ncol(rot_comparison))
+  if (!is.null(n_components)) {
+    n_shared <- min(n_shared, n_components)
+  }
+
+  diff_mat <- vapply(seq_len(n_shared), function(i) {
+    baseline_vec <- rot_baseline[, i]
+    comparison_vec <- rot_comparison[, i]
+
+    # Loading vectors are only unique up to sign; flip `comparison_vec` if
+    # doing so reduces the total absolute difference from `baseline_vec`.
+    if (sum(abs(-comparison_vec - baseline_vec)) < sum(abs(comparison_vec - baseline_vec))) {
+      comparison_vec <- -comparison_vec
+    }
+
+    comparison_vec - baseline_vec
+  }, FUN.VALUE = numeric(length(shared_features)))
+
+  colnames(diff_mat) <- paste0("PC", seq_len(n_shared))
+
+  tibble::as_tibble(diff_mat) |>
+    dplyr::mutate(feature = shared_features, .before = 1)
+}
+
+#' Heatmap of PCA Loading Differences Between Two Fits
+#'
+#' Renders the output of \code{\link{pca_loading_diff}} as a heatmap (feature
+#' by component), using the same visual language as
+#' \code{\link{pca_feature_loading_heatmap}}: a diverging fill scale centered
+#' at zero, so components/variables with little sign-aligned change are
+#' white and larger changes in either direction stand out in blue or red.
+#'
+#' @inheritParams pca_loading_diff
+#' @return A ggplot object.
+#' @export
+#' @examples
+#' set.seed(1)
+#' baseline <- prcomp(mtcars, center = TRUE, scale. = TRUE)
+#' comparison <- prcomp(mtcars[sample(nrow(mtcars)), ], center = TRUE, scale. = TRUE)
+#' pca_loading_diff_heatmap(baseline, comparison)
+pca_loading_diff_heatmap <- function(pca_baseline, pca_comparison, n_components = NULL) {
+  diff_df <- pca_loading_diff(pca_baseline, pca_comparison, n_components)
+
+  long <- diff_df |>
+    tidyr::pivot_longer(-"feature", names_to = "PC", values_to = "value") |>
+    dplyr::mutate(PC = as.numeric(sub("^PC", "", .data$PC)))
+
+  num_comp <- max(long$PC)
+
+  ggplot2::ggplot(long, ggplot2::aes(x = .data$PC, y = .data$feature, fill = .data$value)) +
+    ggplot2::geom_tile() +
+    ggplot2::scale_x_continuous(breaks = seq_len(num_comp)) +
+    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    ggplot2::labs(x = "Principal Component", y = "Feature", fill = "Loading\ndifference",
+                  title = "PCA Loading Differences Between Fits")
 }
 
 #' Generic Plot Method for \code{prcomp} Objects
 #'
 #' @param x A \code{\link[stats]{prcomp}} object.
 #' @param type One of \code{"variance"} (\code{\link{pca_percent_var_explained}}),
-#'   \code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}), or
-#'   \code{"bi"} (\code{\link{plot_pca_bi}}).
+#'   \code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}),
+#'   \code{"bi"} (\code{\link{plot_pca_bi}}), or \code{"biplot"}
+#'   (\code{\link{pca_biplot}}).
 #' @param ... Passed on to the underlying plot function (needed for
-#'   \code{type = "bi"}, which requires \code{newdata} and \code{column}).
+#'   \code{type = "bi"}, which requires \code{newdata} and \code{column}; and
+#'   optionally used by \code{type = "biplot"} to pass \code{x}/\code{y}).
 #' @return A ggplot object.
 #' @exportS3Method base::plot
 #' @examples
 #' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
 #' plot(pca_model, type = "variance")
-plot.prcomp <- function(x, type = c("variance", "heatmap", "bi"), ...) {
+plot.prcomp <- function(x, type = c("variance", "heatmap", "bi", "biplot"), ...) {
   type <- match.arg(type)
   switch(type,
     variance = pca_percent_var_explained(x),
     heatmap = pca_feature_loading_heatmap(x),
-    bi = plot_pca_bi(x, ...)
+    bi = plot_pca_bi(x, ...),
+    biplot = pca_biplot(x, ...)
   )
 }
