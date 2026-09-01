@@ -16,6 +16,8 @@ correlation_plot(
   tl.cex = 0.5,
   number.cex = 0.75,
   tl.srt = 45,
+  mar = c(0, 0, 2, 0),
+  show_coef = TRUE,
   ...
 )
 }
@@ -45,6 +47,27 @@ among the numeric columns before computing correlations.}
 \item{tl.cex, number.cex, tl.srt}{Label/number sizing and rotation, passed
 to \code{\link[corrplot]{corrplot}}.}
 
+\item{mar}{Plot margin, passed to \code{\link[corrplot]{corrplot}} in the
+standard \code{par("mar")} form \code{c(bottom, left, top, right)}
+(default \code{c(0, 0, 2, 0)}). \code{corrplot()} does not otherwise
+reserve any extra space above the matrix for \code{title}, so with the
+default (zero) margin the title text collides with the 45-degree
+diagonal column labels sitting just below it; the default here adds two
+lines of top margin so the title clears the labels. Increase further if
+using a long title or a larger \code{tl.cex}.}
+
+\item{show_coef}{Logical (default \code{TRUE}); whether to draw the
+correlation coefficient inside each cell. On a small matrix the numbers
+add useful precision on top of the visual encoding, but on a large
+matrix (many variables) they quickly overlap each other and the
+diagonal labels. Set to \code{FALSE} to omit them entirely -- this is
+the clean way to declutter a large matrix; shrinking \code{tl.cex} and
+\code{number.cex} down to near-zero to visually "hide" the numbers (as
+earlier callers did) also erases the variable name labels and should be
+avoided. See \code{\link{correlation_plot_split}} for an alternative
+that keeps coefficients readable by splitting a large matrix into
+several smaller plots instead of hiding them.}
+
 \item{...}{Additional arguments passed to \code{\link[corrplot]{corrplot}}.}
 }
 \value{
@@ -56,4 +79,5 @@ using \pkg{corrplot}.
 }
 \examples{
 correlation_plot(mtcars, tl.cex = .7)
+correlation_plot(mtcars, tl.cex = .7, show_coef = FALSE)
 }
