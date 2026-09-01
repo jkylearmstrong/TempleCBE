@@ -1,3 +1,15 @@
+# TempleCBE 0.1.5
+
+## `correlation_plot()` rendering fixes
+
+* `corrplot()` was never given any top margin, so `title` collided with the 45-degree diagonal variable-name labels sitting just below it in every rendered plot. Added a `mar` argument (default `c(0, 0, 2, 0)`, the standard `par("mar")` `c(bottom, left, top, right)` form that `corrplot()` already accepts) so the title clears the labels by default, while still letting callers override it for longer titles or larger `tl.cex`.
+* Coefficient numbers were hardcoded on (`addCoef.col = "black"`) with no clean way to turn them off. On a correlation matrix with many variables the numbers overlap the ellipses and labels; the only workaround was shrinking `tl.cex`/`number.cex` toward zero, which doesn't fix the crowding -- it just deletes every label, leaving an unreadable, unlabeled plot. Added a `show_coef = TRUE` argument; setting it to `FALSE` omits the coefficients cleanly while keeping the diagonal variable labels intact. The default is unchanged, so existing small-matrix callers see no behavior difference.
+
+## New correlation functions
+
+* `correlation_plot_split()`: for a correlation matrix with too many variables to stay legible in one `correlation_plot()` call (e.g. ~40 clinical parameters), automatically groups variables via hierarchical clustering on `as.dist(1 - abs(cor_mat))` -- the same correlation-based distance `corrplot`'s own `order = "hclust"` uses -- and draws one within-group `correlation_plot()`-style plot per group (default target size 12 variables per group, via `ceiling(n_vars / group_size)` groups from `stats::cutree()`). Each sub-plot's title is suffixed `"(Group i of n)"` so the sub-plots can be told apart. Returns the per-group correlation matrices invisibly, as a named list, since it is called (like `correlation_plot()`) for its plotting side effect.
+* `correlation_diff()` / `correlation_diff_heatmap()`: compare the correlation matrix of a comparison dataset against a baseline dataset, matching numeric variables by column name (falling back to the intersection if the two datasets' numeric columns differ). Unlike `pca_loading_diff()`, no sign-alignment step is needed -- correlation coefficients, unlike PCA loadings, have no sign ambiguity. Returns/renders only one triangle of the (symmetric) difference matrix, with the (always-zero) diagonal dropped. `correlation_diff_heatmap()` uses the same diverging, zero-centered fill scale as `pca_loading_diff_heatmap()`.
+
 # TempleCBE 0.1.4
 
 ## New PCA functions

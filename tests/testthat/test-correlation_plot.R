@@ -28,3 +28,126 @@ test_that("correlation_plot only uses numeric columns", {
 
   expect_equal(rownames(res), c("a", "b"))
 })
+
+test_that("correlation_plot defaults still add coefficients and don't error", {
+  tmp_png <- tempfile(fileext = ".png")
+  grDevices::png(tmp_png)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tmp_png)
+  }, add = TRUE)
+
+  expect_no_error(res <- correlation_plot(mtcars))
+  expect_true(is.matrix(res))
+})
+
+test_that("correlation_plot(show_coef = FALSE) doesn't error and still returns the matrix", {
+  tmp_png <- tempfile(fileext = ".png")
+  grDevices::png(tmp_png)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tmp_png)
+  }, add = TRUE)
+
+  expect_no_error(res <- correlation_plot(mtcars, show_coef = FALSE))
+  expect_true(is.matrix(res))
+  expect_equal(dim(res), c(ncol(mtcars), ncol(mtcars)))
+})
+
+test_that("correlation_plot respects a custom mar without erroring", {
+  tmp_png <- tempfile(fileext = ".png")
+  grDevices::png(tmp_png)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tmp_png)
+  }, add = TRUE)
+
+  expect_no_error(correlation_plot(mtcars, mar = c(1, 1, 4, 1)))
+})
+
+test_that("correlation_plot_split groups variables via hierarchical clustering and returns one matrix per group", {
+  tmp_png <- tempfile(fileext = ".png")
+  grDevices::png(tmp_png)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tmp_png)
+  }, add = TRUE)
+
+  wide_data <- cbind(mtcars, iris[seq_len(nrow(mtcars)), sapply(iris, is.numeric)])
+  n_vars <- sum(sapply(wide_data, is.numeric))
+
+  res <- correlation_plot_split(wide_data, group_size = 6)
+
+  expect_type(res, "list")
+  expect_equal(length(res), ceiling(n_vars / 6))
+
+  # Every variable appears in exactly one group, and each group's matrix is
+  # square with matching row/col names (a within-group correlation matrix).
+  all_vars <- unname(unlist(lapply(res, colnames)))
+  expect_equal(sort(all_vars), sort(names(wide_data)[sapply(wide_data, is.numeric)]))
+  expect_false(any(duplicated(all_vars)))
+
+  for (mat in res) {
+    expect_true(is.matrix(mat))
+    expect_equal(nrow(mat), ncol(mat))
+    expect_equal(rownames(mat), colnames(mat))
+  }
+})
+
+test_that("correlation_plot_split with a small data frame still produces a single group without erroring", {
+  tmp_png <- tempfile(fileext = ".png")
+  grDevices::png(tmp_png)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tmp_png)
+  }, add = TRUE)
+
+  res <- correlation_plot_split(mtcars, group_size = 12)
+
+  expect_equal(length(res), 1)
+  expect_equal(sort(colnames(res[[1]])), sort(names(mtcars)))
+})
+
+test_that("correlation_diff against itself is all zeros", {
+  diff_df <- correlation_diff(mtcars, mtcars)
+
+  expect_s3_class(diff_df, "tbl_df")
+  expect_named(diff_df, c("var1", "var2", "diff"))
+  expect_equal(nrow(diff_df), choose(ncol(mtcars), 2))
+  expect_true(all(abs(diff_df$diff) < 1e-8))
+})
+
+test_that("correlation_diff only returns one triangle (no duplicate or diagonal rows)", {
+  diff_df <- correlation_diff(mtcars, mtcars)
+
+  pairs <- paste(diff_df$var1, diff_df$var2)
+  reverse_pairs <- paste(diff_df$var2, diff_df$var1)
+  expect_false(any(reverse_pairs %in% pairs))
+  expect_false(any(diff_df$var1 == diff_df$var2))
+})
+
+test_that("correlation_diff matches variables by name and falls back to the intersection", {
+  baseline <- mtcars
+  comparison <- mtcars[, setdiff(names(mtcars), "carb")]
+
+  diff_df <- correlation_diff(baseline, comparison)
+
+  expect_false(any(diff_df$var1 == "carb" | diff_df$var2 == "carb"))
+  expect_equal(nrow(diff_df), choose(ncol(mtcars) - 1, 2))
+})
+
+test_that("correlation_diff detects a real difference between datasets", {
+  set.seed(1)
+  baseline <- mtcars
+  comparison <- mtcars
+  comparison$hp <- rev(comparison$hp)
+
+  diff_df <- correlation_diff(baseline, comparison)
+
+  expect_true(any(abs(diff_df$diff) > 1e-8))
+})
+
+test_that("correlation_diff_heatmap returns a ggplot object", {
+  p <- correlation_diff_heatmap(mtcars, mtcars)
+  expect_s3_class(p, "ggplot")
+})
