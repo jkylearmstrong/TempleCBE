@@ -4,19 +4,38 @@
 \alias{missmap}
 \title{Missingness Map}
 \usage{
-missmap(df, by_column = NULL, na_list = NULL, row_order = FALSE)
+missmap(
+  df,
+  by_column = NULL,
+  na_list = NULL,
+  row_order = FALSE,
+  fill = c("auto", "binary", "count")
+)
 }
 \arguments{
 \item{df}{A data frame or tibble.}
 
 \item{by_column}{Optional unquoted column name to aggregate missingness by
-(e.g. a site or subject id) instead of plotting every row individually.}
+(e.g. a site or subject id) instead of plotting every row individually.
+Missingness is summed per feature within each group. When \code{row_order
+= FALSE}, both the groups (x-axis) and the features (y-axis) are ordered
+by descending total missingness, exactly as in the per-row/column view.}
 
 \item{na_list}{Optional vector of additional values to treat as missing
 (beyond actual \code{NA}).}
 
-\item{row_order}{Logical; if \code{FALSE} (default) rows/features are
-ordered by how much missingness they have.}
+\item{row_order}{Logical; if \code{FALSE} (default) rows/features (or, in
+\code{by_column} mode, groups/features) are ordered by how much
+missingness they have.}
+
+\item{fill}{In \code{by_column} mode, how to color the tiles: \code{"auto"}
+(default) picks a discrete two-level "Missing"/"Present" fill (matching
+the per-row/column view) when every group has at most one contributing
+row -- in which case the summed missingness count is always 0 or 1 and a
+count scale would be misleading -- and otherwise falls back to a
+continuous "# missing" gradient. \code{"binary"} and \code{"count"} force
+one of those two behaviors regardless of group size. Ignored outside
+\code{by_column} mode.}
 }
 \value{
 A ggplot object.
