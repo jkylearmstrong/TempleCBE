@@ -131,7 +131,7 @@ head(baked_data)
 re-export, so they can be validated against something publicly auditable
 instead of each maintaining their own private, unreviewed copy.
 
-**Public** (this layer):
+**Public**:
 
 - **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**: this
   package — biostatistical, EDA, testing, and modeling utilities.
@@ -140,25 +140,13 @@ instead of each maintaining their own private, unreviewed copy.
   synthetic example/test data across the ecosystem.
 - **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
   OMOP CDM database creation/querying (DuckDB).
-- **`ML-PScore`**: propensity score / cohort ML tooling (private today,
-  pending PI approval to go public — already licensed to match this
-  layer).
 - **`quarto_temple_brand`**: Quarto branding/report templates.
 
-**Private, imports from the public layer** (never the reverse):
-
-- **`datasci`**: Temple CBE’s protected data store and internal DB
-  access layer. Re-exports every function it used to own locally
-  straight from `TempleCBE` (`datasci/R/reexports.R`), so nothing that
-  calls `datasci::<function>()` needed to change.
-- **`Wolfson`**: Dr. Marla Wolfson’s injury-phenotype research project —
-  the original source of `step_famd`, `glmnet_IBS`, `proc_pca`, and
-  `corr_test_all`, which were copied here (not moved — see `NOTES.md`
-  for why) and are now maintained as two deliberately separate copies.
-- **`kyle_out_zip`**: the Rubin eDerri project codebase; may hold
-  protected multi-site clinical data.
-
-See `NOTES.md` for how this split came about and what’s still open.
+Several other Temple Center for Biostatistics and Epidemiology (CBE) PI
+studies and analyses import `TempleCBE` for their own private,
+protected-data work — keeping study-specific code and data private while
+validating the general-purpose statistics they depend on against this
+public, auditable layer.
 
 ------------------------------------------------------------------------
 
