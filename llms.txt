@@ -1,0 +1,344 @@
+# TempleCBE
+
+# TempleCBE ![](inst/templates/Temple_Logo.png)
+
+[![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
+[![License: GPL-3 \|
+MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](https://jkylearmstrong.github.io/TempleCBE/LICENSE.md)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/jkylearmstrong/TempleCBE)
+
+**TempleCBE** is an open-source R package developed for Temple
+University’s **Center for Biostatistics and Epidemiology (CBE)**. It
+provides a clean, domain-agnostic suite of biostatistical testing
+functions, data quality and missingness visualizations, normalization
+utilities, custom Tidymodels recipe steps (`step_famd`), and clinical
+survival evaluation metrics (`glmnet_IBS`).
+
+------------------------------------------------------------------------
+
+## 📦 Installation
+
+You can install the development version of `TempleCBE` directly from
+GitHub:
+
+``` r
+
+# Install pak if not already installed
+if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
+
+# Install TempleCBE
+pak::pak("jkylearmstrong/TempleCBE")
+```
+
+Or using `remotes`:
+
+``` r
+
+remotes::install_github("jkylearmstrong/TempleCBE")
+```
+
+------------------------------------------------------------------------
+
+## 🚀 Quick Start
+
+``` r
+
+library(TempleCBE)
+library(dplyr)
+```
+
+### 1. Data Quality & Missingness Analysis
+
+Quickly compute total missing counts and detailed feature-level
+missingness tables:
+
+``` r
+
+# Sample dataset with missing values
+df <- tibble(
+  patient_id = 1:5,
+  age = c(45, 52, NA, 61, 38),
+  bmi = c(NA, 24.5, 29.1, NA, 31.0),
+  blood_pressure = c(120, NA, 135, 140, 118)
+)
+
+# Total missing values across dataset
+SumNa(df)
+
+# Feature-level missingness summary
+features_percent_miss(df)
+```
+
+Generate a missingness summary plot:
+
+``` r
+
+plot_features_percent_miss(df)
+```
+
+### 2. Normalization & Outlier Detection
+
+Standardize features or detect numerical outliers using Interquartile
+Range (IQR) thresholding:
+
+``` r
+
+# Min-Max Normalization to [0, 1]
+min_max_norm(df$age)
+
+# Z-Score Standardization (mean = 0, sd = 1)
+z_norm(df$age)
+
+# Detect numerical outliers via IQR fences (MILD vs EXTREME, by inner/outer fence)
+detect_outliers(data.frame(measurement = c(1, 2, 3, 4, 5, 100)))
+```
+
+### 3. Infix Helper Operators
+
+Convenient syntax for string matching and negation:
+
+``` r
+
+# Pattern matching operators
+"patient_cohort_A" %like% "cohort"   # TRUE
+"PATIENT_COHORT_A" %ilike% "cohort"  # TRUE (case-insensitive)
+
+# Negated %in% operator
+5 %notin% c(1, 2, 3, 4)             # TRUE
+```
+
+### 4. Custom Tidymodels Recipe Step: `step_famd`
+
+Extract Factor Analysis of Mixed Data (FAMD) principal components
+seamlessly within the `tidymodels` framework:
+
+``` r
+
+library(recipes)
+
+# Define recipe with mixed numeric and categorical variables
+rec <- recipe(Species ~ ., data = iris) %>%
+  step_famd(all_predictors(), num_comp = 2)
+
+# Prep and bake
+prepped_rec <- prep(rec)
+baked_data <- bake(prepped_rec, new_data = NULL)
+
+head(baked_data)
+```
+
+------------------------------------------------------------------------
+
+## 🏛️ Ecosystem Architecture
+
+`TempleCBE` is the public layer of Temple CBE’s biostatistics framework
+— general-purpose code that private, protected-data repos import and
+re-export, so they can be validated against something publicly auditable
+instead of each maintaining their own private, unreviewed copy.
+
+**Public** (this layer):
+
+- **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**: this
+  package — biostatistical, EDA, testing, and modeling utilities.
+- **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
+  longitudinal propensity score simulation, and the designated source of
+  synthetic example/test data across the ecosystem.
+- **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
+  OMOP CDM database creation/querying (DuckDB).
+- **`ML-PScore`**: propensity score / cohort ML tooling (private today,
+  pending PI approval to go public — already licensed to match this
+  layer).
+- **`quarto_temple_brand`**: Quarto branding/report templates.
+
+**Private, imports from the public layer** (never the reverse):
+
+- **`datasci`**: Temple CBE’s protected data store and internal DB
+  access layer. Re-exports every function it used to own locally
+  straight from `TempleCBE` (`datasci/R/reexports.R`), so nothing that
+  calls `datasci::<function>()` needed to change.
+- **`Wolfson`**: Dr. Marla Wolfson’s injury-phenotype research project —
+  the original source of `step_famd`, `glmnet_IBS`, `proc_pca`, and
+  `corr_test_all`, which were copied here (not moved — see `NOTES.md`
+  for why) and are now maintained as two deliberately separate copies.
+- **`kyle_out_zip`**: the Rubin eDerri project codebase; may hold
+  protected multi-site clinical data.
+
+See `NOTES.md` for how this split came about and what’s still open.
+
+------------------------------------------------------------------------
+
+## 📄 License
+
+Dual-licensed at your option under GPL-3 or MIT — see
+[LICENSE.md](https://jkylearmstrong.github.io/TempleCBE/LICENSE.md) and
+[LICENSE](https://jkylearmstrong.github.io/TempleCBE/LICENSE).
+
+# Package index
+
+## Data Quality & Missingness Analysis
+
+Functions for missing data auditing, summary tables, and visualizations.
+
+- [`SumNa()`](https://jkylearmstrong.github.io/TempleCBE/reference/SumNa.md)
+  : Count Total Missing (NA) Values
+- [`features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/features_percent_miss.md)
+  : Calculate Percentage of Missing Data Per Feature
+- [`plot(`*`<features_percent_miss>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md)
+  [`plot_features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md)
+  : Plot method for features_percent_miss objects
+- [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
+  : Missingness Map
+- [`my_summary_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/my_summary_table.md)
+  : Summary Table Function
+- [`get_dataset_info()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
+  [`proc_contents()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
+  : Summarize a Data Frame's Columns
+
+## Normalization & Outlier Detection
+
+Functions for scaling numeric features and flagging statistical
+outliers.
+
+- [`min_max_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/min_max_norm.md)
+  : Min-Max Data Normalization
+- [`z_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/z_norm.md)
+  : Z-Score Standard Normalization
+- [`range_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/range_norm.md)
+  : Range Normalization
+- [`detect_outliers()`](https://jkylearmstrong.github.io/TempleCBE/reference/detect_outliers.md)
+  : Detect Outliers Across a Data Frame's Numeric Columns
+- [`calculate_fences()`](https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.md)
+  : Calculate Inner and Outer IQR Fences
+- [`flag_outliers()`](https://jkylearmstrong.github.io/TempleCBE/reference/flag_outliers.md)
+  : Flag and Classify Outliers
+
+## Tidymodels Recipe Steps & Modeling Utilities
+
+Recipe steps and modeling evaluation metrics.
+
+- [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  : Factor Analysis of Mixed Data (FAMD) Recipe Step
+- [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  : Integrated Brier Score (IBS) Evaluation for Regularized Survival
+  Models
+
+## Statistical Testing & EDA
+
+Biostatistical test wrappers, correlation matrices, and distribution
+tests.
+
+- [`single_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/single_t_test.md)
+  : Single T-Test, Tidied
+- [`multiple_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/multiple_t_test.md)
+  : Multiple T-Tests Against One Classifier
+- [`one_vs_rest_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/one_vs_rest_t_test.md)
+  : One-vs-Rest T-Tests Across a Multi-Level Factor
+- [`corr_test_all()`](https://jkylearmstrong.github.io/TempleCBE/reference/corr_test_all.md)
+  : Pairwise Correlation Matrix and Significance Testing
+- [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
+  : Correlation Plot
+- [`find_correlation()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_correlation.md)
+  : Find Highly Correlated Columns
+- [`distribution_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_test.md)
+  : Check a Vector or Data Frame's Distribution
+- [`distribution_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_plot.md)
+  : Distribution Plot
+- [`is_normal()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_normal.md)
+  : Test Whether a Vector Looks Normally Distributed
+- [`is_poisson()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_poisson.md)
+  : Test Whether a Vector Looks Poisson-Distributed
+- [`is.int()`](https://jkylearmstrong.github.io/TempleCBE/reference/is.int.md)
+  : Is a Vector Composed of Integer-Valued Numbers
+- [`significance_stars()`](https://jkylearmstrong.github.io/TempleCBE/reference/significance_stars.md)
+  : P-value Significance Stars
+
+## PCA & Dimensionality Reduction
+
+Principal Component Analysis utilities, loadings, and biplots.
+
+- [`proc_pca()`](https://jkylearmstrong.github.io/TempleCBE/reference/proc_pca.md)
+  : Process and Plot Principal Component Analysis (PCA)
+
+- [`rotation_matrix()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  [`pca_loadings()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  : PCA Rotation Matrix (Loadings)
+
+- [`pca_eqns()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_eqns.md)
+  : PCA Equations
+
+- [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md)
+  : Percent Variance Explained by Each Principal Component
+
+- [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)
+  : PCA Feature-Loading Heatmap
+
+- [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
+  : PCA Biplot
+
+- [`plot(`*`<prcomp>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.md)
+  :
+
+  Generic Plot Method for `prcomp` Objects
+
+## Visualization & Reporting
+
+Manhattan/volcano plots, report generation, and document conversions.
+
+- [`manhattan_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/manhattan_plot.md)
+  : Manhattan Plot
+- [`volcano_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.md)
+  : Volcano Plot
+- [`create_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_report.md)
+  : Scaffold a New Report From a Template
+- [`zip_render()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.md)
+  : Render a Quarto Document and Zip It With Its Dependencies
+- [`pdf_to_rtf()`](https://jkylearmstrong.github.io/TempleCBE/reference/pdf_to_rtf.md)
+  : Convert a PDF to Rich Text Format (RTF)
+- [`create_toc_from_sas_pdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_toc_from_sas_pdf.md)
+  : Build a Table of Contents from a SAS-Generated PDF
+- [`read_excel_multiple_headers()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_excel_multiple_headers.md)
+  : Read Excel Data With Multi-Row Column Headers
+- [`read_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_workbook.md)
+  : Read Every Sheet of an Excel Workbook
+
+## Helper & Infix Operators
+
+Clean column naming, string matching, and vector manipulation.
+
+- [`clean_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/clean_names.md)
+  : Clean and Standardize Variable Names
+- [`R_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/R_names.md)
+  : Clean Column Names, Preserving Originals as Labels
+- [`make_excel_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/make_excel_names.md)
+  : Generate Excel-Compatible Column Names
+- [`keep_only()`](https://jkylearmstrong.github.io/TempleCBE/reference/keep_only.md)
+  : Keep Only Specified Objects in an Environment
+- [`delete_nul_files()`](https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.md)
+  : Delete Stray 'nul' Files
+- [`find_code()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_code.md)
+  : Search for Code Patterns Across a Directory Tree
+- [`sd.error()`](https://jkylearmstrong.github.io/TempleCBE/reference/sd.error.md)
+  : Compute standard error
+- [`install.packages.no_lock()`](https://jkylearmstrong.github.io/TempleCBE/reference/install.packages.no_lock.md)
+  : Install a Package, Bypassing an Existing Lock
+- [`like()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%like%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`ilike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%ilike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`flike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%flike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`plike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%plike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`notin()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%!in%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%notin%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  : Pattern Matching and Logical-Negation Infix Operators
+
+# Articles
+
+### All vignettes
+
+- [Exploratory Data Analysis, Missingness Auditing, and
+  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md):
+- [Nested Cross-Validation for Longitudinal Survival
+  Models](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.md):
