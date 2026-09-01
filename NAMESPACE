@@ -71,26 +71,34 @@ export(zip_render)
 import(dplyr)
 importFrom(corrplot,corrplot)
 importFrom(dplyr,if_else)
-importFrom(recipes,add_step)
-importFrom(recipes,check_name)
-importFrom(recipes,check_new_data)
-importFrom(recipes,get_keep_original_cols)
-importFrom(recipes,is_trained)
-importFrom(recipes,print_step)
-importFrom(recipes,rand_id)
-importFrom(recipes,remove_original_cols)
-importFrom(recipes,sel2char)
-importFrom(recipes,step)
-importFrom(rlang,":=")
-importFrom(rlang,.data)
-importFrom(rlang,enquo)
-importFrom(rlang,enquos)
-importFrom(rlang,expr)
-importFrom(rlang,na_chr)
-importFrom(rlang,na_dbl)
-importFrom(rlang,quo_is_null)
-importFrom(stats,ecdf)
-importFrom(stats,sd)
-importFrom(tibble,as_tibble)
-importFrom(tibble,tibble)
+importFrom(recipes,
+  add_step,
+  check_name,
+  check_new_data,
+  get_keep_original_cols,
+  is_trained,
+  print_step,
+  rand_id,
+  remove_original_cols,
+  sel2char,
+  step
+)
+importFrom(rlang,
+  ":=",
+  .data,
+  enquo,
+  enquos,
+  expr,
+  na_chr,
+  na_dbl,
+  quo_is_null
+)
+importFrom(stats,
+  ecdf,
+  sd
+)
+importFrom(tibble,
+  as_tibble,
+  tibble
+)
 importFrom(tidyr,pivot_longer)
