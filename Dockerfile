@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     git \
     curl \
+    xz-utils \
   && rm -rf /var/lib/apt/lists/*
 
 # Quarto CLI (bundles its own pandoc) — arch picked up from buildx's TARGETARCH
