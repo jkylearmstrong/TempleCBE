@@ -45,6 +45,9 @@ reference:
       - one_vs_rest_t_test
       - corr_test_all
       - correlation_plot
+      - correlation_plot_split
+      - correlation_diff
+      - correlation_diff_heatmap
       - find_correlation
       - distribution_test
       - distribution_plot
@@ -62,6 +65,9 @@ reference:
       - pca_percent_var_explained
       - pca_feature_loading_heatmap
       - plot_pca_bi
+      - pca_biplot
+      - pca_loading_diff
+      - pca_loading_diff_heatmap
       - rotation_matrix
       - plot.prcomp
 
