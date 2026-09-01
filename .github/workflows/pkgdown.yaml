@@ -14,7 +14,8 @@ permissions:
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    only-one-concurrent: true
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     steps:
       - uses: actions/checkout@v4
 
