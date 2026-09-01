@@ -1,3 +1,15 @@
+# TempleCBE 0.1.4
+
+## New PCA functions
+
+* `pca_biplot()`: a real PCA loadings biplot. Unlike `plot_pca_bi()` (which draws each *observation* as an arrow to its PC score, labeled by an id column), `pca_biplot()` draws the observation scores as a muted point cloud and overlays the variable loading vectors (from `pca_model$rotation`) as labeled arrows from the origin -- the classic two-panel-in-one biplot. Loadings are rescaled so their max extent is 80% of the score cloud's max extent, since raw (unit-scale) loadings would otherwise be invisible next to the scores. Works directly off a fitted `prcomp` object; no `newdata` argument needed. Added as a new `type = "biplot"` option in `plot.prcomp()`.
+* `pca_loading_diff()`: compares variable loadings between two independently-fit `prcomp` objects on the same variables (e.g. the same domain at baseline vs. a later timepoint). Handles PCA's arbitrary component sign by sign-aligning each shared component of the comparison fit to the baseline before differencing, so a component that's merely flipped (not truly changed) reads as ~0 difference instead of a spurious ~2x jump. Matches variables by name and falls back to the intersection if the two fits' variable sets differ.
+* `pca_loading_diff_heatmap()`: renders `pca_loading_diff()`'s output as a feature-by-component heatmap with a diverging, zero-centered fill scale, matching `pca_feature_loading_heatmap()`'s visual style.
+
+## Styling
+
+* `pca_percent_var_explained()`: tightened the top margin above the variance bars by adding `expand = ggplot2::expansion(mult = c(0, 0.01))` to the percent-of-variance y scale.
+
 # TempleCBE 0.1.3
 
 ## `missmap()` improvements

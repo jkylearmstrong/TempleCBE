@@ -4,17 +4,19 @@
 \alias{plot.prcomp}
 \title{Generic Plot Method for \code{prcomp} Objects}
 \usage{
-\method{plot}{prcomp}(x, type = c("variance", "heatmap", "bi"), ...)
+\method{plot}{prcomp}(x, type = c("variance", "heatmap", "bi", "biplot"), ...)
 }
 \arguments{
 \item{x}{A \code{\link[stats]{prcomp}} object.}
 
 \item{type}{One of \code{"variance"} (\code{\link{pca_percent_var_explained}}),
-\code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}), or
-\code{"bi"} (\code{\link{plot_pca_bi}}).}
+\code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}),
+\code{"bi"} (\code{\link{plot_pca_bi}}), or \code{"biplot"}
+(\code{\link{pca_biplot}}).}
 
 \item{...}{Passed on to the underlying plot function (needed for
-\code{type = "bi"}, which requires \code{newdata} and \code{column}).}
+\code{type = "bi"}, which requires \code{newdata} and \code{column}; and
+optionally used by \code{type = "biplot"} to pass \code{x}/\code{y}).}
 }
 \value{
 A ggplot object.
