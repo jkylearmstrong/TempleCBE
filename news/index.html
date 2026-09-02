@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,16 @@
       <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.7" id="templecbe-017">TempleCBE 0.1.7<a class="anchor" aria-label="anchor" href="#templecbe-017"></a></h2>
+<div class="section level3">
+<h3 id="correlation_plot_split-crash-fix-0-1-7">
+<code>correlation_plot_split()</code> crash fix<a class="anchor" aria-label="anchor" href="#correlation_plot_split-crash-fix-0-1-7"></a></h3>
+<ul><li>Found by a real render, not by the existing test suite: <code><a href="../reference/correlation_plot_split.html">correlation_plot_split()</a></code>’s hierarchical clustering, cut at a fixed <code>k = ceiling(n_vars / group_size)</code>, can leave a cluster with just one variable in it – confirmed with a real 7-variable dataset at <code>group_size = 6</code>. A “group” of one variable has no pairwise correlation to show, and a 1x1 correlation matrix crashes <code>corrplot()</code>’s default <code>order = "FPC"</code> ordering downstream (<code>eigen(corr)$vectors[, 1:2]</code>: subscript out of bounds – a 1x1 matrix’s <code><a href="https://rdrr.io/r/base/eigen.html" class="external-link">eigen()</a></code> has no second eigenvector to index). Added <code>merge_singleton_groups()</code>, an internal helper that folds any singleton cluster into whichever other group its variable is most correlated with on average (in absolute value), so <code><a href="../reference/correlation_plot_split.html">correlation_plot_split()</a></code> never hands <code><a href="../reference/correlation_plot.html">correlation_plot()</a></code> a group of one. Verified against 15 random variable counts (5-9) with no errors and no singleton groups produced.</li>
+<li>
+<code><a href="../reference/correlation_plot.html">correlation_plot()</a></code> itself now errors clearly (“requires at least 2 numeric columns”) on single-column input, instead of failing inside <code>corrplot()</code>’s internals – defense in depth for any direct caller, not just calls routed through <code><a href="../reference/correlation_plot_split.html">correlation_plot_split()</a></code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.6" id="templecbe-016">TempleCBE 0.1.6<a class="anchor" aria-label="anchor" href="#templecbe-016"></a></h2>
 <div class="section level3">
