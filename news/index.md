@@ -1,5 +1,34 @@
 # Changelog
 
+## TempleCBE 0.1.7
+
+### `correlation_plot_split()` crash fix
+
+- Found by a real render, not by the existing test suite:
+  [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md)’s
+  hierarchical clustering, cut at a fixed
+  `k = ceiling(n_vars / group_size)`, can leave a cluster with just one
+  variable in it – confirmed with a real 7-variable dataset at
+  `group_size = 6`. A “group” of one variable has no pairwise
+  correlation to show, and a 1x1 correlation matrix crashes
+  `corrplot()`’s default `order = "FPC"` ordering downstream
+  (`eigen(corr)$vectors[, 1:2]`: subscript out of bounds – a 1x1
+  matrix’s [`eigen()`](https://rdrr.io/r/base/eigen.html) has no second
+  eigenvector to index). Added `merge_singleton_groups()`, an internal
+  helper that folds any singleton cluster into whichever other group its
+  variable is most correlated with on average (in absolute value), so
+  [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md)
+  never hands
+  [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
+  a group of one. Verified against 15 random variable counts (5-9) with
+  no errors and no singleton groups produced.
+- [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
+  itself now errors clearly (“requires at least 2 numeric columns”) on
+  single-column input, instead of failing inside `corrplot()`’s
+  internals – defense in depth for any direct caller, not just calls
+  routed through
+  [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md).
+
 ## TempleCBE 0.1.6
 
 ### Docker/`renv` reproducibility fix
