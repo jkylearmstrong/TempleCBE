@@ -1,5 +1,50 @@
 # Changelog
 
+## TempleCBE 0.1.6
+
+### Docker/`renv` reproducibility fix
+
+- `Dockerfile` previously ignored the committed `renv.lock` entirely:
+  `remotes::install_deps()` resolved TempleCBE’s declared `DESCRIPTION`
+  dependencies against whatever versions happened to be current on live
+  CRAN/r-universe at build time, so the exact package versions baked
+  into a Docker image could silently drift from what
+  [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+  installs on a Windows dev machine against the pinned lockfile –
+  exactly the reproducibility gap `renv` exists to close. The image now
+  installs a pinned `renv` (version tracked via a new `RENV_VERSION`
+  build arg, matching the existing `R_VERSION`/`QUARTO_VERSION` arg
+  convention) and runs `renv::restore(prompt = FALSE)` against the
+  committed `renv.lock`, `.Rprofile`, and
+  `renv/activate.R`/`renv/settings.json`, so Docker builds and local
+  [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+  on Windows now install identical dependency versions. These are still
+  copied in ahead of the rest of the source tree (as `DESCRIPTION` was
+  previously), so the restore layer only invalidates when the lockfile
+  itself changes, not on every source commit. The final package install
+  also switched from `R CMD INSTALL` to `renv::install(".")`, since
+  plain `R CMD INSTALL` doesn’t source `.Rprofile` and so can’t see the
+  renv-managed library
+  [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+  populated – it failed to find `ggplot2`/`corrplot`/etc. even though
+  they were installed correctly.
+  [`renv::install()`](https://rstudio.github.io/renv/reference/install.html)
+  runs inside the same renv-activated session, avoiding that mismatch.
+  (One caveat found while verifying the built image:
+  [`renv::status()`](https://rstudio.github.io/renv/reference/status.html)
+  still reports R’s own bundled “recommended” packages – `survival`,
+  `MASS`, `Matrix`, etc. – as out of sync with the lockfile inside the
+  container, because renv deliberately avoids overwriting a base R
+  installation’s own recommended-package versions. This is expected
+  `renv` behavior rather than a gap introduced here, doesn’t affect any
+  of TempleCBE’s own dependencies, and the built image was confirmed to
+  load and run TempleCBE correctly.)
+- [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+  was re-run to confirm the lockfile is current after the 0.1.5
+  correlation-plot changes; those changes only used already-imported
+  packages (`stats`, `ggplot2`, `corrplot`, `dplyr`, `tibble`), so no
+  package versions needed updating – `renv.lock` is unchanged.
+
 ## TempleCBE 0.1.5
 
 ### `correlation_plot()` rendering fixes

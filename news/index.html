@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,16 @@
       <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.6" id="templecbe-016">TempleCBE 0.1.6<a class="anchor" aria-label="anchor" href="#templecbe-016"></a></h2>
+<div class="section level3">
+<h3 id="dockerrenv-reproducibility-fix-0-1-6">Docker/<code>renv</code> reproducibility fix<a class="anchor" aria-label="anchor" href="#dockerrenv-reproducibility-fix-0-1-6"></a></h3>
+<ul><li>
+<code>Dockerfile</code> previously ignored the committed <code>renv.lock</code> entirely: <code>remotes::install_deps()</code> resolved TempleCBE’s declared <code>DESCRIPTION</code> dependencies against whatever versions happened to be current on live CRAN/r-universe at build time, so the exact package versions baked into a Docker image could silently drift from what <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> installs on a Windows dev machine against the pinned lockfile – exactly the reproducibility gap <code>renv</code> exists to close. The image now installs a pinned <code>renv</code> (version tracked via a new <code>RENV_VERSION</code> build arg, matching the existing <code>R_VERSION</code>/<code>QUARTO_VERSION</code> arg convention) and runs <code>renv::restore(prompt = FALSE)</code> against the committed <code>renv.lock</code>, <code>.Rprofile</code>, and <code>renv/activate.R</code>/<code>renv/settings.json</code>, so Docker builds and local <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> on Windows now install identical dependency versions. These are still copied in ahead of the rest of the source tree (as <code>DESCRIPTION</code> was previously), so the restore layer only invalidates when the lockfile itself changes, not on every source commit. The final package install also switched from <code>R CMD INSTALL</code> to <code>renv::install(".")</code>, since plain <code>R CMD INSTALL</code> doesn’t source <code>.Rprofile</code> and so can’t see the renv-managed library <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> populated – it failed to find <code>ggplot2</code>/<code>corrplot</code>/etc. even though they were installed correctly. <code><a href="https://rstudio.github.io/renv/reference/install.html" class="external-link">renv::install()</a></code> runs inside the same renv-activated session, avoiding that mismatch. (One caveat found while verifying the built image: <code><a href="https://rstudio.github.io/renv/reference/status.html" class="external-link">renv::status()</a></code> still reports R’s own bundled “recommended” packages – <code>survival</code>, <code>MASS</code>, <code>Matrix</code>, etc. – as out of sync with the lockfile inside the container, because renv deliberately avoids overwriting a base R installation’s own recommended-package versions. This is expected <code>renv</code> behavior rather than a gap introduced here, doesn’t affect any of TempleCBE’s own dependencies, and the built image was confirmed to load and run TempleCBE correctly.)</li>
+<li>
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> was re-run to confirm the lockfile is current after the 0.1.5 correlation-plot changes; those changes only used already-imported packages (<code>stats</code>, <code>ggplot2</code>, <code>corrplot</code>, <code>dplyr</code>, <code>tibble</code>), so no package versions needed updating – <code>renv.lock</code> is unchanged.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.5" id="templecbe-015">TempleCBE 0.1.5<a class="anchor" aria-label="anchor" href="#templecbe-015"></a></h2>
 <div class="section level3">
