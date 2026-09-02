@@ -63,6 +63,11 @@ correlation_plot <- function(data,
   num_data <- dplyr::select(data, dplyr::where(is.numeric))
   if (isTRUE(na_omit)) num_data <- stats::na.omit(num_data)
 
+  if (ncol(num_data) < 2) {
+    stop("correlation_plot() requires at least 2 numeric columns to plot pairwise ",
+         "correlations; got ", ncol(num_data), ".")
+  }
+
   cor_mat <- stats::cor(num_data, use = cor.use, method = cor.method)
 
   coef_args <- if (isTRUE(show_coef)) {
@@ -155,6 +160,7 @@ correlation_plot_split <- function(data,
     hc <- stats::hclust(dist_mat)
     clusters <- stats::cutree(hc, k = n_groups)
     groups <- split(names(clusters), clusters)
+    groups <- merge_singleton_groups(groups, cor_mat)
   }
 
   n_groups <- length(groups)
@@ -177,6 +183,48 @@ correlation_plot_split <- function(data,
   }
 
   invisible(result)
+}
+
+#' Merge Singleton Clusters Into Their Most-Correlated Neighboring Group
+#'
+#' Internal helper for \code{\link{correlation_plot_split}}. Cutting a
+#' hierarchical clustering at a fixed \code{k} can leave a cluster with just
+#' one variable in it -- a "group" of one variable has no pairwise
+#' correlation to show, and worse, a 1x1 correlation matrix crashes
+#' \code{\link[corrplot]{corrplot}}'s default \code{order = "FPC"}
+#' (first-principal-component ordering): \code{eigen()} on a 1x1 matrix has
+#' no second eigenvector to index. Rather than special-case that failure
+#' downstream, any singleton group is folded here into whichever other group
+#' its variable is most correlated with on average (in absolute value) --
+#' keeping \code{correlation_plot_split}'s "group by correlation structure"
+#' intent intact instead of letting singletons disappear, error, or crash.
+#'
+#' @param groups A named list of character vectors (variable names per
+#'   group), as produced by \code{split(names(clusters), clusters)}.
+#' @param cor_mat The full correlation matrix the groups were cut from.
+#' @return \code{groups}, with any singleton entries merged into the group
+#'   they're most correlated with. Never returns a singleton group unless
+#'   only one group exists in total (i.e. there was nothing to merge it
+#'   into).
+#' @noRd
+merge_singleton_groups <- function(groups, cor_mat) {
+  repeat {
+    sizes <- lengths(groups)
+    if (length(groups) <= 1 || all(sizes > 1)) break
+
+    singleton_idx <- which(sizes == 1)[1]
+    singleton_var <- groups[[singleton_idx]][[1]]
+    other_idx <- setdiff(seq_along(groups), singleton_idx)
+
+    mean_abs_cor <- vapply(other_idx, function(i) {
+      mean(abs(cor_mat[singleton_var, groups[[i]]]))
+    }, numeric(1))
+
+    target_idx <- other_idx[which.max(mean_abs_cor)]
+    groups[[target_idx]] <- c(groups[[target_idx]], singleton_var)
+    groups[[singleton_idx]] <- NULL
+  }
+  groups
 }
 
 #' Difference in Correlation Matrices Between Two Datasets
