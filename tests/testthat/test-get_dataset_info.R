@@ -97,6 +97,47 @@ test_that("get_dataset_info handles all-NA columns without crashing", {
   expect_true(all(is.na(na_rows$most_freq)))
 })
 
+test_that("get_dataset_info summarizes Surv columns via time/status, not flattened numerics", {
+  skip_if_not_installed("survival")
+
+  time <- c(5, 10, 15, 20, NA)
+  status <- c(1, 0, 1, 1, 0)
+  df <- data.frame(
+    id = 1:5,
+    surv = survival::Surv(time, status)
+  )
+
+  res <- get_dataset_info(df)
+  surv_row <- res |> dplyr::filter(columns == "surv")
+
+  expect_equal(surv_row$class, "Surv")
+  expect_equal(surv_row$mean, mean(time, na.rm = TRUE))
+  expect_equal(surv_row$sd, stats::sd(time, na.rm = TRUE))
+  expect_equal(surv_row$most_freq, "Events: 3 (60%)")
+  # all 5 (time, status) rows are distinct, including the row with NA time
+  expect_equal(surv_row$n_distinct, 5)
+})
+
+test_that("get_dataset_info does not error or infinitely recurse on Surv n_distinct", {
+  skip_if_not_installed("survival")
+
+  df <- data.frame(surv = survival::Surv(c(1, 2, 3), c(1, 1, 0)))
+
+  expect_no_error(res <- get_dataset_info(df))
+  expect_false(is.na(res$n_distinct[1]))
+})
+
+test_that("get_dataset_info falls back to attr(x, 'label') when labelled::var_label is unset", {
+  x <- 1:5
+  attr(x, "label") <- "Base label"
+  df <- data.frame(x = x, y = 1:5)
+
+  res <- get_dataset_info(df)
+
+  expect_equal(res |> dplyr::filter(columns == "x") |> dplyr::pull(labels), "Base label")
+  expect_equal(res |> dplyr::filter(columns == "y") |> dplyr::pull(labels), "y")
+})
+
 test_that("proc_contents handles incompatible numeric S3 classes (e.g. chron::times)", {
   # Simulate a 'times' class that is numeric but incompatible with double in pivot_longer
   # chron::times is numeric but has class "times"
