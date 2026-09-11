@@ -10,3 +10,4 @@
 ^\.github$
 ^NOTES\.md$
 ^secret_internal_NOTES_keep_local\.md$
+^secrets$
