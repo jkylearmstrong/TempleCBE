@@ -106,7 +106,6 @@ render_me <- function(path,
     times <- furrr::future_map_dfr(
       files,
       render_single,
-      .id = "id",
       .options = furrr::furrr_options(seed = TRUE)
     )
   } else {
