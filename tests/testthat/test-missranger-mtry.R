@@ -149,7 +149,7 @@ test_that("sweep imputes everything, preserves excluded columns and column order
     num.trees = 50, maxiter = 2, seed = 42, parallel = FALSE
   )
 
-  expect_named(res, c("imp_data", "oob_error", "best"))
+  expect_named(res, c("imp_data", "oob_error", "best", "excluded_high_missing"))
   expect_equal(names(res$imp_data), names(df))
   expect_equal(res$imp_data$id, df$id)
   expect_equal(res$imp_data$time, df$time)
@@ -370,4 +370,67 @@ test_that("a frame where every column has gaps sweeps only mtry = 1", {
   )
   expect_equal(unique(res$oob_error$mtry), 1L)
   expect_false(anyNA(res$imp_data))
+})
+
+# --- max_pct_missing --------------------------------------------------------
+
+test_that("max_pct_missing holds out sparse columns and carries them through", {
+  skip_if_not_installed("missRanger")
+
+  df <- toy_df()
+  df$sparse <- c(1, 2, rep(NA, 10))
+
+  res <- NULL
+  expect_message(
+    res <- missranger_sweep_mtry(
+      df, exclude = c("id", "time"), max_pct_missing = 0.8,
+      num.trees = 50, maxiter = 2, seed = 1, parallel = FALSE
+    ),
+    "sparse"
+  )
+
+  expect_equal(res$excluded_high_missing, "sparse")
+  expect_equal(names(res$imp_data), names(df))
+  expect_equal(sum(is.na(res$imp_data$sparse)), 10L)
+  expect_false("sparse" %in% res$best$column)
+  expect_false(anyNA(res$imp_data[, c("a", "b", "c")]))
+})
+
+test_that("holding out by threshold matches naming the column in exclude", {
+  skip_if_not_installed("missRanger")
+
+  df <- toy_df()
+  df$sparse <- c(1, 2, rep(NA, 10))
+  args <- list(df, num.trees = 50, maxiter = 2, seed = 99, parallel = FALSE)
+
+  by_name <- do.call(missranger_sweep_mtry,
+    c(args, list(exclude = c("id", "time", "sparse"))))
+  by_rule <- suppressMessages(do.call(missranger_sweep_mtry,
+    c(args, list(exclude = c("id", "time"), max_pct_missing = 0.8))))
+
+  expect_equal(by_name$imp_data, by_rule$imp_data)
+  expect_equal(by_name$best, by_rule$best)
+  expect_equal(by_rule$excluded_high_missing, "sparse")
+})
+
+test_that("a threshold below 1 subsumes the all-NA refusal", {
+  skip_if_not_installed("missRanger")
+
+  # Without a threshold an all-NA column is an error; with one it is simply
+  # the most extreme case of the same rule and is carried through.
+  df <- toy_df()
+  df$dead <- NA_real_
+
+  expect_error(
+    missranger_sweep_mtry(df, exclude = c("id", "time"), num.trees = 20,
+                          maxiter = 2, parallel = FALSE),
+    "entirely NA: dead"
+  )
+
+  res <- suppressMessages(missranger_sweep_mtry(
+    df, exclude = c("id", "time"), max_pct_missing = 0.9,
+    num.trees = 50, maxiter = 2, seed = 1, parallel = FALSE
+  ))
+  expect_equal(res$excluded_high_missing, "dead")
+  expect_true(all(is.na(res$imp_data$dead)))
 })

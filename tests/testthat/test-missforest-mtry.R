@@ -163,7 +163,7 @@ test_that("sweep imputes everything, preserves excluded columns and column order
     ntree = 20, maxiter = 2, seed = 42, parallel = FALSE
   )
 
-  expect_named(res, c("imp_data", "oob_error", "best"))
+  expect_named(res, c("imp_data", "oob_error", "best", "excluded_high_missing"))
 
   # Original column order restored, not grouped by winning mtry.
   expect_equal(names(res$imp_data), names(df))
@@ -305,4 +305,74 @@ test_that("unknown `exclude` names are ignored rather than erroring", {
     ntree = 20, maxiter = 2, seed = 5, parallel = FALSE
   )
   expect_equal(names(res$imp_data), names(toy_df()))
+})
+
+# --- max_pct_missing --------------------------------------------------------
+
+test_that("max_pct_missing holds out sparse columns and carries them through", {
+  skip_if_not_installed("missForest")
+
+  df <- toy_df()
+  # Observed in 2 of 12 rows: imputing it would manufacture 10 values.
+  df$sparse <- c(1, 2, rep(NA, 10))
+
+  res <- NULL
+  expect_message(
+    res <- missforest_sweep_mtry(
+      df, exclude = c("id", "time"), max_pct_missing = 0.8,
+      ntree = 20, maxiter = 2, seed = 1, parallel = FALSE
+    ),
+    "sparse"
+  )
+
+  expect_equal(res$excluded_high_missing, "sparse")
+  # Held out, not dropped: still present, still unimputed.
+  expect_equal(names(res$imp_data), names(df))
+  expect_equal(sum(is.na(res$imp_data$sparse)), 10L)
+  expect_false("sparse" %in% res$best$column)
+  # Everything else is still imputed.
+  expect_false(anyNA(res$imp_data[, c("a", "b", "c")]))
+})
+
+test_that("holding out by threshold matches naming the column in exclude", {
+  skip_if_not_installed("missForest")
+
+  df <- toy_df()
+  df$sparse <- c(1, 2, rep(NA, 10))
+  args <- list(df, ntree = 20, maxiter = 2, seed = 99, parallel = FALSE)
+
+  by_name <- do.call(missforest_sweep_mtry,
+    c(args, list(exclude = c("id", "time", "sparse"))))
+  by_rule <- suppressMessages(do.call(missforest_sweep_mtry,
+    c(args, list(exclude = c("id", "time"), max_pct_missing = 0.8))))
+
+  # The rule reproduces the hardcoded decision, but derives it from the data.
+  expect_equal(by_name$imp_data, by_rule$imp_data)
+  expect_equal(by_name$best, by_rule$best)
+  expect_equal(by_name$excluded_high_missing, character(0))
+  expect_equal(by_rule$excluded_high_missing, "sparse")
+})
+
+test_that("no threshold means every column is imputed however sparse", {
+  skip_if_not_installed("missForest")
+
+  df <- toy_df()
+  df$sparse <- c(1, 2, rep(NA, 10))
+  res <- missforest_sweep_mtry(
+    df, exclude = c("id", "time"), ntree = 20, maxiter = 2,
+    seed = 1, parallel = FALSE
+  )
+  expect_equal(res$excluded_high_missing, character(0))
+  expect_false(anyNA(res$imp_data))   # sparse got imputed
+})
+
+test_that("max_pct_missing is validated", {
+  df <- toy_df()
+  for (bad in list(0, -1, 2, "a", c(0.5, 0.6), NA_real_)) {
+    expect_error(
+      missforest_sweep_mtry(df, exclude = c("id", "time"), max_pct_missing = bad,
+                            parallel = FALSE),
+      "must be a single number in"
+    )
+  }
 })

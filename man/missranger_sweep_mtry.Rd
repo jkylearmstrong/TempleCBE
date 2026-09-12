@@ -13,6 +13,7 @@ missranger_sweep_mtry(
   maxiter = 10,
   seed = NULL,
   num.threads = 1,
+  max_pct_missing = NULL,
   parallel = TRUE
 )
 }
@@ -36,17 +37,30 @@ shorter sweep than [missforest_sweep_mtry()] performs on the same data.}
 \item{seed}{Integer seed passed to every fit in the sweep, or `NULL`
 (default) for an unseeded sweep. See Reproducibility.}
 
+\item{max_pct_missing}{Optional proportion in `(0, 1]`. Columns missing a
+greater share than this are held out of the imputation and carried
+through unimputed, and are reported in `excluded_high_missing`. `NULL`
+(the default) imputes every column regardless of how sparse it is.
+Imputing a column observed in a handful of rows manufactures values
+rather than recovering them, and nothing downstream can tell the
+difference; a threshold states that judgement as a rule that carries to
+the next data set, instead of naming the offending column inline.
+Note a threshold below `1` subsumes the all-`NA` refusal, since an
+all-`NA` column exceeds every threshold.}
+
 \item{parallel}{Whether to evaluate the sweep with [furrr::future_map()].
 Default `TRUE`. When `FALSE`, runs sequentially via [purrr::map()].}
 }
 \value{
-A list of three elements, matching [missforest_sweep_mtry()]:
+A list of four elements, matching [missforest_sweep_mtry()]:
   \describe{
     \item{`imp_data`}{A tibble of the imputed data, with `exclude` columns
       re-attached and the original column order restored.}
     \item{`oob_error`}{A tibble of every imputed column's OOB error at every
       swept `mtry`.}
     \item{`best`}{The winning row per imputed column.}
+    \item{`excluded_high_missing`}{Columns held out by `max_pct_missing`,
+      carried through unimputed. `character(0)` when none were.}
   }
 }
 \description{

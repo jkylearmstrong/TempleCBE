@@ -124,6 +124,40 @@ normalize_mtry_values <- function(mtry_values, max_mtry, note = NULL) {
 }
 
 
+#' Identify Columns Too Sparse to Impute
+#'
+#' Imputing a column observed in a handful of rows does not recover
+#' information, it manufactures it: a column 93% missing is 7% data and 93%
+#' model output, and everything downstream treats the two identically.
+#'
+#' Analysis code usually handles this by naming the offending column inline
+#' (`setdiff(cols, c("time", "rare_assay"))`). That is a correct decision
+#' recorded in the least portable possible way -- it silently does nothing on
+#' the next data set, where the sparse column has a different name. Expressing
+#' it as a proportion carries the decision across data sets; the excluded
+#' columns are reported back so the choice stays auditable.
+#'
+#' Columns named here are *not* dropped: they are carried through unimputed,
+#' exactly as holding them out via `exclude` would.
+#'
+#' @param data A data frame, after `exclude` has been applied.
+#' @param max_pct_missing Proportion in `(0, 1]`, or `NULL` for no threshold.
+#' @return A character vector of column names exceeding the threshold.
+#' @keywords internal
+#' @noRd
+high_missing_columns <- function(data, max_pct_missing) {
+  if (is.null(max_pct_missing)) {
+    return(character())
+  }
+  if (!is.numeric(max_pct_missing) || length(max_pct_missing) != 1L ||
+      is.na(max_pct_missing) || max_pct_missing <= 0 || max_pct_missing > 1) {
+    stop("`max_pct_missing` must be a single number in (0, 1].", call. = FALSE)
+  }
+  pct <- vapply(data, function(z) mean(is.na(z)), numeric(1))
+  names(data)[pct > max_pct_missing]
+}
+
+
 #' Keep the Lowest-Error `mtry` For Each Column
 #'
 #' @param oob_error A tibble with `column`, `error`, and `mtry`.
