@@ -68,3 +68,29 @@ test_that("scan_data_io flags a write target that doesn't exist yet as a missing
   expect_equal(nrow(res$missing_write_dirs), 1)
   expect_equal(basename(res$missing_write_dirs$dir_path), "deliverables")
 })
+
+test_that("scan_data_io resolves paths containing repeated separators", {
+  # macOS sets TMPDIR with a trailing slash, so tempdir() there looks like
+  # `.../T//RtmpXXXX`. A doubled separator must not truncate the parsed path.
+  local_sequential_search()
+  tmp_dir <- paste0(tempdir(), "//test_scan_data_io_double_sep")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  data_dir <- file.path(tmp_dir, "data")
+  dir.create(data_dir, showWarnings = FALSE, recursive = TRUE)
+  writeLines("x", file.path(data_dir, "written.xlsx"))
+  writeLines("x", file.path(data_dir, "input.xlsx"))
+
+  writeLines(c(
+    sprintf("writexl::write_xlsx(df, '%s')", file.path(data_dir, "written.xlsx")),
+    sprintf("df <- readxl::read_excel('%s')", file.path(data_dir, "input.xlsx"))
+  ), file.path(tmp_dir, "script.R"))
+
+  res <- scan_data_io(tmp_dir, project_root = tmp_dir, ext = "xlsx")
+  files <- res$files
+
+  expect_equal(files$file_class[files$file_name == "written.xlsx"], "write_output")
+  expect_equal(files$file_class[files$file_name == "input.xlsx"], "workflow_input")
+  expect_equal(nrow(res$missing_write_dirs), 0)
+})
