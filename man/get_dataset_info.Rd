@@ -20,7 +20,8 @@ A tibble with one row per column of \code{df}: \code{dataset_name},
 \description{
 Per-column metadata: class, variable label (if set via \pkg{labelled}),
 mean/sd for numeric columns, most-frequent value, distinct-value count,
-and missingness.
+and missingness. \code{survival::Surv} columns are summarized from their
+underlying time/status matrix rather than unrolled as plain numerics.
 }
 \examples{
 get_dataset_info(mtcars)
