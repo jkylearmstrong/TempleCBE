@@ -48,6 +48,7 @@ Suggests:
     missForest,
     missRanger,
     openxlsx,
+    pkgload,
     quarto,
     rmarkdown,
     rsample (>= 1.0.0),
