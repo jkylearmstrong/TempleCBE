@@ -46,6 +46,7 @@ Suggests:
     glmnet (>= 4.1.0),
     knitr,
     missForest,
+    missRanger,
     openxlsx,
     quarto,
     rmarkdown,

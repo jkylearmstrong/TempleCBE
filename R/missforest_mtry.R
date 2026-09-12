@@ -1,41 +1,3 @@
-#' Refuse Columns That Are Entirely `NA`
-#'
-#' `missForest()` silently *drops* any column with no observed values
-#' ("removed variable(s) N due to the missingness of all entries"), so its
-#' `OOBerror` vector comes back shorter than `ncol(data)` and the per-column
-#' error table cannot be built -- surfacing as an opaque tibble recycling
-#' error far from the cause.
-#'
-#' Refusing is also the right answer on the merits. An all-`NA` column carries
-#' no information, yet still counts toward `ncol()` and therefore toward both
-#' the `mtry` range and the predictor pool at every split. It passes any
-#' name-based schema check, so a batch that silently lost a column would sweep
-#' the same nominal `mtry` grid over a strictly weaker predictor set and
-#' report success. Dropping it automatically is not available either: the
-#' chosen `mtry` values are indices into a predictor set, so quietly shrinking
-#' that set changes what they mean.
-#'
-#' @param data A data frame to check.
-#' @param fn Calling function name, used in the error message.
-#' @return Invisibly `NULL`; called for its side effect of erroring.
-#' @keywords internal
-#' @noRd
-check_no_all_na_columns <- function(data, fn) {
-  all_na <- names(data)[vapply(data, function(x) all(is.na(x)), logical(1))]
-  if (length(all_na) == 0L) {
-    return(invisible(NULL))
-  }
-  stop(
-    "`", fn, "()` cannot impute: column(s) entirely NA: ",
-    paste(all_na, collapse = ", "),
-    ". `missForest()` drops all-NA columns, which breaks the per-column error ",
-    "table and would silently shrink the predictor set the swept `mtry` ",
-    "values index into. Drop or fill these columns before imputing.",
-    call. = FALSE
-  )
-}
-
-
 #' Run `missForest` at a Single `mtry` and Report Variablewise OOB Error
 #'
 #' Fits [missForest::missForest()] once at a given `mtry`, returning both the
@@ -160,26 +122,8 @@ missforest_oob_by_mtry <- function(data, mtry, ntree = 100, maxiter = 10) {
 #' @seealso [missforest_sweep_mtry()]
 #' @export
 missforest_impute_by_mtry <- function(sweep, best) {
-  if (!is.data.frame(best) || !all(c("column", "mtry") %in% names(best))) {
-    stop("`best` must be a data frame with `column` and `mtry` columns.", call. = FALSE)
-  }
-
-  winning_mtry <- unique(best$mtry)
-
-  pieces <- purrr::map(winning_mtry, function(m) {
-    key <- as.character(m)
-    run <- sweep[[key]]
-    if (is.null(run)) {
-      stop(
-        "No sweep result named '", key, "'. `sweep` must be named by `mtry`.",
-        call. = FALSE
-      )
-    }
-    cols <- best$column[best$mtry == m]
-    dplyr::select(tibble::as_tibble(run[["ximp"]]), dplyr::all_of(cols))
-  })
-
-  purrr::list_cbind(pieces)
+  # Engine-agnostic; missranger_sweep_mtry() assembles the same way.
+  assemble_by_best_mtry(sweep, best)
 }
 
 
@@ -287,18 +231,8 @@ missforest_sweep_mtry <- function(data,
   # dispatching every `mtry` to the parallel backend.
   check_no_all_na_columns(dt, "missforest_sweep_mtry")
 
-  if (is.null(mtry_values)) {
-    mtry_values <- seq_len(ncol(dt) - 1L)
-  }
-  mtry_values <- as.integer(mtry_values)
-  if (anyNA(mtry_values) || any(mtry_values < 1) || any(mtry_values >= ncol(dt))) {
-    stop(
-      "`mtry_values` must be integers in 1:(ncol - 1) = 1:", ncol(dt) - 1L, ".",
-      call. = FALSE
-    )
-  }
   # Named by mtry so results are looked up by name, never by position.
-  names(mtry_values) <- as.character(mtry_values)
+  mtry_values <- normalize_mtry_values(mtry_values, ncol(dt) - 1L)
 
   fit_one <- function(m) {
     missforest_oob_by_mtry(dt, mtry = m, ntree = ntree, maxiter = maxiter)
@@ -323,11 +257,7 @@ missforest_sweep_mtry <- function(data,
 
   oob_error <- purrr::list_rbind(purrr::map(sweep, "oob_error"))
 
-  best <- oob_error |>
-    dplyr::group_by(.data$column) |>
-    dplyr::filter(.data$error == min(.data$error, na.rm = TRUE)) |>
-    dplyr::filter(dplyr::row_number() == 1L) |>
-    dplyr::ungroup()
+  best <- best_mtry_per_column(oob_error)
 
   imputed <- missforest_impute_by_mtry(sweep, best)
 
