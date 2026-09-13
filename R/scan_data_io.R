@@ -105,7 +105,8 @@ scan_data_io <- function(code_path,
                           project_root = code_path,
                           ext = "xlsx",
                           strong_read_patterns = c("read_workbook", "read_excel_multiple_headers"),
-                          include_comments_write = FALSE) {
+                          include_comments_write = FALSE,
+                          max_depth = Inf) {
   stopifnot(dir.exists(code_path), dir.exists(project_root))
 
   ws <- write_search(code_path, include_comments = include_comments_write)
@@ -256,8 +257,18 @@ scan_data_io <- function(code_path,
     )
   }
 
-  all_files <- list.files(project_root, pattern = paste0("\\.", ext, "$"), full.names = TRUE, recursive = TRUE)
-  all_files_tbl <- .file_meta_fs(all_files) |>
+  # Use fs::dir_ls which is faster and more robust; allow optional max_depth
+  if (missing(max_depth)) max_depth <- Inf
+  if (is.finite(max_depth)) {
+    all_files <- fs::dir_ls(path = project_root, recurse = TRUE, glob = paste0("**/*.", ext))
+    # Filter by depth: count separators relative to project_root
+    rel <- substr(all_files, nchar(normalizePath(project_root, winslash = "/", mustWork = FALSE)) + 2L, nchar(all_files))
+    depth <- ifelse(nchar(rel) == 0, 0, stringr::str_count(rel, "/") + 1)
+    all_files <- all_files[depth <= max_depth]
+  } else {
+    all_files <- fs::dir_ls(path = project_root, recurse = TRUE, glob = paste0("**/*.", ext))
+  }
+  all_files_tbl <- .file_meta_fs(as.character(all_files)) |>
     dplyr::mutate(path = .normalize_safely(path))
 
   inputs_heur <- inputs |>

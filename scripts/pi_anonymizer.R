@@ -28,7 +28,7 @@ generate_pi_names <- function(n = 1,
   
   if (format == "token") {
     # Generate token sequence: PI_i, PI_j, PI_k...
-    letters_seq <- letters[9:26] # 'i' through 'z'
+    letters_seq <- letters
     if (n <= length(letters_seq)) {
       tokens <- paste0(prefix, letters_seq[seq_len(n)])
     } else {

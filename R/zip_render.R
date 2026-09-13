@@ -9,6 +9,8 @@
 #' @param formats Character vector of output formats (e.g. \code{c("html","pdf","docx")} or \code{"all"}).
 #' @param resources Optional character vector of extra files to include, absolute or project-relative.
 #' @param detect \code{"heuristic"} (default; scans the \code{.qmd} for likely file paths) or \code{"none"}.
+#' @details
+#' Heuristic detection inspects quoted file paths and here::here() calls in the document. For YAML front-matter resources, pass them explicitly via the `resources` argument or include them in the document's YAML; this function will attempt to parse YAML when present to pick up top-level resource lists.
 #' @param build_dir Staging directory; defaults to a fresh temp directory.
 #' @param zip_name Name of the resulting zip; defaults to \verb{<input-stem>.zip}.
 #' @param copy_back_dir Where to copy the finished zip; defaults to \code{dirname(input)}.
@@ -55,6 +57,21 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   detected <- character(0)
   if (detect == "heuristic") {
     qmd_lines <- readLines(input, warn = FALSE, encoding = "UTF-8")
+
+    # Parse YAML front-matter if present (--- at top)
+    if (length(qmd_lines) > 0 && grepl("^---$", qmd_lines[1])) {
+      end_yaml <- which(qmd_lines == "---")
+      if (length(end_yaml) >= 2) {
+        yaml_block <- paste(qmd_lines[2:(end_yaml[2]-1)], collapse = "\n")
+        if (requireNamespace("yaml", quietly = TRUE)) {
+          y <- tryCatch(yaml::read_yaml(text = yaml_block), error = function(e) NULL)
+          if (!is.null(y) && !is.null(y$resources)) {
+            detected <- c(detected, unlist(y$resources))
+          }
+        }
+      }
+    }
+
     patt_files <- "\"([^\"]+\\.(rds|csv|tsv|xlsx|xls|png|jpg|jpeg|svg|gif|bib|tex|css|csl))\""
     cand1 <- unique(gsub("^\"|\"$", "", unlist(regmatches(qmd_lines, gregexpr(patt_files, qmd_lines, perl = TRUE))), perl = TRUE))
 
@@ -70,9 +87,9 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
       }
     }
 
-    cands <- unique(c(cand1, cand2))
+    cands <- unique(c(detected, cand1, cand2))
     cands <- cands[nzchar(cands)]
-    detected <- cands[file.exists(file.path(input_dir, cands)) | file.exists(cands)]
+    detected <- unique(cands[file.exists(file.path(input_dir, cands)) | file.exists(cands)])
     if (length(detected)) vcat("Heuristic detected resources:\n -", paste(detected, collapse = "\n - "))
   }
 
