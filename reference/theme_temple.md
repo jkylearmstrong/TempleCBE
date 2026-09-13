@@ -17,9 +17,9 @@ theme_temple(base_size = 11, base_family = "")
 
 - base_family:
 
-  Base font family. The brand's typeface is `"Source Sans 3"`; the
-  default `""` uses the device font, because naming a font that isn't
-  installed makes devices warn.
+  Base font family. The brand's body typeface is `"Faustina"` (headings
+  use `"Roboto"`); the default `""` uses the device font, because naming
+  a font that isn't installed makes devices warn.
 
 ## Value
 

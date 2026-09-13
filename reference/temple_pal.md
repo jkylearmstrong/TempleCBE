@@ -26,23 +26,23 @@ A function taking `n` and returning `n` hex codes.
 
 - `"main"`:
 
-  Qualitative: cherry, dark blue, ochre, taupe, black, lime, geranium.
-  At most 7 colors.
+  Qualitative: cherry, Night Owl, Owl's Eye, Founder's Garden, Upward
+  Momentum, Diamond Acres, black. At most 7 colors.
 
 - `"diverging"`:
 
-  Dark blue through white to cherry, for values centered at zero
+  Night Owl through white to cherry, for values centered at zero
   (correlations, loadings, differences).
 
 - `"sequential"`:
 
-  Eggshell to cherry.
+  Book Nook to cherry.
 
 ## Examples
 
 ``` r
 temple_pal()(3)
-#> [1] "#a41e35" "#21287e" "#fdb913"
+#> [1] "#a41e35" "#005a70" "#f3aa00"
 temple_pal("diverging")(5)
-#> [1] "#21287E" "#9093BE" "#FFFFFF" "#D18E9A" "#A41E35"
+#> [1] "#005A70" "#7FACB7" "#FFFFFF" "#D18E9A" "#A41E35"
 ```

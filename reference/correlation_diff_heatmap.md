@@ -6,7 +6,7 @@ as a heatmap (variable by variable), using the same visual language as
 [`pca_loading_diff_heatmap`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md):
 a diverging fill scale centered at zero, so variable pairs with little
 change are white and larger correlation changes in either direction
-stand out in Temple dark blue or cherry.
+stand out in Temple Night Owl or cherry.
 
 ## Usage
 

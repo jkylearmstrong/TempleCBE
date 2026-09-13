@@ -29,7 +29,7 @@
   [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md),
   [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md),
   [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md))
-  run dark blue-white-cherry instead of blue-white-red;
+  run Night Owl-white-cherry instead of blue-white-red;
   [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
   counts,
   [`plot_features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md),
@@ -42,6 +42,16 @@
   and
   [`volcano_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.md)
   use Temple colors. Only colors change.
+- The palette follows Temple’s current brand
+  (<https://liberalarts.temple.edu/marcom/logos-and-brand>), matching
+  quarto_temple_brand: cherry, white, and black (`#000000`); Clear Skies
+  and Book Nook; formal accents `academic-gold`, `diamond-acres`,
+  `founders-garden`, `night-owl`; casual accents `owls-eye`,
+  `conwell-blue`, `upward-momentum`, `cherry-blossom`. The earlier names
+  (`taupe`, `icy-blue`, `lime`, `eggshell`, `ochre`, `geranium`,
+  `dark-blue`) are gone. The `"main"` palette is cherry, Night Owl,
+  Owl’s Eye, Founder’s Garden, Upward Momentum, Diamond Acres, black;
+  `"sequential"` runs Book Nook to cherry.
 
 ### `zip_render()` fixes
 
