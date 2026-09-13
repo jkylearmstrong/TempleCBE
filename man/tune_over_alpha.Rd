@@ -27,8 +27,9 @@ tune_over_alpha(
 \item{alphas}{Optional numeric vector of `alpha` values to use instead of
 the generated grid; in formula mode, one per formula.}
 
-\item{formulas}{Optional character vector of `+`-separated feature sets,
-each fit as a separate model (see [glmnet_IBS()]'s `formula`).}
+\item{formulas}{Optional character vector of `+`-separated feature sets, or
+a list of one-sided formulas, each fit as a separate model (see
+[glmnet_IBS()]'s `formula`).}
 
 \item{progress}{Show a progress bar.}
 }

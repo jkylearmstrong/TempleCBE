@@ -94,3 +94,22 @@ test_that("scan_data_io resolves paths containing repeated separators", {
   expect_equal(files$file_class[files$file_name == "input.xlsx"], "workflow_input")
   expect_equal(nrow(res$missing_write_dirs), 0)
 })
+
+test_that("scan_data_io applies max_depth with a relative project_root", {
+  local_sequential_search()
+  tmp_dir <- withr::local_tempdir()
+  dir.create(file.path(tmp_dir, "a", "b"), recursive = TRUE)
+  writeLines("x", file.path(tmp_dir, "top.xlsx"))
+  writeLines("x", file.path(tmp_dir, "a", "b", "deep.xlsx"))
+  writeLines(
+    sprintf("writexl::write_xlsx(df, '%s')", normalizePath(file.path(tmp_dir, "top.xlsx"), winslash = "/")),
+    file.path(tmp_dir, "script.R")
+  )
+  withr::local_dir(dirname(tmp_dir))
+
+  shallow <- scan_data_io(basename(tmp_dir), max_depth = 1)
+  expect_setequal(unique(shallow$files$file_name), "top.xlsx")
+
+  everything <- scan_data_io(basename(tmp_dir))
+  expect_setequal(unique(everything$files$file_name), c("top.xlsx", "deep.xlsx"))
+})

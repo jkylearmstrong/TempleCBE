@@ -230,3 +230,18 @@ test_that("tune_over_alpha fits one model per formula and records it", {
   expect_error(tune_over_alpha(fx$split, formulas = "x1 + x2", alphas = c(0, 1)), "one value per")
   expect_error(tune_over_alpha(fx$split, formulas = "x1 + x2", formula = "x1"), "not both")
 })
+
+test_that("tune_over_alpha accepts formula objects in formulas", {
+  skip_if_no_ibs_deps()
+  skip_if_not_installed("furrr")
+  fx <- ibs_fixture()
+  runs <- tune_over_alpha(
+    fx$split, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+    formulas = list(~ x1 + x2, ~ x2 + x3), alphas = c(0, 0.5)
+  )
+  results <- lapply(runs, `[[`, "result")
+  expect_equal(unique(results[[1]]$formula), "x1 + x2")
+  expect_setequal(results[[1]]$term, c("x1", "x2"))
+  expect_setequal(results[[2]]$term, c("x2", "x3"))
+})

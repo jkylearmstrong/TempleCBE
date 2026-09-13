@@ -90,20 +90,28 @@ file_meta_fs <- function(paths) {
   )
 }
 
-# An .xlsx file name: dots and spaces allowed; no path separators, line
-# breaks, quotes, backticks, parentheses, commas, or `=`, so a match stops at
-# the surrounding code instead of running back over it.
-xlsx_name_re <- "[^/\\\\\\n'\"`(),=]+\\.xlsx\\b"
+# An .xlsx file name. Right after a quote or path separator it may hold spaces
+# and punctuation (`'table (1).xlsx'`); anywhere else only letters, digits,
+# `_`, `.`, and `-`, so an unquoted mention doesn't sweep up the code before
+# it. A name followed by `(` is a function call, like `openxlsx::write.xlsx()`.
+xlsx_name_re <- paste0(
+  "(?:(?<=['\"`/\\\\])[^/\\\\\\n'\"`]+|\\b[\\w.-]+)",
+  "\\.xlsx\\b(?!\\s*\\()"
+)
 
 #' Extract Full `.xlsx` Paths From Text
 #'
 #' Finds the first full Windows or POSIX path ending in an `.xlsx` file name
-#' in each string, and splits it into folder and file name.
+#' in each string, and splits it into folder and file name. Separators may
+#' repeat (`C:/data//out`, or `C:\\\\data` as written in R code). Relative
+#' paths such as `output/t1.xlsx` are not full paths and give `NA`.
 #'
 #' @param x Character vector, e.g. code lines.
 #' @param xlsx_token_re Regular expression for the file-name part. The default
-#'   matches a name ending in `.xlsx` that may contain dots and spaces but not
-#'   path separators, quotes, backticks, parentheses, commas, or `=`.
+#'   matches a name ending in `.xlsx`: right after a quote or path separator it
+#'   may contain spaces and punctuation other than quotes and separators;
+#'   elsewhere only letters, digits, `_`, `.`, and `-`. Names followed by `(`
+#'   (function calls such as `read.xlsx()`) are skipped.
 #' @return A tibble with one row per element of `x`: `dir`, `file`, and
 #'   `full_path` (`NA` where no path was found).
 #' @seealso [extract_all_xlsx_tokens()]
@@ -116,7 +124,12 @@ extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
   token_re <- stringr::str_remove(xlsx_token_re, "^\\(\\?<!\\[/\\\\\\\\\\]\\)")
   # Group 1: directory (optional Windows drive + one or more segments)
   # Group 2: file name ending in .xlsx
-  re <- paste0("((?:[A-Za-z]:)?(?:[/\\\\][^/\\\\\\n]+)+)[/\\\\](", token_re, ")")
+  # The path must not start mid-word, so `output/tables/t1.xlsx` doesn't match
+  # from its first separator as `/tables`.
+  re <- paste0(
+    "(?<![\\w.~-])((?:[A-Za-z]:)?(?:[/\\\\]+[^/\\\\\\n]+)+)[/\\\\]+(",
+    token_re, ")"
+  )
   m <- stringr::str_match(x, re)
   dir <- m[, 2]
   file <- m[, 3]
