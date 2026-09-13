@@ -31,11 +31,14 @@ glmnet_IBS(
 
 \item{recipe}{An unprepped [recipes::recipe()].}
 
-\item{feature_names}{Character vector of baked predictor column names.}
+\item{feature_names}{Character vector of baked predictor column names, or a
+function that takes the baked analysis set and returns them -- for
+recipes whose output columns vary by fold, such as
+`step_pca(threshold = )`.}
 
 \item{time_data}{A data frame of the time grid to evaluate on, with columns
 `start_col` and `stop_col` (typically the distinct start/stop pairs of the
-full data).}
+full data). A stop time must not appear with more than one start time.}
 
 \item{formula}{Optional character string of `+`-separated feature names
 (or a one-sided formula) to restrict the model to a subset of

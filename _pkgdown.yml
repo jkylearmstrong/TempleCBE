@@ -41,6 +41,16 @@ reference:
       - get_model_parameters
       - fit_n_rank
 
+  - title: Missing Data Imputation
+    desc: Per-column mtry sweeps for missForest and missRanger imputation.
+    contents:
+      - missforest_sweep_mtry
+      - missforest_oob_by_mtry
+      - missforest_impute_by_mtry
+      - missranger_sweep_mtry
+      - missranger_oob_by_mtry
+      - missranger_max_mtry
+
   - title: Statistical Testing & EDA
     desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
     contents:
@@ -94,6 +104,11 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
+      - render_me
+      - zip_reports
+      - scan_data_io
+      - read_search
+      - write_search
 
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
@@ -106,6 +121,11 @@ reference:
       - find_code
       - sd.error
       - profvis_summary
+      - normalize_safely
+      - parse_here_call_vec
+      - file_meta_fs
+      - extract_win_posix_paths
+      - extract_all_xlsx_tokens
       - install.packages.no_lock
       - "%like%"
       - "%ilike%"

@@ -65,6 +65,7 @@ Suggests:
     workflows,
     workflowsets (>= 1.0.0),
     writexl,
+    yaml,
     yardstick (>= 1.2.0),
     zip
 VignetteBuilder: knitr

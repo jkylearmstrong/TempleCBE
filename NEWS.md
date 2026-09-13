@@ -4,7 +4,8 @@
 
 * **Breaking change.** `glmnet_IBS()` is now a port of the penalized-Cox tuning code it was originally meant to replace, generalized so no column names are hard-coded. The previous version scored plain `time`/`status` data with its own IPCW Brier score, treated every start/stop row as an independent subject, used every numeric column (including identifiers) as a predictor, and returned only `IBS`, `lambda`, and `alpha` -- none of which fit repeated-measures data. The new signature takes an `rsplit`, an unprepped `recipe` (prepped inside the fold), `feature_names`, a `time_data` grid, and `id_col`/`start_col`/`stop_col`/`status_col`, and returns `IBS`, `lambda`, `term`, `estimate`, and `alpha` (one row per coefficient at `lambda.min`), with `IBS = failure_ibs` (default 2) when `cv.glmnet()` cannot fit.
 * `censoring_weights = "none"` (default) reproduces the ported code: interval rows scored with censoring weight 1. `censoring_weights = "ipcw"` scores one row per subject with inverse-probability-of-censoring weights (Graf et al., 1999) from the analysis-set censoring distribution. The two give different numbers; compare within one setting.
-* New `tune_over_alpha()` and `summarize_tune_results()` tune `glmnet_IBS()` over an `alpha` grid for one split and for every split of a resample. Neither calls `future::plan()`.
+* New `tune_over_alpha()` and `summarize_tune_results()` tune `glmnet_IBS()` over an `alpha` grid for one split and for every split of a resample. Neither calls `future::plan()`. With `formulas`, they instead fit one model per candidate feature set, each with its own (given or randomly drawn) `alpha`, and add a `formula` column.
+* `glmnet_IBS()` accepts `feature_names` as a function of the baked analysis set, for recipes whose output columns vary by fold (e.g. `step_pca(threshold = )`).
 * Bugs fixed relative to the ported code: the `alpha` grid hard-coded 6 fixed values, so it produced `num_alpha_values + 1` values when `num_fixed = 6` and overwrote fixed values otherwise -- it now has exactly `num_alpha_values`; the outer map over splits drew random `alpha` values in workers without a seed, so grids were not reproducible -- both maps now run with `furrr_options(seed = TRUE)`; filling a missing relative risk looped forever for a subject with no known value -- it now errors naming the subject.
 * The internal `ipcw_brier_score()`/`integrate_brier_score()` helpers of the old implementation are removed; scoring now goes through `yardstick::brier_survival_integrated()`.
 
@@ -14,8 +15,17 @@
 * `km_summary_to_prism()` expands a Kaplan-Meier summary-by-time table into a GraphPad Prism survival table. Fixed while porting: `strata_levels` was documented but ignored, and `validate_totals` failed when `strata_levels` was set.
 * `convert_pdf_to_docx()`, `convert_pdfs_to_docx()`, `check_docx_toolchain()`, `find_python()`, and `find_soffice()` convert PDFs to DOCX via `pdf2docx`, LibreOffice, or Word COM (Windows), with verified backend discovery. `convert_pdf_to_docx` fits `zip_reports(docx_from_pdf = )`. Pinned Python requirements ship in `inst/python/requirements.txt`. Interpreters are configured with `options(templecbe.python)`/`TEMPLECBE_PYTHON` and `options(templecbe.soffice)`/`TEMPLECBE_SOFFICE`. The Word COM subprocess now runs the calling session's own `Rscript` rather than the first one on `PATH`.
 * `run_sas_script()` runs a SAS program in batch mode with its log and listing in separate folders; `find_sas()` locates the executable (`options(templecbe.sas)`, `SAS_EXE`, `PATH`, or the default install locations).
+* `normalize_safely()`, `parse_here_call_vec()`, `file_meta_fs()`, `extract_win_posix_paths()`, and `extract_all_xlsx_tokens()` are exported: the path helpers behind `scan_data_io()`, for code that audits file paths itself.
 * `profvis_summary()` tabulates a `profvis` profile by function: memory, memory increments, call counts, stack depth, and memory over time.
 * `parsnip`, `profvis`, `reticulate`, `tune`, `workflows`, `workflowsets`, and `yardstick` added to Suggests.
+
+## CI and packaging fixes
+
+* The "Nested Cross-Validation for Longitudinal Survival Models" vignette uses the new `glmnet_IBS()` arguments (`recipe`, `feature_names`, `time_data`, `id_col`) and shows both censoring weightings; it no longer built against 0.2.0.
+* `normalize_safely()` returns forward slashes on every platform, consistent with `scan_data_io()`.
+* `scan_data_io()` documents `max_depth`, `zip_render()`'s documentation is regenerated to match its code, and `yaml` (used by `zip_render()`) is declared in Suggests. These were the two `R CMD check` warnings on `master`.
+* The pkgdown reference index lists every exported topic, adding the `mtry` sweeps, `render_me()`, `read_search()`, `write_search()`, `scan_data_io()`, and `zip_reports()`.
+* The Docker image installs `libuv1-dev`, which `fs` needs at load time.
 
 # TempleCBE 0.1.8
 

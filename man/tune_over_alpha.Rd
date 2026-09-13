@@ -10,6 +10,7 @@ tune_over_alpha(
   num_alpha_values = 10,
   num_fixed = 6,
   alphas = NULL,
+  formulas = NULL,
   progress = FALSE
 )
 }
@@ -24,26 +25,36 @@ tune_over_alpha(
 \item{num_fixed}{Number of evenly spaced values from 0 to 1 in the grid.}
 
 \item{alphas}{Optional numeric vector of `alpha` values to use instead of
-the generated grid.}
+the generated grid; in formula mode, one per formula.}
+
+\item{formulas}{Optional character vector of `+`-separated feature sets,
+each fit as a separate model (see [glmnet_IBS()]'s `formula`).}
 
 \item{progress}{Show a progress bar.}
 }
 \value{
-A list named by `alpha`, one element per value, each the output of
+A list named by `alpha`, one element per fit, each the output of
   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
   `NULL`) and `error` (`NULL`, or the condition).
 }
 \description{
 Runs [glmnet_IBS()] on one resampling split for each value in an `alpha`
-grid, in parallel via [furrr::future_map()]. Set a [future::plan()] first
-to run in parallel; this function never sets one.
+grid, or for each of a set of candidate formulas, in parallel via
+[furrr::future_map()]. Set a [future::plan()] first to run in parallel;
+this function never sets one.
 }
 \details{
-By default the grid is `num_fixed` evenly spaced values from 0 to 1, plus
-`num_alpha_values - num_fixed` values drawn uniformly at random, one per gap
-between consecutive fixed values (cycling through the gaps if there are more
-random draws than gaps). The draws use the R session's random number stream,
-so call [set.seed()] first for a reproducible grid. Model fits run with
+**Grid mode** (the default). The grid is `num_fixed` evenly spaced values
+from 0 to 1, plus `num_alpha_values - num_fixed` values drawn uniformly at
+random, one per gap between consecutive fixed values (cycling through the
+gaps if there are more random draws than gaps).
+
+**Formula mode** (`formulas` given). One fit per formula, each with its own
+`alpha`: the matching element of `alphas`, or a value drawn uniformly from
+0 to 1 when `alphas` is `NULL`. Each result gains a `formula` column.
+
+Random draws use the R session's random number stream, so call
+[set.seed()] first for reproducible values. Model fits run with
 `furrr_options(seed = TRUE)`, so they are reproducible too.
 }
 \seealso{

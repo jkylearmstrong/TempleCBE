@@ -44,10 +44,13 @@
 #' @param object An `rsplit` (e.g. one element of `rsample` resamples).
 #' @param alpha Elastic net mixing parameter: 1 is lasso, 0 is ridge.
 #' @param recipe An unprepped [recipes::recipe()].
-#' @param feature_names Character vector of baked predictor column names.
+#' @param feature_names Character vector of baked predictor column names, or a
+#'   function that takes the baked analysis set and returns them -- for
+#'   recipes whose output columns vary by fold, such as
+#'   `step_pca(threshold = )`.
 #' @param time_data A data frame of the time grid to evaluate on, with columns
 #'   `start_col` and `stop_col` (typically the distinct start/stop pairs of the
-#'   full data).
+#'   full data). A stop time must not appear with more than one start time.
 #' @param formula Optional character string of `+`-separated feature names
 #'   (or a one-sided formula) to restrict the model to a subset of
 #'   `feature_names`. Defaults to all of them.
@@ -125,14 +128,6 @@ glmnet_IBS <- function(object,
     stop("`time_data` is missing column(s): ", paste(missing_time_cols, collapse = ", "), call. = FALSE)
   }
 
-  if (is.null(formula)) {
-    formula <- paste0(feature_names, collapse = " + ")
-  } else if (inherits(formula, "formula")) {
-    formula <- paste(deparse(formula[[length(formula)]]), collapse = " ")
-  }
-  selected <- trimws(strsplit(paste0(formula, collapse = " + "), "\\+")[[1]])
-  selected <- intersect(selected, feature_names)
-
   train_raw <- rsample::analysis(object)
   test_raw <- rsample::assessment(object)
   prep_data <- if (prep_on == "baseline") {
@@ -148,6 +143,17 @@ glmnet_IBS <- function(object,
     stop("The baked recipe output is missing column(s): ", paste(missing_keys, collapse = ", "),
          ". Keep them in the recipe with an \"id variable\" role.", call. = FALSE)
   }
+
+  if (is.function(feature_names)) {
+    feature_names <- feature_names(train)
+  }
+  if (is.null(formula)) {
+    formula <- paste0(feature_names, collapse = " + ")
+  } else if (inherits(formula, "formula")) {
+    formula <- paste(deparse(formula[[length(formula)]]), collapse = " ")
+  }
+  selected <- trimws(strsplit(paste0(formula, collapse = " + "), "\\+")[[1]])
+  selected <- intersect(selected, feature_names)
 
   x_cols <- intersect(colnames(train), selected)
   x_train <- as.matrix(train[, x_cols, drop = FALSE])
@@ -239,15 +245,22 @@ glmnet_IBS <- function(object,
 #' Tune a Penalized Cox Model Over a Grid of `alpha` Values
 #'
 #' Runs [glmnet_IBS()] on one resampling split for each value in an `alpha`
-#' grid, in parallel via [furrr::future_map()]. Set a [future::plan()] first
-#' to run in parallel; this function never sets one.
+#' grid, or for each of a set of candidate formulas, in parallel via
+#' [furrr::future_map()]. Set a [future::plan()] first to run in parallel;
+#' this function never sets one.
 #'
 #' @details
-#' By default the grid is `num_fixed` evenly spaced values from 0 to 1, plus
-#' `num_alpha_values - num_fixed` values drawn uniformly at random, one per gap
-#' between consecutive fixed values (cycling through the gaps if there are more
-#' random draws than gaps). The draws use the R session's random number stream,
-#' so call [set.seed()] first for a reproducible grid. Model fits run with
+#' **Grid mode** (the default). The grid is `num_fixed` evenly spaced values
+#' from 0 to 1, plus `num_alpha_values - num_fixed` values drawn uniformly at
+#' random, one per gap between consecutive fixed values (cycling through the
+#' gaps if there are more random draws than gaps).
+#'
+#' **Formula mode** (`formulas` given). One fit per formula, each with its own
+#' `alpha`: the matching element of `alphas`, or a value drawn uniformly from
+#' 0 to 1 when `alphas` is `NULL`. Each result gains a `formula` column.
+#'
+#' Random draws use the R session's random number stream, so call
+#' [set.seed()] first for reproducible values. Model fits run with
 #' `furrr_options(seed = TRUE)`, so they are reproducible too.
 #'
 #' @param object An `rsplit`.
@@ -256,9 +269,11 @@ glmnet_IBS <- function(object,
 #' @param num_alpha_values Total number of `alpha` values in the grid.
 #' @param num_fixed Number of evenly spaced values from 0 to 1 in the grid.
 #' @param alphas Optional numeric vector of `alpha` values to use instead of
-#'   the generated grid.
+#'   the generated grid; in formula mode, one per formula.
+#' @param formulas Optional character vector of `+`-separated feature sets,
+#'   each fit as a separate model (see [glmnet_IBS()]'s `formula`).
 #' @param progress Show a progress bar.
-#' @return A list named by `alpha`, one element per value, each the output of
+#' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
 #'   `NULL`) and `error` (`NULL`, or the condition).
 #' @seealso [glmnet_IBS()], [summarize_tune_results()]
@@ -268,14 +283,42 @@ tune_over_alpha <- function(object,
                             num_alpha_values = 10,
                             num_fixed = 6,
                             alphas = NULL,
+                            formulas = NULL,
                             progress = FALSE) {
   require_packages("furrr", "tune_over_alpha")
+  dots <- list(...)
+
+  if (!is.null(formulas)) {
+    if ("formula" %in% names(dots)) {
+      stop("Pass either `formulas` or `formula`, not both.", call. = FALSE)
+    }
+    formulas <- as.character(formulas)
+    if (is.null(alphas)) {
+      alphas <- stats::runif(length(formulas))
+    }
+    if (length(alphas) != length(formulas)) {
+      stop("`alphas` must have one value per element of `formulas`.", call. = FALSE)
+    }
+    runs <- furrr::future_map2(
+      alphas,
+      formulas,
+      purrr::safely(function(a, f) {
+        res <- do.call(glmnet_IBS, c(list(object = object, alpha = a, formula = f), dots))
+        res$formula <- f
+        res
+      }),
+      .options = furrr::furrr_options(seed = TRUE),
+      .progress = progress
+    )
+    names(runs) <- alphas
+    return(runs)
+  }
+
   if (is.null(alphas)) {
     alphas <- alpha_grid(num_alpha_values, num_fixed)
   }
   alphas <- sort(alphas)
   names(alphas) <- alphas
-  dots <- list(...)
 
   furrr::future_map(
     alphas,
@@ -305,6 +348,7 @@ summarize_tune_results <- function(object,
                                    num_alpha_values = 10,
                                    num_fixed = 6,
                                    alphas = NULL,
+                                   formulas = NULL,
                                    progress = FALSE) {
   require_packages("furrr", "summarize_tune_results")
   dots <- list(...)
@@ -314,7 +358,7 @@ summarize_tune_results <- function(object,
     function(split) {
       runs <- do.call(tune_over_alpha, c(
         list(object = split, num_alpha_values = num_alpha_values,
-             num_fixed = num_fixed, alphas = alphas),
+             num_fixed = num_fixed, alphas = alphas, formulas = formulas),
         dots
       ))
       ok <- vapply(runs, function(run) is.null(run$error), logical(1))
