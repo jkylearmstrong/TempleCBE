@@ -19,6 +19,14 @@
 * `profvis_summary()` tabulates a `profvis` profile by function: memory, memory increments, call counts, stack depth, and memory over time.
 * `parsnip`, `profvis`, `reticulate`, `tune`, `workflows`, `workflowsets`, and `yardstick` added to Suggests.
 
+## CI and packaging fixes
+
+* The "Nested Cross-Validation for Longitudinal Survival Models" vignette uses the new `glmnet_IBS()` arguments (`recipe`, `feature_names`, `time_data`, `id_col`) and shows both censoring weightings; it no longer built against 0.2.0.
+* `normalize_safely()` returns forward slashes on every platform, consistent with `scan_data_io()`.
+* `scan_data_io()` documents `max_depth`, `zip_render()`'s documentation is regenerated to match its code, and `yaml` (used by `zip_render()`) is declared in Suggests. These were the two `R CMD check` warnings on `master`.
+* The pkgdown reference index lists every exported topic, adding the `mtry` sweeps, `render_me()`, `read_search()`, `write_search()`, `scan_data_io()`, and `zip_reports()`.
+* The Docker image installs `libuv1-dev`, which `fs` needs at load time.
+
 # TempleCBE 0.1.8
 
 ## New `mtry`-sweep imputation (#3)

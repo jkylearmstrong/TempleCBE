@@ -9,7 +9,8 @@ scan_data_io(
   project_root = code_path,
   ext = "xlsx",
   strong_read_patterns = c("read_workbook", "read_excel_multiple_headers"),
-  include_comments_write = FALSE
+  include_comments_write = FALSE,
+  max_depth = Inf
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ extension, even on a line that doesn't otherwise mention \code{ext}
 
 \item{include_comments_write}{Logical, passed through to
 \code{\link{write_search}}. Defaults to \code{FALSE}.}
+
+\item{max_depth}{Maximum folder depth below \code{project_root} to inventory
+files in (default \code{Inf}, no limit).}
 }
 \value{
 A list with:

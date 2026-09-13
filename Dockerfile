@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    libuv1-dev \
     libpoppler-cpp-dev \
     libfontconfig1-dev \
     libfreetype6-dev \

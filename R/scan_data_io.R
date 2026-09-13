@@ -26,6 +26,8 @@
 #'   \code{c("read_workbook", "read_excel_multiple_headers")}.
 #' @param include_comments_write Logical, passed through to
 #'   \code{\link{write_search}}. Defaults to \code{FALSE}.
+#' @param max_depth Maximum folder depth below \code{project_root} to inventory
+#'   files in (default \code{Inf}, no limit).
 #'
 #' @return A list with:
 #'   \item{writes}{Resolved file-write call sites.}
