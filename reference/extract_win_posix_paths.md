@@ -1,7 +1,10 @@
 # Extract Full \`.xlsx\` Paths From Text
 
 Finds the first full Windows or POSIX path ending in an \`.xlsx\` file
-name in each string, and splits it into folder and file name.
+name in each string, and splits it into folder and file name. Separators
+may repeat (\`C:/data//out\`, or \`C:\\data\` as written in R code).
+Relative paths such as \`output/t1.xlsx\` are not full paths and give
+\`NA\`.
 
 ## Usage
 
@@ -18,8 +21,11 @@ extract_win_posix_paths(x, xlsx_token_re = xlsx_name_re)
 - xlsx_token_re:
 
   Regular expression for the file-name part. The default matches a name
-  ending in \`.xlsx\` that may contain dots and spaces but not path
-  separators, quotes, backticks, parentheses, commas, or \`=\`.
+  ending in \`.xlsx\`: right after a quote or path separator it may
+  contain spaces and punctuation other than quotes and separators;
+  elsewhere only letters, digits, \`\_\`, \`.\`, and \`-\`. Names
+  followed by \`(\` (function calls such as \`read.xlsx()\`) are
+  skipped.
 
 ## Value
 

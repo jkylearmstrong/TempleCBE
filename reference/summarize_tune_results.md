@@ -46,8 +46,9 @@ summarize_tune_results(
 
 - formulas:
 
-  Optional character vector of \`+\`-separated feature sets, each fit as
-  a separate model (see \[glmnet_IBS()\]'s \`formula\`).
+  Optional character vector of \`+\`-separated feature sets, or a list
+  of one-sided formulas, each fit as a separate model (see
+  \[glmnet_IBS()\]'s \`formula\`).
 
 - progress:
 

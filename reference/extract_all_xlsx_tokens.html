@@ -55,8 +55,10 @@
 
 <dt id="arg-xlsx-token-re">xlsx_token_re<a class="anchor" aria-label="anchor" href="#arg-xlsx-token-re"></a></dt>
 <dd><p>Regular expression for the file-name part. The default
-matches a name ending in `.xlsx` that may contain dots and spaces but not
-path separators, quotes, backticks, parentheses, commas, or `=`.</p></dd>
+matches a name ending in `.xlsx`: right after a quote or path separator it
+may contain spaces and punctuation other than quotes and separators;
+elsewhere only letters, digits, `_`, `.`, and `-`. Names followed by `(`
+(function calls such as `read.xlsx()`) are skipped.</p></dd>
 
 </dl></div>
     <div class="section level2">
