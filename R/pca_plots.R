@@ -207,7 +207,7 @@ pca_percent_var_explained <- function(pca_model) {
     dplyr::mutate(variance = factor(.data$variance, levels = c("cumulative", "percent"))) |>
     ggplot2::ggplot(ggplot2::aes(x = .data$PC, y = .data$percent, fill = .data$variance, alpha = .data$variance)) +
     ggplot2::geom_bar(stat = "identity", position = "identity") +
-    ggplot2::scale_fill_manual(values = c(cumulative = temple_hex[["taupe"]], percent = temple_hex[["black"]])) +
+    ggplot2::scale_fill_manual(values = c(cumulative = temple_hex[["diamond-acres"]], percent = temple_hex[["black"]])) +
     ggplot2::scale_x_continuous(breaks = seq_len(n_comp)) +
     ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(),
                                  expand = ggplot2::expansion(mult = c(0, 0.01))) +

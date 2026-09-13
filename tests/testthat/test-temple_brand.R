@@ -1,10 +1,11 @@
 test_that("temple_colors returns the brand palette and subsets by name", {
   cols <- temple_colors()
-  expect_length(cols, 10)
+  expect_length(cols, 13)
   expect_true(all(grepl("^#[0-9a-f]{6}$", cols)))
   expect_equal(unname(temple_colors("cherry")), "#a41e35")
-  expect_named(temple_colors("dark-blue", "taupe"), c("dark-blue", "taupe"))
-  expect_error(temple_colors("maroon"), "Unknown Temple color")
+  expect_equal(unname(temple_colors("black")), "#000000")
+  expect_named(temple_colors("night-owl", "academic-gold"), c("night-owl", "academic-gold"))
+  expect_error(temple_colors("taupe"), "Unknown Temple color")
 })
 
 test_that("temple_colors matches the bundled brand.yml", {
@@ -15,11 +16,11 @@ test_that("temple_colors matches the bundled brand.yml", {
 })
 
 test_that("temple_pal generates palettes of the requested length", {
-  expect_equal(temple_pal()(2), unname(temple_colors("cherry", "dark-blue")))
+  expect_equal(temple_pal()(2), unname(temple_colors("cherry", "night-owl")))
   expect_error(temple_pal()(8), "7 colors")
 
   div <- temple_pal("diverging")(3)
-  expect_equal(toupper(div), toupper(unname(temple_colors("dark-blue", "white", "cherry"))))
+  expect_equal(toupper(div), toupper(unname(temple_colors("night-owl", "white", "cherry"))))
   expect_equal(temple_pal("diverging", reverse = TRUE)(3), rev(div))
   expect_length(temple_pal("sequential")(10), 10)
 })
@@ -29,7 +30,7 @@ test_that("Temple scales build in discrete and continuous plots", {
     ggplot2::geom_point() +
     scale_colour_temple()
   colours <- unique(ggplot2::ggplot_build(p_disc)$data[[1]]$colour)
-  expect_setequal(colours, unname(temple_colors("cherry", "dark-blue", "ochre")))
+  expect_setequal(colours, unname(temple_colors("cherry", "night-owl", "owls-eye")))
 
   # The diverging scale maps `midpoint` (0) to white even for an asymmetric range.
   df <- data.frame(x = 1:3, y = 1, z = c(-1, 0, 2))

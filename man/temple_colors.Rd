@@ -7,7 +7,7 @@
 temple_colors(...)
 }
 \arguments{
-\item{...}{Optional color names (e.g. \code{"cherry"}, \code{"dark-blue"}).
+\item{...}{Optional color names (e.g. \code{"cherry"}, \code{"night-owl"}).
 With none, every color is returned.}
 }
 \value{
@@ -16,11 +16,16 @@ A named character vector of hex codes.
 \description{
 Hex codes for the Temple University palette used by the
 \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
-Quarto extension, so R graphics match branded reports.
+Quarto extension, so R graphics match branded reports. The palette follows
+Temple's current brand
+(\url{https://liberalarts.temple.edu/marcom/logos-and-brand}): primary
+cherry, white, and black; secondary Clear Skies and Book Nook; formal
+accents Academic Gold, Diamond Acres, Founder's Garden, and Night Owl; and
+casual accents Owl's Eye, Conwell Blue, Upward Momentum, and Cherry Blossom.
 }
 \examples{
 temple_colors()
-temple_colors("cherry", "dark-blue")
+temple_colors("cherry", "night-owl")
 }
 \seealso{
 \code{\link{temple_pal}}, \code{\link{scale_colour_temple}},

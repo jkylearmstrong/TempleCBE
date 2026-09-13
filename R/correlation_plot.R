@@ -58,7 +58,7 @@ correlation_plot <- function(data,
                               mar = c(0, 0, 2, 0),
                               show_coef = TRUE,
                               ...) {
-  palette <- grDevices::colorRampPalette(temple_hex[c("dark-blue", "white", "cherry")])
+  palette <- grDevices::colorRampPalette(temple_hex[c("night-owl", "white", "cherry")])
 
   num_data <- dplyr::select(data, dplyr::where(is.numeric))
   if (isTRUE(na_omit)) num_data <- stats::na.omit(num_data)
@@ -297,7 +297,7 @@ correlation_diff <- function(baseline_data,
 #' (variable by variable), using the same visual language as
 #' \code{\link{pca_loading_diff_heatmap}}: a diverging fill scale centered at
 #' zero, so variable pairs with little change are white and larger
-#' correlation changes in either direction stand out in Temple dark blue or cherry.
+#' correlation changes in either direction stand out in Temple Night Owl or cherry.
 #'
 #' @inheritParams correlation_diff
 #' @return A ggplot object.
