@@ -6,9 +6,11 @@
 # TempleCBE <img src="inst/templates/Temple_Logo.png" align="right" height="138" />
 
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
+[![Codecov test
+coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)
 [![License: GPL-3 \|
 MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](LICENSE.md)
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/jkylearmstrong/TempleCBE)
+[![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&query=%24.Version&label=version&color=blue)](https://github.com/jkylearmstrong/TempleCBE)
 
 **TempleCBE** is an open-source R package developed for Temple
 University’s **Center for Biostatistics and Epidemiology (CBE)**. It
