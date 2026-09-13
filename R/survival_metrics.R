@@ -152,10 +152,8 @@ glmnet_IBS <- function(object,
   }
   if (is.null(formula)) {
     formula <- paste0(feature_names, collapse = " + ")
-  } else if (inherits(formula, "formula")) {
-    formula <- paste(deparse(formula[[length(formula)]]), collapse = " ")
   }
-  selected <- trimws(strsplit(paste0(formula, collapse = " + "), "\\+")[[1]])
+  selected <- trimws(strsplit(formula_terms_string(formula), "\\+")[[1]])
   selected <- intersect(selected, feature_names)
 
   x_cols <- intersect(colnames(train), selected)
@@ -273,8 +271,9 @@ glmnet_IBS <- function(object,
 #' @param num_fixed Number of evenly spaced values from 0 to 1 in the grid.
 #' @param alphas Optional numeric vector of `alpha` values to use instead of
 #'   the generated grid; in formula mode, one per formula.
-#' @param formulas Optional character vector of `+`-separated feature sets,
-#'   each fit as a separate model (see [glmnet_IBS()]'s `formula`).
+#' @param formulas Optional character vector of `+`-separated feature sets, or
+#'   a list of one-sided formulas, each fit as a separate model (see
+#'   [glmnet_IBS()]'s `formula`).
 #' @param progress Show a progress bar.
 #' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
@@ -295,7 +294,10 @@ tune_over_alpha <- function(object,
     if ("formula" %in% names(dots)) {
       stop("Pass either `formulas` or `formula`, not both.", call. = FALSE)
     }
-    formulas <- as.character(formulas)
+    if (inherits(formulas, "formula")) {
+      formulas <- list(formulas)
+    }
+    formulas <- vapply(formulas, formula_terms_string, character(1), USE.NAMES = FALSE)
     if (is.null(alphas)) {
       alphas <- stats::runif(length(formulas))
     }
@@ -371,6 +373,20 @@ summarize_tune_results <- function(object,
     .options = furrr::furrr_options(seed = TRUE),
     .progress = progress
   )
+}
+
+#' Turn a Formula or Formula String Into `+`-Separated Term Names
+#'
+#' @param formula A formula (its right-hand side is used), or a character
+#'   vector of `+`-separated names, optionally starting with `~`.
+#' @return A single string such as `"x1 + x2"`.
+#' @keywords internal
+#' @noRd
+formula_terms_string <- function(formula) {
+  if (inherits(formula, "formula")) {
+    formula <- paste(deparse(formula[[length(formula)]]), collapse = " ")
+  }
+  trimws(sub("^\\s*~", "", paste0(formula, collapse = " + ")))
 }
 
 #' Build an `alpha` Grid

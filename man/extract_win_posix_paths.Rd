@@ -10,8 +10,10 @@ extract_win_posix_paths(x, xlsx_token_re = xlsx_name_re)
 \item{x}{Character vector, e.g. code lines.}
 
 \item{xlsx_token_re}{Regular expression for the file-name part. The default
-matches a name ending in `.xlsx` that may contain dots and spaces but not
-path separators, quotes, backticks, parentheses, commas, or `=`.}
+matches a name ending in `.xlsx`: right after a quote or path separator it
+may contain spaces and punctuation other than quotes and separators;
+elsewhere only letters, digits, `_`, `.`, and `-`. Names followed by `(`
+(function calls such as `read.xlsx()`) are skipped.}
 }
 \value{
 A tibble with one row per element of `x`: `dir`, `file`, and
@@ -19,7 +21,9 @@ A tibble with one row per element of `x`: `dir`, `file`, and
 }
 \description{
 Finds the first full Windows or POSIX path ending in an `.xlsx` file name
-in each string, and splits it into folder and file name.
+in each string, and splits it into folder and file name. Separators may
+repeat (`C:/data//out`, or `C:\\\\data` as written in R code). Relative
+paths such as `output/t1.xlsx` are not full paths and give `NA`.
 }
 \examples{
 extract_win_posix_paths(c("C:\\\\data\\\\table_1.xlsx", "/home/me/out/table-2.xlsx", "none"))

@@ -47,3 +47,27 @@ test_that("extract_all_xlsx_tokens returns every file name per string", {
   expect_equal(tokens[[1]], "a.xlsx")
   expect_length(tokens[[2]], 0)
 })
+
+test_that("extract_all_xlsx_tokens skips function names and surrounding code", {
+  tokens <- extract_all_xlsx_tokens(c(
+    "df <- openxlsx::read.xlsx(f)",
+    "openxlsx::write.xlsx(df, 'table (1).xlsx')",
+    "# save table.xlsx later"
+  ))
+  expect_length(tokens[[1]], 0)
+  expect_equal(tokens[[2]], "table (1).xlsx")
+  expect_equal(tokens[[3]], "table.xlsx")
+})
+
+test_that("extract_win_posix_paths handles repeated separators and rejects relative paths", {
+  x <- c(
+    "read_excel('C:/data//r/t2.xlsx')",
+    "write_xlsx(df, 'output/tables/t1.xlsx')",
+    "read_excel('C:\\data\\t3.xlsx')"
+  )
+  df <- extract_win_posix_paths(x)
+  expect_equal(df$file, c("t2.xlsx", NA, "t3.xlsx"))
+  expect_equal(df$full_path[1], "C:/data/r/t2.xlsx")
+  expect_true(is.na(df$full_path[2]))
+  expect_equal(df$full_path[3], "C:/data/t3.xlsx")
+})

@@ -200,16 +200,14 @@ scan_data_io <- function(code_path,
     )
   }
 
-  # Use fs::dir_ls which is faster and more robust; allow optional max_depth
-  if (missing(max_depth)) max_depth <- Inf
+  # A regexp rather than the glob `**/*.ext`, which needs a `/` in the path and
+  # so misses top-level files when `project_root` is relative.
+  all_files <- fs::dir_ls(path = project_root, recurse = TRUE, regexp = paste0("\\.", ext, "$"))
   if (is.finite(max_depth)) {
-    all_files <- fs::dir_ls(path = project_root, recurse = TRUE, glob = paste0("**/*.", ext))
-    # Filter by depth: count separators relative to project_root
-    rel <- substr(all_files, nchar(normalizePath(project_root, winslash = "/", mustWork = FALSE)) + 2L, nchar(all_files))
-    depth <- ifelse(nchar(rel) == 0, 0, stringr::str_count(rel, "/") + 1)
-    all_files <- all_files[depth <= max_depth]
-  } else {
-    all_files <- fs::dir_ls(path = project_root, recurse = TRUE, glob = paste0("**/*.", ext))
+    # Depth below project_root: 1 for a file directly inside it. `path_rel()`
+    # works whether `project_root` is relative or absolute.
+    rel <- fs::path_rel(all_files, start = project_root)
+    all_files <- all_files[stringr::str_count(rel, "/") + 1 <= max_depth]
   }
   all_files_tbl <- file_meta_fs(as.character(all_files)) |>
     dplyr::mutate(path = normalize_safely(path))
