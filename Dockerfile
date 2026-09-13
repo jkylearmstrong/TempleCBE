@@ -40,8 +40,16 @@ RUN QUARTO_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
   && dpkg -i /tmp/quarto.deb \
   && rm /tmp/quarto.deb
 
-# TinyTeX for PDF rendering (Quarto -> PDF / r2rtf's LaTeX-adjacent output)
-RUN quarto install tinytex --no-prompt
+# Install TeX live packages for PDF rendering (Quarto -> PDF / r2rtf's LaTeX-adjacent output)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
+    texlive-xetex \
+    texlive-pictures \
+    texlive-science \
+  && rm -rf /var/lib/apt/lists/*
 
 # renv itself, pinned to the exact version recorded in renv/activate.R (keep the two
 # in sync -- renv::activate()/renv::upgrade() rewrite activate.R's embedded version
