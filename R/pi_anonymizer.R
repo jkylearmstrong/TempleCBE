@@ -28,7 +28,9 @@ default_secrets_path <- function() {
   p <- tryCatch(normalizePath(path, winslash = "/", mustWork = FALSE), error = function(e) NULL)
   if (is.null(p)) return(NULL)
   repeat {
-    if (dir.exists(file.path(p, ".git"))) return(p)
+    git_marker <- file.path(p, ".git")
+    # In a normal checkout `.git` is a directory; in a git worktree it's a file.
+    if (dir.exists(git_marker) || file.exists(git_marker)) return(p)
     parent <- dirname(p)
     if (identical(parent, p)) return(NULL)
     p <- parent
