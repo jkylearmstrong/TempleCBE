@@ -19,11 +19,12 @@ Returns a palette function that generates \code{n} Temple brand colors.
 }
 \details{
 \describe{
-  \item{\code{"main"}}{Qualitative: cherry, dark blue, ochre, taupe, black,
-    lime, geranium. At most 7 colors.}
-  \item{\code{"diverging"}}{Dark blue through white to cherry, for values
+  \item{\code{"main"}}{Qualitative: cherry, Night Owl, Owl's Eye,
+    Founder's Garden, Upward Momentum, Diamond Acres, black. At most 7
+    colors.}
+  \item{\code{"diverging"}}{Night Owl through white to cherry, for values
     centered at zero (correlations, loadings, differences).}
-  \item{\code{"sequential"}}{Eggshell to cherry.}
+  \item{\code{"sequential"}}{Book Nook to cherry.}
 }
 }
 \examples{

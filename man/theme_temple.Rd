@@ -9,8 +9,9 @@ theme_temple(base_size = 11, base_family = "")
 \arguments{
 \item{base_size}{Base font size in points.}
 
-\item{base_family}{Base font family. The brand's typeface is
-\code{"Source Sans 3"}; the default \code{""} uses the device font,
+\item{base_family}{Base font family. The brand's body typeface is
+\code{"Faustina"} (headings use \code{"Roboto"}); the default \code{""}
+uses the device font,
 because naming a font that isn't installed makes devices warn.}
 }
 \value{

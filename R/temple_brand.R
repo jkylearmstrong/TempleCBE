@@ -2,31 +2,44 @@
 # quarto_temple_brand extension's brand.yml, a copy of which ships in
 # inst/brand/brand.yml (tests check the two agree).
 temple_hex <- c(
-  cherry      = "#a41e35",
-  black       = "#1d1d1d",
-  white       = "#ffffff",
-  taupe       = "#baa682",
-  `icy-blue`  = "#cbf6ff",
-  lime        = "#c7d703",
-  eggshell    = "#f2eee8",
-  ochre       = "#fdb913",
-  geranium    = "#e7201d",
-  `dark-blue` = "#21287e"
+  # Primary
+  cherry            = "#a41e35",
+  white             = "#ffffff",
+  black             = "#000000",
+  # Secondary
+  `clear-skies`     = "#deefec",
+  `book-nook`       = "#fff2e8",
+  # Accents: formal
+  `academic-gold`   = "#ad7422",
+  `diamond-acres`   = "#9e9597",
+  `founders-garden` = "#772762",
+  `night-owl`       = "#005a70",
+  # Accents: casual
+  `owls-eye`        = "#f3aa00",
+  `conwell-blue`    = "#12d0ff",
+  `upward-momentum` = "#1fceb6",
+  `cherry-blossom`  = "#fe649f"
 )
 
 temple_palettes <- list(
-  main       = c("cherry", "dark-blue", "ochre", "taupe", "black", "lime", "geranium"),
-  diverging  = c("dark-blue", "white", "cherry"),
-  sequential = c("eggshell", "cherry")
+  main       = c("cherry", "night-owl", "owls-eye", "founders-garden",
+                 "upward-momentum", "diamond-acres", "black"),
+  diverging  = c("night-owl", "white", "cherry"),
+  sequential = c("book-nook", "cherry")
 )
 
 #' Temple University Brand Colors
 #'
 #' Hex codes for the Temple University palette used by the
 #' \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
-#' Quarto extension, so R graphics match branded reports.
+#' Quarto extension, so R graphics match branded reports. The palette follows
+#' Temple's current brand
+#' (\url{https://liberalarts.temple.edu/marcom/logos-and-brand}): primary
+#' cherry, white, and black; secondary Clear Skies and Book Nook; formal
+#' accents Academic Gold, Diamond Acres, Founder's Garden, and Night Owl; and
+#' casual accents Owl's Eye, Conwell Blue, Upward Momentum, and Cherry Blossom.
 #'
-#' @param ... Optional color names (e.g. \code{"cherry"}, \code{"dark-blue"}).
+#' @param ... Optional color names (e.g. \code{"cherry"}, \code{"night-owl"}).
 #'   With none, every color is returned.
 #' @return A named character vector of hex codes.
 #' @seealso \code{\link{temple_pal}}, \code{\link{scale_colour_temple}},
@@ -34,7 +47,7 @@ temple_palettes <- list(
 #' @export
 #' @examples
 #' temple_colors()
-#' temple_colors("cherry", "dark-blue")
+#' temple_colors("cherry", "night-owl")
 temple_colors <- function(...) {
   cols <- c(...)
   if (is.null(cols)) return(temple_hex)
@@ -51,11 +64,12 @@ temple_colors <- function(...) {
 #' Returns a palette function that generates \code{n} Temple brand colors.
 #'
 #' \describe{
-#'   \item{\code{"main"}}{Qualitative: cherry, dark blue, ochre, taupe, black,
-#'     lime, geranium. At most 7 colors.}
-#'   \item{\code{"diverging"}}{Dark blue through white to cherry, for values
+#'   \item{\code{"main"}}{Qualitative: cherry, Night Owl, Owl's Eye,
+#'     Founder's Garden, Upward Momentum, Diamond Acres, black. At most 7
+#'     colors.}
+#'   \item{\code{"diverging"}}{Night Owl through white to cherry, for values
 #'     centered at zero (correlations, loadings, differences).}
-#'   \item{\code{"sequential"}}{Eggshell to cherry.}
+#'   \item{\code{"sequential"}}{Book Nook to cherry.}
 #' }
 #'
 #' @param palette One of \code{"main"}, \code{"diverging"}, or \code{"sequential"}.
@@ -150,8 +164,9 @@ temple_scale <- function(aesthetic, palette, discrete, reverse, midpoint, ...) {
 #' reports rendered with the quarto_temple_brand extension.
 #'
 #' @param base_size Base font size in points.
-#' @param base_family Base font family. The brand's typeface is
-#'   \code{"Source Sans 3"}; the default \code{""} uses the device font,
+#' @param base_family Base font family. The brand's body typeface is
+#'   \code{"Faustina"} (headings use \code{"Roboto"}); the default \code{""}
+#'   uses the device font,
 #'   because naming a font that isn't installed makes devices warn.
 #' @return A ggplot2 theme.
 #' @export
