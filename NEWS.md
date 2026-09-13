@@ -1,3 +1,33 @@
+# TempleCBE 0.1.8
+
+## New `mtry`-sweep imputation (#3)
+
+* `missforest_sweep_mtry()` sweeps `mtry` for `missForest`, scores every column by its out-of-bag error, and assembles each column from whichever run imputed it best. `missforest_oob_by_mtry()` (one fit, tidy per-column OOB table) and `missforest_impute_by_mtry()` (assemble columns from their winning runs) are exported as the building blocks. This consolidates three copies that had drifted apart in analysis code; their differences are now arguments (`exclude` for identifier/time columns) or documented behavior (character-to-factor coercion inside the worker, original column order restored).
+* `missranger_sweep_mtry()`, `missranger_oob_by_mtry()`, and `missranger_max_mtry()` run the same sweep on the `missRanger` engine with the same return shape. `missranger_max_mtry()` computes the largest `mtry` `missRanger` admits, which is bounded by the number of complete columns rather than `ncol - 1`. Errors are not comparable across engines -- compare `mtry` within an engine only.
+* Bugs fixed relative to the copies this replaces: runs were looked up by position (`sweep[[mtry]]`), which is only correct when the grid is exactly `1:n`; seeding passed to `future::plan(.options = ...)` was ignored, so most sweeps were never seeded -- the seed now reaches `furrr::future_map()`'s own `.options`; all-`NA` columns, which `missForest` silently drops and `missRanger` silently leaves `NA`, are now refused by name.
+* `max_pct_missing` holds out columns missing more than a given share, carries them through unimputed, and reports them in `excluded_high_missing`. Defaults to `NULL` (impute everything).
+* Neither sweep calls `future::plan()`; the caller's backend is respected. `missForest`, `missRanger`, and `pkgload` added to Suggests.
+
+## `corr_test_all()` output options (#4)
+
+* `columns = "tidy"` returns every `broom::tidy()` column of each `cor.test()` (estimate renamed `cor`), including the statistic, degrees of freedom, and confidence limits. The default `"compact"` output (`var1`, `var2`, `r`, `p_value`) is unchanged.
+* `sort` chooses `"p_value"` (default), `"estimate"`, `"abs_estimate"`, or `"none"`.
+* `...` is passed to `cor.test()` (`alternative`, `conf.level`, `exact`).
+* `use = "complete.obs"` now tests every pair on the same rows. `use` was previously accepted but had no effect on the tests; unsupported values now error.
+* **Behavior change:** pairs are enumerated in column order, so `var1` is the column that appears first in `data`. Previously it was whichever name sorted first under the locale's collation. Values are unchanged; only a pair's orientation and tie order can differ.
+
+## New reporting utilities (#1)
+
+* `render_me()` renders Quarto documents, optionally in parallel (`future`/`furrr`/`quarto` in Suggests).
+* `read_search()` / `write_search()` locate read and write calls in code.
+* `zip_reports()` packages already-rendered reports and a data folder into one indexed, hyperlinked zip, given a plain ordered data frame. DOCX generation is a caller-supplied `docx_from_pdf()` callback.
+* `scan_data_io()` cross-references read/write calls in code against files on disk, for any file extension and project root. Fixed while porting: the full-path regex could never match, so full-path resolution silently found nothing. Also fixed after the port: inconsistent result schema on `render_me()`'s parallel path, the path separator on non-Windows platforms, and `scan_data_io()` failing on paths with repeated separators.
+
+## Fixes
+
+* `get_dataset_info()` handles `survival::Surv` columns (#2). `Surv` objects are numeric matrices, so they were summarized as one flattened mean/SD of time and status together, and `dplyr::n_distinct()` recursed infinitely on them. They are now summarized from their time/status columns. Variable labels also fall back to `attr(x, "label")` when `labelled::var_label()` finds none.
+* Example templates in `inst/templates/` generate synthetic data inline and no longer depend on `datasci` or a private dataset; the bundled example PDFs were re-rendered from them.
+
 # TempleCBE 0.1.7
 
 ## `correlation_plot_split()` crash fix
