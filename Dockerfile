@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libv8-dev \
     libgomp1 \
-    libuv1-dev \
+    libuv1 libuv1-dev \
     ca-certificates \
     git \
     curl \
