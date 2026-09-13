@@ -3,6 +3,9 @@
 Per-column metadata: class, variable label (if set via labelled),
 mean/sd for numeric columns, most-frequent value, distinct-value count,
 and missingness.
+[`survival::Surv`](https://rdrr.io/pkg/survival/man/Surv.html) columns
+are summarized from their underlying time/status matrix rather than
+unrolled as plain numerics.
 
 ## Usage
 

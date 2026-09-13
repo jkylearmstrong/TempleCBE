@@ -44,8 +44,35 @@ Recipe steps and modeling evaluation metrics.
 - [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
   : Factor Analysis of Mixed Data (FAMD) Recipe Step
 - [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
-  : Integrated Brier Score (IBS) Evaluation for Regularized Survival
-  Models
+  : Integrated Brier Score of a Penalized Cox Model on Start/Stop
+  Survival Data
+- [`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md)
+  : Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
+- [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  : Tune Over \`alpha\` for Every Split of a Resample
+- [`get_model_parameters()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_model_parameters.md)
+  : Tuning Parameters of a Ranked Workflow in a Workflow Set
+- [`fit_n_rank()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_n_rank.md)
+  : Fit the Configuration Ranked \`.rank\` in a Workflow Set
+
+## Missing Data Imputation
+
+Per-column mtry sweeps for missForest and missRanger imputation.
+
+- [`missforest_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_sweep_mtry.md)
+  : Impute a Data Frame by Sweeping \`missForest\` Over \`mtry\`
+- [`missforest_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_oob_by_mtry.md)
+  : Run \`missForest\` at a Single \`mtry\` and Report Variablewise OOB
+  Error
+- [`missforest_impute_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_impute_by_mtry.md)
+  : Assemble Imputed Columns From Their Best-\`mtry\` Runs
+- [`missranger_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_sweep_mtry.md)
+  : Impute a Data Frame by Sweeping \`missRanger\` Over \`mtry\`
+- [`missranger_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_oob_by_mtry.md)
+  : Run \`missRanger\` at a Single \`mtry\` and Report Per-Column OOB
+  Error
+- [`missranger_max_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_max_mtry.md)
+  : Largest \`mtry\` \`missRanger\` Will Accept For a Data Set
 
 ## Statistical Testing & EDA
 
@@ -59,7 +86,7 @@ tests.
 - [`one_vs_rest_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/one_vs_rest_t_test.md)
   : One-vs-Rest T-Tests Across a Multi-Level Factor
 - [`corr_test_all()`](https://jkylearmstrong.github.io/TempleCBE/reference/corr_test_all.md)
-  : Pairwise Correlation Matrix and Significance Testing
+  : Pairwise Correlation Tests Across All Numeric Columns
 - [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
   : Correlation Plot
 - [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md)
@@ -140,6 +167,33 @@ Manhattan/volcano plots, report generation, and document conversions.
   : Read Excel Data With Multi-Row Column Headers
 - [`read_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_workbook.md)
   : Read Every Sheet of an Excel Workbook
+- [`km_summary_to_prism()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_summary_to_prism.md)
+  : Convert a Kaplan-Meier Summary Table to a GraphPad Prism Survival
+  Table
+- [`convert_pdf_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdf_to_docx.md)
+  : Convert a Single PDF to DOCX Using the Best Available Backend
+- [`convert_pdfs_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdfs_to_docx.md)
+  : Convert PDFs to DOCX Using the Best Available Backend
+- [`check_docx_toolchain()`](https://jkylearmstrong.github.io/TempleCBE/reference/check_docx_toolchain.md)
+  : Report Which PDF -\> DOCX Backends Are Usable on This Machine
+- [`find_python()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_python.md)
+  : Locate a Python Interpreter That Can Import pdf2docx
+- [`find_soffice()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_soffice.md)
+  : Locate a LibreOffice Headless Binary
+- [`run_sas_script()`](https://jkylearmstrong.github.io/TempleCBE/reference/run_sas_script.md)
+  : Run a SAS Program in Batch Mode
+- [`find_sas()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_sas.md)
+  : Locate a SAS Executable
+- [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)
+  : Render Quarto Documents to Multiple Formats With Timing
+- [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
+  : Package Multiple Already-Rendered Reports Into an Indexed Zip
+- [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
+  : Audit Data File Read/Write Calls Against a Project's Files on Disk
+- [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md)
+  : Search a Directory Tree for File-Read Calls
+- [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md)
+  : Search a Directory Tree for File-Write Calls
 
 ## Helper & Infix Operators
 
@@ -159,6 +213,18 @@ Clean column naming, string matching, and vector manipulation.
   : Search for Code Patterns Across a Directory Tree
 - [`sd.error()`](https://jkylearmstrong.github.io/TempleCBE/reference/sd.error.md)
   : Compute standard error
+- [`profvis_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/profvis_summary.md)
+  : Summarize a \`profvis\` Profile
+- [`normalize_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/normalize_safely.md)
+  : Normalize File Paths Without Failing
+- [`parse_here_call_vec()`](https://jkylearmstrong.github.io/TempleCBE/reference/parse_here_call_vec.md)
+  : Resolve \`here::here()\` Calls Found in Code Text
+- [`file_meta_fs()`](https://jkylearmstrong.github.io/TempleCBE/reference/file_meta_fs.md)
+  : File Metadata as a Tibble
+- [`extract_win_posix_paths()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_win_posix_paths.md)
+  : Extract Full \`.xlsx\` Paths From Text
+- [`extract_all_xlsx_tokens()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_all_xlsx_tokens.md)
+  : Extract Every \`.xlsx\` File Name From Text
 - [`install.packages.no_lock()`](https://jkylearmstrong.github.io/TempleCBE/reference/install.packages.no_lock.md)
   : Install a Package, Bypassing an Existing Lock
 - [`like()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)

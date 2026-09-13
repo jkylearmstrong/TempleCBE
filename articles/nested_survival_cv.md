@@ -193,15 +193,63 @@ Integrated Brier Score metric provided by
 
 ``` r
 
-# Demonstrate IBS calculation on outer fold 1
+# Cox model recipe: identifier and interval columns are kept but not used as
+# predictors; numeric predictors are normalized inside each fold
+cox_rec <- recipe(
+  ~ age + bmi + score_marker + treatment + patient_id + tstart + tstop + status,
+  data = sim_data
+) %>%
+  update_role(patient_id, tstart, tstop, status, new_role = "id variable") %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors())
+
+# Evaluation grid: every distinct visit interval
+visit_times <- distinct(sim_data, tstart, tstop)
+
+# IBS on outer fold 1
 fold_1_split <- nested_folds$splits[[1]]
 
-ibs_result <- glmnet_IBS(object = fold_1_split, alpha = 1)
+ibs_result <- glmnet_IBS(
+  object = fold_1_split,
+  alpha = 1,
+  recipe = cox_rec,
+  feature_names = c("age", "bmi", "score_marker", "treatment_Treated"),
+  time_data = visit_times,
+  id_col = "patient_id",
+  internal_folds = 3,
+  cox.ties = "breslow"
+)
 ibs_result
-#> # A tibble: 1 × 3
-#>      IBS  lambda alpha
-#>    <dbl>   <dbl> <dbl>
-#> 1 0.0541 0.00546     1
+#> # A tibble: 2 × 5
+#>      IBS lambda term         estimate alpha
+#>    <dbl>  <dbl> <chr>           <dbl> <dbl>
+#> 1 0.0563 0.0178 age            0.0886     1
+#> 2 0.0563 0.0178 score_marker   0.339      1
+```
+
+`censoring_weights = "ipcw"` scores one row per patient and weights each
+by the inverse probability of remaining uncensored, so patients who
+leave the study early do not count as much as patients followed to the
+end:
+
+``` r
+
+ipcw_result <- glmnet_IBS(
+  object = fold_1_split,
+  alpha = 1,
+  recipe = cox_rec,
+  feature_names = c("age", "bmi", "score_marker", "treatment_Treated"),
+  time_data = visit_times,
+  id_col = "patient_id",
+  internal_folds = 3,
+  censoring_weights = "ipcw",
+  cox.ties = "breslow"
+)
+ipcw_result
+#> # A tibble: 1 × 5
+#>      IBS lambda term         estimate alpha
+#>    <dbl>  <dbl> <chr>           <dbl> <dbl>
+#> 1 0.0194 0.0258 score_marker    0.206     1
 ```
 
 ------------------------------------------------------------------------

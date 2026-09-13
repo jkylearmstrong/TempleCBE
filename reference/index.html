@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -158,7 +158,86 @@
           <code><a href="glmnet_IBS.html">glmnet_IBS()</a></code>
 
         </dt>
-        <dd>Integrated Brier Score (IBS) Evaluation for Regularized Survival Models</dd>
+        <dd>Integrated Brier Score of a Penalized Cox Model on Start/Stop Survival Data</dd>
+
+        <dt>
+
+          <code><a href="tune_over_alpha.html">tune_over_alpha()</a></code>
+
+        </dt>
+        <dd>Tune a Penalized Cox Model Over a Grid of `alpha` Values</dd>
+
+        <dt>
+
+          <code><a href="summarize_tune_results.html">summarize_tune_results()</a></code>
+
+        </dt>
+        <dd>Tune Over `alpha` for Every Split of a Resample</dd>
+
+        <dt>
+
+          <code><a href="get_model_parameters.html">get_model_parameters()</a></code>
+
+        </dt>
+        <dd>Tuning Parameters of a Ranked Workflow in a Workflow Set</dd>
+
+        <dt>
+
+          <code><a href="fit_n_rank.html">fit_n_rank()</a></code>
+
+        </dt>
+        <dd>Fit the Configuration Ranked `.rank` in a Workflow Set</dd>
+      </dl></div><div class="section level2">
+      <h2 id="missing-data-imputation">Missing Data Imputation<a class="anchor" aria-label="anchor" href="#missing-data-imputation"></a></h2>
+
+      <div class="section-desc"><p>Per-column mtry sweeps for missForest and missRanger imputation.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code>
+
+        </dt>
+        <dd>Impute a Data Frame by Sweeping `missForest` Over `mtry`</dd>
+
+        <dt>
+
+          <code><a href="missforest_oob_by_mtry.html">missforest_oob_by_mtry()</a></code>
+
+        </dt>
+        <dd>Run `missForest` at a Single `mtry` and Report Variablewise OOB Error</dd>
+
+        <dt>
+
+          <code><a href="missforest_impute_by_mtry.html">missforest_impute_by_mtry()</a></code>
+
+        </dt>
+        <dd>Assemble Imputed Columns From Their Best-`mtry` Runs</dd>
+
+        <dt>
+
+          <code><a href="missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code>
+
+        </dt>
+        <dd>Impute a Data Frame by Sweeping `missRanger` Over `mtry`</dd>
+
+        <dt>
+
+          <code><a href="missranger_oob_by_mtry.html">missranger_oob_by_mtry()</a></code>
+
+        </dt>
+        <dd>Run `missRanger` at a Single `mtry` and Report Per-Column OOB Error</dd>
+
+        <dt>
+
+          <code><a href="missranger_max_mtry.html">missranger_max_mtry()</a></code>
+
+        </dt>
+        <dd>Largest `mtry` `missRanger` Will Accept For a Data Set</dd>
       </dl></div><div class="section level2">
       <h2 id="statistical-testing-eda">Statistical Testing &amp; EDA<a class="anchor" aria-label="anchor" href="#statistical-testing-eda"></a></h2>
 
@@ -195,7 +274,7 @@
           <code><a href="corr_test_all.html">corr_test_all()</a></code>
 
         </dt>
-        <dd>Pairwise Correlation Matrix and Significance Testing</dd>
+        <dd>Pairwise Correlation Tests Across All Numeric Columns</dd>
 
         <dt>
 
@@ -417,6 +496,97 @@
 
         </dt>
         <dd>Read Every Sheet of an Excel Workbook</dd>
+
+        <dt>
+
+          <code><a href="km_summary_to_prism.html">km_summary_to_prism()</a></code>
+
+        </dt>
+        <dd>Convert a Kaplan-Meier Summary Table to a GraphPad Prism Survival Table</dd>
+
+        <dt>
+
+          <code><a href="convert_pdf_to_docx.html">convert_pdf_to_docx()</a></code>
+
+        </dt>
+        <dd>Convert a Single PDF to DOCX Using the Best Available Backend</dd>
+
+        <dt>
+
+          <code><a href="convert_pdfs_to_docx.html">convert_pdfs_to_docx()</a></code>
+
+        </dt>
+        <dd>Convert PDFs to DOCX Using the Best Available Backend</dd>
+
+        <dt>
+
+          <code><a href="check_docx_toolchain.html">check_docx_toolchain()</a></code>
+
+        </dt>
+        <dd>Report Which PDF -&gt; DOCX Backends Are Usable on This Machine</dd>
+
+        <dt>
+
+          <code><a href="find_python.html">find_python()</a></code>
+
+        </dt>
+        <dd>Locate a Python Interpreter That Can Import pdf2docx</dd>
+
+        <dt>
+
+          <code><a href="find_soffice.html">find_soffice()</a></code>
+
+        </dt>
+        <dd>Locate a LibreOffice Headless Binary</dd>
+
+        <dt>
+
+          <code><a href="run_sas_script.html">run_sas_script()</a></code>
+
+        </dt>
+        <dd>Run a SAS Program in Batch Mode</dd>
+
+        <dt>
+
+          <code><a href="find_sas.html">find_sas()</a></code>
+
+        </dt>
+        <dd>Locate a SAS Executable</dd>
+
+        <dt>
+
+          <code><a href="render_me.html">render_me()</a></code>
+
+        </dt>
+        <dd>Render Quarto Documents to Multiple Formats With Timing</dd>
+
+        <dt>
+
+          <code><a href="zip_reports.html">zip_reports()</a></code>
+
+        </dt>
+        <dd>Package Multiple Already-Rendered Reports Into an Indexed Zip</dd>
+
+        <dt>
+
+          <code><a href="scan_data_io.html">scan_data_io()</a></code>
+
+        </dt>
+        <dd>Audit Data File Read/Write Calls Against a Project's Files on Disk</dd>
+
+        <dt>
+
+          <code><a href="read_search.html">read_search()</a></code>
+
+        </dt>
+        <dd>Search a Directory Tree for File-Read Calls</dd>
+
+        <dt>
+
+          <code><a href="write_search.html">write_search()</a></code>
+
+        </dt>
+        <dd>Search a Directory Tree for File-Write Calls</dd>
       </dl></div><div class="section level2">
       <h2 id="helper-infix-operators">Helper &amp; Infix Operators<a class="anchor" aria-label="anchor" href="#helper-infix-operators"></a></h2>
 
@@ -475,6 +645,48 @@
 
         </dt>
         <dd>Compute standard error</dd>
+
+        <dt>
+
+          <code><a href="profvis_summary.html">profvis_summary()</a></code>
+
+        </dt>
+        <dd>Summarize a `profvis` Profile</dd>
+
+        <dt>
+
+          <code><a href="normalize_safely.html">normalize_safely()</a></code>
+
+        </dt>
+        <dd>Normalize File Paths Without Failing</dd>
+
+        <dt>
+
+          <code><a href="parse_here_call_vec.html">parse_here_call_vec()</a></code>
+
+        </dt>
+        <dd>Resolve `here::here()` Calls Found in Code Text</dd>
+
+        <dt>
+
+          <code><a href="file_meta_fs.html">file_meta_fs()</a></code>
+
+        </dt>
+        <dd>File Metadata as a Tibble</dd>
+
+        <dt>
+
+          <code><a href="extract_win_posix_paths.html">extract_win_posix_paths()</a></code>
+
+        </dt>
+        <dd>Extract Full `.xlsx` Paths From Text</dd>
+
+        <dt>
+
+          <code><a href="extract_all_xlsx_tokens.html">extract_all_xlsx_tokens()</a></code>
+
+        </dt>
+        <dd>Extract Every `.xlsx` File Name From Text</dd>
 
         <dt>
 

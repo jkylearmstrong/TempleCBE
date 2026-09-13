@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -241,15 +241,59 @@ and an <strong>inner tuning loop</strong> (bootstrap folds):</p>
 Integrated Brier Score metric provided by
 <code><a href="../reference/glmnet_IBS.html">TempleCBE::glmnet_IBS()</a></code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Demonstrate IBS calculation on outer fold 1</span></span>
+<code class="sourceCode R"><span><span class="co"># Cox model recipe: identifier and interval columns are kept but not used as</span></span>
+<span><span class="co"># predictors; numeric predictors are normalized inside each fold</span></span>
+<span><span class="va">cox_rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/recipe.html" class="external-link">recipe</a></span><span class="op">(</span></span>
+<span>  <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">bmi</span> <span class="op">+</span> <span class="va">score_marker</span> <span class="op">+</span> <span class="va">treatment</span> <span class="op">+</span> <span class="va">patient_id</span> <span class="op">+</span> <span class="va">tstart</span> <span class="op">+</span> <span class="va">tstop</span> <span class="op">+</span> <span class="va">status</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">sim_data</span></span>
+<span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://recipes.tidymodels.org/reference/roles.html" class="external-link">update_role</a></span><span class="op">(</span><span class="va">patient_id</span>, <span class="va">tstart</span>, <span class="va">tstop</span>, <span class="va">status</span>, new_role <span class="op">=</span> <span class="st">"id variable"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://recipes.tidymodels.org/reference/step_normalize.html" class="external-link">step_normalize</a></span><span class="op">(</span><span class="fu"><a href="https://recipes.tidymodels.org/reference/has_role.html" class="external-link">all_numeric_predictors</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://recipes.tidymodels.org/reference/step_dummy.html" class="external-link">step_dummy</a></span><span class="op">(</span><span class="fu"><a href="https://recipes.tidymodels.org/reference/has_role.html" class="external-link">all_nominal_predictors</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Evaluation grid: every distinct visit interval</span></span>
+<span><span class="va">visit_times</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">sim_data</span>, <span class="va">tstart</span>, <span class="va">tstop</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># IBS on outer fold 1</span></span>
 <span><span class="va">fold_1_split</span> <span class="op">&lt;-</span> <span class="va">nested_folds</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">ibs_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/glmnet_IBS.html">glmnet_IBS</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">fold_1_split</span>, alpha <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">ibs_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/glmnet_IBS.html">glmnet_IBS</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">fold_1_split</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  recipe <span class="op">=</span> <span class="va">cox_rec</span>,</span>
+<span>  feature_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"bmi"</span>, <span class="st">"score_marker"</span>, <span class="st">"treatment_Treated"</span><span class="op">)</span>,</span>
+<span>  time_data <span class="op">=</span> <span class="va">visit_times</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"patient_id"</span>,</span>
+<span>  internal_folds <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  cox.ties <span class="op">=</span> <span class="st">"breslow"</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">ibs_result</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;      IBS  lambda alpha</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.054<span style="text-decoration: underline;">1</span> 0.005<span style="text-decoration: underline;">46</span>     1</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 5</span></span></span>
+<span><span class="co">#&gt;      IBS lambda term         estimate alpha</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.056<span style="text-decoration: underline;">3</span> 0.017<span style="text-decoration: underline;">8</span> age            0.088<span style="text-decoration: underline;">6</span>     1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 0.056<span style="text-decoration: underline;">3</span> 0.017<span style="text-decoration: underline;">8</span> score_marker   0.339      1</span></span></code></pre></div>
+<p><code>censoring_weights = "ipcw"</code> scores one row per patient
+and weights each by the inverse probability of remaining uncensored, so
+patients who leave the study early do not count as much as patients
+followed to the end:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ipcw_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/glmnet_IBS.html">glmnet_IBS</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">fold_1_split</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  recipe <span class="op">=</span> <span class="va">cox_rec</span>,</span>
+<span>  feature_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"bmi"</span>, <span class="st">"score_marker"</span>, <span class="st">"treatment_Treated"</span><span class="op">)</span>,</span>
+<span>  time_data <span class="op">=</span> <span class="va">visit_times</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"patient_id"</span>,</span>
+<span>  internal_folds <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  censoring_weights <span class="op">=</span> <span class="st">"ipcw"</span>,</span>
+<span>  cox.ties <span class="op">=</span> <span class="st">"breslow"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ipcw_result</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;      IBS lambda term         estimate alpha</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.019<span style="text-decoration: underline;">4</span> 0.025<span style="text-decoration: underline;">8</span> score_marker    0.206     1</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">

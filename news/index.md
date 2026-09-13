@@ -1,5 +1,238 @@
 # Changelog
 
+## TempleCBE 0.2.0
+
+### `glmnet_IBS()` rebuilt for start/stop survival data (breaking)
+
+- **Breaking change.**
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  is now a port of the penalized-Cox tuning code it was originally meant
+  to replace, generalized so no column names are hard-coded. The
+  previous version scored plain `time`/`status` data with its own IPCW
+  Brier score, treated every start/stop row as an independent subject,
+  used every numeric column (including identifiers) as a predictor, and
+  returned only `IBS`, `lambda`, and `alpha` – none of which fit
+  repeated-measures data. The new signature takes an `rsplit`, an
+  unprepped `recipe` (prepped inside the fold), `feature_names`, a
+  `time_data` grid, and `id_col`/`start_col`/`stop_col`/`status_col`,
+  and returns `IBS`, `lambda`, `term`, `estimate`, and `alpha` (one row
+  per coefficient at `lambda.min`), with `IBS = failure_ibs` (default 2)
+  when `cv.glmnet()` cannot fit.
+- `censoring_weights = "none"` (default) reproduces the ported code:
+  interval rows scored with censoring weight 1.
+  `censoring_weights = "ipcw"` scores one row per subject with
+  inverse-probability-of-censoring weights (Graf et al., 1999) from the
+  analysis-set censoring distribution. The two give different numbers;
+  compare within one setting.
+- New
+  [`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md)
+  and
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  tune
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  over an `alpha` grid for one split and for every split of a resample.
+  Neither calls
+  [`future::plan()`](https://future.futureverse.org/reference/plan.html).
+  With `formulas`, they instead fit one model per candidate feature set,
+  each with its own (given or randomly drawn) `alpha`, and add a
+  `formula` column.
+- [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  accepts `feature_names` as a function of the baked analysis set, for
+  recipes whose output columns vary by fold
+  (e.g. `step_pca(threshold = )`).
+- Bugs fixed relative to the ported code: the `alpha` grid hard-coded 6
+  fixed values, so it produced `num_alpha_values + 1` values when
+  `num_fixed = 6` and overwrote fixed values otherwise – it now has
+  exactly `num_alpha_values`; the outer map over splits drew random
+  `alpha` values in workers without a seed, so grids were not
+  reproducible – both maps now run with `furrr_options(seed = TRUE)`;
+  filling a missing relative risk looped forever for a subject with no
+  known value – it now errors naming the subject.
+- The internal `ipcw_brier_score()`/`integrate_brier_score()` helpers of
+  the old implementation are removed; scoring now goes through
+  [`yardstick::brier_survival_integrated()`](https://yardstick.tidymodels.org/reference/brier_survival_integrated.html).
+
+### Other new functions
+
+- [`get_model_parameters()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_model_parameters.md)
+  returns the preprocessor, model, and best tuning parameters of the
+  workflow ranked `.rank` in tuned workflow set results;
+  [`fit_n_rank()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_n_rank.md)
+  also fits it with
+  [`tune::fit_best()`](https://tune.tidymodels.org/reference/fit_best.html).
+  Fixed while porting: with `group_wflow = FALSE`, the ranked
+  configuration was reported but the workflow’s *best* configuration was
+  fitted; and the fit used `fit_best()`’s default metric rather than
+  `rank_metric`.
+- [`km_summary_to_prism()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_summary_to_prism.md)
+  expands a Kaplan-Meier summary-by-time table into a GraphPad Prism
+  survival table. Fixed while porting: `strata_levels` was documented
+  but ignored, and `validate_totals` failed when `strata_levels` was
+  set.
+- [`convert_pdf_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdf_to_docx.md),
+  [`convert_pdfs_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdfs_to_docx.md),
+  [`check_docx_toolchain()`](https://jkylearmstrong.github.io/TempleCBE/reference/check_docx_toolchain.md),
+  [`find_python()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_python.md),
+  and
+  [`find_soffice()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_soffice.md)
+  convert PDFs to DOCX via `pdf2docx`, LibreOffice, or Word COM
+  (Windows), with verified backend discovery. `convert_pdf_to_docx` fits
+  `zip_reports(docx_from_pdf = )`. Pinned Python requirements ship in
+  `inst/python/requirements.txt`. Interpreters are configured with
+  `options(templecbe.python)`/`TEMPLECBE_PYTHON` and
+  `options(templecbe.soffice)`/`TEMPLECBE_SOFFICE`. The Word COM
+  subprocess now runs the calling session’s own `Rscript` rather than
+  the first one on `PATH`.
+- [`run_sas_script()`](https://jkylearmstrong.github.io/TempleCBE/reference/run_sas_script.md)
+  runs a SAS program in batch mode with its log and listing in separate
+  folders;
+  [`find_sas()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_sas.md)
+  locates the executable (`options(templecbe.sas)`, `SAS_EXE`, `PATH`,
+  or the default install locations).
+- [`normalize_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/normalize_safely.md),
+  [`parse_here_call_vec()`](https://jkylearmstrong.github.io/TempleCBE/reference/parse_here_call_vec.md),
+  [`file_meta_fs()`](https://jkylearmstrong.github.io/TempleCBE/reference/file_meta_fs.md),
+  [`extract_win_posix_paths()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_win_posix_paths.md),
+  and
+  [`extract_all_xlsx_tokens()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_all_xlsx_tokens.md)
+  are exported: the path helpers behind
+  [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md),
+  for code that audits file paths itself.
+- [`profvis_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/profvis_summary.md)
+  tabulates a `profvis` profile by function: memory, memory increments,
+  call counts, stack depth, and memory over time.
+- `parsnip`, `profvis`, `reticulate`, `tune`, `workflows`,
+  `workflowsets`, and `yardstick` added to Suggests.
+
+### CI and packaging fixes
+
+- The “Nested Cross-Validation for Longitudinal Survival Models”
+  vignette uses the new
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  arguments (`recipe`, `feature_names`, `time_data`, `id_col`) and shows
+  both censoring weightings; it no longer built against 0.2.0.
+- [`normalize_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/normalize_safely.md)
+  returns forward slashes on every platform, consistent with
+  [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md).
+- [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
+  documents `max_depth`,
+  [`zip_render()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.md)’s
+  documentation is regenerated to match its code, and `yaml` (used by
+  [`zip_render()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.md))
+  is declared in Suggests. These were the two `R CMD check` warnings on
+  `master`.
+- The pkgdown reference index lists every exported topic, adding the
+  `mtry` sweeps,
+  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md),
+  [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md),
+  [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md),
+  [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md),
+  and
+  [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md).
+- The Docker image installs `libuv1-dev`, which `fs` needs at load time.
+
+## TempleCBE 0.1.8
+
+### New `mtry`-sweep imputation ([\#3](https://github.com/jkylearmstrong/TempleCBE/issues/3))
+
+- [`missforest_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_sweep_mtry.md)
+  sweeps `mtry` for `missForest`, scores every column by its out-of-bag
+  error, and assembles each column from whichever run imputed it best.
+  [`missforest_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_oob_by_mtry.md)
+  (one fit, tidy per-column OOB table) and
+  [`missforest_impute_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_impute_by_mtry.md)
+  (assemble columns from their winning runs) are exported as the
+  building blocks. This consolidates three copies that had drifted apart
+  in analysis code; their differences are now arguments (`exclude` for
+  identifier/time columns) or documented behavior (character-to-factor
+  coercion inside the worker, original column order restored).
+- [`missranger_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_sweep_mtry.md),
+  [`missranger_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_oob_by_mtry.md),
+  and
+  [`missranger_max_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_max_mtry.md)
+  run the same sweep on the `missRanger` engine with the same return
+  shape.
+  [`missranger_max_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_max_mtry.md)
+  computes the largest `mtry` `missRanger` admits, which is bounded by
+  the number of complete columns rather than `ncol - 1`. Errors are not
+  comparable across engines – compare `mtry` within an engine only.
+- Bugs fixed relative to the copies this replaces: runs were looked up
+  by position (`sweep[[mtry]]`), which is only correct when the grid is
+  exactly `1:n`; seeding passed to `future::plan(.options = ...)` was
+  ignored, so most sweeps were never seeded – the seed now reaches
+  [`furrr::future_map()`](https://furrr.futureverse.org/reference/future_map.html)’s
+  own `.options`; all-`NA` columns, which `missForest` silently drops
+  and `missRanger` silently leaves `NA`, are now refused by name.
+- `max_pct_missing` holds out columns missing more than a given share,
+  carries them through unimputed, and reports them in
+  `excluded_high_missing`. Defaults to `NULL` (impute everything).
+- Neither sweep calls
+  [`future::plan()`](https://future.futureverse.org/reference/plan.html);
+  the caller’s backend is respected. `missForest`, `missRanger`, and
+  `pkgload` added to Suggests.
+
+### `corr_test_all()` output options ([\#4](https://github.com/jkylearmstrong/TempleCBE/issues/4))
+
+- `columns = "tidy"` returns every
+  [`broom::tidy()`](https://generics.r-lib.org/reference/tidy.html)
+  column of each [`cor.test()`](https://rdrr.io/r/stats/cor.test.html)
+  (estimate renamed `cor`), including the statistic, degrees of freedom,
+  and confidence limits. The default `"compact"` output (`var1`, `var2`,
+  `r`, `p_value`) is unchanged.
+- `sort` chooses `"p_value"` (default), `"estimate"`, `"abs_estimate"`,
+  or `"none"`.
+- `...` is passed to
+  [`cor.test()`](https://rdrr.io/r/stats/cor.test.html) (`alternative`,
+  `conf.level`, `exact`).
+- `use = "complete.obs"` now tests every pair on the same rows. `use`
+  was previously accepted but had no effect on the tests; unsupported
+  values now error.
+- **Behavior change:** pairs are enumerated in column order, so `var1`
+  is the column that appears first in `data`. Previously it was
+  whichever name sorted first under the locale’s collation. Values are
+  unchanged; only a pair’s orientation and tie order can differ.
+
+### New reporting utilities ([\#1](https://github.com/jkylearmstrong/TempleCBE/issues/1))
+
+- [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)
+  renders Quarto documents, optionally in parallel
+  (`future`/`furrr`/`quarto` in Suggests).
+- [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md)
+  /
+  [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md)
+  locate read and write calls in code.
+- [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
+  packages already-rendered reports and a data folder into one indexed,
+  hyperlinked zip, given a plain ordered data frame. DOCX generation is
+  a caller-supplied `docx_from_pdf()` callback.
+- [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
+  cross-references read/write calls in code against files on disk, for
+  any file extension and project root. Fixed while porting: the
+  full-path regex could never match, so full-path resolution silently
+  found nothing. Also fixed after the port: inconsistent result schema
+  on
+  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)’s
+  parallel path, the path separator on non-Windows platforms, and
+  [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
+  failing on paths with repeated separators.
+
+### Fixes
+
+- [`get_dataset_info()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
+  handles [`survival::Surv`](https://rdrr.io/pkg/survival/man/Surv.html)
+  columns ([\#2](https://github.com/jkylearmstrong/TempleCBE/issues/2)).
+  `Surv` objects are numeric matrices, so they were summarized as one
+  flattened mean/SD of time and status together, and
+  [`dplyr::n_distinct()`](https://dplyr.tidyverse.org/reference/n_distinct.html)
+  recursed infinitely on them. They are now summarized from their
+  time/status columns. Variable labels also fall back to
+  `attr(x, "label")` when
+  [`labelled::var_label()`](https://larmarange.github.io/labelled/reference/var_label.html)
+  finds none.
+- Example templates in `inst/templates/` generate synthetic data inline
+  and no longer depend on `datasci` or a private dataset; the bundled
+  example PDFs were re-rendered from them.
+
 ## TempleCBE 0.1.7
 
 ### `correlation_plot_split()` crash fix

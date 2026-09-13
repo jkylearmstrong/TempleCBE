@@ -74,6 +74,14 @@ zip_render(
 Invisibly, a list with the build directory, detected/copied resources,
 render outputs, and final zip path.
 
+## Details
+
+Heuristic detection inspects quoted file paths and here::here() calls in
+the document. For YAML front-matter resources, pass them explicitly via
+the \`resources\` argument or include them in the document's YAML; this
+function will attempt to parse YAML when present to pick up top-level
+resource lists.
+
 ## Examples
 
 ``` r

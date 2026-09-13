@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,94 @@
       <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="templecbe-020">TempleCBE 0.2.0<a class="anchor" aria-label="anchor" href="#templecbe-020"></a></h2>
+<div class="section level3">
+<h3 id="glmnet_ibs-rebuilt-for-startstop-survival-data-breaking-0-2-0">
+<code>glmnet_IBS()</code> rebuilt for start/stop survival data (breaking)<a class="anchor" aria-label="anchor" href="#glmnet_ibs-rebuilt-for-startstop-survival-data-breaking-0-2-0"></a></h3>
+<ul><li>
+<strong>Breaking change.</strong> <code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> is now a port of the penalized-Cox tuning code it was originally meant to replace, generalized so no column names are hard-coded. The previous version scored plain <code>time</code>/<code>status</code> data with its own IPCW Brier score, treated every start/stop row as an independent subject, used every numeric column (including identifiers) as a predictor, and returned only <code>IBS</code>, <code>lambda</code>, and <code>alpha</code> – none of which fit repeated-measures data. The new signature takes an <code>rsplit</code>, an unprepped <code>recipe</code> (prepped inside the fold), <code>feature_names</code>, a <code>time_data</code> grid, and <code>id_col</code>/<code>start_col</code>/<code>stop_col</code>/<code>status_col</code>, and returns <code>IBS</code>, <code>lambda</code>, <code>term</code>, <code>estimate</code>, and <code>alpha</code> (one row per coefficient at <code>lambda.min</code>), with <code>IBS = failure_ibs</code> (default 2) when <code>cv.glmnet()</code> cannot fit.</li>
+<li>
+<code>censoring_weights = "none"</code> (default) reproduces the ported code: interval rows scored with censoring weight 1. <code>censoring_weights = "ipcw"</code> scores one row per subject with inverse-probability-of-censoring weights (Graf et al., 1999) from the analysis-set censoring distribution. The two give different numbers; compare within one setting.</li>
+<li>New <code><a href="../reference/tune_over_alpha.html">tune_over_alpha()</a></code> and <code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code> tune <code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> over an <code>alpha</code> grid for one split and for every split of a resample. Neither calls <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">future::plan()</a></code>. With <code>formulas</code>, they instead fit one model per candidate feature set, each with its own (given or randomly drawn) <code>alpha</code>, and add a <code>formula</code> column.</li>
+<li>
+<code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> accepts <code>feature_names</code> as a function of the baked analysis set, for recipes whose output columns vary by fold (e.g. <code>step_pca(threshold = )</code>).</li>
+<li>Bugs fixed relative to the ported code: the <code>alpha</code> grid hard-coded 6 fixed values, so it produced <code>num_alpha_values + 1</code> values when <code>num_fixed = 6</code> and overwrote fixed values otherwise – it now has exactly <code>num_alpha_values</code>; the outer map over splits drew random <code>alpha</code> values in workers without a seed, so grids were not reproducible – both maps now run with <code>furrr_options(seed = TRUE)</code>; filling a missing relative risk looped forever for a subject with no known value – it now errors naming the subject.</li>
+<li>The internal <code>ipcw_brier_score()</code>/<code>integrate_brier_score()</code> helpers of the old implementation are removed; scoring now goes through <code><a href="https://yardstick.tidymodels.org/reference/brier_survival_integrated.html" class="external-link">yardstick::brier_survival_integrated()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-new-functions-0-2-0">Other new functions<a class="anchor" aria-label="anchor" href="#other-new-functions-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/get_model_parameters.html">get_model_parameters()</a></code> returns the preprocessor, model, and best tuning parameters of the workflow ranked <code>.rank</code> in tuned workflow set results; <code><a href="../reference/fit_n_rank.html">fit_n_rank()</a></code> also fits it with <code><a href="https://tune.tidymodels.org/reference/fit_best.html" class="external-link">tune::fit_best()</a></code>. Fixed while porting: with <code>group_wflow = FALSE</code>, the ranked configuration was reported but the workflow’s <em>best</em> configuration was fitted; and the fit used <code>fit_best()</code>’s default metric rather than <code>rank_metric</code>.</li>
+<li>
+<code><a href="../reference/km_summary_to_prism.html">km_summary_to_prism()</a></code> expands a Kaplan-Meier summary-by-time table into a GraphPad Prism survival table. Fixed while porting: <code>strata_levels</code> was documented but ignored, and <code>validate_totals</code> failed when <code>strata_levels</code> was set.</li>
+<li>
+<code><a href="../reference/convert_pdf_to_docx.html">convert_pdf_to_docx()</a></code>, <code><a href="../reference/convert_pdfs_to_docx.html">convert_pdfs_to_docx()</a></code>, <code><a href="../reference/check_docx_toolchain.html">check_docx_toolchain()</a></code>, <code><a href="../reference/find_python.html">find_python()</a></code>, and <code><a href="../reference/find_soffice.html">find_soffice()</a></code> convert PDFs to DOCX via <code>pdf2docx</code>, LibreOffice, or Word COM (Windows), with verified backend discovery. <code>convert_pdf_to_docx</code> fits <code>zip_reports(docx_from_pdf = )</code>. Pinned Python requirements ship in <code>inst/python/requirements.txt</code>. Interpreters are configured with <code>options(templecbe.python)</code>/<code>TEMPLECBE_PYTHON</code> and <code>options(templecbe.soffice)</code>/<code>TEMPLECBE_SOFFICE</code>. The Word COM subprocess now runs the calling session’s own <code>Rscript</code> rather than the first one on <code>PATH</code>.</li>
+<li>
+<code><a href="../reference/run_sas_script.html">run_sas_script()</a></code> runs a SAS program in batch mode with its log and listing in separate folders; <code><a href="../reference/find_sas.html">find_sas()</a></code> locates the executable (<code>options(templecbe.sas)</code>, <code>SAS_EXE</code>, <code>PATH</code>, or the default install locations).</li>
+<li>
+<code><a href="../reference/normalize_safely.html">normalize_safely()</a></code>, <code><a href="../reference/parse_here_call_vec.html">parse_here_call_vec()</a></code>, <code><a href="../reference/file_meta_fs.html">file_meta_fs()</a></code>, <code><a href="../reference/extract_win_posix_paths.html">extract_win_posix_paths()</a></code>, and <code><a href="../reference/extract_all_xlsx_tokens.html">extract_all_xlsx_tokens()</a></code> are exported: the path helpers behind <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>, for code that audits file paths itself.</li>
+<li>
+<code><a href="../reference/profvis_summary.html">profvis_summary()</a></code> tabulates a <code>profvis</code> profile by function: memory, memory increments, call counts, stack depth, and memory over time.</li>
+<li>
+<code>parsnip</code>, <code>profvis</code>, <code>reticulate</code>, <code>tune</code>, <code>workflows</code>, <code>workflowsets</code>, and <code>yardstick</code> added to Suggests.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="ci-and-packaging-fixes-0-2-0">CI and packaging fixes<a class="anchor" aria-label="anchor" href="#ci-and-packaging-fixes-0-2-0"></a></h3>
+<ul><li>The “Nested Cross-Validation for Longitudinal Survival Models” vignette uses the new <code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> arguments (<code>recipe</code>, <code>feature_names</code>, <code>time_data</code>, <code>id_col</code>) and shows both censoring weightings; it no longer built against 0.2.0.</li>
+<li>
+<code><a href="../reference/normalize_safely.html">normalize_safely()</a></code> returns forward slashes on every platform, consistent with <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>.</li>
+<li>
+<code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> documents <code>max_depth</code>, <code><a href="../reference/zip_render.html">zip_render()</a></code>’s documentation is regenerated to match its code, and <code>yaml</code> (used by <code><a href="../reference/zip_render.html">zip_render()</a></code>) is declared in Suggests. These were the two <code>R CMD check</code> warnings on <code>master</code>.</li>
+<li>The pkgdown reference index lists every exported topic, adding the <code>mtry</code> sweeps, <code><a href="../reference/render_me.html">render_me()</a></code>, <code><a href="../reference/read_search.html">read_search()</a></code>, <code><a href="../reference/write_search.html">write_search()</a></code>, <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>, and <code><a href="../reference/zip_reports.html">zip_reports()</a></code>.</li>
+<li>The Docker image installs <code>libuv1-dev</code>, which <code>fs</code> needs at load time.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.8" id="templecbe-018">TempleCBE 0.1.8<a class="anchor" aria-label="anchor" href="#templecbe-018"></a></h2>
+<div class="section level3">
+<h3 id="new-mtry-sweep-imputation-0-1-8">New <code>mtry</code>-sweep imputation (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/3" class="external-link">#3</a>)<a class="anchor" aria-label="anchor" href="#new-mtry-sweep-imputation-0-1-8"></a></h3>
+<ul><li>
+<code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code> sweeps <code>mtry</code> for <code>missForest</code>, scores every column by its out-of-bag error, and assembles each column from whichever run imputed it best. <code><a href="../reference/missforest_oob_by_mtry.html">missforest_oob_by_mtry()</a></code> (one fit, tidy per-column OOB table) and <code><a href="../reference/missforest_impute_by_mtry.html">missforest_impute_by_mtry()</a></code> (assemble columns from their winning runs) are exported as the building blocks. This consolidates three copies that had drifted apart in analysis code; their differences are now arguments (<code>exclude</code> for identifier/time columns) or documented behavior (character-to-factor coercion inside the worker, original column order restored).</li>
+<li>
+<code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code>, <code><a href="../reference/missranger_oob_by_mtry.html">missranger_oob_by_mtry()</a></code>, and <code><a href="../reference/missranger_max_mtry.html">missranger_max_mtry()</a></code> run the same sweep on the <code>missRanger</code> engine with the same return shape. <code><a href="../reference/missranger_max_mtry.html">missranger_max_mtry()</a></code> computes the largest <code>mtry</code> <code>missRanger</code> admits, which is bounded by the number of complete columns rather than <code>ncol - 1</code>. Errors are not comparable across engines – compare <code>mtry</code> within an engine only.</li>
+<li>Bugs fixed relative to the copies this replaces: runs were looked up by position (<code>sweep[[mtry]]</code>), which is only correct when the grid is exactly <code>1:n</code>; seeding passed to <code>future::plan(.options = ...)</code> was ignored, so most sweeps were never seeded – the seed now reaches <code><a href="https://furrr.futureverse.org/reference/future_map.html" class="external-link">furrr::future_map()</a></code>’s own <code>.options</code>; all-<code>NA</code> columns, which <code>missForest</code> silently drops and <code>missRanger</code> silently leaves <code>NA</code>, are now refused by name.</li>
+<li>
+<code>max_pct_missing</code> holds out columns missing more than a given share, carries them through unimputed, and reports them in <code>excluded_high_missing</code>. Defaults to <code>NULL</code> (impute everything).</li>
+<li>Neither sweep calls <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">future::plan()</a></code>; the caller’s backend is respected. <code>missForest</code>, <code>missRanger</code>, and <code>pkgload</code> added to Suggests.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="corr_test_all-output-options-0-1-8">
+<code>corr_test_all()</code> output options (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/4" class="external-link">#4</a>)<a class="anchor" aria-label="anchor" href="#corr_test_all-output-options-0-1-8"></a></h3>
+<ul><li>
+<code>columns = "tidy"</code> returns every <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">broom::tidy()</a></code> column of each <code><a href="https://rdrr.io/r/stats/cor.test.html" class="external-link">cor.test()</a></code> (estimate renamed <code>cor</code>), including the statistic, degrees of freedom, and confidence limits. The default <code>"compact"</code> output (<code>var1</code>, <code>var2</code>, <code>r</code>, <code>p_value</code>) is unchanged.</li>
+<li>
+<code>sort</code> chooses <code>"p_value"</code> (default), <code>"estimate"</code>, <code>"abs_estimate"</code>, or <code>"none"</code>.</li>
+<li>
+<code>...</code> is passed to <code><a href="https://rdrr.io/r/stats/cor.test.html" class="external-link">cor.test()</a></code> (<code>alternative</code>, <code>conf.level</code>, <code>exact</code>).</li>
+<li>
+<code>use = "complete.obs"</code> now tests every pair on the same rows. <code>use</code> was previously accepted but had no effect on the tests; unsupported values now error.</li>
+<li>
+<strong>Behavior change:</strong> pairs are enumerated in column order, so <code>var1</code> is the column that appears first in <code>data</code>. Previously it was whichever name sorted first under the locale’s collation. Values are unchanged; only a pair’s orientation and tie order can differ.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-reporting-utilities-0-1-8">New reporting utilities (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/1" class="external-link">#1</a>)<a class="anchor" aria-label="anchor" href="#new-reporting-utilities-0-1-8"></a></h3>
+<ul><li>
+<code><a href="../reference/render_me.html">render_me()</a></code> renders Quarto documents, optionally in parallel (<code>future</code>/<code>furrr</code>/<code>quarto</code> in Suggests).</li>
+<li>
+<code><a href="../reference/read_search.html">read_search()</a></code> / <code><a href="../reference/write_search.html">write_search()</a></code> locate read and write calls in code.</li>
+<li>
+<code><a href="../reference/zip_reports.html">zip_reports()</a></code> packages already-rendered reports and a data folder into one indexed, hyperlinked zip, given a plain ordered data frame. DOCX generation is a caller-supplied <code>docx_from_pdf()</code> callback.</li>
+<li>
+<code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> cross-references read/write calls in code against files on disk, for any file extension and project root. Fixed while porting: the full-path regex could never match, so full-path resolution silently found nothing. Also fixed after the port: inconsistent result schema on <code><a href="../reference/render_me.html">render_me()</a></code>’s parallel path, the path separator on non-Windows platforms, and <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> failing on paths with repeated separators.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-1-8">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-1-8"></a></h3>
+<ul><li>
+<code><a href="../reference/get_dataset_info.html">get_dataset_info()</a></code> handles <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code> columns (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/2" class="external-link">#2</a>). <code>Surv</code> objects are numeric matrices, so they were summarized as one flattened mean/SD of time and status together, and <code><a href="https://dplyr.tidyverse.org/reference/n_distinct.html" class="external-link">dplyr::n_distinct()</a></code> recursed infinitely on them. They are now summarized from their time/status columns. Variable labels also fall back to <code>attr(x, "label")</code> when <code><a href="https://larmarange.github.io/labelled/reference/var_label.html" class="external-link">labelled::var_label()</a></code> finds none.</li>
+<li>Example templates in <code>inst/templates/</code> generate synthetic data inline and no longer depend on <code>datasci</code> or a private dataset; the bundled example PDFs were re-rendered from them.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.7" id="templecbe-017">TempleCBE 0.1.7<a class="anchor" aria-label="anchor" href="#templecbe-017"></a></h2>
 <div class="section level3">
