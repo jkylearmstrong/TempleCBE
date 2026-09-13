@@ -144,10 +144,13 @@ scan_data_io <- function(code_path,
   # captured separator and so must use the unrestricted `token_core`.
   token_core <- paste0("[^/\\\\\\n]+\\.", ext, "\\b")
   bare_token_re <- paste0("(?<![/\\\\])", token_core)
-  # Group 1: directory, group 2: separator (dropped), group 3: filename token
+  # Group 1: directory, group 2: separator (dropped), group 3: filename token.
+  # Separators may repeat (`a//b`): macOS sets TMPDIR with a trailing slash,
+  # so `tempdir()` there is `.../T//RtmpXXXX`, and a single-separator pattern
+  # would restart the match after the `//` and truncate the directory.
   full_path_re <- paste0(
-    "((?:[A-Za-z]:)?(?:[/\\\\][^/\\\\\\n]+)+)",
-    "([/\\\\])",
+    "((?:[A-Za-z]:)?(?:[/\\\\]+[^/\\\\\\n]+)+)",
+    "([/\\\\]+)",
     "(", token_core, ")"
   )
 
