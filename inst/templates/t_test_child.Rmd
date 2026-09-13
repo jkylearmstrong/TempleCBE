@@ -30,7 +30,7 @@ V2 <- pairs %>%
 V1_V2 <- paste0(V1, " and ", V2)
 my_title <- paste0("Pairwise t-test between ",V1_V2)
  
-dt <- input_parameters_raw %>% 
+dt <- example_data %>% 
    select(all_of(c(V1, V2))) %>%
    tidyr::pivot_longer(everything()) 
 

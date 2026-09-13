@@ -53,19 +53,19 @@ library('gt')
 # and must not depend on any private data source.
 set.seed(42)
 n <- 60
-input_parameters_raw <- tibble::tibble(
-  arl_number = sprintf("SYN-%03d", seq_len(n)),
-  head_shape = sample(c("Round", "Oval"), n, replace = TRUE),
-  orientation = sample(c("Frontal", "Lateral", "Occipital"), n, replace = TRUE),
-  nom_velocity_m_sec = round(rnorm(n, mean = 5.5, sd = 0.8), 2),
-  init_strike_velocity_m_s = round(rnorm(n, mean = 5.2, sd = 0.9), 2),
-  depth_mm = round(rgamma(n, shape = 4, rate = 1), 2),
-  max_depth_mm = round(depth_mm + rgamma(n, shape = 2, rate = 1), 2),
-  duration_ms = round(rgamma(n, shape = 6, rate = 0.8), 2),
-  transf_energy_j = round(rgamma(n, shape = 5, rate = 1.2), 2),
-  pp_chest_wall = sample(c(0, 1), n, replace = TRUE, prob = c(0.7, 0.3)),
-  pp_to_spine = sample(c(0, 1), n, replace = TRUE, prob = c(0.85, 0.15)),
-  pp_neither = sample(c(0, 1), n, replace = TRUE, prob = c(0.6, 0.4))
+example_data <- tibble::tibble(
+  subject_id = sprintf("SYN-%03d", seq_len(n)),
+  group = sample(c("A", "B"), n, replace = TRUE),
+  category = sample(c("X", "Y", "Z"), n, replace = TRUE),
+  measure_1 = round(rnorm(n, mean = 5.5, sd = 0.8), 2),
+  measure_2 = round(rnorm(n, mean = 5.2, sd = 0.9), 2),
+  measure_3 = round(rgamma(n, shape = 4, rate = 1), 2),
+  measure_4 = round(measure_3 + rgamma(n, shape = 2, rate = 1), 2),
+  measure_5 = round(rgamma(n, shape = 6, rate = 0.8), 2),
+  measure_6 = round(rgamma(n, shape = 5, rate = 1.2), 2),
+  flag_a = sample(c(0, 1), n, replace = TRUE, prob = c(0.7, 0.3)),
+  flag_b = sample(c(0, 1), n, replace = TRUE, prob = c(0.85, 0.15)),
+  flag_c = sample(c(0, 1), n, replace = TRUE, prob = c(0.6, 0.4))
 )
 ```
 
@@ -99,18 +99,18 @@ tinytex::install_tinytex()
 ```
 
 ```{r knitr-example, tab.cap="first 5 records and 5 columns of the data"}
-input_parameters_raw %>%
+example_data %>%
   head(n = 5) %>%
-  select(arl_number, head_shape, orientation, nom_velocity_m_sec, init_strike_velocity_m_s) %>%
+  select(subject_id, group, category, measure_1, measure_2) %>%
   knitr::kable()
 ```
 
 # Table One
 
 ```{r table1, tab.cap="An example of a Table 1"}
-input_parameters_raw %>%
-  select(-arl_number, -pp_chest_wall, -pp_to_spine, -pp_neither) %>%
-  tbl_summary(by = "head_shape",
+example_data %>%
+  select(-subject_id, -flag_a, -flag_b, -flag_c) %>%
+  tbl_summary(by = "group",
               type = all_continuous() ~ "continuous2",
               statistic = list(
                 all_continuous() ~ c("{mean} ({sd})","{median} ({p25}, {p75})","{median} ({min} - {max})")
@@ -138,8 +138,8 @@ Suppose we wanted to visualize all pairwise t-tests (we will only do first four 
 
 
 ```{r}
-features_numeric <- input_parameters_raw %>%
-  select(-arl_number) %>%
+features_numeric <- example_data %>%
+  select(-subject_id) %>%
   select(where(is.numeric)) %>%
   colnames()
 
