@@ -1,0 +1,227 @@
+---
+title: "Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup_knitr, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  dev = "png"
+)
+required <- c("glmnet", "survival", "rsample", "yardstick", "recipes", "tidymodels")
+knitr::opts_chunk$set(eval = all(vapply(required, requireNamespace, logical(1), quietly = TRUE)))
+```
+
+## Why start/stop data needs care
+
+In counting-process (start/stop) layout, each subject has one row per
+interval, `Surv(tstart, tstop, status)`, so covariates can change over
+follow-up. Three things go wrong if those rows are treated as independent
+observations:
+
+1. **Resampling leaks.** Row-level folds, like those of `glmnet::cv.glmnet()`,
+   put some of a subject's intervals in the analysis set and others in the
+   assessment set.
+2. **Scoring is wrong, silently.** yardstick's survival metrics expect one
+   row per subject with right-censored truth. Given start/stop truth, they
+   return numbers without complaint, but those numbers count every interval as
+   its own subject.
+3. **Censoring is ignored.** Brier scores need inverse-probability-of-censoring
+   weights, or subjects lost to follow-up bias the score.
+
+`TempleCBE` handles each of these:
+
+| Function | What it does |
+|---|---|
+| `coxnet()` | Elastic-net Cox model (glmnet) with formula, recipe, and x/y interfaces (hardhat) |
+| `cv_coxnet()` | Chooses `mixture` and `penalty` on subject-grouped folds with a yardstick metric set |
+| `nested_cv_coxnet()` | Estimates how well that whole tuning procedure generalizes |
+| `surv_subject_truth()`, `censoring_km()`, `graf_weights()`, `add_graf_weights()` | Score any start/stop model with yardstick |
+
+```{r setup}
+library(TempleCBE)
+library(tidymodels)
+library(survival)
+tidymodels_prefer()
+```
+
+## Simulated data
+
+Each patient has one to four visits at irregular times, belongs to one of five
+sites, and has a marker that drifts between visits. An event can only occur
+in a patient's last interval.
+
+```{r generate_data}
+set.seed(42)
+sim_data <- purrr::map(seq_len(150), function(i) {
+  n_visits <- sample(1:4, 1)
+  tstop <- round(cumsum(runif(n_visits, 20, 40)))
+  age <- rnorm(1, mean = 58, sd = 10)
+  treatment <- sample(c("Control", "Treated"), 1)
+  marker <- rnorm(1) + cumsum(rnorm(n_visits, sd = 0.3))
+  risk <- 0.03 * (age - 58) + 0.8 * marker[n_visits] - 0.6 * (treatment == "Treated")
+  tibble(
+    patient_id = sprintf("PT_%03d", i),
+    site = paste0("site_", i %% 5 + 1),
+    tstart = c(0, head(tstop, -1)),
+    tstop = tstop,
+    status = c(rep(0L, n_visits - 1), rbinom(1, 1, plogis(risk))),
+    age = age,
+    bmi = rnorm(1, mean = 27, sd = 4),
+    marker = marker,
+    treatment = factor(treatment, levels = c("Control", "Treated"))
+  )
+}) |>
+  purrr::list_rbind()
+
+sim_data
+```
+
+Collapsed to one row per patient, this is the truth yardstick needs:
+
+```{r truth}
+surv_subject_truth(Surv(sim_data$tstart, sim_data$tstop, sim_data$status), sim_data$patient_id)
+```
+
+## Fitting one model: `coxnet()`
+
+`coxnet()` fits the whole glmnet regularization path. The formula interface
+expands factors into indicator columns.
+
+```{r coxnet}
+fit <- coxnet(
+  Surv(tstart, tstop, status) ~ age + bmi + marker + treatment,
+  data = sim_data, mixture = 0.5, penalty = 0.01
+)
+fit
+tidy(fit)
+```
+
+Predictions follow tidymodels conventions: `.pred_linear_pred` (larger means
+longer survival), or a `.pred` list-column of survival probabilities.
+
+```{r coxnet_predict}
+predict(fit, sim_data[1:3, ], type = "survival", eval_time = c(30, 60, 90))$.pred[[1]]
+```
+
+## Choosing `mixture` and `penalty`: `cv_coxnet()`
+
+With a recipe, preprocessing is learned inside each fold. The outcome is a
+`Surv` column; the patient identifier gets the `"id"` role, which
+`cv_coxnet()` uses to group folds and score patients.
+
+```{r cv_coxnet}
+sim_data$surv <- Surv(sim_data$tstart, sim_data$tstop, sim_data$status)
+
+cox_rec <- recipe(surv ~ age + bmi + marker + treatment + patient_id + site, data = sim_data) |>
+  update_role(patient_id, new_role = "id") |>
+  update_role(site, new_role = "site") |>
+  step_dummy(treatment) |>
+  step_normalize(all_numeric_predictors())
+
+set.seed(2026)
+cv <- cv_coxnet(cox_rec, sim_data, mixture = c(0.25, 0.5, 1), v = 5, nlambda = 30)
+cv
+```
+
+By default every fold is scored with the integrated Brier score (used to
+choose), concordance, and the time-specific Brier score and ROC AUC, at deciles
+of the observed event times.
+
+```{r cv_metrics}
+collect_metrics(cv) |>
+  filter(.metric %in% c("brier_survival_integrated", "concordance_survival")) |>
+  arrange(.metric, mean)
+autoplot(cv)
+tidy(cv, penalty = "lambda.1se")
+```
+
+Folds can be grouped by a coarser unit than the patient. With
+`group = "site"`, each fold holds out whole sites:
+
+```{r cv_sites}
+set.seed(2026)
+cv_sites <- cv_coxnet(
+  cox_rec, sim_data, group = "site", v = 5, nlambda = 20,
+  metrics = metric_set(brier_survival_integrated, concordance_survival)
+)
+cv_sites$best_by_mixture
+```
+
+## How well does tuning generalize? `nested_cv_coxnet()`
+
+A cross-validated score at the chosen settings is optimistic: the same
+assessment sets chose the settings. Nested cross-validation tunes on inner
+resamples, refits on each outer analysis set, and scores the untouched outer
+assessment set.
+
+```{r nested}
+set.seed(2026)
+nested_folds <- nested_cv(
+  sim_data,
+  outside = group_vfold_cv(group = patient_id, v = 3),
+  inside = group_vfold_cv(group = patient_id, v = 3)
+)
+
+nested <- nested_cv_coxnet(
+  nested_folds, cox_rec,
+  mixture = c(0.5, 1), rule = "1se", nlambda = 20,
+  metrics = metric_set(brier_survival_integrated, concordance_survival)
+)
+nested |> select(id, mixture, penalty)
+collect_metrics(nested)
+```
+
+## Scoring any start/stop model with yardstick
+
+The same helpers score predictions from any model. Here, a `coxnet()` fit
+predicts each test patient's survival from their baseline covariates:
+
+```{r any_model}
+set.seed(2026)
+split <- group_initial_split(sim_data, group = patient_id)
+train <- training(split)
+test <- testing(split)
+times <- c(30, 60, 90)
+
+model <- coxnet(
+  Surv(tstart, tstop, status) ~ age + bmi + marker + treatment,
+  data = train, mixture = cv$mixture, penalty = cv$lambda_min
+)
+
+train_truth <- surv_subject_truth(train$surv, train$patient_id)
+test_truth <- surv_subject_truth(test$surv, test$patient_id)
+baseline_rows <- test |> filter(tstart == 0) |> arrange(patient_id)
+
+scored <- test_truth |>
+  bind_cols(predict(model, baseline_rows, type = "survival", eval_time = times)) |>
+  add_graf_weights(censoring = censoring_km(train_truth$.truth))
+
+brier_survival_integrated(scored, truth = .truth, .pred)
+```
+
+## Existing analysis code: `glmnet_IBS()`
+
+`glmnet_IBS()`, `tune_over_alpha()`, and `summarize_tune_results()` keep their
+arguments. They now use `cv_coxnet()` underneath, so the penalty is chosen on
+patient-grouped folds and the IBS uses censoring weights.
+
+```{r glmnet_ibs}
+legacy_rec <- recipe(~ age + bmi + marker + treatment + patient_id + tstart + tstop + status, data = sim_data) |>
+  update_role(patient_id, tstart, tstop, status, new_role = "id variable") |>
+  step_dummy(treatment) |>
+  step_normalize(all_numeric_predictors())
+
+set.seed(2026)
+glmnet_IBS(
+  split, alpha = 0.5, recipe = legacy_rec,
+  feature_names = c("age", "bmi", "marker", "treatment_Treated"),
+  eval_time = times, id_col = "patient_id", internal_folds = 3
+)
+```

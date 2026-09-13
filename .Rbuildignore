@@ -1,0 +1,13 @@
+^README\.qmd$
+^\.Rproj\.user$
+^TempleCBE\.Rproj$
+^_pkgdown\.yml$
+^docs$
+^LICENSE\.md$
+^renv$
+^renv\.lock$
+^\.claude$
+^\.github$
+^NOTES\.md$
+^secret_internal_NOTES_keep_local\.md$
+^secrets$

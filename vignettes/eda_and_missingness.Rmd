@@ -1,0 +1,125 @@
+---
+title: "Exploratory Data Analysis, Missingness Auditing, and Normalization"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Exploratory Data Analysis, Missingness Auditing, and Normalization}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup_knitr, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  dev = "png"
+)
+```
+
+## Overview
+
+Clinical datasets and electronic health records (EHR) frequently exhibit complex missingness patterns, non-standard missing codes (e.g. `"999"`, `"NA"`, `""`), and extreme statistical outliers. The **`TempleCBE`** package provides domain-agnostic tools to streamline exploratory data analysis (EDA), quantify missingness, normalize numerical features, and flag outliers cleanly.
+
+```r
+library(TempleCBE)
+library(dplyr)
+```
+
+---
+
+## 1. Auditing Missing Data
+
+### Total Missingness with `SumNa()`
+
+`SumNa()` counts missing values in vectors, data frames, or matrices, supporting explicit missing value codes (such as `"NA"` strings or empty strings):
+
+```{r sum_na_demo}
+library(TempleCBE)
+
+# Sample vector with default and non-standard missing values
+vec <- c(12, 14, NA, 999, 18, "")
+
+# Count standard NAs
+SumNa(vec)
+
+# Count NAs including custom missing codes
+SumNa(vec, na_list = c("999", ""))
+```
+
+### Feature-Level Missingness Table
+
+`features_percent_miss()` generates a detailed summary table sorted descending by missingness percentage:
+
+```{r features_percent_miss_demo}
+# Synthetic clinical dataframe
+df_clinical <- data.frame(
+  patient_id = 1:6,
+  age = c(45, 52, NA, 61, 38, NA),
+  systolic_bp = c(120, 135, NA, 140, 118, 125),
+  bmi = c(22.5, NA, 29.1, NA, 31.0, NA),
+  smoker = c("No", "Yes", "", "No", "NA", "Yes"),
+  stringsAsFactors = FALSE
+)
+
+# Audit missingness with custom codes
+features_percent_miss(df_clinical, na_list = c("", "NA"))
+```
+
+### Missingness Visualizations
+
+Visualize missingness across all features using `plot_features_percent_miss()` or S3 `plot()`:
+
+```r
+# Plot feature missingness chart
+plot_features_percent_miss(df_clinical)
+
+# Plot top 3 missing features
+plot_features_percent_miss(df_clinical, top_n = 3)
+```
+
+Or view complete missingness heatmaps with `missmap()`:
+
+```r
+# Render missingness heatmap
+missmap(df_clinical)
+```
+
+---
+
+## 2. Feature Normalization
+
+`TempleCBE` includes three standard feature scaling transformations:
+
+- **`min_max_norm()`**: Scales values to the range $[0, 1]$.
+- **`z_norm()`**: Standardizes features to mean $0$ and standard deviation $1$.
+- **`range_norm()`**: Scales relative to combined distribution bounds across columns.
+
+```{r norm_demo}
+x <- c(10, 20, 30, 40, 50)
+
+# Min-Max Normalization
+min_max_norm(x)
+
+# Z-Score Normalization
+z_norm(x)
+```
+
+---
+
+## 3. Outlier Detection
+
+`detect_outliers()` evaluates numeric vectors or data frame columns using Interquartile Range (IQR) thresholding, distinguishing between **MILD** (1.5 × IQR) and **EXTREME** (3.0 × IQR) outliers.
+
+```{r outlier_demo}
+data_vals <- c(12, 14, 15, 14, 16, 15, 14, 45, 120)
+
+# Detect mild and extreme outliers
+detect_outliers(data_vals)
+```
+
+---
+
+## Summary
+
+Combining `SumNa()`, `features_percent_miss()`, `min_max_norm()`, and `detect_outliers()` provides a reproducible, auditable workflow for preparing clinical data for downstream statistical modeling.
