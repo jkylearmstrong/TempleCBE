@@ -74,8 +74,10 @@ typography:
     family: "JetBrains Mono"
     background-color: book-nook
 
+  # Conventional link blue rather than cherry: the brand guide sets no link
+  # color, and red links read as errors, especially in print.
   link:
-    color: cherry
+    color: "#0563c1"
     decoration: underline
 
   # Code block background uses Book Nook, the warm secondary color
