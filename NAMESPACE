@@ -108,6 +108,7 @@ export(tune_over_alpha)
 export(use_temple_brand)
 export(volcano_plot)
 export(write_search)
+export(write_xlsx)
 export(z_norm)
 export(zip_render)
 export(zip_reports)
@@ -145,3 +146,4 @@ importFrom(tibble,
   tibble
 )
 importFrom(tidyr,pivot_longer)
+importFrom(writexl,write_xlsx)

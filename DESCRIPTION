@@ -36,7 +36,8 @@ Imports:
     tibble (>= 3.2.0),
     tidyr (>= 1.3.0),
     utils,
-    vctrs (>= 0.6.0)
+    vctrs (>= 0.6.0),
+    writexl
 Suggests:
     caret,
     devtools,
@@ -62,7 +63,6 @@ Suggests:
     withr,
     workflows,
     workflowsets (>= 1.0.0),
-    writexl,
     yaml,
     yardstick (>= 1.2.0),
     zip
