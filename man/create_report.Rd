@@ -10,13 +10,14 @@ create_report(
   child = TRUE,
   type = ".qmd",
   include_bib = TRUE,
-  include_tex = TRUE
+  include_tex = TRUE,
+  install_brand = FALSE
 )
 }
 \arguments{
 \item{location}{Directory to create the report in (default \code{getwd()}).}
 
-\item{template_name}{One of \code{"t_test_example"} (default) or \code{"example"}.}
+\item{template_name}{One of \code{"t_test_example"} (default), \code{"example"}, or \code{"temple"}.}
 
 \item{child}{Logical (default \code{TRUE}); also copy the child-document template.}
 
@@ -25,6 +26,10 @@ create_report(
 \item{include_bib}{Logical (default \code{TRUE}); also copy the \code{.bib} file.}
 
 \item{include_tex}{Logical (default \code{TRUE}); also copy the title \code{.tex} file.}
+
+\item{install_brand}{Logical (default \code{FALSE}); for the \code{"temple"}
+template, also run \code{\link{use_temple_brand}(location)}, which
+downloads the extension.}
 }
 \value{
 A list indicating whether each file was created.
@@ -33,8 +38,17 @@ A list indicating whether each file was created.
 Copies a bundled report template (and its supporting bibliography/title
 files) into \code{location}.
 }
+\details{
+The \code{"temple"} template renders with the
+\href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+extension's \code{temple-html}, \code{temple-pdf}, and \code{temple-typst}
+formats, so it needs that extension installed beside it (see
+\code{\link{use_temple_brand}}). It uses no \code{title.tex} or child
+document, and is Quarto-only.
+}
 \examples{
 \dontrun{
 create_report(here::here("analysis"))
+create_report(here::here("analysis"), template_name = "temple", install_brand = TRUE)
 }
 }

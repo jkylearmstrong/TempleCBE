@@ -101,9 +101,25 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
 
   sidecars <- character(0)
   if (include_sources) {
-    likely_sidecars <- c("bib.bib", "grateful-refs.bib", "title.tex", "_variables.yml", "styles.css")
+    likely_sidecars <- c("bib.bib", "grateful-refs.bib", "title.tex", "styles.css")
     present <- file.path(input_dir, likely_sidecars)
     sidecars <- present[file.exists(present)]
+  }
+
+  # Project metadata, brand, and extensions (e.g. `format: temple-pdf`) must sit
+  # beside the .qmd for it to render as it does in place, so they are copied
+  # relative to input_dir whether or not sources are zipped.
+  project_files <- file.path(input_dir, c("_quarto.yml", "_quarto.yaml", "_brand.yml", "_brand.yaml", "_variables.yml"))
+  project_files <- project_files[file.exists(project_files)]
+  if (dir.exists(file.path(input_dir, "_extensions"))) {
+    project_files <- c(project_files, list.files(file.path(input_dir, "_extensions"), recursive = TRUE,
+                                                 full.names = TRUE, all.files = TRUE))
+  }
+  project_rel <- substring(project_files, nchar(input_dir) + 2L)
+  for (i in seq_along(project_files)) {
+    dest <- file.path(build_dir, project_rel[i])
+    dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+    file.copy(project_files[i], dest, overwrite = TRUE)
   }
 
   project_root <- tryCatch(here::here(), error = function(e) NULL)
@@ -139,12 +155,18 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   zip_path_tmp <- file.path(build_dir, zip_name)
   if (file.exists(zip_path_tmp)) file.remove(zip_path_tmp)
 
+  # Project files keep their relative paths (e.g. _extensions/<name>/...) so the
+  # zipped sources still render; everything else is stored flat, as before.
+  zip_project_rel <- if (include_sources) project_rel else character(0)
   if (requireNamespace("zip", quietly = TRUE)) {
     zip::zipr(zipfile = zip_path_tmp, files = include_in_zip, recurse = FALSE)
+    if (length(zip_project_rel)) {
+      zip::zip_append(zip_path_tmp, files = zip_project_rel, root = build_dir, mode = "mirror")
+    }
   } else {
     old <- setwd(build_dir)
     on.exit(setwd(old), add = TRUE)
-    utils::zip(zipfile = zip_name, files = basename(include_in_zip), flags = "-r9Xq")
+    utils::zip(zipfile = zip_name, files = c(basename(include_in_zip), zip_project_rel), flags = "-r9Xq")
   }
 
   dest_zip <- file.path(copy_back_dir, basename(zip_path_tmp))
@@ -182,7 +204,14 @@ output_format_extensions <- function(formats) {
   if ("all" %in% formats) {
     exts <- unique(format_ext_map)
   } else {
-    exts <- unique(ifelse(formats %in% names(format_ext_map), format_ext_map[formats], formats))
+    resolve <- function(fmt) {
+      if (fmt %in% names(format_ext_map)) return(format_ext_map[[fmt]])
+      # Extension formats are named <extension>-<base format>, e.g.
+      # titlepage-pdf or temple-html, and produce the base format's file.
+      base <- sub("^.*-", "", fmt)
+      if (base %in% names(format_ext_map)) format_ext_map[[base]] else fmt
+    }
+    exts <- unique(vapply(formats, resolve, character(1), USE.NAMES = FALSE))
   }
   paste(exts, collapse = "|")
 }

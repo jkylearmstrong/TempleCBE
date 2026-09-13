@@ -49,10 +49,10 @@ distribution_plot <- function(data, method = "range") {
   if (method %in% c("raw", "none")) {
     p <- p + ggplot2::labs(title = "Distribution of Columns", x = "Value", y = "Column")
   } else if (method %in% c("range", "min-max", "min_max")) {
-    p <- p + ggplot2::geom_vline(xintercept = 0.5, color = "red") +
+    p <- p + ggplot2::geom_vline(xintercept = 0.5, color = temple_hex[["cherry"]]) +
       ggplot2::labs(title = "Distribution of Normalized Columns", x = "Normalized Value", y = "Column")
   } else {
-    p <- p + ggplot2::geom_vline(xintercept = 0, color = "red") +
+    p <- p + ggplot2::geom_vline(xintercept = 0, color = temple_hex[["cherry"]]) +
       ggplot2::labs(title = "Distribution of Standardized Columns", x = "Standardized Value", y = "Column")
   }
   p

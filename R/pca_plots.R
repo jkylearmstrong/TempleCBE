@@ -19,7 +19,7 @@ pca_feature_loading_heatmap <- function(pca_model) {
   ggplot2::ggplot(long, ggplot2::aes(x = .data$PC, y = .data$feature, fill = .data$value)) +
     ggplot2::geom_tile() +
     ggplot2::scale_x_continuous(breaks = seq_len(num_comp)) +
-    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red")
+    scale_fill_temple("diverging", discrete = FALSE)
 }
 
 #' PCA Biplot
@@ -68,7 +68,7 @@ plot_pca_bi <- function(pca_model, newdata, column, x = 1, y = 2) {
   ggplot2::ggplot(plot_df, ggplot2::aes(x = .data[[x_col]], y = .data[[y_col]])) +
     ggplot2::geom_segment(xend = 0, yend = 0,
                            arrow = grid::arrow(angle = 20, ends = "first", type = "closed", length = grid::unit(8, "pt"))) +
-    ggplot2::geom_text(ggplot2::aes(label = .data[[column]]), hjust = 1, nudge_x = -0.02, color = "#904C2F") +
+    ggplot2::geom_text(ggplot2::aes(label = .data[[column]]), hjust = 1, nudge_x = -0.02, color = temple_hex[["cherry"]]) +
     ggplot2::coord_fixed()
 }
 
@@ -123,10 +123,10 @@ pca_biplot <- function(pca_model, x = 1, y = 2) {
     ggplot2::geom_segment(data = loadings,
                            ggplot2::aes(x = 0, y = 0, xend = .data[[x_col]], yend = .data[[y_col]]),
                            arrow = grid::arrow(angle = 20, type = "closed", length = grid::unit(8, "pt")),
-                           color = "#904C2F") +
+                           color = temple_hex[["cherry"]]) +
     ggplot2::geom_text(data = loadings,
                         ggplot2::aes(x = .data[[x_col]], y = .data[[y_col]], label = .data$feature),
-                        color = "#904C2F", hjust = -0.1, vjust = -0.1) +
+                        color = temple_hex[["cherry"]], hjust = -0.1, vjust = -0.1) +
     ggplot2::labs(x = paste0("PC", x), y = paste0("PC", y), title = "PCA Biplot") +
     ggplot2::coord_fixed()
 }
@@ -207,7 +207,7 @@ pca_percent_var_explained <- function(pca_model) {
     dplyr::mutate(variance = factor(.data$variance, levels = c("cumulative", "percent"))) |>
     ggplot2::ggplot(ggplot2::aes(x = .data$PC, y = .data$percent, fill = .data$variance, alpha = .data$variance)) +
     ggplot2::geom_bar(stat = "identity", position = "identity") +
-    ggplot2::scale_fill_manual(values = c(cumulative = "#56B4E9", percent = "black")) +
+    ggplot2::scale_fill_manual(values = c(cumulative = temple_hex[["taupe"]], percent = temple_hex[["black"]])) +
     ggplot2::scale_x_continuous(breaks = seq_len(n_comp)) +
     ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(),
                                  expand = ggplot2::expansion(mult = c(0, 0.01))) +
@@ -312,7 +312,7 @@ pca_loading_diff_heatmap <- function(pca_baseline, pca_comparison, n_components 
   ggplot2::ggplot(long, ggplot2::aes(x = .data$PC, y = .data$feature, fill = .data$value)) +
     ggplot2::geom_tile() +
     ggplot2::scale_x_continuous(breaks = seq_len(num_comp)) +
-    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    scale_fill_temple("diverging", discrete = FALSE) +
     ggplot2::labs(x = "Principal Component", y = "Feature", fill = "Loading\ndifference",
                   title = "PCA Loading Differences Between Fits")
 }

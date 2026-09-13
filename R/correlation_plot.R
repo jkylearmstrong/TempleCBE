@@ -58,7 +58,7 @@ correlation_plot <- function(data,
                               mar = c(0, 0, 2, 0),
                               show_coef = TRUE,
                               ...) {
-  palette <- grDevices::colorRampPalette(c("blue", "white", "red"))
+  palette <- grDevices::colorRampPalette(temple_hex[c("dark-blue", "white", "cherry")])
 
   num_data <- dplyr::select(data, dplyr::where(is.numeric))
   if (isTRUE(na_omit)) num_data <- stats::na.omit(num_data)
@@ -297,7 +297,7 @@ correlation_diff <- function(baseline_data,
 #' (variable by variable), using the same visual language as
 #' \code{\link{pca_loading_diff_heatmap}}: a diverging fill scale centered at
 #' zero, so variable pairs with little change are white and larger
-#' correlation changes in either direction stand out in blue or red.
+#' correlation changes in either direction stand out in Temple dark blue or cherry.
 #'
 #' @inheritParams correlation_diff
 #' @return A ggplot object.
@@ -318,7 +318,7 @@ correlation_diff_heatmap <- function(baseline_data,
 
   ggplot2::ggplot(diff_df, ggplot2::aes(x = .data$var1, y = .data$var2, fill = .data$diff)) +
     ggplot2::geom_tile() +
-    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    scale_fill_temple("diverging", discrete = FALSE) +
     ggplot2::labs(x = NULL, y = NULL, fill = "Correlation\ndifference",
                   title = "Correlation Differences Between Datasets") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))

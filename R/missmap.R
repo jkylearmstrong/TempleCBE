@@ -95,7 +95,7 @@ missmap <- function(df, by_column = NULL, na_list = NULL, row_order = FALSE,
       p <- long |>
         ggplot2::ggplot(ggplot2::aes(x = !!by_col_quo, y = .data$variable, fill = .data$sum_na)) +
         ggplot2::geom_tile() +
-        ggplot2::scale_fill_gradient(low = "black", high = "red") +
+        ggplot2::scale_fill_gradient(low = temple_hex[["black"]], high = temple_hex[["cherry"]]) +
         ggplot2::theme(axis.text.x = ggplot2::element_text(size = 6, angle = 45, vjust = 0.5, hjust = 1),
                         axis.text.y = ggplot2::element_text(size = 6)) +
         ggplot2::labs(fill = "# missing")
