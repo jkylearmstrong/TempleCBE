@@ -1,3 +1,22 @@
+# TempleCBE 0.2.0
+
+## `glmnet_IBS()` rebuilt for start/stop survival data (breaking)
+
+* **Breaking change.** `glmnet_IBS()` is now a port of the penalized-Cox tuning code it was originally meant to replace, generalized so no column names are hard-coded. The previous version scored plain `time`/`status` data with its own IPCW Brier score, treated every start/stop row as an independent subject, used every numeric column (including identifiers) as a predictor, and returned only `IBS`, `lambda`, and `alpha` -- none of which fit repeated-measures data. The new signature takes an `rsplit`, an unprepped `recipe` (prepped inside the fold), `feature_names`, a `time_data` grid, and `id_col`/`start_col`/`stop_col`/`status_col`, and returns `IBS`, `lambda`, `term`, `estimate`, and `alpha` (one row per coefficient at `lambda.min`), with `IBS = failure_ibs` (default 2) when `cv.glmnet()` cannot fit.
+* `censoring_weights = "none"` (default) reproduces the ported code: interval rows scored with censoring weight 1. `censoring_weights = "ipcw"` scores one row per subject with inverse-probability-of-censoring weights (Graf et al., 1999) from the analysis-set censoring distribution. The two give different numbers; compare within one setting.
+* New `tune_over_alpha()` and `summarize_tune_results()` tune `glmnet_IBS()` over an `alpha` grid for one split and for every split of a resample. Neither calls `future::plan()`.
+* Bugs fixed relative to the ported code: the `alpha` grid hard-coded 6 fixed values, so it produced `num_alpha_values + 1` values when `num_fixed = 6` and overwrote fixed values otherwise -- it now has exactly `num_alpha_values`; the outer map over splits drew random `alpha` values in workers without a seed, so grids were not reproducible -- both maps now run with `furrr_options(seed = TRUE)`; filling a missing relative risk looped forever for a subject with no known value -- it now errors naming the subject.
+* The internal `ipcw_brier_score()`/`integrate_brier_score()` helpers of the old implementation are removed; scoring now goes through `yardstick::brier_survival_integrated()`.
+
+## Other new functions
+
+* `get_model_parameters()` returns the preprocessor, model, and best tuning parameters of the workflow ranked `.rank` in tuned workflow set results; `fit_n_rank()` also fits it with `tune::fit_best()`. Fixed while porting: with `group_wflow = FALSE`, the ranked configuration was reported but the workflow's *best* configuration was fitted; and the fit used `fit_best()`'s default metric rather than `rank_metric`.
+* `km_summary_to_prism()` expands a Kaplan-Meier summary-by-time table into a GraphPad Prism survival table. Fixed while porting: `strata_levels` was documented but ignored, and `validate_totals` failed when `strata_levels` was set.
+* `convert_pdf_to_docx()`, `convert_pdfs_to_docx()`, `check_docx_toolchain()`, `find_python()`, and `find_soffice()` convert PDFs to DOCX via `pdf2docx`, LibreOffice, or Word COM (Windows), with verified backend discovery. `convert_pdf_to_docx` fits `zip_reports(docx_from_pdf = )`. Pinned Python requirements ship in `inst/python/requirements.txt`. Interpreters are configured with `options(templecbe.python)`/`TEMPLECBE_PYTHON` and `options(templecbe.soffice)`/`TEMPLECBE_SOFFICE`. The Word COM subprocess now runs the calling session's own `Rscript` rather than the first one on `PATH`.
+* `run_sas_script()` runs a SAS program in batch mode with its log and listing in separate folders; `find_sas()` locates the executable (`options(templecbe.sas)`, `SAS_EXE`, `PATH`, or the default install locations).
+* `profvis_summary()` tabulates a `profvis` profile by function: memory, memory increments, call counts, stack depth, and memory over time.
+* `parsnip`, `profvis`, `reticulate`, `tune`, `workflows`, `workflowsets`, and `yardstick` added to Suggests.
+
 # TempleCBE 0.1.8
 
 ## New `mtry`-sweep imputation (#3)
