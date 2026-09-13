@@ -5,8 +5,6 @@ Version: 0.2.0
 Authors@R: 
     person("J Kyle", "Armstrong", email = "j.kyle.armstrong@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4269-0121"))
-Author: J Kyle Armstrong [aut, cre]
-Maintainer: J Kyle Armstrong <j.kyle.armstrong@gmail.com>
 Description: An open-source R package developed for Temple University's Center for Biostatistics and Epidemiology (CBE). Provides domain-agnostic biostatistical testing, data quality and missingness visualizations, normalization functions, custom Tidymodels recipe steps, and clinical survival metrics.
 License: MIT + file LICENSE
 Encoding: UTF-8
