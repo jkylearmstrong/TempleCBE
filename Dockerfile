@@ -52,6 +52,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-science \
   && rm -rf /var/lib/apt/lists/*
 
+# Ensure libuv runtime is present for packages like fs that load libuv.so.1
+RUN apt-get update && apt-get install -y --no-install-recommends libuv1 || true
+RUN rm -rf /var/lib/apt/lists/*
+
 # renv itself, pinned to the exact version recorded in renv/activate.R (keep the two
 # in sync -- renv::activate()/renv::upgrade() rewrite activate.R's embedded version
 # whenever the project's renv version changes). Installed before the lockfile/source
