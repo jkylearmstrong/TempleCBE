@@ -6,7 +6,7 @@
   suppressWarnings(
     vapply(x, function(xx) {
       if (is.na(xx)) return(NA_character_)
-      tryCatch(normalizePath(xx, winslash = "\\", mustWork = FALSE),
+      tryCatch(normalizePath(xx, winslash = "/", mustWork = FALSE),
                error = function(e) xx)
     }, FUN.VALUE = character(1))
   )
@@ -118,7 +118,7 @@ scan_data_io <- function(code_path,
     if (is.null(p) || length(p) == 0) return(p)
     p_norm <- .normalize_safely(p)
     actual_root_lower <- tolower(actual_root)
-    actual_root_lower_slash <- if (grepl("[/\\\\]$", actual_root_lower)) actual_root_lower else paste0(actual_root_lower, .Platform$file.sep)
+    actual_root_lower_slash <- if (grepl("[/\\\\]$", actual_root_lower)) actual_root_lower else paste0(actual_root_lower, "/")
 
     out <- p
     for (i in seq_along(p_norm)) {
