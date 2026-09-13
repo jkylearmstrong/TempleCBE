@@ -21,7 +21,7 @@ plot_features_percent_miss <- function(data, top_n = NULL) {
   }
   
   ggplot2::ggplot(df_miss, ggplot2::aes(x = stats::reorder(.data$feature, .data$PctNa), y = .data$PctNa * 100)) +
-    ggplot2::geom_col(fill = "#d95f02", width = 0.7) +
+    ggplot2::geom_col(fill = temple_hex[["cherry"]], width = 0.7) +
     ggplot2::coord_flip() +
     ggplot2::scale_y_continuous(limits = c(0, 100), labels = function(x) paste0(x, "%")) +
     ggplot2::labs(

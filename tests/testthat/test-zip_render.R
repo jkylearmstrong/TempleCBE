@@ -87,3 +87,46 @@ test_that("zip_render works correctly for HTML output", {
   expect_true(any(grepl("minimal\\.html$", zip_files)))
   expect_true(any(grepl("minimal\\.qmd$", zip_files)))
 })
+
+test_that("output_format_extensions resolves extension formats to their base format", {
+  expect_equal(output_format_extensions("titlepage-pdf"), "pdf")
+  expect_equal(output_format_extensions(c("temple-html", "temple-pdf", "temple-typst")), "html|pdf")
+  expect_equal(output_format_extensions("temple-revealjs"), "html")
+  expect_equal(output_format_extensions("my-custom"), "my-custom")
+})
+
+test_that("zip_render renders extension formats and zips the extension with its paths", {
+  # Regression test: extension formats (e.g. temple-pdf) weren't matched to
+  # their output file, and _quarto.yml/_extensions weren't copied to the
+  # build directory, so the format couldn't even be found there.
+  skip_if_not(requireNamespace("quarto", quietly = TRUE), "quarto package not available")
+  skip_if(is.null(quarto::quarto_path()), "Quarto CLI not available")
+  skip_if_not_installed("zip")
+
+  tmp_dir <- withr::local_tempdir("test_zip_render_ext")
+  ext_dir <- file.path(tmp_dir, "_extensions", "mini")
+  dir.create(ext_dir, recursive = TRUE)
+  writeLines(c("title: Mini", "version: 1.0.0", "contributes:",
+               "  formats:", "    html:", "      toc: true"),
+             file.path(ext_dir, "_extension.yml"))
+  writeLines(c("project:", "  type: default"), file.path(tmp_dir, "_quarto.yml"))
+
+  qmd_file <- file.path(tmp_dir, "minimal.qmd")
+  writeLines(c("---", "title: \"Minimal Test\"", "---", "", "## Hello World"), qmd_file)
+
+  res <- zip_render(
+    input = qmd_file,
+    formats = "mini-html",
+    build_dir = withr::local_tempdir("test_zip_render_ext_build"),
+    copy_back_dir = tmp_dir,
+    verbose = FALSE
+  )
+
+  expect_length(res$outputs, 1)
+  expect_match(res$outputs[1], "minimal\\.html$")
+  expect_match(paste(readLines(res$outputs[1], warn = FALSE), collapse = "\n"), "id=\"TOC\"")
+
+  zip_files <- zip::zip_list(res$zip)$filename
+  expect_true("_extensions/mini/_extension.yml" %in% zip_files)
+  expect_true("_quarto.yml" %in% zip_files)
+})

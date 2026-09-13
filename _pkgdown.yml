@@ -110,6 +110,18 @@ reference:
       - read_search
       - write_search
 
+  - title: Temple Brand
+    desc: >
+      Temple University colors, ggplot2 scales and theme, and setup for the
+      quarto_temple_brand Quarto extension.
+    contents:
+      - temple_colors
+      - temple_pal
+      - scale_colour_temple
+      - theme_temple
+      - temple_brand_path
+      - use_temple_brand
+
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
     contents:

@@ -23,7 +23,7 @@ manhattan_plot <- function(.data, var, log_p, alpha = 0.05, highlight_significan
                                 ymin = -log10(alpha), ymax = Inf, alpha = 0.2, fill = "yellow")
   }
 
-  p + ggplot2::geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "red") +
+  p + ggplot2::geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = temple_hex[["cherry"]]) +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1), legend.position = "none") +
     ggplot2::labs(x = "Variable", y = "-log10(p-value)", title = "Manhattan Plot")
 }
@@ -54,7 +54,7 @@ volcano_plot <- function(.data, log2_fold_change, log_p, var, alpha = 0.05, high
                                 ymin = -log10(alpha), ymax = Inf, alpha = 0.2, fill = "yellow")
   }
 
-  p + ggplot2::geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "red") +
+  p + ggplot2::geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = temple_hex[["cherry"]]) +
     ggplot2::theme(legend.position = "none") +
     ggplot2::labs(x = "log2(Fold-Change)", y = "-log10(p-value)", title = "Volcano Plot")
 }

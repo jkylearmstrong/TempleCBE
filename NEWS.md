@@ -1,3 +1,17 @@
+# TempleCBE (development version)
+
+## Temple brand
+
+* New `temple_colors()`, `temple_pal()`, `scale_colour_temple()`/`scale_color_temple()`/`scale_fill_temple()`, and `theme_temple()` draw R graphics in the Temple University palette used by the [quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand) Quarto extension. `temple_brand_path()` returns a bundled copy of its `brand.yml`, for `quarto::theme_brand_ggplot2()` or `bslib::bs_theme(brand = )`.
+* New `use_temple_brand()` installs that extension into a Quarto project, creating `_quarto.yml` if needed, which enables the `temple-html`, `temple-pdf` (LaTeX title page), `temple-typst`, and `temple-revealjs` formats.
+* `create_report(template_name = "temple")` scaffolds a report in those formats; `install_brand = TRUE` also installs the extension.
+* Plots use the Temple palette. Diverging heatmaps (`correlation_plot()`, `correlation_diff_heatmap()`, `pca_feature_loading_heatmap()`, `pca_loading_diff_heatmap()`) run dark blue-white-cherry instead of blue-white-red; `missmap()` counts, `plot_features_percent_miss()`, `plot_pca_bi()`/`pca_biplot()` loadings, `pca_percent_var_explained()`, and the reference lines of `distribution_plot()`, `manhattan_plot()`, and `volcano_plot()` use Temple colors. Only colors change.
+
+## `zip_render()` fixes
+
+* Extension formats such as `titlepage-pdf` or `temple-pdf` weren't matched to their output file, so it was silently left out of the zip. They now resolve to their base format's extension.
+* `_quarto.yml`, `_brand.yml`, `_variables.yml`, and `_extensions/` are copied into the build directory, so documents that use a project, brand, or extension format render there as they do in place. With `include_sources = TRUE` they are zipped under their relative paths.
+
 # TempleCBE 0.2.0
 
 ## `glmnet_IBS()` rebuilt for start/stop survival data (breaking)

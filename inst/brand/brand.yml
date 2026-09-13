@@ -1,0 +1,81 @@
+meta:
+  name:
+    full: Center for Biostatistics & Epidemiology
+    short: CBE
+  description: >
+    Center for Biostatistics & Epidemiology,
+    Department of Biomedical Education and Data Science,
+    Lewis Katz School of Medicine at Temple University
+  link: https://medicine.temple.edu/research/research-centers/center-biostatistics-epidemiology
+
+color:
+  palette:
+    # Temple primary colors
+    cherry:    "#a41e35"
+    black:     "#1d1d1d"
+    white:     "#ffffff"
+    # Temple secondary colors
+    taupe:     "#baa682"
+    icy-blue:  "#cbf6ff"
+    lime:      "#c7d703"
+    eggshell:  "#f2eee8"
+    ochre:     "#fdb913"
+    geranium:  "#e7201d"
+    dark-blue: "#21287e"
+
+  # Semantic role assignments
+  foreground:   "#1d1d1d"
+  background:   "#ffffff"
+  primary:      "#a41e35"
+  secondary:    "#21287e"
+  tertiary:     "#baa682"
+  success:      "#c7d703"
+  info:         "#cbf6ff"
+  warning:      "#fdb913"
+  danger:       "#e7201d"
+  light:        "#f2eee8"
+  dark:         "#1d1d1d"
+
+typography:
+  # Temple uses ITC Franklin Gothic and similar sans-serif families.
+  # These Google Fonts are close open-source alternatives.
+  fonts:
+    - family: "Source Sans 3"
+      source: google
+    - family: "Source Serif 4"
+      source: google
+    - family: "JetBrains Mono"
+      source: google
+
+  base:
+    family: "Source Sans 3"
+    size: 1rem
+    weight: 400
+    line-height: 1.6
+
+  headings:
+    family: "Source Sans 3"
+    weight: 700
+    color: "#a41e35"
+    line-height: 1.2
+
+  monospace:
+    family: "JetBrains Mono"
+    size: 0.9em
+
+  monospace-inline:
+    family: "JetBrains Mono"
+    background-color: "#f2eee8"
+
+  link:
+    color: "#a41e35"
+    decoration: underline
+
+  # Code block background echoes eggshell (light) brand color
+  monospace-block:
+    family: "JetBrains Mono"
+    background-color: "#f2eee8"
+    color: "#1d1d1d"
+
+logo:
+  medium: "Temple_T_logo.png"
