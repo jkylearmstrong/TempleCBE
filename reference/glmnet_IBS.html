@@ -138,7 +138,10 @@ outside the valid 0-1 range so failed fits are easy to filter out).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Further arguments passed to [glmnet::cv.glmnet()].</p></dd>
+<dd><p>Further arguments passed to [glmnet::cv.glmnet()], such as
+`cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
+5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
+versions.</p></dd>
 
 </dl></div>
     <div class="section level2">

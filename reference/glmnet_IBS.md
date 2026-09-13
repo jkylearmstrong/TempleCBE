@@ -95,7 +95,10 @@ glmnet_IBS(
 
 - ...:
 
-  Further arguments passed to \[glmnet::cv.glmnet()\].
+  Further arguments passed to \[glmnet::cv.glmnet()\], such as
+  \`cox.ties\` (\`"breslow"\` or \`"efron"\`). glmnet 5.0 defaults to
+  Breslow and 5.1 to Efron, so pass \`cox.ties\` to keep results stable
+  across glmnet versions.
 
 ## Value
 
