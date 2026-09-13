@@ -28,7 +28,7 @@ generate_pi_names <- function(n = 1,
   
   if (format == "token") {
     # Generate token sequence: PI_i, PI_j, PI_k...
-    letters_seq <- letters[9:26] # 'i' through 'z'
+    letters_seq <- letters
     if (n <= length(letters_seq)) {
       tokens <- paste0(prefix, letters_seq[seq_len(n)])
     } else {
@@ -41,16 +41,57 @@ generate_pi_names <- function(n = 1,
   if (n == 1) sampled[1] else sampled
 }
 
+#' Default secrets path (user data directory, not the repo)
+default_secrets_path <- function() {
+  if (requireNamespace("rappdirs", quietly = TRUE)) {
+    dir <- rappdirs::user_data_dir("TempleCBE")
+  } else {
+    dir <- file.path(Sys.getenv("HOME", unset = tempdir()), ".TempleCBE")
+  }
+  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  file.path(dir, "pi_mapping.json")
+}
+
+# helper: find repo root by locating .git
+.find_repo_root <- function(path = ".") {
+  p <- tryCatch(normalizePath(path, winslash = "/", mustWork = FALSE), error = function(e) NULL)
+  if (is.null(p)) return(NULL)
+  repeat {
+    if (dir.exists(file.path(p, ".git"))) return(p)
+    parent <- dirname(p)
+    if (identical(parent, p)) return(NULL)
+    p <- parent
+  }
+}
+
 #' Retrieve or Map Anonymized Token for a PI Name
 #'
 #' @param name Real PI name to mask.
 #' @param secrets_path Path to confidential mapping file (default "secrets/pi_mapping.json").
 #' @return Anonymized string token.
 #' @export
-anonymize_pi <- function(name, secrets_path = "secrets/pi_mapping.json") {
+anonymize_pi <- function(name, secrets_path = NULL) {
+  # If no path provided, use a user-scoped defaults directory (not the repo)
+  if (is.null(secrets_path)) secrets_path <- default_secrets_path()
+  secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
+
+  # Refuse to write into the repository tree to avoid accidentally committing PHI
+  repo_root <- .find_repo_root(".")
+  if (!is.null(repo_root)) {
+    repo_root_norm <- normalizePath(repo_root, winslash = "/", mustWork = FALSE)
+    if (startsWith(secrets_path, repo_root_norm)) {
+      stop("Refusing to write mapping into repository path (", secrets_path, "). Pass an explicit secrets_path outside the repository to override.")
+    }
+  }
+
+  # Ensure file exists (create an empty mapping if needed)
   if (!file.exists(secrets_path)) {
-    warning("Mapping file not found at: ", secrets_path, ". Returning default prefix.")
-    return(paste0("PI_", name))
+    mapping_data <- list(mappings = list())
+    if (requireNamespace("jsonlite", quietly = TRUE)) {
+      jsonlite::write_json(mapping_data, secrets_path, pretty = TRUE, auto_unbox = TRUE)
+    } else {
+      writeLines('{"mappings": {}}', con = secrets_path)
+    }
   }
   
   if (requireNamespace("jsonlite", quietly = TRUE)) {
