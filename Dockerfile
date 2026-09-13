@@ -11,6 +11,8 @@ ENV RENV_VERSION=${RENV_VERSION}
 
 # System libraries: TempleCBE deps (pdftools/r2rtf/graphics) + doc rendering toolchain
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
@@ -20,6 +22,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libtiff5-dev \
     libjpeg-dev \
+    libbz2-dev \
+    zlib1g-dev \
+    liblzma-dev \
+    libicu-dev \
+    libv8-dev \
+    libgomp1 \
+    ca-certificates \
     git \
     curl \
     xz-utils \
@@ -38,6 +47,8 @@ RUN quarto install tinytex --no-prompt
 # in sync -- renv::activate()/renv::upgrade() rewrite activate.R's embedded version
 # whenever the project's renv version changes). Installed before the lockfile/source
 # are copied in so this layer only invalidates on a renv upgrade, not on every commit.
+ENV RENV_PATHS_CACHE=/usr/local/renv/cache
+RUN mkdir -p ${RENV_PATHS_CACHE} && chown root:root ${RENV_PATHS_CACHE}
 RUN Rscript -e 'install.packages("remotes", repos = "https://packagemanager.posit.co/cran/latest"); \
     remotes::install_version("renv", version = Sys.getenv("RENV_VERSION"), repos = "https://packagemanager.posit.co/cran/latest")'
 
@@ -50,7 +61,8 @@ WORKDIR /pkg
 # layer still caches independently of R/**, docs, etc.
 COPY renv.lock .Rprofile ./
 COPY renv/activate.R renv/settings.json ./renv/
-RUN Rscript -e 'renv::restore(prompt = FALSE)'
+# Use the specified cache directory for renv to speed restores across builds
+RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); renv::restore(prompt = FALSE)'
 
 COPY . .
 
