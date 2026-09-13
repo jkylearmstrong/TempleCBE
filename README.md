@@ -114,7 +114,7 @@ seamlessly within the `tidymodels` framework:
 library(recipes)
 
 # Define recipe with mixed numeric and categorical variables
-rec <- recipe(Species ~ ., data = iris) %>%
+rec <- recipe(~ ., data = iris) %>%
   step_famd(all_predictors(), num_comp = 2)
 
 # Prep and bake

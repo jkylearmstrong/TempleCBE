@@ -18,7 +18,7 @@ tune_over_alpha(
 \item{object}{An `rsplit`.}
 
 \item{...}{Arguments passed to [glmnet_IBS()] (`recipe`, `feature_names`,
-`time_data`, `id_col`, `censoring_weights`, ...).}
+`time_data`, `id_col`, `cox.ties`, ...).}
 
 \item{num_alpha_values}{Total number of `alpha` values in the grid.}
 
@@ -57,7 +57,9 @@ gaps if there are more random draws than gaps).
 Random draws use the R session's random number stream, so call
 [set.seed()] first for reproducible values. Model fits run with
 `furrr_options(seed = TRUE)`, so they are reproducible too.
+
+To tune `alpha` and the penalty together in one call, see [cv_coxnet()].
 }
 \seealso{
-[glmnet_IBS()], [summarize_tune_results()]
+[glmnet_IBS()], [summarize_tune_results()], [cv_coxnet()]
 }

@@ -2,24 +2,44 @@
 % Please edit documentation in R/pdf_to_rtf.R
 \name{pdf_to_rtf}
 \alias{pdf_to_rtf}
-\title{Convert a PDF to Rich Text Format (RTF)}
+\title{Convert a PDF's Text to Rich Text Format (RTF)}
 \usage{
-pdf_to_rtf(path_To_PDF_File, path_To_write_RTF_File)
+pdf_to_rtf(
+  pdf,
+  rtf = sub("\\\\.pdf$", ".rtf", pdf, ignore.case = TRUE),
+  font_size = 10,
+  overwrite = TRUE
+)
 }
 \arguments{
-\item{path_To_PDF_File}{Path to the input \code{.pdf} file.}
+\item{pdf}{Path to the input `.pdf` file.}
 
-\item{path_To_write_RTF_File}{Path to write the converted \code{.rtf} file to.}
+\item{rtf}{Path of the `.rtf` file to write. Defaults to `pdf` with its
+extension replaced by `.rtf`.}
+
+\item{font_size}{Font size in points.}
+
+\item{overwrite}{If `FALSE`, error when `rtf` already exists.}
 }
 \value{
-The normalized path to the created RTF file (invisibly).
+The path to `rtf`, invisibly.
 }
 \description{
-Extracts text from a PDF via \code{\link[pdftools]{pdf_text}} and writes
-it to a portable \code{.rtf} file.
+Extracts the text layer of a PDF with [pdftools::pdf_text()] and writes it
+to an RTF file in a monospaced font, one RTF page per PDF page, so the
+column alignment of text tables (such as SAS listings) is kept.
+}
+\details{
+Only text is converted: images, fonts, and vector graphics are not. A
+scanned PDF with no text layer gives empty pages. Non-ASCII characters are
+written as RTF Unicode escapes, so the file is plain ASCII and opens the
+same in any locale.
 }
 \examples{
-\dontrun{
-pdf_to_rtf("report.pdf", "report.rtf")
+pdf <- system.file("templates", "example.pdf", package = "TempleCBE")
+rtf <- pdf_to_rtf(pdf, tempfile(fileext = ".rtf"))
+readLines(rtf, n = 3)
 }
+\seealso{
+[create_toc_from_sas_pdf()]
 }

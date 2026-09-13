@@ -30,40 +30,64 @@ is.int <- function(col) {
 
 #' Test Whether a Vector Looks Normally Distributed
 #'
-#' Runs a Shapiro-Wilk test (for n <= 5000, on a random subsample above that)
-#' and a one-sample Kolmogorov-Smirnov test against the normal distribution
-#' with mean/sd estimated from \code{col} (deterministic — no simulated
-#' comparison sample is drawn, so results are reproducible without seeding).
+#' Runs two normality tests on the finite values of `col`:
 #'
-#' @param col A numeric vector.
-#' @return A tibble of test results.
+#' * **Shapiro-Wilk** ([stats::shapiro.test()]), for 3 to 5000 values. It is
+#'   left out above 5000 rather than run on a random subsample, so results
+#'   never depend on the random number generator.
+#' * **Lilliefors** ([nortest::lillie.test()]), for 5 or more values: the
+#'   Kolmogorov-Smirnov test corrected for estimating the mean and standard
+#'   deviation from the same data. A plain KS test against
+#'   `pnorm(mean(x), sd(x))` gives p-values that are far too large.
+#'
+#' Both tests are deterministic. In large samples they reject normality for
+#' departures too small to matter, so read them alongside a plot such as
+#' [distribution_plot()] or a normal Q-Q plot.
+#'
+#' @param col A numeric vector. `NA`, `NaN`, and infinite values are dropped.
+#' @param alpha Significance level for `distribution.test`.
+#' @return A tibble with one row per test run: `statistic`, `p.value`,
+#'   `method`, `distribution.test` (`TRUE` when `p.value >= alpha`, i.e.
+#'   normality is not rejected), `p_value_sig`, and `distribution`. It has no
+#'   rows when neither test applies (fewer than 3 values, or all values equal).
+#' @references Lilliefors HW (1967). On the Kolmogorov-Smirnov test for
+#'   normality with mean and variance unknown. *Journal of the American
+#'   Statistical Association*, 62(318), 399-402.
 #' @export
 #' @examples
+#' set.seed(1)
 #' is_normal(rnorm(1000, mean = 5, sd = 3))
 #' is_normal(runif(1000, min = 2, max = 4))
-is_normal <- function(col) {
-  temp_col <- stats::na.omit(col)
-  mu <- mean(temp_col)
-  sd_ <- stats::sd(temp_col)
-  n <- length(temp_col)
+is_normal <- function(col, alpha = 0.1) {
+  if (!is.numeric(col)) {
+    stop("`col` must be a numeric vector.", call. = FALSE)
+  }
+  if (!is.numeric(alpha) || length(alpha) != 1 || !(alpha > 0 && alpha < 1)) {
+    stop("`alpha` must be a single number between 0 and 1.", call. = FALSE)
+  }
+  x <- col[is.finite(col)]
+  n <- length(x)
 
-  shapiro_result <- data.frame()
-  if (n > 3 && n <= 5000) {
-    shapiro_result <- broom::tidy(stats::shapiro.test(temp_col)) |>
-      dplyr::mutate(distribution.test = .data$p.value >= 0.1)
-  } else if (n > 5000) {
-    shapiro_result <- broom::tidy(stats::shapiro.test(sample(temp_col, 5000))) |>
-      dplyr::mutate(distribution.test = .data$p.value >= 0.1)
+  tests <- list()
+  if (n >= 3 && length(unique(x)) > 1) {
+    if (n <= 5000) tests$shapiro <- broom::tidy(stats::shapiro.test(x))
+    if (n >= 5) tests$lilliefors <- broom::tidy(nortest::lillie.test(x))
   }
 
-  ks_result <- suppressWarnings(
-    broom::tidy(stats::ks.test(temp_col, "pnorm", mean = mu, sd = sd_)) |>
-      dplyr::mutate(distribution.test = .data$p.value >= 0.1)
-  )
+  if (!length(tests)) {
+    return(tibble::tibble(
+      statistic = double(), p.value = double(), method = character(),
+      distribution.test = logical(), p_value_sig = character(), distribution = character()
+    ))
+  }
 
-  dplyr::bind_rows(ks_result, shapiro_result) |>
-    dplyr::mutate(p_value_sig = significance_stars(.data$p.value)) |>
-    dplyr::mutate(distribution = "normal")
+  dplyr::bind_rows(tests) |>
+    dplyr::select("statistic", "p.value", "method") |>
+    dplyr::mutate(
+      distribution.test = .data$p.value >= alpha,
+      p_value_sig = significance_stars(.data$p.value),
+      distribution = "normal"
+    )
 }
 
 #' @keywords internal
@@ -117,8 +141,9 @@ poisson_gof_chisq <- function(x, mu) {
 #' distribution is discrete with real point masses, which inflates the KS
 #' statistic (and deflates its p-value) regardless of true fit — the
 #' chi-squared test is the standard, correctly-calibrated tool for
-#' discrete/count goodness-of-fit. \code{\link{is_normal}} uses a
-#' Kolmogorov-Smirnov test because the normal distribution is continuous.
+#' discrete/count goodness-of-fit. \code{\link{is_normal}} uses the
+#' Lilliefors variant of the Kolmogorov-Smirnov test, which suits the
+#' continuous normal distribution.
 #'
 #' Since the Poisson distribution's support is the non-negative integers,
 #' this returns an empty tibble for vectors containing negative values or

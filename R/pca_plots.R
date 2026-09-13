@@ -317,27 +317,42 @@ pca_loading_diff_heatmap <- function(pca_baseline, pca_comparison, n_components 
                   title = "PCA Loading Differences Between Fits")
 }
 
-#' Generic Plot Method for \code{prcomp} Objects
+#' Plot a PCA Fit
 #'
-#' @param x A \code{\link[stats]{prcomp}} object.
+#' One entry point to this package's PCA plots.
+#'
+#' This is an ordinary function rather than a `plot()` method: \pkg{stats}
+#' already registers `plot()` for `prcomp` objects (a scree plot), and a
+#' package that replaces another package's method for a class it doesn't own
+#' changes `plot()` for everyone who loads it. Call `pca_plot(x, type = )`,
+#' or [stats::screeplot()] for the base scree plot.
+#'
+#' @param pca_model A \code{\link[stats]{prcomp}} object. (Not `x`, which
+#'   would capture the `x` component argument of `type = "bi"` and
+#'   `"biplot"`.)
 #' @param type One of \code{"variance"} (\code{\link{pca_percent_var_explained}}),
 #'   \code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}),
 #'   \code{"bi"} (\code{\link{plot_pca_bi}}), or \code{"biplot"}
 #'   (\code{\link{pca_biplot}}).
 #' @param ... Passed on to the underlying plot function (needed for
 #'   \code{type = "bi"}, which requires \code{newdata} and \code{column}; and
-#'   optionally used by \code{type = "biplot"} to pass \code{x}/\code{y}).
+#'   optionally used by \code{type = "bi"} or \code{"biplot"} to pick
+#'   components with \code{x}/\code{y}).
 #' @return A ggplot object.
-#' @exportS3Method base::plot
+#' @export
 #' @examples
 #' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
-#' plot(pca_model, type = "variance")
-plot.prcomp <- function(x, type = c("variance", "heatmap", "bi", "biplot"), ...) {
+#' pca_plot(pca_model, type = "variance")
+#' pca_plot(pca_model, type = "biplot", x = 1, y = 3)
+pca_plot <- function(pca_model, type = c("variance", "heatmap", "bi", "biplot"), ...) {
+  if (!inherits(pca_model, "prcomp")) {
+    stop("`pca_model` must be a prcomp object, from stats::prcomp().", call. = FALSE)
+  }
   type <- match.arg(type)
   switch(type,
-    variance = pca_percent_var_explained(x),
-    heatmap = pca_feature_loading_heatmap(x),
-    bi = plot_pca_bi(x, ...),
-    biplot = pca_biplot(x, ...)
+    variance = pca_percent_var_explained(pca_model),
+    heatmap = pca_feature_loading_heatmap(pca_model),
+    bi = plot_pca_bi(pca_model, ...),
+    biplot = pca_biplot(pca_model, ...)
   )
 }

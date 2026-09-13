@@ -20,9 +20,39 @@ test_that("is_normal flags normal data as normal and uniform data as not", {
   expect_false(any(unif_res$distribution.test))
 })
 
-test_that("is_normal is deterministic (no simulated comparison sample)", {
+test_that("is_normal is deterministic at every sample size", {
   x <- rnorm(500, mean = 1, sd = 2)
   expect_identical(is_normal(x), is_normal(x))
+
+  # Above 5000 values a random Shapiro-Wilk subsample used to change results.
+  big <- rnorm(6000)
+  expect_identical(is_normal(big), is_normal(big))
+  expect_equal(is_normal(big)$method, "Lilliefors (Kolmogorov-Smirnov) normality test")
+})
+
+test_that("is_normal uses the Lilliefors correction, not a plain KS test", {
+  x <- c(stats::qnorm(stats::ppoints(200)), 6, 7, 8)
+  res <- is_normal(x)
+  lillie <- res[grepl("Lilliefors", res$method), ]
+  expect_equal(lillie$p.value, nortest::lillie.test(x)$p.value)
+  naive <- suppressWarnings(stats::ks.test(x, "pnorm", mean(x), stats::sd(x))$p.value)
+  expect_lt(lillie$p.value, naive)
+})
+
+test_that("is_normal handles small, constant, and non-finite input", {
+  expect_equal(nrow(is_normal(c(1, 2))), 0)
+  expect_equal(nrow(is_normal(rep(3, 10))), 0)
+  expect_equal(is_normal(c(1, 5, 2, NA, Inf))$method, "Shapiro-Wilk normality test")
+  expect_named(is_normal(numeric(0)), c("statistic", "p.value", "method", "distribution.test", "p_value_sig", "distribution"))
+  expect_error(is_normal("a"), "numeric")
+  expect_error(is_normal(1:10, alpha = 2), "alpha")
+})
+
+test_that("is_normal's alpha sets distribution.test", {
+  set.seed(3)
+  x <- rnorm(100)
+  res <- is_normal(x, alpha = 0.999)
+  expect_equal(res$distribution.test, res$p.value >= 0.999)
 })
 
 test_that("is_poisson flags Poisson-shaped data as Poisson-shaped", {

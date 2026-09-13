@@ -63,14 +63,21 @@ test_that("pca_percent_var_explained's y scale keeps 10% breaks and a tightened 
   expect_equal(y_scale$expand, ggplot2::expansion(mult = c(0, 0.01)))
 })
 
-test_that("plot.prcomp dispatches to the right underlying plot for each type", {
+test_that("pca_plot dispatches to the right underlying plot for each type", {
   pca_model <- stats::prcomp(mtcars, center = TRUE, scale. = TRUE)
   mtcars2 <- tibble::rownames_to_column(mtcars, "model")
 
-  expect_s3_class(plot(pca_model, type = "variance"), "ggplot")
-  expect_s3_class(plot(pca_model, type = "heatmap"), "ggplot")
-  expect_s3_class(plot(pca_model, type = "bi", newdata = mtcars2, column = "model"), "ggplot")
-  expect_s3_class(plot(pca_model, type = "biplot"), "ggplot")
+  expect_s3_class(pca_plot(pca_model, type = "variance"), "ggplot")
+  expect_s3_class(pca_plot(pca_model, type = "heatmap"), "ggplot")
+  expect_s3_class(pca_plot(pca_model, type = "bi", newdata = mtcars2, column = "model"), "ggplot")
+  expect_equal(pca_plot(pca_model, type = "biplot", x = 2, y = 3)$labels$x, "PC2")
+  expect_error(pca_plot(mtcars), "prcomp object")
+})
+
+test_that("TempleCBE does not replace stats' plot() method for prcomp", {
+  expect_false("plot.prcomp" %in% getNamespaceExports("TempleCBE"))
+  method <- utils::getS3method("plot", "prcomp")
+  expect_identical(environmentName(environment(method)), "stats")
 })
 
 test_that("pca_biplot returns a ggplot object with PC axis labels", {

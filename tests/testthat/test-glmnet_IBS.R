@@ -34,33 +34,57 @@ ibs_fixture <- function() {
 }
 
 skip_if_no_ibs_deps <- function() {
-  for (pkg in c("glmnet", "survival", "rsample", "yardstick")) skip_if_not_installed(pkg)
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes")) skip_if_not_installed(pkg)
 }
 
-test_that("glmnet_IBS returns one row per coefficient at lambda.min under both weightings", {
+test_that("glmnet_IBS returns one row per feature with a valid IBS under both covariate settings", {
   skip_if_no_ibs_deps()
   fx <- ibs_fixture()
 
-  for (weights in c("none", "ipcw")) {
+  for (covariates in c("path", "baseline")) {
     set.seed(3)
     res <- glmnet_IBS(
       fx$split, alpha = 0.5, recipe = fx$recipe, feature_names = fx$features,
-      time_data = fx$times, internal_folds = 3, cox.ties = "breslow", censoring_weights = weights
+      time_data = fx$times, internal_folds = 3, cox.ties = "breslow", covariates = covariates
     )
     expect_s3_class(res, "tbl_df")
     expect_named(res, c("IBS", "lambda", "term", "estimate", "alpha"))
-    expect_true(all(res$term %in% fx$features))
+    expect_equal(res$term, fx$features)
     expect_length(unique(res$IBS), 1)
-    expect_true(is.finite(res$IBS[1]))
+    expect_true(res$IBS[1] >= 0 && res$IBS[1] <= 1)
     expect_equal(unique(res$alpha), 0.5)
   }
+})
+
+test_that("glmnet_IBS chooses lambda with cv_coxnet on the baked analysis set", {
+  skip_if_no_ibs_deps()
+  fx <- ibs_fixture()
+  set.seed(3)
+  res <- glmnet_IBS(
+    fx$split, alpha = 1, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow", nlambda = 10
+  )
+
+  train <- recipes::bake(
+    recipes::prep(fx$recipe, training = rsample::analysis(fx$split)[rsample::analysis(fx$split)$tstart == 0, ]),
+    new_data = rsample::analysis(fx$split)
+  )
+  set.seed(3)
+  cv <- cv_coxnet(
+    as.data.frame(train[fx$features]), survival::Surv(train$tstart, train$tstop, train$status),
+    subject_id = train$id, v = 3, eval_time = c(5, 10, 20, 40),
+    metrics = yardstick::metric_set(yardstick::brier_survival_integrated),
+    nlambda = 10, cox.ties = "breslow"
+  )
+  expect_equal(res$lambda[1], cv$lambda_min)
+  expect_equal(res$estimate, generics::tidy(cv)$estimate)
 
   set.seed(3)
-  ipcw <- glmnet_IBS(
-    fx$split, alpha = 0.5, recipe = fx$recipe, feature_names = fx$features,
-    time_data = fx$times, internal_folds = 3, cox.ties = "breslow", censoring_weights = "ipcw"
+  one_se <- glmnet_IBS(
+    fx$split, alpha = 1, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow", nlambda = 10, rule = "1se"
   )
-  expect_true(ipcw$IBS[1] >= 0 && ipcw$IBS[1] <= 1)
+  expect_gte(one_se$lambda[1], res$lambda[1])
 })
 
 test_that("glmnet_IBS restricts the model to `formula` terms", {
@@ -74,18 +98,29 @@ test_that("glmnet_IBS restricts the model to `formula` terms", {
   expect_setequal(res$term, c("x1", "x2"))
 })
 
-test_that("glmnet_IBS reports failure_ibs when cv.glmnet cannot fit", {
+test_that("glmnet_IBS reports failure_ibs, with a warning, when the model cannot be fit", {
   skip_if_no_ibs_deps()
   fx <- ibs_fixture()
-  # cv.glmnet() refuses fewer than 3 folds.
-  res <- glmnet_IBS(
-    fx$split, recipe = fx$recipe, feature_names = fx$features,
-    time_data = fx$times, internal_folds = 1
+  expect_warning(
+    res <- glmnet_IBS(
+      fx$split, recipe = fx$recipe, feature_names = fx$features,
+      time_data = fx$times, internal_folds = 1
+    ),
+    "could not fit"
   )
-  expect_equal(res, tibble::tibble(IBS = 2, lambda = 0, alpha = 1))
+  expect_equal(res, tibble::tibble(IBS = NA_real_, lambda = NA_real_, alpha = 1))
+
+  expect_warning(
+    res2 <- glmnet_IBS(
+      fx$split, recipe = fx$recipe, feature_names = fx$features,
+      time_data = fx$times, internal_folds = 1, failure_ibs = 2
+    ),
+    "could not fit"
+  )
+  expect_equal(res2$IBS, 2)
 })
 
-test_that("glmnet_IBS validates its inputs", {
+test_that("glmnet_IBS validates its inputs and retired options", {
   skip_if_no_ibs_deps()
   fx <- ibs_fixture()
   expect_error(
@@ -96,6 +131,30 @@ test_that("glmnet_IBS validates its inputs", {
     glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, time_data = fx$times["tstop"]),
     "missing column\\(s\\): tstart"
   )
+  expect_error(
+    glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, censoring_weights = "none"),
+    "0\\.2\\.0"
+  )
+  expect_error(
+    glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, metric = "not_a_metric"),
+    "yardstick survival metric"
+  )
+  expect_error(
+    glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, type.measure = "deviance"),
+    "replaced by `metric`"
+  )
+})
+
+test_that("glmnet_IBS accepts feature_names as a function of the baked data", {
+  skip_if_no_ibs_deps()
+  fx <- ibs_fixture()
+  set.seed(3)
+  res <- glmnet_IBS(
+    fx$split, alpha = 0, recipe = fx$recipe,
+    feature_names = function(baked) grep("^x[12]$", names(baked), value = TRUE),
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow"
+  )
+  expect_setequal(res$term, c("x1", "x2"))
 })
 
 test_that("alpha_grid has num_fixed even steps plus one random value per gap", {
@@ -116,52 +175,6 @@ test_that("alpha_grid has num_fixed even steps plus one random value per gap", {
   expect_length(alpha_grid(3, 3), 3)
   expect_error(alpha_grid(10, 4.2), "whole number")
   expect_error(alpha_grid(5, 6), "no smaller than")
-})
-
-test_that("fill_relative_risk fills from the last known value and refuses subjects with none", {
-  filled <- fill_relative_risk(data.frame(id = 1, relative_risk = c(1, 3, NA, NA)), "id")
-  expect_equal(filled$relative_risk, c(1, 3, 3, 3))
-
-  expect_error(
-    fill_relative_risk(data.frame(id = c(1, 1, 2, 2), relative_risk = c(1, 2, NA, NA)), "id"),
-    "no known value: 2"
-  )
-})
-
-test_that("censoring_prob steps at censoring times, with a left limit", {
-  skip_if_not_installed("survival")
-  # Censored at 2 and 6 (status 0 there); events at 4 and 8.
-  cens_fit <- survival::survfit(survival::Surv(c(2, 4, 6, 8), 1 - c(0, 1, 0, 1)) ~ 1)
-  expect_equal(censoring_prob(c(1, 2, 3, 6), cens_fit), c(1, 0.75, 0.75, 0.375))
-  expect_equal(censoring_prob(c(2, 6), cens_fit, left = TRUE), c(1, 0.75))
-})
-
-test_that("ibs_rows_ipcw applies Graf weights, matching a hand-computed Brier score", {
-  skip_if_not_installed("survival")
-  skip_if_not_installed("yardstick")
-
-  # Training subjects give G(t) = 1 before 2, 3/4 on [2, 6), 3/8 from 6.
-  train_raw <- data.frame(id = 1:4, tstop = c(2, 4, 6, 8), status = c(0, 1, 0, 1))
-  # Subject 11 has an event at 5; subject 12 is censored at 7 (two intervals).
-  test_raw <- data.frame(id = c(11, 12, 12), tstop = c(5, 3, 7), status = c(1, 0, 0))
-  test <- data.frame(
-    id = rep(c(11, 12), each = 2),
-    .eval_time = rep(c(3, 6), 2),
-    .pred_survival = c(0.9, 0.5, 0.8, 0.6)
-  )
-
-  rows <- ibs_rows_ipcw(test, train_raw, test_raw, c(3, 6), "id", "tstop", "status")
-  expect_equal(rows$.time, c(5, 7))
-  expect_equal(rows$.status, c(1, 0))
-
-  weights <- lapply(rows$.pred, `[[`, ".weight_censored")
-  # 11: at risk at 3 -> 1/G(3); event by 6 -> 1/G(5-). 12: at risk at both -> 1/G(3), 1/G(6).
-  expect_equal(weights[[1]], c(4 / 3, 4 / 3))
-  expect_equal(weights[[2]], c(4 / 3, 8 / 3))
-
-  bs <- yardstick::brier_survival(rows, truth = .truth, .pred)
-  # t = 6: 11 had the event -> 0.5^2 * 4/3; 12 still at risk -> 0.4^2 * 8/3; over n = 2.
-  expect_equal(bs$.estimate[bs$.eval_time == 6], (0.25 * 4 / 3 + 0.16 * 8 / 3) / 2)
 })
 
 test_that("tune_over_alpha returns safely() results named by alpha", {
@@ -190,18 +203,6 @@ test_that("summarize_tune_results binds successful fits across splits", {
   expect_s3_class(res, "tbl_df")
   expect_setequal(unique(res$inner_resamples_splits), c("1", "2"))
   expect_setequal(unique(res$alpha), c(0.5, 1))
-})
-
-test_that("glmnet_IBS accepts feature_names as a function of the baked data", {
-  skip_if_no_ibs_deps()
-  fx <- ibs_fixture()
-  set.seed(3)
-  res <- glmnet_IBS(
-    fx$split, alpha = 0, recipe = fx$recipe,
-    feature_names = function(baked) grep("^x[12]$", names(baked), value = TRUE),
-    time_data = fx$times, internal_folds = 3, cox.ties = "breslow"
-  )
-  expect_setequal(res$term, c("x1", "x2"))
 })
 
 test_that("tune_over_alpha fits one model per formula and records it", {

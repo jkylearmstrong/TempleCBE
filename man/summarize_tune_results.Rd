@@ -19,7 +19,7 @@ summarize_tune_results(
 of the `inner_resamples` column of [rsample::nested_cv()]).}
 
 \item{...}{Arguments passed to [glmnet_IBS()] (`recipe`, `feature_names`,
-`time_data`, `id_col`, `censoring_weights`, ...).}
+`time_data`, `id_col`, `cox.ties`, ...).}
 
 \item{num_alpha_values}{Total number of `alpha` values in the grid.}
 
@@ -44,5 +44,5 @@ successful fits. Fits that errored are dropped. A split draws its own random
 `alpha` values, reproducibly: the map runs with `furrr_options(seed = TRUE)`.
 }
 \seealso{
-[glmnet_IBS()], [tune_over_alpha()]
+[glmnet_IBS()], [tune_over_alpha()], [nested_cv_coxnet()]
 }

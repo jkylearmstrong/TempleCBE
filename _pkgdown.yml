@@ -31,13 +31,30 @@ reference:
       - calculate_fences
       - flag_outliers
 
-  - title: Tidymodels Recipe Steps & Modeling Utilities
-    desc: Recipe steps and modeling evaluation metrics.
+  - title: Penalized Cox Models for Survival Data
+    desc: >
+      Elastic-net Cox regression for right-censored and start/stop outcomes,
+      cross-validation and nested cross-validation with yardstick survival
+      metrics, and helpers for scoring start/stop models correctly.
     contents:
-      - step_famd
+      - coxnet
+      - predict.coxnet_model
+      - tidy.coxnet_model
+      - cv_coxnet
+      - cv_coxnet-methods
+      - nested_cv_coxnet
+      - surv_subject_truth
+      - censoring_km
+      - graf_weights
+      - add_graf_weights
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+
+  - title: Tidymodels Recipe Steps & Modeling Utilities
+    desc: Recipe steps and workflow set helpers.
+    contents:
+      - step_famd
       - get_model_parameters
       - fit_n_rank
 
@@ -83,7 +100,7 @@ reference:
       - pca_loading_diff
       - pca_loading_diff_heatmap
       - rotation_matrix
-      - plot.prcomp
+      - pca_plot
 
   - title: Visualization & Reporting
     desc: Manhattan/volcano plots, report generation, and document conversions.
@@ -110,6 +127,12 @@ reference:
       - scan_data_io
       - read_search
       - write_search
+
+  - title: De-identification & Investigator Pseudonyms
+    desc: Functions to generate synthetic investigator names and anonymize real identities for reproducible reporting.
+    contents:
+      - generate_pi_names
+      - anonymize_pi
 
   - title: Temple Brand
     desc: >

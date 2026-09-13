@@ -27,8 +27,9 @@ statistic's null distribution assumes a continuous CDF, and the Poisson
 distribution is discrete with real point masses, which inflates the KS
 statistic (and deflates its p-value) regardless of true fit — the
 chi-squared test is the standard, correctly-calibrated tool for
-discrete/count goodness-of-fit. \code{\link{is_normal}} uses a
-Kolmogorov-Smirnov test because the normal distribution is continuous.
+discrete/count goodness-of-fit. \code{\link{is_normal}} uses the
+Lilliefors variant of the Kolmogorov-Smirnov test, which suits the
+continuous normal distribution.
 
 Since the Poisson distribution's support is the non-negative integers,
 this returns an empty tibble for vectors containing negative values or
