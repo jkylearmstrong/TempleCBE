@@ -66,7 +66,10 @@
 #'   backend.
 #' @param failure_ibs IBS reported when `cv.glmnet()` fails to fit (default 2,
 #'   outside the valid 0-1 range so failed fits are easy to filter out).
-#' @param ... Further arguments passed to [glmnet::cv.glmnet()].
+#' @param ... Further arguments passed to [glmnet::cv.glmnet()], such as
+#'   `cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
+#'   5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
+#'   versions.
 #' @return A tibble with columns `IBS`, `lambda`, `term`, `estimate`, and
 #'   `alpha`: one row per coefficient at `lambda.min`. When the fit fails, a
 #'   single row with `IBS = failure_ibs`, `lambda = 0`, and `alpha`.

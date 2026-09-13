@@ -63,7 +63,10 @@ backend.}
 \item{failure_ibs}{IBS reported when `cv.glmnet()` fails to fit (default 2,
 outside the valid 0-1 range so failed fits are easy to filter out).}
 
-\item{...}{Further arguments passed to [glmnet::cv.glmnet()].}
+\item{...}{Further arguments passed to [glmnet::cv.glmnet()], such as
+`cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
+5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
+versions.}
 }
 \value{
 A tibble with columns `IBS`, `lambda`, `term`, `estimate`, and
