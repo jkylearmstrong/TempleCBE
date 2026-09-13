@@ -36,6 +36,10 @@ reference:
     contents:
       - step_famd
       - glmnet_IBS
+      - tune_over_alpha
+      - summarize_tune_results
+      - get_model_parameters
+      - fit_n_rank
 
   - title: Statistical Testing & EDA
     desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
@@ -82,6 +86,14 @@ reference:
       - create_toc_from_sas_pdf
       - read_excel_multiple_headers
       - read_workbook
+      - km_summary_to_prism
+      - convert_pdf_to_docx
+      - convert_pdfs_to_docx
+      - check_docx_toolchain
+      - find_python
+      - find_soffice
+      - run_sas_script
+      - find_sas
 
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
@@ -93,6 +105,7 @@ reference:
       - delete_nul_files
       - find_code
       - sd.error
+      - profvis_summary
       - install.packages.no_lock
       - "%like%"
       - "%ilike%"

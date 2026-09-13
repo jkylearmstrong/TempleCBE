@@ -1,7 +1,7 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.1.8
+Version: 0.2.0
 Authors@R: 
     person("J Kyle", "Armstrong", email = "j.kyle.armstrong@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4269-0121"))
@@ -48,15 +48,22 @@ Suggests:
     missForest,
     missRanger,
     openxlsx,
+    parsnip,
     pkgload,
+    profvis,
     quarto,
+    reticulate,
     rmarkdown,
     rsample (>= 1.0.0),
     survival (>= 3.5.0),
     testthat (>= 3.0.0),
     tidymodels (>= 1.1.0),
+    tune (>= 1.1.0),
     withr,
+    workflows,
+    workflowsets (>= 1.0.0),
     writexl,
+    yardstick (>= 1.2.0),
     zip
 VignetteBuilder: knitr
 Config/testthat/edition: 3
