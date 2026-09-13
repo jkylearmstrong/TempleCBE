@@ -36,6 +36,24 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="templecbe-development-version">TempleCBE (development version)<a class="anchor" aria-label="anchor" href="#templecbe-development-version"></a></h2>
+<div class="section level3">
+<h3 id="temple-brand-development-version">Temple brand<a class="anchor" aria-label="anchor" href="#temple-brand-development-version"></a></h3>
+<ul><li>New <code><a href="../reference/temple_colors.html">temple_colors()</a></code>, <code><a href="../reference/temple_pal.html">temple_pal()</a></code>, <code><a href="../reference/scale_colour_temple.html">scale_colour_temple()</a></code>/<code><a href="../reference/scale_colour_temple.html">scale_color_temple()</a></code>/<code><a href="../reference/scale_colour_temple.html">scale_fill_temple()</a></code>, and <code><a href="../reference/theme_temple.html">theme_temple()</a></code> draw R graphics in the Temple University palette used by the <a href="https://github.com/jkylearmstrong/quarto_temple_brand" class="external-link">quarto_temple_brand</a> Quarto extension. <code><a href="../reference/temple_brand_path.html">temple_brand_path()</a></code> returns a bundled copy of its <code>brand.yml</code>, for <code><a href="https://quarto-dev.github.io/quarto-r/reference/theme_helpers.html" class="external-link">quarto::theme_brand_ggplot2()</a></code> or <code>bslib::bs_theme(brand = )</code>.</li>
+<li>New <code><a href="../reference/use_temple_brand.html">use_temple_brand()</a></code> installs that extension into a Quarto project, creating <code>_quarto.yml</code> if needed, which enables the <code>temple-html</code>, <code>temple-pdf</code> (LaTeX title page), <code>temple-typst</code>, and <code>temple-revealjs</code> formats.</li>
+<li>
+<code>create_report(template_name = "temple")</code> scaffolds a report in those formats; <code>install_brand = TRUE</code> also installs the extension.</li>
+<li>Plots use the Temple palette. Diverging heatmaps (<code><a href="../reference/correlation_plot.html">correlation_plot()</a></code>, <code><a href="../reference/correlation_diff_heatmap.html">correlation_diff_heatmap()</a></code>, <code><a href="../reference/pca_feature_loading_heatmap.html">pca_feature_loading_heatmap()</a></code>, <code><a href="../reference/pca_loading_diff_heatmap.html">pca_loading_diff_heatmap()</a></code>) run dark blue-white-cherry instead of blue-white-red; <code><a href="../reference/missmap.html">missmap()</a></code> counts, <code><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss()</a></code>, <code><a href="../reference/plot_pca_bi.html">plot_pca_bi()</a></code>/<code><a href="../reference/pca_biplot.html">pca_biplot()</a></code> loadings, <code><a href="../reference/pca_percent_var_explained.html">pca_percent_var_explained()</a></code>, and the reference lines of <code><a href="../reference/distribution_plot.html">distribution_plot()</a></code>, <code><a href="../reference/manhattan_plot.html">manhattan_plot()</a></code>, and <code><a href="../reference/volcano_plot.html">volcano_plot()</a></code> use Temple colors. Only colors change.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="zip_render-fixes-development-version">
+<code>zip_render()</code> fixes<a class="anchor" aria-label="anchor" href="#zip_render-fixes-development-version"></a></h3>
+<ul><li>Extension formats such as <code>titlepage-pdf</code> or <code>temple-pdf</code> weren’t matched to their output file, so it was silently left out of the zip. They now resolve to their base format’s extension.</li>
+<li>
+<code>_quarto.yml</code>, <code>_brand.yml</code>, <code>_variables.yml</code>, and <code>_extensions/</code> are copied into the build directory, so documents that use a project, brand, or extension format render there as they do in place. With <code>include_sources = TRUE</code> they are zipped under their relative paths.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="templecbe-020">TempleCBE 0.2.0<a class="anchor" aria-label="anchor" href="#templecbe-020"></a></h2>
 <div class="section level3">
 <h3 id="glmnet_ibs-rebuilt-for-startstop-survival-data-breaking-0-2-0">

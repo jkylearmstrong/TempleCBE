@@ -12,7 +12,8 @@ create_report(
   child = TRUE,
   type = ".qmd",
   include_bib = TRUE,
-  include_tex = TRUE
+  include_tex = TRUE,
+  install_brand = FALSE
 )
 ```
 
@@ -25,7 +26,7 @@ create_report(
 
 - template_name:
 
-  One of `"t_test_example"` (default) or `"example"`.
+  One of `"t_test_example"` (default), `"example"`, or `"temple"`.
 
 - child:
 
@@ -43,14 +44,30 @@ create_report(
 
   Logical (default `TRUE`); also copy the title `.tex` file.
 
+- install_brand:
+
+  Logical (default `FALSE`); for the `"temple"` template, also run
+  [`use_temple_brand`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)`(location)`,
+  which downloads the extension.
+
 ## Value
 
 A list indicating whether each file was created.
+
+## Details
+
+The `"temple"` template renders with the
+[quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+extension's `temple-html`, `temple-pdf`, and `temple-typst` formats, so
+it needs that extension installed beside it (see
+[`use_temple_brand`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)).
+It uses no `title.tex` or child document, and is Quarto-only.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
 create_report(here::here("analysis"))
+create_report(here::here("analysis"), template_name = "temple", install_brand = TRUE)
 } # }
 ```

@@ -51,7 +51,8 @@ files) into <code>location</code>.</p>
 <span>  child <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">".qmd"</span>,</span>
 <span>  include_bib <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  include_tex <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_tex <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  install_brand <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -64,7 +65,7 @@ files) into <code>location</code>.</p>
 
 
 <dt id="arg-template-name">template_name<a class="anchor" aria-label="anchor" href="#arg-template-name"></a></dt>
-<dd><p>One of <code>"t_test_example"</code> (default) or <code>"example"</code>.</p></dd>
+<dd><p>One of <code>"t_test_example"</code> (default), <code>"example"</code>, or <code>"temple"</code>.</p></dd>
 
 
 <dt id="arg-child">child<a class="anchor" aria-label="anchor" href="#arg-child"></a></dt>
@@ -82,16 +83,32 @@ files) into <code>location</code>.</p>
 <dt id="arg-include-tex">include_tex<a class="anchor" aria-label="anchor" href="#arg-include-tex"></a></dt>
 <dd><p>Logical (default <code>TRUE</code>); also copy the title <code>.tex</code> file.</p></dd>
 
+
+<dt id="arg-install-brand">install_brand<a class="anchor" aria-label="anchor" href="#arg-install-brand"></a></dt>
+<dd><p>Logical (default <code>FALSE</code>); for the <code>"temple"</code>
+template, also run <code><a href="use_temple_brand.html">use_temple_brand</a>(location)</code>, which
+downloads the extension.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list indicating whether each file was created.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The <code>"temple"</code> template renders with the
+<a href="https://github.com/jkylearmstrong/quarto_temple_brand" class="external-link">quarto_temple_brand</a>
+extension's <code>temple-html</code>, <code>temple-pdf</code>, and <code>temple-typst</code>
+formats, so it needs that extension installed beside it (see
+<code><a href="use_temple_brand.html">use_temple_brand</a></code>). It uses no <code>title.tex</code> or child
+document, and is Quarto-only.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">create_report</span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"analysis"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">create_report</span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"analysis"</span><span class="op">)</span>, template_name <span class="op">=</span> <span class="st">"temple"</span>, install_brand <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

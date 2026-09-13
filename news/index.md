@@ -1,5 +1,58 @@
 # Changelog
 
+## TempleCBE (development version)
+
+### Temple brand
+
+- New
+  [`temple_colors()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_colors.md),
+  [`temple_pal()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_pal.md),
+  [`scale_colour_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)/[`scale_color_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)/[`scale_fill_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md),
+  and
+  [`theme_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_temple.md)
+  draw R graphics in the Temple University palette used by the
+  [quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+  Quarto extension.
+  [`temple_brand_path()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_brand_path.md)
+  returns a bundled copy of its `brand.yml`, for
+  [`quarto::theme_brand_ggplot2()`](https://quarto-dev.github.io/quarto-r/reference/theme_helpers.html)
+  or `bslib::bs_theme(brand = )`.
+- New
+  [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
+  installs that extension into a Quarto project, creating `_quarto.yml`
+  if needed, which enables the `temple-html`, `temple-pdf` (LaTeX title
+  page), `temple-typst`, and `temple-revealjs` formats.
+- `create_report(template_name = "temple")` scaffolds a report in those
+  formats; `install_brand = TRUE` also installs the extension.
+- Plots use the Temple palette. Diverging heatmaps
+  ([`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md),
+  [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md),
+  [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md),
+  [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md))
+  run dark blue-white-cherry instead of blue-white-red;
+  [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
+  counts,
+  [`plot_features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md),
+  [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)/[`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
+  loadings,
+  [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md),
+  and the reference lines of
+  [`distribution_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_plot.md),
+  [`manhattan_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/manhattan_plot.md),
+  and
+  [`volcano_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.md)
+  use Temple colors. Only colors change.
+
+### `zip_render()` fixes
+
+- Extension formats such as `titlepage-pdf` or `temple-pdf` weren’t
+  matched to their output file, so it was silently left out of the zip.
+  They now resolve to their base format’s extension.
+- `_quarto.yml`, `_brand.yml`, `_variables.yml`, and `_extensions/` are
+  copied into the build directory, so documents that use a project,
+  brand, or extension format render there as they do in place. With
+  `include_sources = TRUE` they are zipped under their relative paths.
+
 ## TempleCBE 0.2.0
 
 ### `glmnet_IBS()` rebuilt for start/stop survival data (breaking)

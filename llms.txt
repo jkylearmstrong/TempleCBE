@@ -358,6 +358,26 @@ Manhattan/volcano plots, report generation, and document conversions.
 - [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md)
   : Search a Directory Tree for File-Write Calls
 
+## Temple Brand
+
+Temple University colors, ggplot2 scales and theme, and setup for the
+quarto_temple_brand Quarto extension.
+
+- [`temple_colors()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_colors.md)
+  : Temple University Brand Colors
+- [`temple_pal()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_pal.md)
+  : Temple Color Palettes
+- [`scale_colour_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  [`scale_color_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  [`scale_fill_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  : Temple Color and Fill Scales for ggplot2
+- [`theme_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_temple.md)
+  : Temple ggplot2 Theme
+- [`temple_brand_path()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_brand_path.md)
+  : Path to the Bundled Temple brand.yml
+- [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
+  : Install the Temple Brand Quarto Extension Into a Project
+
 ## Helper & Infix Operators
 
 Clean column naming, string matching, and vector manipulation.
