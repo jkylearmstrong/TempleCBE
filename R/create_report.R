@@ -4,7 +4,7 @@
 #' files) into \code{location}.
 #'
 #' The \code{"temple"} template renders with the
-#' \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+#' \href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 #' extension's \code{temple-html}, \code{temple-pdf}, and \code{temple-typst}
 #' formats, so it needs that extension installed beside it (see
 #' \code{\link{use_temple_brand}}). It uses no \code{title.tex} or child

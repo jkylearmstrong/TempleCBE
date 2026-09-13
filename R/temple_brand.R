@@ -31,7 +31,7 @@ temple_palettes <- list(
 #' Temple University Brand Colors
 #'
 #' Hex codes for the Temple University palette used by the
-#' \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+#' \href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 #' Quarto extension, so R graphics match branded reports. The palette follows
 #' Temple's current brand
 #' (\url{https://liberalarts.temple.edu/marcom/logos-and-brand}): primary
@@ -208,7 +208,7 @@ temple_brand_path <- function() {
 
 #' Install the Temple Brand Quarto Extension Into a Project
 #'
-#' Installs \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+#' Installs \href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 #' with \code{quarto::quarto_add_extension()}, creating a minimal
 #' \code{_quarto.yml} first if there isn't one (Quarto only applies a brand
 #' extension inside a project). Documents in \code{path} can then use
@@ -231,7 +231,7 @@ temple_brand_path <- function() {
 #' create_report("analysis", template_name = "temple")
 #' }
 use_temple_brand <- function(path = ".",
-                             extension = "jkylearmstrong/quarto_temple_brand",
+                             extension = "jkylearmstrong-temple/quarto_temple_brand",
                              quiet = FALSE) {
   if (!requireNamespace("quarto", quietly = TRUE)) {
     stop("Package 'quarto' is required by use_temple_brand(). Install it with install.packages(\"quarto\").", call. = FALSE)
