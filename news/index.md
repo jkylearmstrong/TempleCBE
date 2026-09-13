@@ -54,6 +54,9 @@
   `dark-blue`) are gone. The `"main"` palette is cherry, Night Owl,
   Owl’s Eye, Founder’s Garden, Upward Momentum, Diamond Acres, black;
   `"sequential"` runs Book Nook to cherry.
+- Links in the bundled `brand.yml` are standard blue (`#0563c1`) rather
+  than cherry, matching quarto_temple_brand. The brand guide sets no
+  link color, and red links read as errors, especially in print.
 
 ### `zip_render()` fixes
 
