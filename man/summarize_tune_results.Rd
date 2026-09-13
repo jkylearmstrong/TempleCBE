@@ -10,6 +10,7 @@ summarize_tune_results(
   num_alpha_values = 10,
   num_fixed = 6,
   alphas = NULL,
+  formulas = NULL,
   progress = FALSE
 )
 }
@@ -25,7 +26,10 @@ of the `inner_resamples` column of [rsample::nested_cv()]).}
 \item{num_fixed}{Number of evenly spaced values from 0 to 1 in the grid.}
 
 \item{alphas}{Optional numeric vector of `alpha` values to use instead of
-the generated grid.}
+the generated grid; in formula mode, one per formula.}
+
+\item{formulas}{Optional character vector of `+`-separated feature sets,
+each fit as a separate model (see [glmnet_IBS()]'s `formula`).}
 
 \item{progress}{Show a progress bar.}
 }

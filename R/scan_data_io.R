@@ -1,62 +1,3 @@
-#' Normalize a Path Safely (Robust Across Relative/Absolute & Slash Styles)
-#' @keywords internal
-#' @noRd
-.normalize_safely <- function(x) {
-  x <- ifelse(is.na(x) | trimws(x) == "", NA_character_, x)
-  suppressWarnings(
-    vapply(x, function(xx) {
-      if (is.na(xx)) return(NA_character_)
-      tryCatch(normalizePath(xx, winslash = "\\", mustWork = FALSE),
-               error = function(e) xx)
-    }, FUN.VALUE = character(1))
-  )
-}
-
-#' Vectorized Parser for `here::here('a', 'b', 'file.ext')` Calls
-#' @keywords internal
-#' @noRd
-.parse_here_call_vec <- function(x) {
-  m <- stringr::str_match(x, "here::here\\s*\\((.*?)\\)")
-  inner <- m[, 2]
-  out <- rep(NA_character_, length(x))
-  idx <- which(!is.na(inner))
-  if (!length(idx)) return(out)
-
-  out[idx] <- vapply(idx, function(i) {
-    parts <- stringr::str_match_all(inner[i], "(['\"])(.*?)\\1")[[1]]
-    if (is.null(parts) || nrow(parts) == 0) return(NA_character_)
-    args <- parts[, 3]
-    do.call(here::here, as.list(args))
-  }, FUN.VALUE = character(1))
-
-  out
-}
-
-#' Vectorized File Metadata Lookup
-#' @keywords internal
-#' @noRd
-.file_meta_fs <- function(paths) {
-  if (!length(paths)) {
-    return(tibble::tibble(
-      path = character(0), file_name = character(0),
-      dir_name = character(0), dir_path = character(0),
-      m_time = as.POSIXct(character(0)), c_time = as.POSIXct(character(0)),
-      size = numeric(0), uname = character(0)
-    ))
-  }
-  finfo <- fs::file_info(paths)
-  tibble::tibble(
-    path = as.character(finfo$path),
-    file_name = basename(paths),
-    dir_name = basename(dirname(paths)),
-    dir_path = dirname(paths),
-    m_time = finfo$modification_time,
-    c_time = dplyr::coalesce(finfo$birth_time, finfo$change_time, finfo$modification_time),
-    size   = as.numeric(finfo$size),
-    uname  = if ("user" %in% names(finfo)) finfo$user else NA_character_
-  )
-}
-
 #' Audit Data File Read/Write Calls Against a Project's Files on Disk
 #'
 #' Scans \code{code_path} for read and write calls (via
@@ -111,12 +52,12 @@ scan_data_io <- function(code_path,
   ws <- write_search(code_path, include_comments = include_comments_write)
   rs <- read_search(code_path, include_comments = TRUE)
 
-  actual_root <- .normalize_safely(here::here())
-  custom_root <- .normalize_safely(project_root)
+  actual_root <- normalize_safely(here::here())
+  custom_root <- normalize_safely(project_root)
 
   adjust_here_path <- function(p) {
     if (is.null(p) || length(p) == 0) return(p)
-    p_norm <- .normalize_safely(p)
+    p_norm <- normalize_safely(p)
     actual_root_lower <- tolower(actual_root)
     actual_root_lower_slash <- if (grepl("[/\\\\]$", actual_root_lower)) actual_root_lower else paste0(actual_root_lower, .Platform$file.sep)
 
@@ -156,7 +97,7 @@ scan_data_io <- function(code_path,
 
   writes_multi <- ws |>
     dplyr::mutate(
-      here_path = adjust_here_path(.parse_here_call_vec(line)),
+      here_path = adjust_here_path(parse_here_call_vec(line)),
       m = stringr::str_match(line, full_path_re),
       output_dir = m[, 2],
       output_file_from_path = m[, 4],
@@ -174,14 +115,14 @@ scan_data_io <- function(code_path,
         !is.na(output_file) ~ output_file,
         TRUE ~ NA_character_
       ),
-      outfile_path = .normalize_safely(outfile_path),
+      outfile_path = normalize_safely(outfile_path),
       output_file = dplyr::coalesce(output_file_from_path, output_file)
     ) |>
     dplyr::distinct(file, path, line_number, output_file, outfile_path, .keep_all = TRUE)
 
   existing_write_tbl <- writes_resolved |>
     dplyr::filter(!is.na(outfile_path)) |>
-    dplyr::mutate(path = .normalize_safely(outfile_path)) |>
+    dplyr::mutate(path = normalize_safely(outfile_path)) |>
     dplyr::group_by(path) |>
     dplyr::summarise(
       write_pattern = paste(unique(pattern), collapse = ", "),
@@ -198,7 +139,7 @@ scan_data_io <- function(code_path,
     ) |>
     dplyr::filter(workflow_input) |>
     dplyr::mutate(
-      here_path = adjust_here_path(.parse_here_call_vec(line)),
+      here_path = adjust_here_path(parse_here_call_vec(line)),
       m = stringr::str_match(line, full_path_re),
       input_dir = m[, 2],
       input_file_from_path = m[, 4],
@@ -219,7 +160,7 @@ scan_data_io <- function(code_path,
         !is.na(input_file) ~ as.character(input_file),
         TRUE ~ NA_character_
       ),
-      infile_path = .normalize_safely(infile_path),
+      infile_path = normalize_safely(infile_path),
       input_file = dplyr::coalesce(input_file_from_path, as.character(input_file)),
       workflow_input = TRUE
     ) |>
@@ -243,9 +184,9 @@ scan_data_io <- function(code_path,
       dir_name = names(dirs_deliverables),
       dir_path = dirs_deliverables
     ) |>
-      dplyr::left_join(.file_meta_fs(present_by_dir), by = c("dir_name", "dir_path")) |>
+      dplyr::left_join(file_meta_fs(present_by_dir), by = c("dir_name", "dir_path")) |>
       dplyr::mutate(
-        path = .normalize_safely(path),
+        path = normalize_safely(path),
         file_name = dplyr::if_else(is.na(path), NA_character_, basename(path)),
         deliverable = TRUE
       )
@@ -257,8 +198,8 @@ scan_data_io <- function(code_path,
   }
 
   all_files <- list.files(project_root, pattern = paste0("\\.", ext, "$"), full.names = TRUE, recursive = TRUE)
-  all_files_tbl <- .file_meta_fs(all_files) |>
-    dplyr::mutate(path = .normalize_safely(path))
+  all_files_tbl <- file_meta_fs(all_files) |>
+    dplyr::mutate(path = normalize_safely(path))
 
   inputs_heur <- inputs |>
     dplyr::rowwise() |>
