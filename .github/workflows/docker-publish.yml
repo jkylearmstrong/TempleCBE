@@ -41,6 +41,16 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
 
+      - name: Cache renv package sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/renv/cache
+            ~/.cache/R
+          key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
       - uses: docker/build-push-action@v6
         with:
           context: .
