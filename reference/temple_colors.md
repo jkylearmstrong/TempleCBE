@@ -1,7 +1,7 @@
 # Temple University Brand Colors
 
 Hex codes for the Temple University palette used by the
-[quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+[quarto_temple_brand](https://github.com/jkylearmstrong-temple/quarto_temple_brand)
 Quarto extension, so R graphics match branded reports. The palette
 follows Temple's current brand
 (<https://liberalarts.temple.edu/marcom/logos-and-brand>): primary

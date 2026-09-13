@@ -1,7 +1,7 @@
 # Install the Temple Brand Quarto Extension Into a Project
 
 Installs
-[quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+[quarto_temple_brand](https://github.com/jkylearmstrong-temple/quarto_temple_brand)
 with
 [`quarto::quarto_add_extension()`](https://quarto-dev.github.io/quarto-r/reference/quarto_add_extension.html),
 creating a minimal `_quarto.yml` first if there isn't one (Quarto only
@@ -15,7 +15,7 @@ brand colors, fonts, and logo.
 ``` r
 use_temple_brand(
   path = ".",
-  extension = "jkylearmstrong/quarto_temple_brand",
+  extension = "jkylearmstrong-temple/quarto_temple_brand",
   quiet = FALSE
 )
 ```

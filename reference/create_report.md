@@ -57,7 +57,7 @@ A list indicating whether each file was created.
 ## Details
 
 The `"temple"` template renders with the
-[quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+[quarto_temple_brand](https://github.com/jkylearmstrong-temple/quarto_temple_brand)
 extension's `temple-html`, `temple-pdf`, and `temple-typst` formats, so
 it needs that extension installed beside it (see
 [`use_temple_brand`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)).

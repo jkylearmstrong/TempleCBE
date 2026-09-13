@@ -11,7 +11,7 @@
   and
   [`theme_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_temple.md)
   draw R graphics in the Temple University palette used by the
-  [quarto_temple_brand](https://github.com/jkylearmstrong/quarto_temple_brand)
+  [quarto_temple_brand](https://github.com/jkylearmstrong-temple/quarto_temple_brand)
   Quarto extension.
   [`temple_brand_path()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_brand_path.md)
   returns a bundled copy of its `brand.yml`, for
@@ -19,9 +19,11 @@
   or `bslib::bs_theme(brand = )`.
 - New
   [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
-  installs that extension into a Quarto project, creating `_quarto.yml`
-  if needed, which enables the `temple-html`, `temple-pdf` (LaTeX title
-  page), `temple-typst`, and `temple-revealjs` formats.
+  installs that extension (from
+  `jkylearmstrong-temple/quarto_temple_brand` by default) into a Quarto
+  project, creating `_quarto.yml` if needed, which enables the
+  `temple-html`, `temple-pdf` (LaTeX title page), `temple-typst`, and
+  `temple-revealjs` formats.
 - `create_report(template_name = "temple")` scaffolds a report in those
   formats; `install_brand = TRUE` also installs the extension.
 - Plots use the Temple palette. Diverging heatmaps
