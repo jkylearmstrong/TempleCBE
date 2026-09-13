@@ -6,7 +6,7 @@
 \usage{
 use_temple_brand(
   path = ".",
-  extension = "jkylearmstrong/quarto_temple_brand",
+  extension = "jkylearmstrong-temple/quarto_temple_brand",
   quiet = FALSE
 )
 }
@@ -24,7 +24,7 @@ Invisibly, a list with \code{path}, \code{quarto_yml},
   \code{created_quarto_yml}, and \code{extension_dir}.
 }
 \description{
-Installs \href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+Installs \href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 with \code{quarto::quarto_add_extension()}, creating a minimal
 \code{_quarto.yml} first if there isn't one (Quarto only applies a brand
 extension inside a project). Documents in \code{path} can then use

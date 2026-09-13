@@ -15,7 +15,7 @@ A named character vector of hex codes.
 }
 \description{
 Hex codes for the Temple University palette used by the
-\href{https://github.com/jkylearmstrong/quarto_temple_brand}{quarto_temple_brand}
+\href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 Quarto extension, so R graphics match branded reports. The palette follows
 Temple's current brand
 (\url{https://liberalarts.temple.edu/marcom/logos-and-brand}): primary
