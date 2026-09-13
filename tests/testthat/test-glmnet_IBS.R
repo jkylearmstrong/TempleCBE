@@ -191,3 +191,42 @@ test_that("summarize_tune_results binds successful fits across splits", {
   expect_setequal(unique(res$inner_resamples_splits), c("1", "2"))
   expect_setequal(unique(res$alpha), c(0.5, 1))
 })
+
+test_that("glmnet_IBS accepts feature_names as a function of the baked data", {
+  skip_if_no_ibs_deps()
+  fx <- ibs_fixture()
+  set.seed(3)
+  res <- glmnet_IBS(
+    fx$split, alpha = 0, recipe = fx$recipe,
+    feature_names = function(baked) grep("^x[12]$", names(baked), value = TRUE),
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow"
+  )
+  expect_setequal(res$term, c("x1", "x2"))
+})
+
+test_that("tune_over_alpha fits one model per formula and records it", {
+  skip_if_no_ibs_deps()
+  skip_if_not_installed("furrr")
+  fx <- ibs_fixture()
+  runs <- tune_over_alpha(
+    fx$split, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+    formulas = c("x1 + x2", "x2 + x3"), alphas = c(0, 0.5)
+  )
+  expect_named(runs, c("0", "0.5"))
+  results <- lapply(runs, `[[`, "result")
+  expect_equal(unique(results[[1]]$formula), "x1 + x2")
+  expect_setequal(results[[2]]$term, c("x2", "x3"))
+
+  set.seed(8)
+  drawn <- tune_over_alpha(
+    fx$split, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+    formulas = "x1 + x3"
+  )
+  expect_length(drawn, 1)
+  expect_true(all(unique(drawn[[1]]$result$alpha) >= 0 & unique(drawn[[1]]$result$alpha) <= 1))
+
+  expect_error(tune_over_alpha(fx$split, formulas = "x1 + x2", alphas = c(0, 1)), "one value per")
+  expect_error(tune_over_alpha(fx$split, formulas = "x1 + x2", formula = "x1"), "not both")
+})
