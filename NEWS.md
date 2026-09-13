@@ -1,5 +1,9 @@
 # TempleCBE (development version)
 
+## `write_xlsx()` re-exported
+
+* `write_xlsx()` is re-exported from `writexl`, so `TempleCBE::write_xlsx()` works. Analysis code already calls it that way, but it previously failed with "'write_xlsx' is not an exported object". `writexl` moves from Suggests to Imports.
+
 ## Temple brand
 
 * New `temple_colors()`, `temple_pal()`, `scale_colour_temple()`/`scale_color_temple()`/`scale_fill_temple()`, and `theme_temple()` draw R graphics in the Temple University palette used by the [quarto_temple_brand](https://github.com/jkylearmstrong-temple/quarto_temple_brand) Quarto extension. `temple_brand_path()` returns a bundled copy of its `brand.yml`, for `quarto::theme_brand_ggplot2()` or `bslib::bs_theme(brand = )`.

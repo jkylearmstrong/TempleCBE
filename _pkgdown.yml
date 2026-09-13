@@ -96,6 +96,7 @@ reference:
       - create_toc_from_sas_pdf
       - read_excel_multiple_headers
       - read_workbook
+      - reexports
       - km_summary_to_prism
       - convert_pdf_to_docx
       - convert_pdfs_to_docx
