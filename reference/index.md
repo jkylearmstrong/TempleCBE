@@ -167,6 +167,9 @@ Manhattan/volcano plots, report generation, and document conversions.
   : Read Excel Data With Multi-Row Column Headers
 - [`read_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_workbook.md)
   : Read Every Sheet of an Excel Workbook
+- [`reexports`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  [`write_xlsx`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  : Objects exported from other packages
 - [`km_summary_to_prism()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_summary_to_prism.md)
   : Convert a Kaplan-Meier Summary Table to a GraphPad Prism Survival
   Table

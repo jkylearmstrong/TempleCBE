@@ -2,6 +2,15 @@
 
 ## TempleCBE (development version)
 
+### `write_xlsx()` re-exported
+
+- [`write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  is re-exported from `writexl`, so
+  [`TempleCBE::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  works. Analysis code already calls it that way, but it previously
+  failed with “‘write_xlsx’ is not an exported object”. `writexl` moves
+  from Suggests to Imports.
+
 ### Temple brand
 
 - New
