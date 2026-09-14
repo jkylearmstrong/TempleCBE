@@ -52,6 +52,37 @@ test_that("zip_reports bundles existing outputs, deliverables, and an index", {
   expect_true(any(grepl("^report_order\\.xlsx$", zip_contents)))
 })
 
+test_that("zip_reports disambiguates same-stem reports from different folders", {
+  skip_if_not(requireNamespace("openxlsx", quietly = TRUE), "openxlsx package not available")
+
+  tmp_dir <- file.path(tempdir(), "test_zip_reports_same_stem")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  analysis_dirs <- file.path(tmp_dir, c("analysis1", "analysis2"))
+  lapply(analysis_dirs, dir.create, recursive = TRUE, showWarnings = FALSE)
+
+  for (d in analysis_dirs) {
+    writeLines("qmd source", file.path(d, "analysis.qmd"))
+    writeLines("pdf bytes", file.path(d, "analysis.pdf"))
+  }
+
+  reports <- data.frame(
+    name = c("Analysis 1", "Analysis 2"),
+    path = file.path(analysis_dirs, "analysis.qmd"),
+    stage = c("01_analysis", "01_analysis"),
+    stringsAsFactors = FALSE
+  )
+
+  out_dir <- file.path(tmp_dir, "out")
+  zip_path <- zip_reports(reports, output_formats = "pdf", output_dir = out_dir)
+  zip_contents <- utils::unzip(zip_path, list = TRUE)$Name
+
+  expect_true(any(grepl("pdf/01_analysis/analysis1__analysis\\.pdf$", zip_contents)))
+  expect_true(any(grepl("pdf/01_analysis/analysis2__analysis\\.pdf$", zip_contents)))
+  expect_equal(length(grep("^pdf/01_analysis/.*analysis\\.pdf$", zip_contents)), 2)
+})
+
 test_that("zip_reports calls docx_from_pdf to fill in a missing DOCX", {
   skip_if_not(requireNamespace("openxlsx", quietly = TRUE), "openxlsx package not available")
 
