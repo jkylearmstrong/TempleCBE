@@ -8,7 +8,7 @@ generate_pi_names(
   n = 1,
   format = c("synthetic", "token"),
   prefix = "PI_",
-  n_chars = 8,
+  n_chars = 16,
   rename_fn = NULL,
   seed = NULL
 )
@@ -21,7 +21,7 @@ generate_pi_names(
 
 \item{prefix}{Character, prefix when format is `"token"` (default `"PI_"`).}
 
-\item{n_chars}{Integer, number of hex characters from the hash digest when `format = "token"` (default 8).}
+\item{n_chars}{Integer, number of hex characters from the hash digest when `format = "token"` (default 16).}
 
 \item{rename_fn}{Optional function to rename or format generated tokens/names.}
 
@@ -37,5 +37,5 @@ pseudonym tokens (`PI_...`).
 \examples{
 generate_pi_names(1)
 generate_pi_names(3, format = "token")
-generate_pi_names(3, format = "token", n_chars = 4)
+generate_pi_names(3, format = "token", n_chars = 8)
 }

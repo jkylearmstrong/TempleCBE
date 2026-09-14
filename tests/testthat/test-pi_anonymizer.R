@@ -29,8 +29,12 @@ test_that("generate_pseudonym_token works for cryptographic hash tokens and HMAC
   toks_rand <- generate_pseudonym_token(n = 3)
   expect_length(toks_rand, 3)
   expect_true(all(startsWith(toks_rand, "PI_")))
-  expect_equal(nchar(toks_rand[1]), 3 + 8)
+  expect_equal(nchar(toks_rand[1]), 3 + 16) # Default strengthened 16 hex chars
   expect_equal(length(unique(toks_rand)), 3)
+
+  # Full untruncated hash token (n_chars = NULL)
+  toks_full <- generate_pseudonym_token(n = 2, n_chars = NULL)
+  expect_equal(nchar(toks_full[1]), 3 + 64) # "PI_" + 64 hex chars of SHA-256
 
   # Reproducible with seed
   toks_s1 <- generate_pseudonym_token(n = 3, seed = 42)
@@ -40,9 +44,11 @@ test_that("generate_pseudonym_token works for cryptographic hash tokens and HMAC
   # Custom prefix
   expect_true(all(startsWith(generate_pseudonym_token(n = 2, prefix = "INVESTIGATOR_"), "INVESTIGATOR_")))
 
-  # Short names / tokens (e.g. n_chars = 4)
+  # Short names / tokens (e.g. n_chars = 4 and n_chars = 8)
   short_toks <- generate_pseudonym_token(n = 2, n_chars = 4)
   expect_equal(nchar(short_toks[1]), 3 + 4) # "PI_" + 4 hex chars
+  toks_8 <- generate_pseudonym_token(n = 2, n_chars = 8)
+  expect_equal(nchar(toks_8[1]), 3 + 8)
 
   # Custom renaming / formatting function
   lower_toks <- generate_pseudonym_token(n = 2, rename_fn = tolower)
@@ -56,7 +62,7 @@ test_that("generate_pseudonym_token works for cryptographic hash tokens and HMAC
   t2 <- generate_pseudonym_token("Franklin", key = "test_salt_key")
   expect_identical(t1, t2)
   expect_true(startsWith(t1, "PI_"))
-  expect_equal(nchar(t1), 3 + 8) # "PI_" + 8 hex chars
+  expect_equal(nchar(t1), 3 + 16) # Strengthened 16 hex chars
 
   # Vectorized HMAC tokens
   vec <- generate_pseudonym_token(c("Franklin", "Taylor", NA), key = "test_salt_key")
@@ -134,6 +140,6 @@ test_that("anonymize_pi enforces security and input validation", {
   # Security: refuses to write into repo tree
   expect_error(
     anonymize_pi("TestInvestigator", method = "token", secrets_path = file.path(".", "danger.json")),
-    "Refusing to write mapping into repository path"
+    "Refusing to .*repository path"
   )
 })

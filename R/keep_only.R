@@ -75,7 +75,7 @@ delete_nul_files <- function(path = here::here(), .dontask = FALSE, .verify_comm
     }
   }
 
-  for (cmd in delete_commands) shell(cmd)
+  for (cmd in delete_commands) safe_shell(cmd)
   invisible(nul_files)
 }
 

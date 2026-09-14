@@ -18,22 +18,32 @@
 # goes through these helpers so that missing-command, non-zero-exit and
 # genuine R-level errors all collapse to a single integer status.
 #
-# suppressWarnings(), not tryCatch(warning = ), on purpose: system2() still
-# returns a usable status alongside the warning (127 for a missing command), so
-# swallowing the warning and inspecting the status is strictly more
-# informative than treating any warning as total failure.
-.run_status <- function(cmd, args, ...) {
-  suppressWarnings(tryCatch(
-    as.integer(system2(cmd, args, ...)),
-    error = function(e) NA_integer_
-  ))
+# Every external call in this file goes through safe_system2 so that
+# missing executables are explicitly validated and failures are instrumented.
+.run_status <- function(cmd, args, check = FALSE, log_failures = FALSE, ...) {
+  tryCatch({
+    res <- safe_system2(cmd, args, check = check, log_failures = log_failures, ...)
+    status <- attr(res, "status")
+    if (is.null(status)) 0L else as.integer(status)
+  }, external_process_error = function(e) {
+    if (isTRUE(check)) stop(e)
+    if (identical(e$failure_mode, "missing_executable")) 127L else 1L
+  }, error = function(e) {
+    if (isTRUE(check)) stop(e)
+    NA_integer_
+  })
 }
 
-.run_output <- function(cmd, args) {
-  suppressWarnings(tryCatch(
-    system2(cmd, args, stdout = TRUE, stderr = TRUE),
-    error = function(e) NULL
-  ))
+.run_output <- function(cmd, args, check = FALSE, log_failures = FALSE) {
+  tryCatch({
+    safe_system2(cmd, args, stdout = TRUE, stderr = TRUE, check = check, log_failures = log_failures)
+  }, external_process_error = function(e) {
+    if (isTRUE(check)) stop(e)
+    NULL
+  }, error = function(e) {
+    if (isTRUE(check)) stop(e)
+    NULL
+  })
 }
 
 .status_ok <- function(st) {

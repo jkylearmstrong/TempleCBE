@@ -69,7 +69,8 @@ run_sas_script <- function(path,
   }
   dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
   dir.create(list_dir, recursive = TRUE, showWarnings = FALSE)
-  system2(sas_path, sas_args(path, log_dir, list_dir))
+  safe_system2(sas_path, sas_args(path, log_dir, list_dir), check = TRUE)
+  invisible(0L)
 }
 
 #' Command-Line Arguments for a Batch SAS Run
