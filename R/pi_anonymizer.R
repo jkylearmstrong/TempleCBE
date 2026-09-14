@@ -17,9 +17,7 @@ NULL
 #' @noRd
 default_secrets_path <- function() {
   dir <- tools::R_user_dir("TempleCBE", which = "data")
-  if (!dir.exists(dir)) {
-    dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-  }
+  validate_secrets_dir(dir)
   file.path(dir, "pi_mapping.json")
 }
 
@@ -161,15 +159,21 @@ generate_pseudonym_token <- function(name = NULL,
                                      n = 1,
                                      prefix = "PI_",
                                      key = Sys.getenv("TEMPLECBE_SECRET_KEY", unset = ""),
-                                     n_chars = 8,
+                                     n_chars = 16,
                                      rename_fn = NULL,
                                      seed = NULL) {
   if (!is.null(rename_fn) && !is.function(rename_fn)) {
     stop("`rename_fn` must be a function or NULL.")
   }
-  n_chars <- as.integer(n_chars)
-  if (length(n_chars) != 1 || is.na(n_chars) || n_chars < 1) {
-    stop("`n_chars` must be a positive integer.")
+  if (!is.null(n_chars)) {
+    n_chars <- as.integer(n_chars)
+    if (length(n_chars) != 1 || is.na(n_chars) || n_chars < 1) {
+      stop("`n_chars` must be a positive integer or NULL for full hash.")
+    }
+  }
+
+  slice_hash <- function(h) {
+    if (is.null(n_chars)) h else substr(h, 1, min(nchar(h), n_chars))
   }
 
   if (!is.null(name)) {
@@ -180,7 +184,7 @@ generate_pseudonym_token <- function(name = NULL,
     tokens <- vapply(name, function(nm) {
       if (is.na(nm)) return(NA_character_)
       h <- as.character(openssl::sha256(nm, key = effective_key))
-      paste0(prefix, substr(h, 1, n_chars))
+      paste0(prefix, slice_hash(h))
     }, character(1), USE.NAMES = FALSE)
   } else {
     if (!is.numeric(n) || length(n) != 1 || n < 1) {
@@ -188,27 +192,15 @@ generate_pseudonym_token <- function(name = NULL,
     }
     n <- as.integer(n)
     if (!is.null(seed)) {
-      withr_available <- requireNamespace("withr", quietly = TRUE)
-      gen <- function() {
-        vapply(seq_len(n), function(i) {
-          raw_hash <- as.character(openssl::sha256(paste0("templecbe_seed_", i, "_", stats::runif(1))))
-          paste0(prefix, substr(raw_hash, 1, n_chars))
-        }, character(1), USE.NAMES = FALSE)
-      }
-      tokens <- if (withr_available) {
-        withr::with_seed(seed, gen())
-      } else {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) get(".Random.seed", envir = .GlobalEnv) else NULL
-        on.exit({
-          if (is.null(old_seed)) rm(".Random.seed", envir = .GlobalEnv) else assign(".Random.seed", old_seed, envir = .GlobalEnv)
-        }, add = TRUE)
-        set.seed(seed)
-        gen()
-      }
-    } else {
       tokens <- vapply(seq_len(n), function(i) {
-        raw_hash <- as.character(openssl::sha256(openssl::rand_bytes(16)))
-        paste0(prefix, substr(raw_hash, 1, n_chars))
+        raw_hash <- as.character(openssl::sha256(paste0("templecbe_seed_", seed, "_", i)))
+        paste0(prefix, slice_hash(raw_hash))
+      }, character(1), USE.NAMES = FALSE)
+    } else {
+      # Use true OpenSSL CSPRNG source (32 bytes = 256 bits of entropy)
+      tokens <- vapply(seq_len(n), function(i) {
+        raw_hash <- as.character(openssl::sha256(openssl::rand_bytes(32)))
+        paste0(prefix, slice_hash(raw_hash))
       }, character(1), USE.NAMES = FALSE)
     }
   }
@@ -229,7 +221,7 @@ generate_pseudonym_token <- function(name = NULL,
 #' @param format Character, either `"synthetic"` (realistic surnames) or `"token"`
 #'   (cryptographic hash tokens).
 #' @param prefix Character, prefix when format is `"token"` (default `"PI_"`).
-#' @param n_chars Integer, number of hex characters from the hash digest when `format = "token"` (default 8).
+#' @param n_chars Integer, number of hex characters from the hash digest when `format = "token"` (default 16).
 #' @param rename_fn Optional function to rename or format generated tokens/names.
 #' @param seed Optional integer, random seed for reproducibility.
 #'
@@ -239,11 +231,11 @@ generate_pseudonym_token <- function(name = NULL,
 #' @examples
 #' generate_pi_names(1)
 #' generate_pi_names(3, format = "token")
-#' generate_pi_names(3, format = "token", n_chars = 4)
+#' generate_pi_names(3, format = "token", n_chars = 8)
 generate_pi_names <- function(n = 1,
                               format = c("synthetic", "token"),
                               prefix = "PI_",
-                              n_chars = 8,
+                              n_chars = 16,
                               rename_fn = NULL,
                               seed = NULL) {
   format <- match.arg(format)
@@ -310,7 +302,7 @@ anonymize_pi <- function(name,
                          secrets_path = NULL,
                          exclude = character(),
                          prefix = "PI_",
-                         n_chars = 8,
+                         n_chars = 16,
                          rename_fn = NULL,
                          seed = NULL) {
   if (missing(name) || !is.character(name) || length(name) == 0) {
@@ -361,6 +353,9 @@ anonymize_pi <- function(name,
   # Default: method == "token" (persistent JSON mapping table)
   if (is.null(secrets_path)) {
     secrets_path <- default_secrets_path()
+  } else {
+    parent_dir <- dirname(secrets_path)
+    validate_secrets_dir(parent_dir)
   }
   secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
 
@@ -378,59 +373,69 @@ anonymize_pi <- function(name,
     }
   }
 
-  # Ensure parent directory exists
-  parent_dir <- dirname(secrets_path)
-  if (!dir.exists(parent_dir)) {
-    dir.create(parent_dir, recursive = TRUE, showWarnings = FALSE)
-  }
+  lock_path <- paste0(secrets_path, ".lock")
 
-  # Ensure file exists
-  if (!file.exists(secrets_path)) {
-    mapping_data <- list(mappings = list())
-    if (requireNamespace("jsonlite", quietly = TRUE)) {
-      jsonlite::write_json(mapping_data, secrets_path, pretty = TRUE, auto_unbox = TRUE)
-    } else {
-      writeLines('{"mappings": {}}', con = secrets_path)
-    }
-  }
-
-  if (requireNamespace("jsonlite", quietly = TRUE)) {
-    mapping_data <- jsonlite::fromJSON(secrets_path)
-    mapping <- if (is.list(mapping_data$mappings)) mapping_data$mappings else list()
-
-    # Track modifications
-    modified <- FALSE
-    unique_names <- unique(valid_names)
-
-    for (nm in unique_names) {
-      if (!nm %in% names(mapping)) {
-        token <- generate_pseudonym_token(name = nm, prefix = prefix, key = key, n_chars = n_chars, rename_fn = rename_fn)
-        mapping[[nm]] <- token
-        modified <- TRUE
-      }
-    }
-
-    if (modified) {
-      mapping_data$mappings <- mapping
-      jsonlite::write_json(mapping_data, secrets_path, pretty = TRUE, auto_unbox = TRUE)
-    }
-
-    res <- vapply(valid_names, function(nm) as.character(mapping[[nm]]), character(1), USE.NAMES = FALSE)
-    out[valid_indices] <- res
-    out[is_na] <- NA_character_
-    return(out)
-  } else {
-    lines <- readLines(secrets_path, warn = FALSE)
-    res <- vapply(valid_names, function(nm) {
-      match_line <- grep(paste0('"', nm, '"\\s*:'), lines, value = TRUE)
-      if (length(match_line) > 0) {
-        sub('.*:\\s*"([^"]+)".*', '\\1', match_line[1])
+  res <- with_file_lock(lock_path, {
+    # Ensure file exists
+    if (!file.exists(secrets_path)) {
+      mapping_data <- list(mappings = list())
+      json_str <- if (requireNamespace("jsonlite", quietly = TRUE)) {
+        jsonlite::toJSON(mapping_data, pretty = TRUE, auto_unbox = TRUE)
       } else {
-        generate_pseudonym_token(name = nm, prefix = prefix, key = key, n_chars = n_chars, rename_fn = rename_fn)
+        '{"mappings": {}}'
       }
-    }, character(1), USE.NAMES = FALSE)
-    out[valid_indices] <- res
-    out[is_na] <- NA_character_
-    return(out)
-  }
+      atomic_write_file(json_str, secrets_path)
+    }
+
+    if (requireNamespace("jsonlite", quietly = TRUE)) {
+      mapping_data <- jsonlite::fromJSON(secrets_path)
+      mapping <- if (is.list(mapping_data$mappings)) mapping_data$mappings else list()
+
+      # Track modifications
+      modified <- FALSE
+      unique_names <- unique(valid_names)
+
+      for (nm in unique_names) {
+        if (!nm %in% names(mapping)) {
+          token <- generate_pseudonym_token(name = nm, prefix = prefix, key = key, n_chars = n_chars, rename_fn = rename_fn)
+          # Collision prevention across existing mappings
+          existing_tokens <- as.character(unlist(mapping, use.names = FALSE))
+          coll_counter <- 1L
+          while (token %in% existing_tokens) {
+            coll_counter <- coll_counter + 1L
+            token <- generate_pseudonym_token(
+              name = paste0(nm, "_coll_", coll_counter),
+              prefix = prefix,
+              key = key,
+              n_chars = n_chars,
+              rename_fn = rename_fn
+            )
+          }
+          mapping[[nm]] <- token
+          modified <- TRUE
+        }
+      }
+
+      if (modified) {
+        mapping_data$mappings <- mapping
+        json_str <- jsonlite::toJSON(mapping_data, pretty = TRUE, auto_unbox = TRUE)
+        atomic_write_file(json_str, secrets_path)
+      }
+
+      vapply(valid_names, function(nm) as.character(mapping[[nm]]), character(1), USE.NAMES = FALSE)
+    } else {
+      lines <- readLines(secrets_path, warn = FALSE)
+      vapply(valid_names, function(nm) {
+        match_line <- grep(paste0('"', nm, '"\\s*:'), lines, value = TRUE)
+        if (length(match_line) > 0) {
+          sub('.*:\\s*"([^"]+)".*', '\\1', match_line[1])
+        } else {
+          generate_pseudonym_token(name = nm, prefix = prefix, key = key, n_chars = n_chars, rename_fn = rename_fn)
+        }
+      }, character(1), USE.NAMES = FALSE)
+    }
+  })
+  out[valid_indices] <- res
+  out[is_na] <- NA_character_
+  return(out)
 }

@@ -11,7 +11,7 @@ anonymize_pi(
   secrets_path = NULL,
   exclude = character(),
   prefix = "PI_",
-  n_chars = 8,
+  n_chars = 16,
   rename_fn = NULL,
   seed = NULL
 )

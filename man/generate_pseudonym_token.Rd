@@ -9,7 +9,7 @@ generate_pseudonym_token(
   n = 1,
   prefix = "PI_",
   key = Sys.getenv("TEMPLECBE_SECRET_KEY", unset = ""),
-  n_chars = 8,
+  n_chars = 16,
   rename_fn = NULL,
   seed = NULL
 )
