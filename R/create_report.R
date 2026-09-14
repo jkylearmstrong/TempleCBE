@@ -19,16 +19,29 @@
 #' @param install_brand Logical (default \code{FALSE}); for the \code{"temple"}
 #'   template, also run \code{\link{use_temple_brand}(location)}, which
 #'   downloads the extension.
+#' @param filename Base name (no extension) for the report file, default
+#'   \code{NULL} uses \code{template_name}. The report is always written to
+#'   \code{location}, so calling \code{create_report()} twice for the same
+#'   \code{location} with the same \code{template_name} (or the same
+#'   \code{filename}) overwrites the first report; pass a distinct
+#'   \code{filename} for each report that shares a \code{location}, e.g.
+#'   \code{create_report("analysis", filename = "analysis1")} and
+#'   \code{create_report("analysis", filename = "analysis2")}.
 #' @return A list indicating whether each file was created.
 #' @export
 #' @examples
 #' \dontrun{
 #' create_report(here::here("analysis"))
 #' create_report(here::here("analysis"), template_name = "temple", install_brand = TRUE)
+#'
+#' # Two reports sharing one location need distinct `filename`s, or the
+#' # second call overwrites the first report file:
+#' create_report(here::here("analysis"), template_name = "temple", filename = "analysis1")
+#' create_report(here::here("analysis"), template_name = "temple", filename = "analysis2")
 #' }
 create_report <- function(location = getwd(), template_name = "t_test_example",
                            child = TRUE, type = ".qmd", include_bib = TRUE, include_tex = TRUE,
-                           install_brand = FALSE) {
+                           install_brand = FALSE, filename = NULL) {
   template_list <- c("t_test_example", "example", "temple")
   if (!(template_name %in% template_list)) {
     warning("`template_name` should be one of: ", paste(template_list, collapse = ", "), ". Using t_test_example.")
@@ -61,12 +74,28 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
     stop("Destination directory '", location, "' is not writable (permission denied).", call. = FALSE)
   }
 
+  if (!is.null(filename)) {
+    if (!is.character(filename) || length(filename) != 1L || !nzchar(trimws(filename))) {
+      stop("`filename` must be a single non-empty string, or NULL to use `template_name`.", call. = FALSE)
+    }
+    # Strip an extension the caller may have included, so it isn't doubled.
+    filename <- sub("\\.(qmd|Rmd)$", "", trimws(filename), ignore.case = TRUE)
+  }
+  report_name <- if (is.null(filename)) template_name else filename
+
   template_path <- system.file("templates", paste0(template_name, type), package = "TempleCBE")
   child_path <- system.file("templates", paste0("t_test_child", type), package = "TempleCBE")
   bib_path <- system.file("templates", "bib.bib", package = "TempleCBE")
   title_path <- system.file("templates", "title.tex", package = "TempleCBE")
 
-  new_report_path <- file.path(location, paste0(template_name, type))
+  new_report_path <- file.path(location, paste0(report_name, type))
+  if (file.exists(new_report_path)) {
+    warning(
+      "Overwriting existing report file '", new_report_path, "'. ",
+      "Pass a different `filename` to create a separate report in this `location` instead.",
+      call. = FALSE
+    )
+  }
   new_child_path <- file.path(location, paste0("t_test_child", type))
   new_bib_path <- file.path(location, "bib.bib")
   new_title_path <- file.path(location, "title.tex")

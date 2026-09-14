@@ -11,7 +11,8 @@ create_report(
   type = ".qmd",
   include_bib = TRUE,
   include_tex = TRUE,
-  install_brand = FALSE
+  install_brand = FALSE,
+  filename = NULL
 )
 }
 \arguments{
@@ -30,6 +31,15 @@ create_report(
 \item{install_brand}{Logical (default \code{FALSE}); for the \code{"temple"}
 template, also run \code{\link{use_temple_brand}(location)}, which
 downloads the extension.}
+
+\item{filename}{Base name (no extension) for the report file, default
+\code{NULL} uses \code{template_name}. The report is always written to
+\code{location}, so calling \code{create_report()} twice for the same
+\code{location} with the same \code{template_name} (or the same
+\code{filename}) overwrites the first report; pass a distinct
+\code{filename} for each report that shares a \code{location}, e.g.
+\code{create_report("analysis", filename = "analysis1")} and
+\code{create_report("analysis", filename = "analysis2")}.}
 }
 \value{
 A list indicating whether each file was created.
@@ -50,5 +60,10 @@ document, and is Quarto-only.
 \dontrun{
 create_report(here::here("analysis"))
 create_report(here::here("analysis"), template_name = "temple", install_brand = TRUE)
+
+# Two reports sharing one location need distinct `filename`s, or the
+# second call overwrites the first report file:
+create_report(here::here("analysis"), template_name = "temple", filename = "analysis1")
+create_report(here::here("analysis"), template_name = "temple", filename = "analysis2")
 }
 }
