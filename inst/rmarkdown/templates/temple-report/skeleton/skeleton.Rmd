@@ -4,12 +4,25 @@ subtitle: "Center for Biostatistics & Epidemiology"
 author:
   - name: Author Name, PhD
     email: author@temple.edu
+    corresponding: true
+    affiliations:
+      - name: Lewis Katz School of Medicine at Temple University
+        department: Center for Biostatistics & Epidemiology
+  - name: Jordan Tramoun, PhD
+    email: tramoun@temple.edu
     affiliations:
       - name: Lewis Katz School of Medicine at Temple University
         department: Center for Biostatistics & Epidemiology
 date: today
 date-format: medium
 bibliography: bib.bib
+# titlepage-corresponding-only: only authors marked `corresponding: true`
+# (Author Name here) are listed under Correspondence on the temple-pdf
+# title page; without it, every author with an email is listed.
+titlepage-corresponding-only: true
+# titlepage-corner: the cherry corner graphic on the temple-pdf title page;
+# set to false to drop it (title then starts 1in from the top instead of 3in).
+titlepage-corner: true
 # The temple-* formats come from the quarto_temple_brand extension.
 # Install it next to this file with TempleCBE::use_temple_brand().
 format:
@@ -37,8 +50,11 @@ theme_set(theme_temple())
 
 This template renders to four formats. `temple-html` and `temple-typst` need
 only Quarto; `temple-pdf` needs a LaTeX installation (e.g.
-`tinytex::install_tinytex()`) and adds the Temple title page. References come
-from `bib.bib` [@Al-Helali2021-as].
+`tinytex::install_tinytex()`) and adds the Temple title page. With
+`titlepage-corresponding-only: true`, only the author marked
+`corresponding: true` appears under Correspondence; `titlepage-corner: false`
+would drop the cherry corner graphic instead. References come from `bib.bib`
+[@Al-Helali2021-as].
 
 # Data
 
