@@ -57,7 +57,10 @@ document), \code{zip_reports} does not render anything itself — it
 packages outputs that have already been rendered, e.g. by
 \code{\link{render_me}}. Report order and staging is entirely the
 caller's decision (for example, the topological sort of a project's own
-dependency graph) — pass \code{reports} pre-ordered.
+dependency graph) — pass \code{reports} pre-ordered. If multiple reports
+share the same source stem (for example \code{analysis1/analysis.qmd} and
+\code{analysis2/analysis.qmd}), staged output names are disambiguated to
+prevent overwrites within a stage/format folder.
 }
 \examples{
 \dontrun{

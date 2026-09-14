@@ -55,6 +55,10 @@
 * Extension formats such as `titlepage-pdf` or `temple-pdf` weren't matched to their output file, so it was silently left out of the zip. They now resolve to their base format's extension.
 * `_quarto.yml`, `_brand.yml`, `_variables.yml`, and `_extensions/` are copied into the build directory, so documents that use a project, brand, or extension format render there as they do in place. With `include_sources = TRUE` they are zipped under their relative paths.
 
+## `zip_reports()` fix
+
+* Reports that share the same source stem (for example `analysis1/analysis.qmd` and `analysis2/analysis.qmd`) no longer overwrite each other inside staged `pdf/`, `docx/`, or `html/` folders. `zip_reports()` now disambiguates staged output names while keeping index links aligned with the copied files.
+
 # TempleCBE 0.2.0
 
 ## `glmnet_IBS()` rebuilt for start/stop survival data (breaking)

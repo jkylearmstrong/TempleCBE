@@ -11,7 +11,10 @@
 #' packages outputs that have already been rendered, e.g. by
 #' \code{\link{render_me}}. Report order and staging is entirely the
 #' caller's decision (for example, the topological sort of a project's own
-#' dependency graph) — pass \code{reports} pre-ordered.
+#' dependency graph) — pass \code{reports} pre-ordered. If multiple reports
+#' share the same source stem (for example \code{analysis1/analysis.qmd} and
+#' \code{analysis2/analysis.qmd}), staged output names are disambiguated to
+#' prevent overwrites within a stage/format folder.
 #'
 #' @param reports A data frame/tibble with one row per report and columns
 #'   \code{name} (display name), \code{path} (path to the \code{.qmd}
@@ -62,6 +65,23 @@ zip_reports <- function(reports,
 
   if ("all" %in% output_formats) output_formats <- c("pdf", "docx", "html")
 
+  make_staged_stems <- function(paths) {
+    paths <- as.character(paths)
+    stems <- tools::file_path_sans_ext(basename(paths))
+    parent_tags <- basename(dirname(paths))
+    parent_tags[is.na(parent_tags) | !nzchar(parent_tags) | parent_tags == "."] <- "report"
+
+    shared_stems <- duplicated(stems) | duplicated(stems, fromLast = TRUE)
+    staged <- ifelse(shared_stems, paste(parent_tags, stems, sep = "__"), stems)
+
+    staged <- gsub("[^A-Za-z0-9._-]+", "-", staged)
+    staged <- gsub("^-+|-+$", "", staged)
+    staged[!nzchar(staged)] <- "report"
+
+    make.unique(staged, sep = "__")
+  }
+  staged_stems <- make_staged_stems(reports$path)
+
   build_dir <- file.path(tempdir(), paste0("report_build_", format(Sys.time(), "%Y%m%d_%H%M%S")))
   if (dir.exists(build_dir)) unlink(build_dir, recursive = TRUE)
   dir.create(build_dir, recursive = TRUE)
@@ -88,13 +108,14 @@ zip_reports <- function(reports,
 
     for (fmt in output_formats) {
       output_path <- sub("\\.qmd$", paste0(".", fmt), report$path)
+      staged_output_name <- paste0(staged_stems[i], ".", fmt)
 
       if (fmt == "pdf") {
         if (pdf_exists) {
           dest_dir <- file.path(build_dir, fmt, stage_folder)
           if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
-          file.copy(output_path, dest_dir)
-          row_data$`PDF Link` <- file.path(".", fmt, stage_folder, basename(output_path))
+          file.copy(output_path, file.path(dest_dir, staged_output_name), overwrite = TRUE)
+          row_data$`PDF Link` <- file.path(".", fmt, stage_folder, staged_output_name)
           row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
         }
       } else if (fmt == "docx") {
@@ -109,16 +130,16 @@ zip_reports <- function(reports,
         if (docx_exists) {
           dest_dir <- file.path(build_dir, fmt, stage_folder)
           if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
-          file.copy(output_path, dest_dir)
-          row_data$`DOCX Link` <- file.path(".", fmt, stage_folder, basename(output_path))
+          file.copy(output_path, file.path(dest_dir, staged_output_name), overwrite = TRUE)
+          row_data$`DOCX Link` <- file.path(".", fmt, stage_folder, staged_output_name)
           row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
         }
       } else {
         if (file.exists(output_path)) {
           dest_dir <- file.path(build_dir, fmt, stage_folder)
           if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
-          file.copy(output_path, dest_dir)
-          if (fmt == "html") row_data$`HTML Link` <- file.path(".", fmt, stage_folder, basename(output_path))
+          file.copy(output_path, file.path(dest_dir, staged_output_name), overwrite = TRUE)
+          if (fmt == "html") row_data$`HTML Link` <- file.path(".", fmt, stage_folder, staged_output_name)
           row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
         }
       }
