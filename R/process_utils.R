@@ -176,7 +176,9 @@ safe_shell <- function(cmd, check = TRUE, log_failures = TRUE, ...) {
     args <- c("/c", cmd)
   } else {
     shell_bin <- "/bin/sh"
-    args <- c("-c", cmd)
+    # system2() pastes args unquoted into one command line, so without
+    # shQuote() `sh -c echo hi` would run only `echo` with `hi` as $0
+    args <- c("-c", shQuote(cmd))
   }
 
   safe_system2(
