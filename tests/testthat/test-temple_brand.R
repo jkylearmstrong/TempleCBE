@@ -69,7 +69,7 @@ test_that("use_temple_brand installs an extension and creates _quarto.yml", {
              file.path(src, "_extensions", "temple", "_extension.yml"))
 
   proj <- file.path(withr::local_tempdir("temple_proj"), "analysis")
-  res <- use_temple_brand(proj, extension = src, quiet = TRUE)
+  res <- use_temple_brand(proj, extension = src, quiet = TRUE, check_root = FALSE)
 
   expect_true(res$created_quarto_yml)
   expect_true(file.exists(file.path(proj, "_quarto.yml")))
@@ -77,5 +77,35 @@ test_that("use_temple_brand installs an extension and creates _quarto.yml", {
   expect_true(file.exists(file.path(res$extension_dir, "_extension.yml")))
 
   # A second call leaves the existing _quarto.yml alone.
-  expect_false(use_temple_brand(proj, extension = src, quiet = TRUE)$created_quarto_yml)
+  expect_false(use_temple_brand(proj, extension = src, quiet = TRUE, check_root = FALSE)$created_quarto_yml)
+})
+
+test_that("use_temple_brand warns when path isn't the here::here() project root", {
+  skip_if_not_installed("quarto")
+  skip_if_not_installed("withr")
+  skip_if_not_installed("here")
+  skip_if(is.null(quarto::quarto_path()), "Quarto CLI not available")
+
+  # A local stand-in for the extension, so the test needs no network.
+  src <- withr::local_tempdir("temple_ext_src2")
+  dir.create(file.path(src, "_extensions", "temple"), recursive = TRUE)
+  writeLines(c("title: Temple Brand", "version: 1.0.0", "contributes:",
+               "  formats:", "    html:", "      toc: true"),
+             file.path(src, "_extensions", "temple", "_extension.yml"))
+
+  root <- withr::local_tempdir("temple_root")
+  writeLines("dummy", file.path(root, ".here"))
+  subdir <- file.path(root, "analysis")
+  dir.create(subdir)
+
+  withr::with_dir(root, {
+    expect_warning(
+      use_temple_brand(subdir, extension = src, quiet = TRUE),
+      "not the project root"
+    )
+    expect_warning(
+      use_temple_brand(subdir, extension = src, quiet = TRUE, check_root = FALSE),
+      NA
+    )
+  })
 })

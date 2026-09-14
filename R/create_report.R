@@ -6,9 +6,11 @@
 #' The \code{"temple"} template renders with the
 #' \href{https://github.com/jkylearmstrong-temple/quarto_temple_brand}{quarto_temple_brand}
 #' extension's \code{temple-html}, \code{temple-pdf}, and \code{temple-typst}
-#' formats, so it needs that extension installed beside it (see
-#' \code{\link{use_temple_brand}}). It uses no \code{title.tex} or child
-#' document, and is Quarto-only.
+#' formats, so it needs that extension installed somewhere Quarto can find it
+#' from \code{location} (see \code{\link{use_temple_brand}}): either at an
+#' ancestor project root shared by every report, or, with \code{install_brand
+#' = TRUE}, in \code{location} itself for a one-off report. It uses no
+#' \code{title.tex} or child document, and is Quarto-only.
 #'
 #' @param location Directory to create the report in (default \code{getwd()}).
 #' @param template_name One of \code{"t_test_example"} (default), \code{"example"}, or \code{"temple"}.
@@ -18,7 +20,10 @@
 #' @param include_tex Logical (default \code{TRUE}); also copy the title \code{.tex} file.
 #' @param install_brand Logical (default \code{FALSE}); for the \code{"temple"}
 #'   template, also run \code{\link{use_temple_brand}(location)}, which
-#'   downloads the extension.
+#'   downloads the extension into \code{location} itself. Leave this
+#'   \code{FALSE} when the extension is already installed at the project
+#'   root (see \code{\link{use_temple_brand}}); it doesn't need reinstalling
+#'   per report.
 #' @param filename Base name (no extension) for the report file, default
 #'   \code{NULL} uses \code{template_name}. The report is always written to
 #'   \code{location}, so calling \code{create_report()} twice for the same
@@ -32,6 +37,14 @@
 #' @examples
 #' \dontrun{
 #' create_report(here::here("analysis"))
+#'
+#' # A project with several "temple" reports: install the extension once at
+#' # the project root, then scaffold each report without install_brand.
+#' use_temple_brand(here::here())
+#' create_report(here::here("analysis"), template_name = "temple")
+#' create_report(here::here("reports"), template_name = "temple", filename = "q3")
+#'
+#' # A single one-off "temple" report instead installs beside itself.
 #' create_report(here::here("analysis"), template_name = "temple", install_brand = TRUE)
 #'
 #' # Two reports sharing one location need distinct `filename`s, or the
@@ -149,10 +162,11 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
 
   if (is_temple) {
     if (isTRUE(install_brand)) {
-      use_temple_brand(location)
-    } else if (is.na(temple_extension_dir(location))) {
+      use_temple_brand(location, check_root = FALSE)
+    } else if (is.na(temple_extension_dir_upward(location))) {
       message("The temple template renders with the quarto_temple_brand extension; ",
-              "install it with use_temple_brand(\"", location, "\").")
+              "install it once at the project root with use_temple_brand(here::here()), ",
+              "or beside this report with use_temple_brand(\"", location, "\").")
     }
   }
 
