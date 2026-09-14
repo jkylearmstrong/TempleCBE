@@ -22,12 +22,20 @@ test_that("failure-mode: missing executables abort with structured external_proc
 })
 
 test_that("failure-mode: permission-denied paths and insecure secrets locations", {
-  # 1. validate_secrets_dir rejects repository path
-  repo_dir <- file.path(getwd(), "secrets_test_reject")
-  expect_error(
-    validate_secrets_dir(repo_dir),
-    "Refusing to use repository path for secrets"
-  )
+  # 1. validate_secrets_dir rejects a path inside the working directory's repository.
+  # Use a throwaway repository: tests only run inside the git checkout under
+  # some runners (not covr). Create the directory first so both paths normalize
+  # to the same form (Windows 8.3 short names, macOS /var -> /private/var).
+  repo <- normalizePath(withr::local_tempdir("secrets_repo"), winslash = "/")
+  dir.create(file.path(repo, ".git"))
+  repo_dir <- file.path(repo, "secrets_test_reject")
+  dir.create(repo_dir)
+  withr::with_dir(repo, {
+    expect_error(
+      validate_secrets_dir(repo_dir),
+      "Refusing to use repository path for secrets"
+    )
+  })
 
   # 2. create_report rejects invalid location
   expect_error(
@@ -71,8 +79,11 @@ test_that("failure-mode: corrupted template directories fail early with actionab
 })
 
 test_that("failure-mode: malformed and truncated archives in renv bootstrap fail early", {
-  # Extract renv_bootstrap_git_extract_sha1_tar from renv/activate.R
-  act_lines <- readLines(file.path(here::here(), "renv", "activate.R"))
+  # Extract renv_bootstrap_git_extract_sha1_tar from renv/activate.R. renv/ is
+  # build-ignored, so the file exists only when tests run from a source checkout.
+  act_path <- file.path(here::here(), "renv", "activate.R")
+  skip_if_not(file.exists(act_path), "renv/activate.R is only available in a source checkout")
+  act_lines <- readLines(act_path)
   s_idx <- grep("renv_bootstrap_git_extract_sha1_tar <- function", act_lines)[1]
   e_idx <- grep("renv_bootstrap_install <- function", act_lines)[1] - 1
   extract_fn <- eval(parse(text = paste(act_lines[s_idx:e_idx], collapse = "\n")))
