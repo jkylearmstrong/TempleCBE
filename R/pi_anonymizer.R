@@ -364,8 +364,13 @@ anonymize_pi <- function(name,
   }
   secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
 
-  # Refuse to write into the repository tree to avoid accidentally committing PHI
-  repo_root <- .find_repo_root(".")
+  # Refuse to write into the repository tree to avoid accidentally committing PHI.
+  # Check the provided `secrets_path` first so this guard works even when the
+  # current working directory is outside the repository (e.g., R CMD check tempdirs).
+  repo_root <- .find_repo_root(secrets_path)
+  if (is.null(repo_root)) {
+    repo_root <- .find_repo_root(".")
+  }
   if (!is.null(repo_root)) {
     repo_root_norm <- normalizePath(repo_root, winslash = "/", mustWork = FALSE)
     if (startsWith(secrets_path, repo_root_norm)) {
