@@ -20,4 +20,5 @@ test_that("run_sas_script refuses a missing program or executable", {
   prog <- withr::local_tempfile(fileext = ".sas")
   writeLines("data _null_; run;", prog)
   expect_error(run_sas_script(prog, sas_path = NULL), "No SAS executable found")
+  expect_error(run_sas_script(prog, sas_path = "non_existent_sas_binary"), class = "external_process_error")
 })

@@ -27,10 +27,10 @@ generate_pi_names <- function(n = 1,
   )
   
   if (format == "token") {
-    # Generate cryptographic hash tokens: PI_...
+    # Generate cryptographic hash tokens: PI_... with 256 bits of CSPRNG entropy
     tokens <- vapply(seq_len(n), function(i) {
-      h <- as.character(openssl::sha256(openssl::rand_bytes(16)))
-      paste0(prefix, substr(h, 1, 8))
+      h <- as.character(openssl::sha256(openssl::rand_bytes(32)))
+      paste0(prefix, substr(h, 1, 16))
     }, character(1))
     return(if (n == 1) tokens[1] else tokens)
   }
@@ -46,7 +46,11 @@ default_secrets_path <- function() {
   } else {
     dir <- file.path(Sys.getenv("HOME", unset = tempdir()), ".TempleCBE")
   }
-  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  if (exists("validate_secrets_dir", mode = "function")) {
+    validate_secrets_dir(dir)
+  } else {
+    if (!dir.exists(dir)) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  }
   file.path(dir, "pi_mapping.json")
 }
 
@@ -70,7 +74,14 @@ default_secrets_path <- function() {
 #' @export
 anonymize_pi <- function(name, secrets_path = NULL) {
   # If no path provided, use a user-scoped defaults directory (not the repo)
-  if (is.null(secrets_path)) secrets_path <- default_secrets_path()
+  if (is.null(secrets_path)) {
+    secrets_path <- default_secrets_path()
+  } else {
+    parent_dir <- dirname(secrets_path)
+    if (exists("validate_secrets_dir", mode = "function")) {
+      validate_secrets_dir(parent_dir)
+    }
+  }
   secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
 
   # Refuse to write into the repository tree to avoid accidentally committing PHI
@@ -82,30 +93,60 @@ anonymize_pi <- function(name, secrets_path = NULL) {
     }
   }
 
+  write_atomic <- function(content, target) {
+    if (exists("atomic_write_file", mode = "function")) {
+      atomic_write_file(content, target)
+    } else {
+      tmp <- tempfile(pattern = ".tmp_", tmpdir = dirname(target))
+      writeLines(content, con = tmp)
+      file.rename(tmp, target)
+    }
+  }
+
+  lock_dir <- paste0(secrets_path, ".lock")
+  acquire_lock <- function(lpath, timeout = 10) {
+    t0 <- Sys.time()
+    while (!dir.create(lpath, showWarnings = FALSE)) {
+      if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > timeout) {
+        stop("Failed to acquire advisory lock on ", lpath)
+      }
+      Sys.sleep(0.05)
+    }
+  }
+
+  acquire_lock(lock_dir)
+  on.exit(if (dir.exists(lock_dir)) unlink(lock_dir, recursive = TRUE, force = TRUE), add = TRUE)
+
   # Ensure file exists (create an empty mapping if needed)
   if (!file.exists(secrets_path)) {
     mapping_data <- list(mappings = list())
     if (requireNamespace("jsonlite", quietly = TRUE)) {
-      jsonlite::write_json(mapping_data, secrets_path, pretty = TRUE, auto_unbox = TRUE)
+      write_atomic(jsonlite::toJSON(mapping_data, pretty = TRUE, auto_unbox = TRUE), secrets_path)
     } else {
-      writeLines('{"mappings": {}}', con = secrets_path)
+      write_atomic('{"mappings": {}}', secrets_path)
     }
   }
   
   if (requireNamespace("jsonlite", quietly = TRUE)) {
     mapping_data <- jsonlite::fromJSON(secrets_path)
-    mapping <- mapping_data$mappings
+    mapping <- if (is.list(mapping_data$mappings)) mapping_data$mappings else list()
     
     if (name %in% names(mapping)) {
       return(mapping[[name]])
     }
     
-    # Auto-assign cryptographic hash token
-    h <- as.character(openssl::sha256(name))
-    token <- paste0("PI_", substr(h, 1, 8))
+    # Auto-assign cryptographic hash token with 16 hex chars
+    h <- as.character(openssl::sha256(openssl::rand_bytes(32)))
+    token <- paste0("PI_", substr(h, 1, 16))
+    existing <- as.character(unlist(mapping, use.names = FALSE))
+    counter <- 1L
+    while (token %in% existing) {
+      counter <- counter + 1L
+      token <- paste0("PI_", substr(as.character(openssl::sha256(paste0(name, "_", counter))), 1, 16))
+    }
     mapping[[name]] <- token
     mapping_data$mappings <- mapping
-    jsonlite::write_json(mapping_data, secrets_path, pretty = TRUE, auto_unbox = TRUE)
+    write_atomic(jsonlite::toJSON(mapping_data, pretty = TRUE, auto_unbox = TRUE), secrets_path)
     return(token)
   } else {
     lines <- readLines(secrets_path, warn = FALSE)
@@ -114,7 +155,7 @@ anonymize_pi <- function(name, secrets_path = NULL) {
       val <- sub('.*:\\s*"([^"]+)".*', '\\1', match_line[1])
       return(val)
     }
-    h <- as.character(openssl::sha256(name))
-    return(paste0("PI_", substr(h, 1, 8)))
+    h <- as.character(openssl::sha256(openssl::rand_bytes(32)))
+    return(paste0("PI_", substr(h, 1, 16)))
   }
 }
