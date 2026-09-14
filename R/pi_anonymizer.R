@@ -28,7 +28,9 @@ default_secrets_path <- function() {
   p <- tryCatch(normalizePath(path, winslash = "/", mustWork = FALSE), error = function(e) NULL)
   if (is.null(p)) return(NULL)
   repeat {
-    if (dir.exists(file.path(p, ".git"))) return(p)
+    git_marker <- file.path(p, ".git")
+    # In a normal checkout `.git` is a directory; in a git worktree it's a file.
+    if (dir.exists(git_marker) || file.exists(git_marker)) return(p)
     parent <- dirname(p)
     if (identical(parent, p)) return(NULL)
     p <- parent
@@ -362,8 +364,13 @@ anonymize_pi <- function(name,
   }
   secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
 
-  # Refuse to write into the repository tree to avoid accidentally committing PHI
-  repo_root <- .find_repo_root(".")
+  # Refuse to write into the repository tree to avoid accidentally committing PHI.
+  # Check the provided `secrets_path` first so this guard works even when the
+  # current working directory is outside the repository (e.g., R CMD check tempdirs).
+  repo_root <- .find_repo_root(secrets_path)
+  if (is.null(repo_root)) {
+    repo_root <- .find_repo_root(".")
+  }
   if (!is.null(repo_root)) {
     repo_root_norm <- normalizePath(repo_root, winslash = "/", mustWork = FALSE)
     if (startsWith(secrets_path, repo_root_norm)) {

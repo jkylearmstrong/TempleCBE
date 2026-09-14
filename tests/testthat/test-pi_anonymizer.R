@@ -132,8 +132,12 @@ test_that("anonymize_pi enforces security and input validation", {
   expect_error(anonymize_pi(123), "`name` must be a character vector")
 
   # Security: refuses to write into repo tree
-  expect_error(
-    anonymize_pi("TestInvestigator", method = "token", secrets_path = file.path(".", "danger.json")),
-    "Refusing to write mapping into repository path"
-  )
+  td <- withr::local_tempdir()
+  dir.create(file.path(td, ".git"))
+  withr::with_dir(td, {
+    expect_error(
+      anonymize_pi("TestInvestigator", method = "token", secrets_path = file.path(td, "danger.json")),
+      "Refusing to write mapping into repository path"
+    )
+  })
 })
