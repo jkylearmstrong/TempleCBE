@@ -362,7 +362,13 @@ anonymize_pi <- function(name,
   if (is.null(secrets_path)) {
     secrets_path <- default_secrets_path()
   }
-  secrets_path <- tryCatch(normalizePath(secrets_path, winslash = "/", mustWork = FALSE), error = function(e) secrets_path)
+  # Normalize through the parent directory: normalizePath() cannot canonicalize a
+  # file that doesn't exist yet, which left Windows 8.3 short names and macOS
+  # /var -> /private/var unresolved and let the repository check below miss.
+  secrets_path <- tryCatch(
+    file.path(normalizePath(dirname(secrets_path), winslash = "/", mustWork = FALSE), basename(secrets_path)),
+    error = function(e) secrets_path
+  )
 
   # Refuse to write into the repository tree to avoid accidentally committing PHI.
   # Check the provided `secrets_path` first so this guard works even when the
