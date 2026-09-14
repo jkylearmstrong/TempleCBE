@@ -47,6 +47,20 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
     type <- ".qmd"
   }
 
+  # Validate destination location
+  if (!is.character(location) || length(location) != 1L || !nzchar(trimws(location))) {
+    stop("`location` must be a single non-empty directory path.", call. = FALSE)
+  }
+  if (!dir.exists(location)) {
+    dir.create(location, recursive = TRUE, showWarnings = FALSE)
+  }
+  if (!dir.exists(location)) {
+    stop("Destination directory '", location, "' could not be created or accessed.", call. = FALSE)
+  }
+  if (file.access(location, 2) != 0) {
+    stop("Destination directory '", location, "' is not writable (permission denied).", call. = FALSE)
+  }
+
   template_path <- system.file("templates", paste0(template_name, type), package = "TempleCBE")
   child_path <- system.file("templates", paste0("t_test_child", type), package = "TempleCBE")
   bib_path <- system.file("templates", "bib.bib", package = "TempleCBE")
@@ -57,11 +71,51 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
   new_bib_path <- file.path(location, "bib.bib")
   new_title_path <- file.path(location, "title.tex")
 
+  # Helper to validate source template files (existence & readability)
+  check_template_src <- function(path, desc) {
+    if (!nzchar(path) || !file.exists(path)) {
+      stop(
+        "Template file '", desc, "' does not exist. ",
+        "The package templates directory appears corrupted or missing required files.",
+        call. = FALSE
+      )
+    }
+    if (file.access(path, 4) != 0) {
+      stop("Template file '", path, "' is not readable (permission denied).", call. = FALSE)
+    }
+  }
+
+  # Helper to validate destination file writeability
+  check_target_dst <- function(path) {
+    if (file.exists(path) && file.access(path, 2) != 0) {
+      stop("Destination file '", path, "' already exists and is not writable (permission denied).", call. = FALSE)
+    }
+  }
+
+  # Pre-flight validate all files that will be copied
+  check_template_src(template_path, paste0(template_name, type))
+  check_target_dst(new_report_path)
+
+  if (include_bib) {
+    check_template_src(bib_path, "bib.bib")
+    check_target_dst(new_bib_path)
+  }
+
+  if (include_tex && !is_temple) {
+    check_template_src(title_path, "title.tex")
+    check_target_dst(new_title_path)
+  }
+
+  if (child && !is_temple) {
+    check_template_src(child_path, paste0("t_test_child", type))
+    check_target_dst(new_child_path)
+  }
+
   created <- list(
-    template_created = file.copy(template_path, new_report_path),
-    bib_created = if (include_bib) file.copy(bib_path, new_bib_path) else FALSE,
-    title_tex_created = if (include_tex && !is_temple) file.copy(title_path, new_title_path) else FALSE,
-    child_created = if (child && !is_temple) file.copy(child_path, new_child_path) else FALSE
+    template_created = file.copy(template_path, new_report_path, overwrite = TRUE),
+    bib_created = if (include_bib) file.copy(bib_path, new_bib_path, overwrite = TRUE) else FALSE,
+    title_tex_created = if (include_tex && !is_temple) file.copy(title_path, new_title_path, overwrite = TRUE) else FALSE,
+    child_created = if (child && !is_temple) file.copy(child_path, new_child_path, overwrite = TRUE) else FALSE
   )
 
   if (is_temple) {
