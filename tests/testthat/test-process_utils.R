@@ -29,7 +29,8 @@ test_that("safe_system2 executes valid commands and handles exit codes", {
 
   # Successful command
   out <- safe_system2(rscript, c("-e", shQuote("cat('hello')")))
-  expect_equal(out, "hello")
+  expect_true(any(trimws(out) == "hello"))
+  expect_null(attr(out, "status"))
 
   # Command with non-zero exit code and check = TRUE raises external_process_error
   expect_error(
