@@ -50,7 +50,7 @@
 - New
   [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
   is a tidymodels counterpart to
-  [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
+  [`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
   Folds are grouped by `subject_id` (or a coarser `group`, such as
   site), preprocessing from a recipe is learned inside each fold, and
   every `mixture` and `penalty` is scored with a yardstick metric set:
