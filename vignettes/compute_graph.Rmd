@@ -264,7 +264,7 @@ For a document deliverable, `print_pipeline()` lays the same graph out
 with `igraph`/`ggraph` and saves it as a sized-to-fit PNG:
 
 ```{r print_png}
-png_path <- tempfile(fileext = ".png")
+png_path <- "pipeline_graph.png"
 print_pipeline(pipeline, png_path)
 knitr::include_graphics(png_path)
 ```
