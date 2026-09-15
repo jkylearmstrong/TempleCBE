@@ -9,6 +9,14 @@ navbar:
     left:  [intro, reference, articles, news]
     right: [github]
 
+articles:
+  - title: Articles & Workflows
+    navbar: ~
+    contents:
+      - compute_graph
+      - eda_and_missingness
+      - nested_survival_cv
+
 reference:
   - title: Data Quality & Missingness Analysis
     desc: Functions for missing data auditing, summary tables, and visualizations.
@@ -17,6 +25,7 @@ reference:
       - features_percent_miss
       - plot_features_percent_miss
       - missmap
+      - add_missing
       - my_summary_table
       - get_dataset_info
       - proc_contents
@@ -128,9 +137,40 @@ reference:
       - read_search
       - write_search
 
+  - title: Pipeline & Computational Graph Architecture
+    desc: >
+      Language-, format-, and tool-agnostic dependency graphs, file-level metadata tracking,
+      and interactive DAG visualizations for reproducible biostatistical pipelines.
+    contents:
+      - compute_graph
+      - pipeline_config
+      - pipeline_summary
+      - as_pipeline_graph
+      - as_igraph
+      - as_tbl_graph.list
+      - summary.tbl_graph
+      - visualize_pipeline
+      - visualize_pipeline_interactive
+      - print_pipeline
+      - collapse_by_stage
+      - export_subgraph
+      - export_interactive_pipeline
+      - list_stage_data_artifacts
+      - controls_datasets
+      - create_qmd_renderer
+      - get_render_plan
+      - join_pipelines
+      - FilePath
+      - FilePath-class
+      - FileUses
+      - FileUses-class
+      - FileOutputs
+      - FileOutputs-class
+
   - title: De-identification & Investigator Pseudonyms
     desc: Functions to generate synthetic investigator names and anonymize real identities for reproducible reporting.
     contents:
+      - pi_anonymizer
       - generate_last_names
       - generate_pseudonym_token
       - generate_pi_names
@@ -165,6 +205,7 @@ reference:
       - extract_win_posix_paths
       - extract_all_xlsx_tokens
       - install.packages.no_lock
+      - infix_helpers
       - "%like%"
       - "%ilike%"
       - "%flike%"

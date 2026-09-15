@@ -150,6 +150,7 @@ setClass(
 #' @param .Object The FilePath object being initialized.
 #' @param ... Additional slot arguments passed to \code{\link[methods]{callNextMethod}}.
 #' @return An initialized \code{FilePath} object.
+#' @keywords internal
 #' @export
 setMethod(
   "initialize",

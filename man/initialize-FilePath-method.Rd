@@ -18,3 +18,4 @@ An initialized \code{FilePath} object.
 Automatically inspects the file path on disk to populate modification time (\code{mtime})
 and file extension (\code{file_ext}) if the file exists.
 }
+\keyword{internal}
