@@ -44,6 +44,121 @@ observations:
 | `nested_cv_coxnet()` | Estimates how well that whole tuning procedure generalizes |
 | `surv_subject_truth()`, `censoring_km()`, `graf_weights()`, `add_graf_weights()` | Score any start/stop model with yardstick |
 
+## Comparison with existing R survival & modeling ecosystems
+
+Survival analysis and prognostic modeling in R are supported by several foundational
+packages, including [survival](https://cran.r-project.org/package=survival),
+[glmnet](https://glmnet.stanford.edu/), [tidymodels](https://www.tidymodels.org/)
+([censored](https://censored.tidymodels.org/), [yardstick](https://yardstick.tidymodels.org/)),
+and specialized evaluation packages like `pec` and `survAUC`. However, applying
+these frameworks to real-world clinical cohorts with longitudinal visits,
+time-dependent covariates, and multi-center structures reveals substantial hurdles:
+
+### Existing tools and their limitations in longitudinal clinical modeling
+
+1. **`survival` (Therneau)**: The foundational baseline for semi-parametric Cox
+   proportional hazards and Kaplan-Meier estimation. While excellent for classical
+   low-dimensional epidemiological inference, it lacks high-dimensional
+   regularization (lasso, elastic net), automated cross-validation, and tidy
+   resampling integration.
+2. **`glmnet::cv.glmnet(family = "cox")` (Friedman et al.)**: The standard
+   penalized Cox implementation. However:
+   - **Data leakage on start/stop data**: `cv.glmnet` constructs folds by randomly
+     partitioning individual *rows*. In counting-process data (`Surv(tstart, tstop, status)`),
+     this splits intervals belonging to the *same patient* across training and validation
+     folds, leaking patient identity and future biomarker trajectory into the validation set.
+   - **No cluster/site-level grouping**: It cannot hold out entire clinical sites
+     or hospital clusters to evaluate generalizability across centers.
+   - **Suboptimal metric selection**: It chooses the penalty parameter $\lambda$
+     using partial likelihood deviance or Harrell's C-index, without support for
+     time-dependent calibration, Integrated Brier Scores (IBS), or IPCW adjustments.
+   - **No modern formula/recipe preprocessing**: Predictors must be supplied as a
+     raw numeric design matrix ($x$), forcing manual one-hot encoding outside the cross-validation loop.
+3. **`tidymodels` / `censored` / `yardstick`**: The modern tidy modeling framework.
+   While `censored` bridges `parsnip` to survival models, its longitudinal counting-process
+   support remains limited:
+   - **Silent scoring failures**: `yardstick` survival metrics expect one row per
+     subject with right-censored truth (`Surv(time, event)`). When provided with
+     counting-process intervals (`Surv(tstart, tstop, event)`), `yardstick` returns
+     numbers without error, but silently treats *every interval as an independent patient*,
+     biasing both Brier scores and ROC AUCs.
+   - **Missing integrated nested CV for penalized Cox**: Evaluating regularized Cox
+     models across an $\alpha$-mixture and $\lambda$-penalty grid with subject-level
+     IPCW weights requires bespoke orchestration.
+4. **`pec` / `riskRegression` / `survAUC`**: Provide inverse-probability-of-censoring
+   weights and prediction error curves, but operate as standalone legacy systems
+   decoupled from `recipes` preprocessing and the `tidymodels` grammar.
+
+### Where `TempleCBE` provides distinct value
+
+`TempleCBE` unifies high-dimensional regularization, tidy recipes, and rigorous
+counting-process survival theory into an integrated, leak-free pipeline:
+
+- **Strict patient- and site-grouped resampling**: `cv_coxnet()` and `nested_cv_coxnet()`
+  enforce grouping by patient (`group = "patient_id"`) or site (`group = "site"`),
+  guaranteeing that all longitudinal intervals for a patient stay within either the
+  analysis set or the assessment set.
+- **Formal start/stop to subject-truth translation**: `surv_subject_truth()` collapses
+  multi-interval records into the valid single-row-per-subject truth required by
+  `yardstick`, verifying that intervals do not overlap and that events occur only
+  at terminal visits.
+- **Inverse-probability-of-censoring (Graf) weighting**: `censoring_km()`,
+  `graf_weights()`, and `add_graf_weights()` estimate the reverse Kaplan-Meier
+  censoring distribution on the training set and attach time-dependent IPCW weights
+  to test predictions, ensuring Brier scores and ROC curves remain unbiased.
+- **True nested cross-validation**: `nested_cv_coxnet()` optimizes hyperparameters
+  strictly on inner folds and scores untouched outer assessment folds, delivering
+  an honest estimate of clinical generalizability.
+- **Mixed continuous and categorical feature spaces**: Through `step_famd()`,
+  `TempleCBE` integrates Factor Analysis of Mixed Data directly into `recipes`,
+  allowing joint dimensionality reduction across continuous clinical labs and
+  discrete clinical stages.
+- **Translational laboratory export**: `km_summary_to_prism()` translates survival
+  curves into GraphPad Prism-compatible format for oncology and pharmacology deliverables.
+
+### Feature comparison matrix
+
+| Dimension | `survival` | `glmnet::cv.glmnet` | `tidymodels` (native) | `TempleCBE` |
+|:---|:---|:---|:---|:---|
+| **Counting-process (`tstart, tstop`)** | Full support | Partial (leaks rows in CV) | Limited in `censored` | Full leak-free support |
+| **Resampling grouping** | Manual | No (row-level only) | `group_vfold_cv()` | Native patient & site grouping |
+| **Penalty selection metric** | None (unpenalized) | Deviance or Concordance | Depends on metric set | Time-dependent IBS & Concordance |
+| **IPCW adjustment for start/stop** | Manual | None | Silent row-level miscount | Automated via `graf_weights()` |
+| **Tidy recipes integration** | None | None | Standard recipes | Full `recipes` + `step_famd()` |
+| **Nested cross-validation engine** | None | None | Manual multi-loop script | Automated via `nested_cv_coxnet()` |
+| **Mixed-data dimensionality reduction** | None | None | `step_pca` (numeric only) | `step_famd` (mixed continuous/discrete) |
+| **GraphPad Prism deliverable export** | None | None | None | Built-in via `km_summary_to_prism()` |
+
+---
+
+## Specific operational and statistical gaps addressed
+
+### 1. Resampling leakage in longitudinal patient cohorts
+In clinical studies tracking chronic disease (e.g. cardiovascular disease, oncology,
+sepsis in the ICU), patients undergo repeated visits with drifting biomarkers. When
+penalized models are cross-validated at the row level, a model trained on visit 1
+and visit 3 is tested on visit 2 of the *same patient*. This produces artificially
+deflated prediction error and false optimism. `TempleCBE` guarantees zero leakage
+across all cross-validation stages.
+
+### 2. Silent metric bias in counting-process evaluation
+Standard evaluation metrics assume each observation corresponds to one independent
+individual. Scoring longitudinal intervals directly artificially inflates sample
+size (e.g. 150 patients with 4 visits each scored as 600 independent patients) and
+ignores informative censoring. `TempleCBE` provides the necessary mathematical
+transformations (`surv_subject_truth()` + `graf_weights()`) so that `yardstick`
+evaluates patients properly.
+
+### 3. High-dimensional clinical feature reduction for mixed data
+Clinical prediction models frequently ingest hundreds of variables combining
+continuous laboratory biomarkers with categorical ICD-10 diagnostic codes, cancer
+stages, and medication history. Standard PCA cannot handle categorical variables
+without arbitrary one-hot expansion that distorts covariance. `TempleCBE::step_famd()`
+provides mathematically principled dimensionality reduction for mixed data within
+standard `tidymodels` workflows.
+
+---
+
 ```{r setup}
 library(TempleCBE)
 library(tidymodels)
@@ -225,3 +340,223 @@ glmnet_IBS(
   eval_time = times, id_col = "patient_id", internal_folds = 3
 )
 ```
+
+---
+
+## Highlighting core TempleCBE survival and modeling utilities
+
+Beyond the core `coxnet()` modeling functions, `TempleCBE` includes several
+specialized utilities that address frequent friction points in biostatistical
+practice:
+
+### 1. Mixed-data dimensionality reduction with `step_famd()`
+
+Clinical prognostic modeling frequently involves datasets with dozens of
+continuous lab values (e.g. creatinine, bilirubin, blood pressure) alongside
+categorical clinical indicators (e.g. disease stage, smoking status, sex,
+treatment center). Standard Principal Component Analysis ([recipes::step_pca()])
+only operates on numeric columns; dummy-encoding categorical variables before PCA
+distorts the geometric distances because binary indicators have different variances
+than continuous variables.
+
+`step_famd()` provides a native `recipes` step for **Factor Analysis of Mixed Data**
+(Pagès 2004, implemented via `FactoMineR::FAMD`):
+- Continuous variables are normalized to unit variance.
+- Categorical variables are dummy-coded and weighted inversely by their category
+  frequencies, ensuring each variable contributes proportionally regardless of its
+  number of levels.
+
+```{r step_famd_demo, eval = FALSE}
+library(recipes)
+
+# Define clinical recipe with mixed numeric and categorical predictors
+mixed_rec <- recipe(surv ~ age + bmi + marker + treatment + site + patient_id, data = sim_data) |>
+  update_role(patient_id, new_role = "id") |>
+  # Apply FAMD to compress continuous and discrete predictors into 3 components
+  step_famd(age, bmi, marker, treatment, site, num_comp = 3, prefix = "FAMD_")
+
+# Train and inspect component contributions
+prepped_famd <- prep(mixed_rec, training = sim_data)
+baked_features <- bake(prepped_famd, new_data = NULL)
+head(baked_features)
+
+# Inspect variance explained by components
+tidy(prepped_famd, number = 1, type = "variance")
+```
+
+`step_famd()` integrates directly into `cv_coxnet()` and `nested_cv_coxnet()`,
+ensuring that components are learned strictly inside each training fold without
+leakage.
+
+### 2. Framework-agnostic survival scoring with `surv_helpers`
+
+The helper functions in `surv_helpers.R` are not restricted to `coxnet()`: they
+enable **any** model (e.g. random survival forests via `ranger`, gradient boosted
+survival trees via `xgboost`, or deep learning survival models) to be properly
+evaluated on longitudinal start/stop cohorts using `yardstick`:
+
+1. `surv_subject_truth()`: Collapses start/stop interval data to a single row
+   per patient with right-censored truth.
+2. `censoring_km()`: Estimates the reverse Kaplan-Meier censoring distribution
+   $\hat{G}(t) = P(C > t)$ on the training cohort.
+3. `graf_weights()` / `add_graf_weights()`: Adds Inverse Probability of Censoring
+   Weights (Graf et al. 1999) to prediction tibbles.
+
+```{r external_model_scoring, eval = FALSE}
+# Scoring any external model predictions on test subjects:
+test_truth <- surv_subject_truth(test_longitudinal$surv, test_longitudinal$patient_id)
+train_censoring <- censoring_km(train_subject_truth$.truth)
+
+# Combine test truth with external model predictions and add IPCW weights
+scored_predictions <- test_truth |>
+  bind_cols(external_model_predictions) |>
+  add_graf_weights(censoring = train_censoring)
+
+# Compute proper, unbiased integrated Brier score
+yardstick::brier_survival_integrated(scored_predictions, truth = .truth, .pred)
+```
+
+### 3. Distributed elastic net tuning with `survival_metrics`
+
+When searching over a broad grid of elastic net mixing parameters ($\alpha$) or
+evaluating competing candidate clinical formulas, `tune_over_alpha()` and
+`summarize_tune_results()` orchestrate parallel evaluation using `furrr`:
+
+```{r tune_alpha_demo, eval = FALSE}
+library(furrr)
+plan(multisession, workers = 4)
+
+# Parallel grid search across alpha values for an rsample split
+alpha_results <- tune_over_alpha(
+  split,
+  recipe = cox_rec,
+  num_alpha_values = 10,
+  internal_folds = 5,
+  progress = TRUE
+)
+
+# Summarize results across all inner splits of a nested resample
+nested_alpha_summary <- summarize_tune_results(nested_folds$inner_resamples[[1]])
+```
+
+### 4. Translating survival curves to GraphPad Prism with `km_summary_to_prism()`
+
+In academic medical centers, biostatisticians frequently collaborate with
+laboratory scientists, pharmacologists, and clinical trialists who require
+Kaplan-Meier survival data formatted for **GraphPad Prism** for manuscript figures
+and FDA briefing documents.
+
+Prism requires a unique table format: an `X` column of timepoints, with separate
+columns per experimental group holding `1` for events, `0` for censored patients,
+and `NA` for other groups. `km_summary_to_prism()` converts standard
+`survival::survfit` summary tables directly into this layout:
+
+```{r prism_demo, eval = FALSE}
+# Fit standard stratified Kaplan-Meier curve
+fit_km <- survfit(Surv(time, status) ~ treatment, data = lung)
+km_summary <- summary(fit_km, censored = TRUE)
+
+km_df <- data.frame(
+  time     = km_summary$time,
+  strata   = km_summary$strata,
+  n.risk   = km_summary$n.risk,
+  n.event  = km_summary$n.event,
+  n.censor = km_summary$n.censor
+)
+
+# Convert to GraphPad Prism layout and export to Excel
+prism_table <- km_summary_to_prism(
+  km_df,
+  out_xlsx = "deliverables/Prism_Survival_Table.xlsx"
+)
+head(prism_table)
+```
+
+---
+
+## How others can use this technology (Adoption Patterns)
+
+Here are five practical adoption patterns for biostatistical and clinical data
+science teams:
+
+### Pattern 1: Longitudinal EHR survival modeling with patient grouping
+When modeling electronic health records with repeated clinical visits, replace
+standard row-level splitting with patient-grouped folds:
+
+```{r pattern_ehr, eval = FALSE}
+# Ensure patient-grouped folds
+cv_fit <- cv_coxnet(
+  recipe = clinical_rec,
+  data = ehr_longitudinal_data,
+  group = "patient_id",
+  mixture = 0.5,
+  v = 5
+)
+```
+
+### Pattern 2: Mixed clinical & biomarker dimensionality reduction
+Combine high-dimensional lab panels and discrete clinical stages using `step_famd()`
+inside a `tidymodels` workflow:
+
+```{r pattern_famd, eval = FALSE}
+rec <- recipe(surv ~ ., data = cohort) |>
+  update_role(patient_id, new_role = "id") |>
+  step_famd(all_predictors(), num_comp = 5)
+
+fit <- coxnet(rec, data = cohort, mixture = 1.0, penalty = 0.05)
+```
+
+### Pattern 3: Multi-center clinical trial generalizability assessment
+Evaluate whether a prognostic signature generalises across hospital sites by
+grouping cross-validation folds at the institutional site level:
+
+```{r pattern_multicenter, eval = FALSE}
+# Hold out entire clinical sites during validation
+site_cv <- cv_coxnet(
+  recipe = clinical_rec,
+  data = multi_site_study,
+  group = "hospital_site",
+  v = 10,
+  metrics = metric_set(brier_survival_integrated, concordance_survival)
+)
+```
+
+### Pattern 4: Honest generalization auditing with nested cross-validation
+Before presenting prognostic scores to clinical stakeholders or submitting
+models for regulatory evaluation, estimate true out-of-sample generalization
+using `nested_cv_coxnet()`:
+
+```{r pattern_nested, eval = FALSE}
+nested_plan <- nested_cv(
+  cohort_data,
+  outside = group_vfold_cv(group = patient_id, v = 5),
+  inside  = group_vfold_cv(group = patient_id, v = 5)
+)
+
+honest_metrics <- nested_cv_coxnet(nested_plan, clinical_rec, mixture = c(0.5, 1.0))
+collect_metrics(honest_metrics)
+```
+
+### Pattern 5: Translational laboratory handoff
+Seamlessly bridge biostatistical analysis in R with laboratory GraphPad Prism
+figure creation using `km_summary_to_prism()`:
+
+```{r pattern_prism, eval = FALSE}
+# Deliver Prism-ready survival spreadsheets to clinical collaborators
+km_summary_to_prism(
+  km_table,
+  out_xlsx = "reports/figures/Figure1_KaplanMeier_Prism.xlsx"
+)
+```
+
+---
+
+## Summary
+
+`TempleCBE` fills the critical gap between classical low-dimensional survival
+analysis and modern high-dimensional machine learning on longitudinal clinical
+cohorts. By pairing leak-free grouped resampling (`cv_coxnet()`, `nested_cv_coxnet()`)
+with proper IPCW scoring (`surv_helpers`), mixed-data feature reduction (`step_famd()`),
+and translational handoff tools (`km_summary_to_prism()`), it provides a robust,
+reproducible foundation for clinical survival modeling.
+

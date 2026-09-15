@@ -716,67 +716,18 @@ local({
   # (512 byte) header.
   renv_bootstrap_git_extract_sha1_tar <- function(bundle) {
   
-    if (!file.exists(bundle)) {
-      stop("Archive bundle does not exist: ", bundle, call. = FALSE)
-    }
-
-    # The default pax header is 512 bytes long and the first pax extended header
-    # with the comment should be 51 bytes long
-    # `52 comment=` (11 chars) + 40 byte SHA1 hash
-    len <- 0x200 + 0x33
-
-    sz <- file.info(bundle)$size
-    if (is.na(sz) || sz < len) {
-      stop(
-        "Malformed or truncated archive: '", bundle, "' is too small (",
-        if (is.na(sz)) 0 else sz, " bytes) to contain a valid tar header.",
-        call. = FALSE
-      )
-    }
-
     # open the bundle for reading
     # We use gzcon for everything because (from ?gzcon)
     # > Reading from a connection which does not supply a 'gzip' magic
     # > header is equivalent to reading from the original connection
-    conn <- tryCatch(
-      gzcon(file(bundle, open = "rb", raw = TRUE)),
-      error = function(e) {
-        stop("Failed to open or decompress archive '", bundle, "': ", e$message, call. = FALSE)
-      }
-    )
+    conn <- gzcon(file(bundle, open = "rb", raw = TRUE))
     on.exit(close(conn))
   
-    raw_bytes <- tryCatch(
-      readBin(conn, "raw", n = len),
-      error = function(e) {
-        stop("Failed reading tar header from '", bundle, "': ", e$message, call. = FALSE)
-      }
-    )
-
-    if (length(raw_bytes) < len) {
-      stop(
-        "Malformed or truncated archive: read ", length(raw_bytes),
-        " bytes, expected at least ", len, " bytes.",
-        call. = FALSE
-      )
-    }
-
-    # Validate tar magic header (offset 257 in standard POSIX ustar/pax format)
-    magic <- tryCatch(rawToChar(raw_bytes[258:262]), error = function(e) "")
-    if (!identical(magic, "ustar")) {
-      stop(
-        "Malformed or corrupt archive '", bundle, "': missing valid tar magic header.",
-        call. = FALSE
-      )
-    }
-
-    header_raw <- raw_bytes[0x201:len]
-    res <- tryCatch(
-      rawToChar(header_raw),
-      error = function(e) {
-        stop("Malformed tar pax extended header in archive '", bundle, "': ", e$message, call. = FALSE)
-      }
-    )
+    # The default pax header is 512 bytes long and the first pax extended header
+    # with the comment should be 51 bytes long
+    # `52 comment=` (11 chars) + 40 byte SHA1 hash
+    len <- 0x200 + 0x33
+    res <- rawToChar(readBin(conn, "raw", n = len)[0x201:len])
   
     if (grepl("^52 comment=", res)) {
       sub("52 comment=", "", res)
