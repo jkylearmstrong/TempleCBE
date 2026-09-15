@@ -1,5 +1,14 @@
 # TempleCBE (development version)
 
+## `use_temple_brand()` warns off-root installs; `create_report()` finds a root install
+
+* `use_temple_brand()` gets a `check_root` argument (default `TRUE`): it now warns when `path` isn't the project root found by `here::here()`, since installing the extension into each report's own subfolder instead of once at the root creates a separate, driftable `_extensions` copy per report. Pass `check_root = FALSE` to install into a subfolder without the warning (what `create_report(..., install_brand = TRUE)` does internally, since that's a deliberate one-report install).
+* `create_report()`'s "install the extension" message no longer fires for a `"temple"` report created under a project that already has the extension installed at an ancestor directory (matching how Quarto itself resolves `_extensions` from any project subfolder) — previously it only checked `location` itself.
+
+## `create_report()` gets a `filename` argument
+
+* New `filename` argument names the report file independently of `template_name`. Previously, two reports in the same `location` (e.g. `analysis/analysis1.qmd` and `analysis/analysis2.qmd`) both defaulted to `<template_name>.qmd`, so the second `create_report()` call silently overwrote the first. `create_report()` now warns before overwriting an existing report file, and `filename` lets each report keep its own name: `create_report("analysis", filename = "analysis1")`, `create_report("analysis", filename = "analysis2")`.
+
 ## Penalized Cox models for start/stop survival data
 
 * New `coxnet()` fits an elastic-net Cox model with glmnet through the tidymodels hardhat interface: formula, recipe, or predictors and outcome. The outcome can be right-censored, `Surv(time, event)`, or start/stop, `Surv(start, stop, event)`. `predict()` returns `.pred_linear_pred` or a `.pred` list-column of survival probabilities (Breslow baseline hazard), and `tidy()` returns every coefficient.

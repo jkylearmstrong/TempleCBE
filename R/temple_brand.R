@@ -216,23 +216,46 @@ temple_brand_path <- function() {
 #' \code{temple-typst}, or \code{temple-revealjs}, and every format picks up
 #' the brand colors, fonts, and logo.
 #'
+#' \strong{Install once, at the project root.} Quarto resolves a project's
+#' \code{_extensions} from any subfolder of that project, so a single install
+#' at the root (where \code{_quarto.yml} lives) covers every report under it.
+#' Calling \code{use_temple_brand()} again for each report's own subfolder
+#' instead creates a separate \code{_extensions} copy per report, which can
+#' drift out of sync as the extension is updated. See
+#' \code{\link{create_report}}'s \code{install_brand} argument for the
+#' one-report shortcut, which installs into that report's own folder and is
+#' fine when there's only ever going to be one.
+#'
 #' @param path Project directory (created if missing). Defaults to the
 #'   working directory.
 #' @param extension Extension source passed to \code{quarto add}: a GitHub
 #'   \code{org/repo}, a URL, or a local path.
 #' @param quiet Logical; suppress Quarto's output.
+#' @param check_root Logical; warn when \code{path} isn't the current
+#'   project's root as found by \code{\link[here]{here}} (i.e. the nearest
+#'   ancestor with a \code{.Rproj}, \code{.git}, or similar marker). Set to
+#'   \code{FALSE} to install into a report's own subfolder without the
+#'   warning, e.g. for a one-off report that won't grow siblings.
 #' @return Invisibly, a list with \code{path}, \code{quarto_yml},
 #'   \code{created_quarto_yml}, and \code{extension_dir}.
 #' @seealso \code{\link{create_report}} with \code{template_name = "temple"}.
 #' @export
 #' @examples
 #' \dontrun{
-#' use_temple_brand("analysis")
+#' # Install once at the project root; every report below it shares the
+#' # extension automatically.
+#' use_temple_brand(here::here())
+#' create_report(here::here("analysis"), template_name = "temple")
+#' create_report(here::here("reports"), template_name = "temple", filename = "q3")
+#'
+#' # A single, one-off report: install alongside it and skip the check.
+#' use_temple_brand("analysis", check_root = FALSE)
 #' create_report("analysis", template_name = "temple")
 #' }
 use_temple_brand <- function(path = ".",
                              extension = "jkylearmstrong-temple/quarto_temple_brand",
-                             quiet = FALSE) {
+                             quiet = FALSE,
+                             check_root = TRUE) {
   if (!requireNamespace("quarto", quietly = TRUE)) {
     stop("Package 'quarto' is required by use_temple_brand(). Install it with install.packages(\"quarto\").", call. = FALSE)
   }
@@ -242,6 +265,25 @@ use_temple_brand <- function(path = ".",
 
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+
+  if (isTRUE(check_root)) {
+    project_root <- tryCatch(
+      normalizePath(here::here(), winslash = "/", mustWork = FALSE),
+      error = function(e) NA_character_
+    )
+    if (!is.na(project_root) && !identical(path, project_root)) {
+      warning(
+        "Installing quarto_temple_brand into '", path, "', not the project root ",
+        "('", project_root, "', per here::here()). If another report also calls ",
+        "use_temple_brand() or create_report(..., install_brand = TRUE), each gets ",
+        "its own '_extensions' copy instead of sharing one. Prefer ",
+        "use_temple_brand(here::here()) once at the root, then create_report(location, ",
+        "template_name = \"temple\") (install_brand = FALSE, the default) for each ",
+        "report. Pass check_root = FALSE to install here anyway without this warning.",
+        call. = FALSE
+      )
+    }
+  }
 
   quarto_yml <- file.path(path, c("_quarto.yml", "_quarto.yaml"))
   created <- !any(file.exists(quarto_yml))
@@ -267,4 +309,20 @@ temple_extension_dir <- function(path) {
                           recursive = TRUE, full.names = TRUE)
   dirs <- dirname(manifests)[basename(dirname(manifests)) == "temple"]
   if (length(dirs)) dirs[[1]] else NA_character_
+}
+
+# Like temple_extension_dir(), but also checks ancestor directories up to
+# (and including) the enclosing project root, mirroring how Quarto itself
+# resolves a project's _extensions from any subfolder. Used to avoid telling
+# users to (re)install when the extension already lives at the project root.
+temple_extension_dir_upward <- function(path) {
+  path <- tryCatch(normalizePath(path, winslash = "/", mustWork = FALSE), error = function(e) path)
+  repeat {
+    found <- temple_extension_dir(path)
+    if (!is.na(found)) return(found)
+    is_project_root <- any(file.exists(file.path(path, c("_quarto.yml", "_quarto.yaml"))))
+    parent <- dirname(path)
+    if (is_project_root || identical(parent, path)) return(NA_character_)
+    path <- parent
+  }
 }
