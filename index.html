@@ -35,8 +35,9 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="articles/nested_survival_cv.html">Nested Cross-Validation for Longitudinal Survival Models</a></li>
+<li><a class="dropdown-item" href="articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -58,7 +59,7 @@
 <div class="section level1">
 <h1 id="templecbe-">TempleCBE <img src="inst/templates/Temple_Logo.png" align="right" height="138"><a class="anchor" aria-label="anchor" href="#templecbe-"></a>
 </h1>
-<p><a href="https://github.com/jkylearmstrong/TempleCBE/actions" class="external-link"><img src="https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="LICENSE.html"><img src="https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg" alt="License: GPL-3 | MIT"></a> <a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link"><img src="https://img.shields.io/badge/version-0.1.2-blue.svg" alt="Version"></a></p>
+<p><a href="https://github.com/jkylearmstrong/TempleCBE/actions" class="external-link"><img src="https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/jkylearmstrong/TempleCBE" class="external-link"><img src="https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="LICENSE.html"><img src="https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg" alt="License: GPL-3 | MIT"></a> <a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link"><img src="https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&amp;query=%24.Version&amp;label=version&amp;color=blue" alt="Version"></a></p>
 <p><strong>TempleCBE</strong> is an open-source R package developed for Temple University’s <strong>Center for Biostatistics and Epidemiology (CBE)</strong>. It provides a clean, domain-agnostic suite of biostatistical testing functions, data quality and missingness visualizations, normalization utilities, custom Tidymodels recipe steps (<code>step_famd</code>), and clinical survival evaluation metrics (<code>glmnet_IBS</code>).</p>
 <hr>
 <div class="section level2">
@@ -139,7 +140,7 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/recipes" class="external-link">recipes</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Define recipe with mixed numeric and categorical variables</span></span>
-<span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/recipe.html" class="external-link">recipe</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/recipe.html" class="external-link">recipe</a></span><span class="op">(</span><span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="reference/step_famd.html">step_famd</a></span><span class="op">(</span><span class="fu"><a href="https://recipes.tidymodels.org/reference/has_role.html" class="external-link">all_predictors</a></span><span class="op">(</span><span class="op">)</span>, num_comp <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Prep and bake</span></span>
@@ -203,6 +204,7 @@
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>J Kyle Armstrong <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-4269-0121" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
 

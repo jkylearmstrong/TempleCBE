@@ -30,8 +30,9 @@ the brand colors, fonts, and logo."></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Nested Cross-Validation for Longitudinal Survival Models</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/jkylearmstrong/TempleCBE/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -63,7 +64,8 @@ the brand colors, fonts, and logo.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">use_temple_brand</span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"."</span>,</span>
 <span>  extension <span class="op">=</span> <span class="st">"jkylearmstrong-temple/quarto_temple_brand"</span>,</span>
-<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  check_root <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -84,11 +86,31 @@ working directory.</p></dd>
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
 <dd><p>Logical; suppress Quarto's output.</p></dd>
 
+
+<dt id="arg-check-root">check_root<a class="anchor" aria-label="anchor" href="#arg-check-root"></a></dt>
+<dd><p>Logical; warn when <code>path</code> isn't the current
+project's root as found by <code><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></code> (i.e. the nearest
+ancestor with a <code>.Rproj</code>, <code>.git</code>, or similar marker). Set to
+<code>FALSE</code> to install into a report's own subfolder without the
+warning, e.g. for a one-off report that won't grow siblings.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with <code>path</code>, <code>quarto_yml</code>,
   <code>created_quarto_yml</code>, and <code>extension_dir</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><strong>Install once, at the project root.</strong> Quarto resolves a project's
+<code>_extensions</code> from any subfolder of that project, so a single install
+at the root (where <code>_quarto.yml</code> lives) covers every report under it.
+Calling <code>use_temple_brand()</code> again for each report's own subfolder
+instead creates a separate <code>_extensions</code> copy per report, which can
+drift out of sync as the extension is updated. See
+<code><a href="create_report.html">create_report</a></code>'s <code>install_brand</code> argument for the
+one-report shortcut, which installs into that report's own folder and is
+fine when there's only ever going to be one.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -98,7 +120,14 @@ working directory.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="fu">use_temple_brand</span><span class="op">(</span><span class="st">"analysis"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Install once at the project root; every report below it shares the</span></span></span>
+<span class="r-in"><span><span class="co"># extension automatically.</span></span></span>
+<span class="r-in"><span><span class="fu">use_temple_brand</span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="create_report.html">create_report</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"analysis"</span><span class="op">)</span>, template_name <span class="op">=</span> <span class="st">"temple"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="create_report.html">create_report</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"reports"</span><span class="op">)</span>, template_name <span class="op">=</span> <span class="st">"temple"</span>, filename <span class="op">=</span> <span class="st">"q3"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A single, one-off report: install alongside it and skip the check.</span></span></span>
+<span class="r-in"><span><span class="fu">use_temple_brand</span><span class="op">(</span><span class="st">"analysis"</span>, check_root <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="create_report.html">create_report</a></span><span class="op">(</span><span class="st">"analysis"</span>, template_name <span class="op">=</span> <span class="st">"temple"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

@@ -18,8 +18,9 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Nested Cross-Validation for Longitudinal Survival Models</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/jkylearmstrong/TempleCBE/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -71,6 +72,13 @@
 
         </dt>
         <dd>Missingness Map</dd>
+
+        <dt>
+
+          <code><a href="add_missing.html">add_missing()</a></code>
+
+        </dt>
+        <dd>Add Missing Values Completely at Random</dd>
 
         <dt>
 
@@ -137,9 +145,9 @@
         </dt>
         <dd>Flag and Classify Outliers</dd>
       </dl></div><div class="section level2">
-      <h2 id="tidymodels-recipe-steps-modeling-utilities">Tidymodels Recipe Steps &amp; Modeling Utilities<a class="anchor" aria-label="anchor" href="#tidymodels-recipe-steps-modeling-utilities"></a></h2>
+      <h2 id="penalized-cox-models-for-survival-data">Penalized Cox Models for Survival Data<a class="anchor" aria-label="anchor" href="#penalized-cox-models-for-survival-data"></a></h2>
 
-      <div class="section-desc"><p>Recipe steps and modeling evaluation metrics.</p></div>
+      <div class="section-desc"><p>Elastic-net Cox regression for right-censored and start/stop outcomes, cross-validation and nested cross-validation with yardstick survival metrics, and helpers for scoring start/stop models correctly.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -148,10 +156,73 @@
 
       <dl><dt>
 
-          <code><a href="step_famd.html">step_famd()</a></code>
+          <code><a href="coxnet.html">coxnet()</a></code>
 
         </dt>
-        <dd>Factor Analysis of Mixed Data (FAMD) Recipe Step</dd>
+        <dd>Penalized Cox Regression for Right-Censored or Start/Stop Survival Data</dd>
+
+        <dt>
+
+          <code><a href="predict.coxnet_model.html">predict(<i>&lt;coxnet_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Predict From a `coxnet` Model</dd>
+
+        <dt>
+
+          <code><a href="tidy.coxnet_model.html">tidy(<i>&lt;coxnet_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tidy the Coefficients of a `coxnet` Model</dd>
+
+        <dt>
+
+          <code><a href="cv_coxnet.html">cv_coxnet()</a></code>
+
+        </dt>
+        <dd>Cross-Validate a Penalized Cox Model With yardstick Survival Metrics</dd>
+
+        <dt>
+
+          <code><a href="cv_coxnet-methods.html">predict(<i>&lt;cv_coxnet&gt;</i>)</a></code> <code><a href="cv_coxnet-methods.html">tidy(<i>&lt;cv_coxnet&gt;</i>)</a></code> <code><a href="cv_coxnet-methods.html">collect_metrics(<i>&lt;cv_coxnet&gt;</i>)</a></code> <code><a href="cv_coxnet-methods.html">autoplot(<i>&lt;cv_coxnet&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Use a `cv_coxnet` Result</dd>
+
+        <dt>
+
+          <code><a href="nested_cv_coxnet.html">nested_cv_coxnet()</a></code> <code><a href="nested_cv_coxnet.html">collect_metrics(<i>&lt;nested_cv_coxnet&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Nested Cross-Validation of a Penalized Cox Model</dd>
+
+        <dt>
+
+          <code><a href="surv_subject_truth.html">surv_subject_truth()</a></code>
+
+        </dt>
+        <dd>Collapse Survival Outcomes to One Row per Subject</dd>
+
+        <dt>
+
+          <code><a href="censoring_km.html">censoring_km()</a></code> <code><a href="censoring_km.html">predict(<i>&lt;censoring_km&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Kaplan-Meier Estimate of the Censoring Distribution</dd>
+
+        <dt>
+
+          <code><a href="graf_weights.html">graf_weights()</a></code>
+
+        </dt>
+        <dd>Inverse Probability of Censoring Weights (Graf et al.)</dd>
+
+        <dt>
+
+          <code><a href="add_graf_weights.html">add_graf_weights()</a></code>
+
+        </dt>
+        <dd>Add Censoring Weights to Survival Predictions for yardstick</dd>
 
         <dt>
 
@@ -173,6 +244,22 @@
 
         </dt>
         <dd>Tune Over `alpha` for Every Split of a Resample</dd>
+      </dl></div><div class="section level2">
+      <h2 id="tidymodels-recipe-steps-modeling-utilities">Tidymodels Recipe Steps &amp; Modeling Utilities<a class="anchor" aria-label="anchor" href="#tidymodels-recipe-steps-modeling-utilities"></a></h2>
+
+      <div class="section-desc"><p>Recipe steps and workflow set helpers.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="step_famd.html">step_famd()</a></code> <code><a href="step_famd.html">tidy(<i>&lt;step_famd&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Factor Analysis of Mixed Data (FAMD) Recipe Step</dd>
 
         <dt>
 
@@ -427,10 +514,10 @@
 
         <dt>
 
-          <code><a href="plot.prcomp.html">plot(<i>&lt;prcomp&gt;</i>)</a></code>
+          <code><a href="pca_plot.html">pca_plot()</a></code>
 
         </dt>
-        <dd>Generic Plot Method for <code>prcomp</code> Objects</dd>
+        <dd>Plot a PCA Fit</dd>
       </dl></div><div class="section level2">
       <h2 id="visualization-reporting">Visualization &amp; Reporting<a class="anchor" aria-label="anchor" href="#visualization-reporting"></a></h2>
 
@@ -474,7 +561,7 @@
           <code><a href="pdf_to_rtf.html">pdf_to_rtf()</a></code>
 
         </dt>
-        <dd>Convert a PDF to Rich Text Format (RTF)</dd>
+        <dd>Convert a PDF's Text to Rich Text Format (RTF)</dd>
 
         <dt>
 
@@ -594,6 +681,227 @@
 
         </dt>
         <dd>Search a Directory Tree for File-Write Calls</dd>
+      </dl></div><div class="section level2">
+      <h2 id="pipeline-computational-graph-architecture">Pipeline &amp; Computational Graph Architecture<a class="anchor" aria-label="anchor" href="#pipeline-computational-graph-architecture"></a></h2>
+
+      <div class="section-desc"><p>Language-, format-, and tool-agnostic dependency graphs, file-level metadata tracking, and interactive DAG visualizations for reproducible biostatistical pipelines.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="compute_graph.html">compute_graph</a></code>
+
+        </dt>
+        <dd>Computational Pipeline Dependency Graphs</dd>
+
+        <dt>
+
+          <code><a href="pipeline_config.html">pipeline_config()</a></code>
+
+        </dt>
+        <dd>Get or set global pipeline configuration options</dd>
+
+        <dt>
+
+          <code><a href="pipeline_summary.html">pipeline_summary()</a></code>
+
+        </dt>
+        <dd>Produce an executive summary of the computational pipeline</dd>
+
+        <dt>
+
+          <code><a href="as_pipeline_graph.html">as_pipeline_graph()</a></code>
+
+        </dt>
+        <dd>Convert pipeline objects or igraph to a tidygraph tbl_graph</dd>
+
+        <dt>
+
+          <code><a href="as_igraph.html">as_igraph()</a></code>
+
+        </dt>
+        <dd>Convert to an enriched igraph graph with rich metadata</dd>
+
+        <dt>
+
+          <code><a href="as_tbl_graph.list.html">as_tbl_graph(<i>&lt;list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Convert pipeline list to tidygraph</dd>
+
+        <dt>
+
+          <code><a href="summary.tbl_graph.html">summary(<i>&lt;tbl_graph&gt;</i>)</a></code>
+
+        </dt>
+        <dd>S3 summary method for tbl_graph objects</dd>
+
+        <dt>
+
+          <code><a href="visualize_pipeline.html">visualize_pipeline()</a></code>
+
+        </dt>
+        <dd>Visualize FilePath dependencies with stage-based coloring and staleness check</dd>
+
+        <dt>
+
+          <code><a href="visualize_pipeline_interactive.html">visualize_pipeline_interactive()</a></code>
+
+        </dt>
+        <dd>Generate an interactive visNetwork visualization of the computation graph</dd>
+
+        <dt>
+
+          <code><a href="print_pipeline.html">print_pipeline()</a></code>
+
+        </dt>
+        <dd>Print the dependency graph as a PNG image</dd>
+
+        <dt>
+
+          <code><a href="collapse_by_stage.html">collapse_by_stage()</a></code>
+
+        </dt>
+        <dd>Collapse an igraph pipeline graph to one node per pipeline `stage`</dd>
+
+        <dt>
+
+          <code><a href="export_subgraph.html">export_subgraph()</a></code>
+
+        </dt>
+        <dd>Export a focused interactive subgraph centered around a focal report or stage</dd>
+
+        <dt>
+
+          <code><a href="export_interactive_pipeline.html">export_interactive_pipeline()</a></code>
+
+        </dt>
+        <dd>Export the computational graph to a self-contained interactive HTML file for stakeholders</dd>
+
+        <dt>
+
+          <code><a href="list_stage_data_artifacts.html">list_stage_data_artifacts()</a></code>
+
+        </dt>
+        <dd>Inspect and categorize all on-disk data artifacts for a pipeline stage</dd>
+
+        <dt>
+
+          <code><a href="controls_datasets.html">controls_datasets()</a></code>
+
+        </dt>
+        <dd>Check if a FileOutputs object controls datasets (outputs an rds, xlsx, etc. file)</dd>
+
+        <dt>
+
+          <code><a href="create_qmd_renderer.html">create_qmd_renderer()</a></code>
+
+        </dt>
+        <dd>Create a FileOutputs object for a rendering QMD</dd>
+
+        <dt>
+
+          <code><a href="get_render_plan.html">get_render_plan()</a></code>
+
+        </dt>
+        <dd>Get the topologically sorted list of QMDs that need to be re-rendered</dd>
+
+        <dt>
+
+          <code><a href="join_pipelines.html">join_pipelines()</a></code>
+
+        </dt>
+        <dd>Join two computational pipeline graphs</dd>
+
+        <dt>
+
+          <code><a href="FilePath.html">FilePath()</a></code>
+
+        </dt>
+        <dd>Construct a FilePath object</dd>
+
+        <dt>
+
+          <code><a href="FilePath-class.html">show(<i>&lt;FilePath&gt;</i>)</a></code>
+
+        </dt>
+        <dd>FilePath S4 Class</dd>
+
+        <dt>
+
+          <code><a href="FileUses.html">FileUses()</a></code>
+
+        </dt>
+        <dd>Construct a FileUses object</dd>
+
+        <dt>
+
+          <code><a href="FileUses-class.html">show(<i>&lt;FileUses&gt;</i>)</a></code>
+
+        </dt>
+        <dd>FileUses S4 Class</dd>
+
+        <dt>
+
+          <code><a href="FileOutputs.html">FileOutputs()</a></code>
+
+        </dt>
+        <dd>Construct a FileOutputs object</dd>
+
+        <dt>
+
+          <code><a href="FileOutputs-class.html">show(<i>&lt;FileOutputs&gt;</i>)</a></code>
+
+        </dt>
+        <dd>FileOutputs S4 Class</dd>
+      </dl></div><div class="section level2">
+      <h2 id="de-identification-investigator-pseudonyms">De-identification &amp; Investigator Pseudonyms<a class="anchor" aria-label="anchor" href="#de-identification-investigator-pseudonyms"></a></h2>
+
+      <div class="section-desc"><p>Functions to generate synthetic investigator names and anonymize real identities for reproducible reporting.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pi_anonymizer.html">pi_anonymizer</a></code>
+
+        </dt>
+        <dd>PI Name Generator and Anonymizer</dd>
+
+        <dt>
+
+          <code><a href="generate_last_names.html">generate_last_names()</a></code>
+
+        </dt>
+        <dd>Procedural Synthetic Last Name Generator</dd>
+
+        <dt>
+
+          <code><a href="generate_pseudonym_token.html">generate_pseudonym_token()</a></code>
+
+        </dt>
+        <dd>Generate Pseudonym Tokens (Cryptographic Hash)</dd>
+
+        <dt>
+
+          <code><a href="generate_pi_names.html">generate_pi_names()</a></code>
+
+        </dt>
+        <dd>Generate Random PI Names or Tokens</dd>
+
+        <dt>
+
+          <code><a href="anonymize_pi.html">anonymize_pi()</a></code>
+
+        </dt>
+        <dd>Anonymize Investigator Names (Vectorized)</dd>
       </dl></div><div class="section level2">
       <h2 id="temple-brand">Temple Brand<a class="anchor" aria-label="anchor" href="#temple-brand"></a></h2>
 

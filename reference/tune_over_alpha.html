@@ -24,8 +24,9 @@ this function never sets one."></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Nested Cross-Validation for Longitudinal Survival Models</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/jkylearmstrong/TempleCBE/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -72,7 +73,7 @@ this function never sets one.</p>
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Arguments passed to [glmnet_IBS()] (`recipe`, `feature_names`,
-`time_data`, `id_col`, `censoring_weights`, ...).</p></dd>
+`time_data`, `id_col`, `cox.ties`, ...).</p></dd>
 
 
 <dt id="arg-num-alpha-values">num_alpha_values<a class="anchor" aria-label="anchor" href="#arg-num-alpha-values"></a></dt>
@@ -116,10 +117,11 @@ gaps if there are more random draws than gaps).</p>
 <p>Random draws use the R session's random number stream, so call
 [set.seed()] first for reproducible values. Model fits run with
 `furrr_options(seed = TRUE)`, so they are reproducible too.</p>
+<p>To tune `alpha` and the penalty together in one call, see [cv_coxnet()].</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p>[glmnet_IBS()], [summarize_tune_results()]</p></div>
+    <div class="dont-index"><p>[glmnet_IBS()], [summarize_tune_results()], [cv_coxnet()]</p></div>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

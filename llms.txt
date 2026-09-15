@@ -3,9 +3,11 @@
 # TempleCBE ![](inst/templates/Temple_Logo.png)
 
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
+[![Codecov test
+coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)
 [![License: GPL-3 \|
 MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](https://jkylearmstrong.github.io/TempleCBE/LICENSE.md)
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/jkylearmstrong/TempleCBE)
+[![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&query=%24.Version&label=version&color=blue)](https://github.com/jkylearmstrong/TempleCBE)
 
 **TempleCBE** is an open-source R package developed for Temple
 University’s **Center for Biostatistics and Epidemiology (CBE)**. It
@@ -117,7 +119,7 @@ seamlessly within the `tidymodels` framework:
 library(recipes)
 
 # Define recipe with mixed numeric and categorical variables
-rec <- recipe(Species ~ ., data = iris) %>%
+rec <- recipe(~ ., data = iris) %>%
   step_famd(all_predictors(), num_comp = 2)
 
 # Prep and bake
@@ -176,6 +178,8 @@ Functions for missing data auditing, summary tables, and visualizations.
   : Plot method for features_percent_miss objects
 - [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
   : Missingness Map
+- [`add_missing()`](https://jkylearmstrong.github.io/TempleCBE/reference/add_missing.md)
+  : Add Missing Values Completely at Random
 - [`my_summary_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/my_summary_table.md)
   : Summary Table Function
 - [`get_dataset_info()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
@@ -200,12 +204,38 @@ outliers.
 - [`flag_outliers()`](https://jkylearmstrong.github.io/TempleCBE/reference/flag_outliers.md)
   : Flag and Classify Outliers
 
-## Tidymodels Recipe Steps & Modeling Utilities
+## Penalized Cox Models for Survival Data
 
-Recipe steps and modeling evaluation metrics.
+Elastic-net Cox regression for right-censored and start/stop outcomes,
+cross-validation and nested cross-validation with yardstick survival
+metrics, and helpers for scoring start/stop models correctly.
 
-- [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
-  : Factor Analysis of Mixed Data (FAMD) Recipe Step
+- [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
+  : Penalized Cox Regression for Right-Censored or Start/Stop Survival
+  Data
+- [`predict(`*`<coxnet_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/predict.coxnet_model.md)
+  : Predict From a \`coxnet\` Model
+- [`tidy(`*`<coxnet_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy.coxnet_model.md)
+  : Tidy the Coefficients of a \`coxnet\` Model
+- [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+  : Cross-Validate a Penalized Cox Model With yardstick Survival Metrics
+- [`predict(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`tidy(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`collect_metrics(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`autoplot(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  : Use a \`cv_coxnet\` Result
+- [`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  [`collect_metrics(`*`<nested_cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  : Nested Cross-Validation of a Penalized Cox Model
+- [`surv_subject_truth()`](https://jkylearmstrong.github.io/TempleCBE/reference/surv_subject_truth.md)
+  : Collapse Survival Outcomes to One Row per Subject
+- [`censoring_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
+  [`predict(`*`<censoring_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
+  : Kaplan-Meier Estimate of the Censoring Distribution
+- [`graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/graf_weights.md)
+  : Inverse Probability of Censoring Weights (Graf et al.)
+- [`add_graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/add_graf_weights.md)
+  : Add Censoring Weights to Survival Predictions for yardstick
 - [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
   : Integrated Brier Score of a Penalized Cox Model on Start/Stop
   Survival Data
@@ -213,6 +243,14 @@ Recipe steps and modeling evaluation metrics.
   : Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
 - [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
   : Tune Over \`alpha\` for Every Split of a Resample
+
+## Tidymodels Recipe Steps & Modeling Utilities
+
+Recipe steps and workflow set helpers.
+
+- [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  [`tidy(`*`<step_famd>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  : Factor Analysis of Mixed Data (FAMD) Recipe Step
 - [`get_model_parameters()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_model_parameters.md)
   : Tuning Parameters of a Ranked Workflow in a Workflow Set
 - [`fit_n_rank()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_n_rank.md)
@@ -279,36 +317,25 @@ Principal Component Analysis utilities, loadings, and biplots.
 
 - [`proc_pca()`](https://jkylearmstrong.github.io/TempleCBE/reference/proc_pca.md)
   : Process and Plot Principal Component Analysis (PCA)
-
 - [`rotation_matrix()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
   [`pca_loadings()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
   : PCA Rotation Matrix (Loadings)
-
 - [`pca_eqns()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_eqns.md)
   : PCA Equations
-
 - [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md)
   : Percent Variance Explained by Each Principal Component
-
 - [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)
   : PCA Feature-Loading Heatmap
-
 - [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
   : PCA Biplot
-
 - [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
   : PCA Loadings Biplot
-
 - [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md)
   : Difference in PCA Loadings Between Two Fits
-
 - [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md)
   : Heatmap of PCA Loading Differences Between Two Fits
-
-- [`plot(`*`<prcomp>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.md)
-  :
-
-  Generic Plot Method for `prcomp` Objects
+- [`pca_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_plot.md)
+  : Plot a PCA Fit
 
 ## Visualization & Reporting
 
@@ -323,7 +350,7 @@ Manhattan/volcano plots, report generation, and document conversions.
 - [`zip_render()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.md)
   : Render a Quarto Document and Zip It With Its Dependencies
 - [`pdf_to_rtf()`](https://jkylearmstrong.github.io/TempleCBE/reference/pdf_to_rtf.md)
-  : Convert a PDF to Rich Text Format (RTF)
+  : Convert a PDF's Text to Rich Text Format (RTF)
 - [`create_toc_from_sas_pdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_toc_from_sas_pdf.md)
   : Build a Table of Contents from a SAS-Generated PDF
 - [`read_excel_multiple_headers()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_excel_multiple_headers.md)
@@ -360,6 +387,84 @@ Manhattan/volcano plots, report generation, and document conversions.
   : Search a Directory Tree for File-Read Calls
 - [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md)
   : Search a Directory Tree for File-Write Calls
+
+## Pipeline & Computational Graph Architecture
+
+Language-, format-, and tool-agnostic dependency graphs, file-level
+metadata tracking, and interactive DAG visualizations for reproducible
+biostatistical pipelines.
+
+- [`compute_graph`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_graph.md)
+  : Computational Pipeline Dependency Graphs
+- [`pipeline_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_config.md)
+  : Get or set global pipeline configuration options
+- [`pipeline_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
+  : Produce an executive summary of the computational pipeline
+- [`as_pipeline_graph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_pipeline_graph.md)
+  : Convert pipeline objects or igraph to a tidygraph tbl_graph
+- [`as_igraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_igraph.md)
+  : Convert to an enriched igraph graph with rich metadata
+- [`as_tbl_graph(`*`<list>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/as_tbl_graph.list.md)
+  : Convert pipeline list to tidygraph
+- [`summary(`*`<tbl_graph>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/summary.tbl_graph.md)
+  : S3 summary method for tbl_graph objects
+- [`visualize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline.md)
+  : Visualize FilePath dependencies with stage-based coloring and
+  staleness check
+- [`visualize_pipeline_interactive()`](https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline_interactive.md)
+  : Generate an interactive visNetwork visualization of the computation
+  graph
+- [`print_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.md)
+  : Print the dependency graph as a PNG image
+- [`collapse_by_stage()`](https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.md)
+  : Collapse an igraph pipeline graph to one node per pipeline \`stage\`
+- [`export_subgraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_subgraph.md)
+  : Export a focused interactive subgraph centered around a focal report
+  or stage
+- [`export_interactive_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_interactive_pipeline.md)
+  : Export the computational graph to a self-contained interactive HTML
+  file for stakeholders
+- [`list_stage_data_artifacts()`](https://jkylearmstrong.github.io/TempleCBE/reference/list_stage_data_artifacts.md)
+  : Inspect and categorize all on-disk data artifacts for a pipeline
+  stage
+- [`controls_datasets()`](https://jkylearmstrong.github.io/TempleCBE/reference/controls_datasets.md)
+  : Check if a FileOutputs object controls datasets (outputs an rds,
+  xlsx, etc. file)
+- [`create_qmd_renderer()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_qmd_renderer.md)
+  : Create a FileOutputs object for a rendering QMD
+- [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
+  : Get the topologically sorted list of QMDs that need to be
+  re-rendered
+- [`join_pipelines()`](https://jkylearmstrong.github.io/TempleCBE/reference/join_pipelines.md)
+  : Join two computational pipeline graphs
+- [`FilePath()`](https://jkylearmstrong.github.io/TempleCBE/reference/FilePath.md)
+  : Construct a FilePath object
+- [`show(`*`<FilePath>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FilePath-class.md)
+  : FilePath S4 Class
+- [`FileUses()`](https://jkylearmstrong.github.io/TempleCBE/reference/FileUses.md)
+  : Construct a FileUses object
+- [`show(`*`<FileUses>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FileUses-class.md)
+  : FileUses S4 Class
+- [`FileOutputs()`](https://jkylearmstrong.github.io/TempleCBE/reference/FileOutputs.md)
+  : Construct a FileOutputs object
+- [`show(`*`<FileOutputs>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FileOutputs-class.md)
+  : FileOutputs S4 Class
+
+## De-identification & Investigator Pseudonyms
+
+Functions to generate synthetic investigator names and anonymize real
+identities for reproducible reporting.
+
+- [`pi_anonymizer`](https://jkylearmstrong.github.io/TempleCBE/reference/pi_anonymizer.md)
+  : PI Name Generator and Anonymizer
+- [`generate_last_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_last_names.md)
+  : Procedural Synthetic Last Name Generator
+- [`generate_pseudonym_token()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_pseudonym_token.md)
+  : Generate Pseudonym Tokens (Cryptographic Hash)
+- [`generate_pi_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_pi_names.md)
+  : Generate Random PI Names or Tokens
+- [`anonymize_pi()`](https://jkylearmstrong.github.io/TempleCBE/reference/anonymize_pi.md)
+  : Anonymize Investigator Names (Vectorized)
 
 ## Temple Brand
 
@@ -428,9 +533,12 @@ Clean column naming, string matching, and vector manipulation.
 
 # Articles
 
-### All vignettes
+### Articles & Workflows
 
+- [Visualizing Computational Pipeline
+  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.md):
 - [Exploratory Data Analysis, Missingness Auditing, and
   Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md):
-- [Nested Cross-Validation for Longitudinal Survival
-  Models](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.md):
+- [Penalized Cox Models and Nested Cross-Validation for Start/Stop
+  Survival
+  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.md):

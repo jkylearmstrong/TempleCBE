@@ -3,7 +3,9 @@
 ## Authors
 
 - **J Kyle Armstrong**. Author, maintainer.
-  [](https://orcid.org/0000-0002-4269-0121)
+  [](https://orcid.org/0000-0002-4269-0121)  
+  Lewis Katz School of Medicine at Temple University, Center for
+  Biostatistics & Epidemiology
 
 ## Citation
 

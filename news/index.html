@@ -18,8 +18,9 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Nested Cross-Validation for Longitudinal Survival Models</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/jkylearmstrong/TempleCBE/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -37,6 +38,66 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="templecbe-development-version">TempleCBE (development version)<a class="anchor" aria-label="anchor" href="#templecbe-development-version"></a></h2>
+<div class="section level3">
+<h3 id="use_temple_brand-warns-off-root-installs-create_report-finds-a-root-install-development-version">
+<code>use_temple_brand()</code> warns off-root installs; <code>create_report()</code> finds a root install<a class="anchor" aria-label="anchor" href="#use_temple_brand-warns-off-root-installs-create_report-finds-a-root-install-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/use_temple_brand.html">use_temple_brand()</a></code> gets a <code>check_root</code> argument (default <code>TRUE</code>): it now warns when <code>path</code> isn’t the project root found by <code><a href="https://here.r-lib.org/reference/here.html" class="external-link">here::here()</a></code>, since installing the extension into each report’s own subfolder instead of once at the root creates a separate, driftable <code>_extensions</code> copy per report. Pass <code>check_root = FALSE</code> to install into a subfolder without the warning (what <code>create_report(..., install_brand = TRUE)</code> does internally, since that’s a deliberate one-report install).</li>
+<li>
+<code><a href="../reference/create_report.html">create_report()</a></code>’s “install the extension” message no longer fires for a <code>"temple"</code> report created under a project that already has the extension installed at an ancestor directory (matching how Quarto itself resolves <code>_extensions</code> from any project subfolder) — previously it only checked <code>location</code> itself.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="create_report-gets-a-filename-argument-development-version">
+<code>create_report()</code> gets a <code>filename</code> argument<a class="anchor" aria-label="anchor" href="#create_report-gets-a-filename-argument-development-version"></a></h3>
+<ul><li>New <code>filename</code> argument names the report file independently of <code>template_name</code>. Previously, two reports in the same <code>location</code> (e.g. <code>analysis/analysis1.qmd</code> and <code>analysis/analysis2.qmd</code>) both defaulted to <code>&lt;template_name&gt;.qmd</code>, so the second <code><a href="../reference/create_report.html">create_report()</a></code> call silently overwrote the first. <code><a href="../reference/create_report.html">create_report()</a></code> now warns before overwriting an existing report file, and <code>filename</code> lets each report keep its own name: <code>create_report("analysis", filename = "analysis1")</code>, <code>create_report("analysis", filename = "analysis2")</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="penalized-cox-models-for-startstop-survival-data-development-version">Penalized Cox models for start/stop survival data<a class="anchor" aria-label="anchor" href="#penalized-cox-models-for-startstop-survival-data-development-version"></a></h3>
+<ul><li>New <code><a href="../reference/coxnet.html">coxnet()</a></code> fits an elastic-net Cox model with glmnet through the tidymodels hardhat interface: formula, recipe, or predictors and outcome. The outcome can be right-censored, <code>Surv(time, event)</code>, or start/stop, <code>Surv(start, stop, event)</code>. <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> returns <code>.pred_linear_pred</code> or a <code>.pred</code> list-column of survival probabilities (Breslow baseline hazard), and <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code> returns every coefficient.</li>
+<li>New <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code> is a tidymodels counterpart to <code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>. Folds are grouped by <code>subject_id</code> (or a coarser <code>group</code>, such as site), preprocessing from a recipe is learned inside each fold, and every <code>mixture</code> and <code>penalty</code> is scored with a yardstick metric set: by default the integrated Brier score, concordance, and the time-specific Brier score and ROC AUC. It reports <code>lambda.min</code> and <code>lambda.1se</code> for the chosen metric, and has <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>, and <code><a href="https://tune.tidymodels.org/reference/collect_predictions.html" class="external-link">tune::collect_metrics()</a></code> methods. Bootstrap resamples, which repeat subjects, are scored with each copy as its own subject.</li>
+<li>New <code><a href="../reference/nested_cv_coxnet.html">nested_cv_coxnet()</a></code> runs <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code> on the inner resamples of an <code><a href="https://rsample.tidymodels.org/reference/nested_cv.html" class="external-link">rsample::nested_cv()</a></code> object, refits on each outer analysis set, and scores the outer assessment set.</li>
+<li>New <code><a href="../reference/surv_subject_truth.html">surv_subject_truth()</a></code>, <code><a href="../reference/censoring_km.html">censoring_km()</a></code>, <code><a href="../reference/graf_weights.html">graf_weights()</a></code>, and <code><a href="../reference/add_graf_weights.html">add_graf_weights()</a></code> collapse start/stop outcomes to one row per subject and add inverse-probability-of-censoring (Graf) weights, so any model’s survival predictions can be scored with yardstick. Given start/stop truth directly, yardstick returns numbers without complaint, but they count every interval as a subject.</li>
+<li>
+<code>hardhat</code> and <code>generics</code> added to Imports.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="glmnet_ibs-rebuilt-on-cv_coxnet-breaking-development-version">
+<code>glmnet_IBS()</code> rebuilt on <code>cv_coxnet()</code> (breaking)<a class="anchor" aria-label="anchor" href="#glmnet_ibs-rebuilt-on-cv_coxnet-breaking-development-version"></a></h3>
+<ul><li>
+<strong>Results change.</strong> <code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code>, <code><a href="../reference/tune_over_alpha.html">tune_over_alpha()</a></code>, and <code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code> keep their arguments, but <code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> now uses <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code>:
+<ul><li>The penalty is chosen by the integrated Brier score (or <code>metric =</code>) on folds grouped by subject. <code>cv.glmnet()</code> chose it by concordance on folds of rows, which put a subject’s intervals in both analysis and assessment sets.</li>
+<li>Survival is predicted from the model’s own Breslow baseline hazard along each subject’s covariate path. Previously it was a null model’s hazard times a relative risk re-centred on the assessment set.</li>
+<li>Missing relative risks were filled by averaging with the previous row, which could belong to a different subject. That code is gone.</li>
+</ul></li>
+<li>
+<code>censoring_weights = "none"</code> is removed and now errors: it scored interval rows without censoring weights, so it was not a proper Brier score. Install TempleCBE 0.2.0 to reproduce results that used it.</li>
+<li>A failed fit returns <code>IBS = NA</code> (was 2) with a warning giving the reason; <code>failure_ibs</code> still sets the value.</li>
+<li>Output has one row per feature, including coefficients the penalty set to zero.</li>
+<li>New arguments: <code>eval_time</code>, <code>metric</code>, <code>rule</code> (<code>"min"</code> or <code>"1se"</code>), and <code>covariates</code> (<code>"path"</code> or <code>"baseline"</code>). <code>type.measure = "C"</code> is deprecated in favour of <code>metric = "concordance_survival"</code>, and <code>parallel</code> is ignored.</li>
+<li>glmnet’s <code>cox.ties</code> defaults to <code>"breslow"</code>, matching the baseline hazard, so results don’t change with glmnet 5.1’s switch to Efron.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="step_famd-fixes-breaking-development-version">
+<code>step_famd()</code> fixes (breaking)<a class="anchor" aria-label="anchor" href="#step_famd-fixes-breaking-development-version"></a></h3>
+<ul><li>
+<code>num_comp</code> was capped at the number of selected variables, but FAMD has more dimensions when categorical variables have several levels (numeric variables plus one fewer than the number of levels, per categorical variable). Components beyond the variable count were silently dropped, and <code>threshold</code> only chose among the first few, so a 99% threshold could keep components covering far less. Both now use all of FAMD’s dimensions.</li>
+<li>Without FactoMineR installed, <code><a href="https://recipes.tidymodels.org/reference/prep.html" class="external-link">prep()</a></code> silently ran a PCA on the numeric variables alone. It now asks for FactoMineR.</li>
+<li>New components are named <code>FAMD1</code>, <code>FAMD2</code>, … (<code><a href="https://recipes.tidymodels.org/reference/names0.html" class="external-link">recipes::names0()</a></code>, zero-padded from 10 components) instead of <code>PC1</code>, <code>PC2</code>, …, so <code><a href="../reference/step_famd.html">step_famd()</a></code> and <code><a href="https://recipes.tidymodels.org/reference/step_pca.html" class="external-link">step_pca()</a></code> can share a recipe. A name that already exists in the data is an error rather than a duplicate column.</li>
+<li>Character and logical variables are treated as factors, with levels learned by <code><a href="https://recipes.tidymodels.org/reference/prep.html" class="external-link">prep()</a></code>. Categories unseen in training and missing values are informative errors.</li>
+<li>Frequency weights are passed to FAMD as row weights (importance weights are ignored, as in <code><a href="https://recipes.tidymodels.org/reference/step_pca.html" class="external-link">step_pca()</a></code>), and <code>tidy(type = "variance")</code> reports component variances as for <code><a href="https://recipes.tidymodels.org/reference/step_pca.html" class="external-link">step_pca()</a></code>.</li>
+<li>New <code><a href="https://generics.r-lib.org/reference/required_pkgs.html" class="external-link">required_pkgs()</a></code> method, so tidymodels loads FactoMineR and TempleCBE on parallel workers.</li>
+<li>The README example selected only numeric predictors (iris with <code>Species</code> as the outcome), which FAMD rejects; it now uses <code>Species</code> as a predictor.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-fixes-development-version">Other fixes<a class="anchor" aria-label="anchor" href="#other-fixes-development-version"></a></h3>
+<ul><li>
+<code>plot.prcomp()</code> is removed. It replaced ’ <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> method for <code>prcomp</code> objects for anyone who loaded TempleCBE. Use the new <code>pca_plot(pca_model, type = )</code>, which also no longer mistakes an <code>x =</code> component argument for the PCA fit.</li>
+<li>
+<code><a href="../reference/pdf_to_rtf.html">pdf_to_rtf()</a></code> wrote page breaks as the literal text <code>\page</code>; they are now real page breaks. Non-ASCII characters are written as RTF Unicode escapes. The arguments are now <code>pdf</code> and <code>rtf</code> (defaulting to <code>pdf</code> with an <code>.rtf</code> extension), with new <code>font_size</code> and <code>overwrite</code>.</li>
+<li>
+<code><a href="../reference/is_normal.html">is_normal()</a></code> used a Kolmogorov-Smirnov test with the mean and standard deviation estimated from the same data, which gives p-values that are far too large. It now uses the Lilliefors test (<code><a href="https://rdrr.io/pkg/nortest/man/lillie.test.html" class="external-link">nortest::lillie.test()</a></code>, added to Imports). Above 5000 values it no longer runs Shapiro-Wilk on a random subsample, so results are deterministic. New <code>alpha</code> argument.</li>
+<li>Minimum versions now match the features used: ggplot2 &gt;= 3.5.0 (the Temple scales omit <code>scale_name</code>), ggridges &gt;= 0.5.0, pdftools &gt;= 2.0, scales &gt;= 0.5.0, hardhat &gt;= 1.3.0, and in Suggests furrr &gt;= 0.2.0, missRanger &gt;= 2.4.0, quarto &gt;= 1.4, rsample &gt;= 1.1.0, testthat &gt;= 3.1.7, withr &gt;= 2.3.0, workflowsets &gt;= 1.1.0, yardstick &gt;= 1.3.0, and zip &gt;= 2.3.0. <code>tools</code> is declared in Imports, and <code>dials</code> (used by <code><a href="../reference/step_famd.html">step_famd()</a></code>’s <code><a href="https://generics.r-lib.org/reference/tunable.html" class="external-link">tunable()</a></code> method) in Suggests.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="write_xlsx-re-exported-development-version">
 <code>write_xlsx()</code> re-exported<a class="anchor" aria-label="anchor" href="#write_xlsx-re-exported-development-version"></a></h3>
@@ -59,6 +120,11 @@
 <ul><li>Extension formats such as <code>titlepage-pdf</code> or <code>temple-pdf</code> weren’t matched to their output file, so it was silently left out of the zip. They now resolve to their base format’s extension.</li>
 <li>
 <code>_quarto.yml</code>, <code>_brand.yml</code>, <code>_variables.yml</code>, and <code>_extensions/</code> are copied into the build directory, so documents that use a project, brand, or extension format render there as they do in place. With <code>include_sources = TRUE</code> they are zipped under their relative paths.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="zip_reports-fix-development-version">
+<code>zip_reports()</code> fix<a class="anchor" aria-label="anchor" href="#zip_reports-fix-development-version"></a></h3>
+<ul><li>Reports that share the same source stem (for example <code>analysis1/analysis.qmd</code> and <code>analysis2/analysis.qmd</code>) no longer overwrite each other inside staged <code>pdf/</code>, <code>docx/</code>, or <code>html/</code> folders. <code><a href="../reference/zip_reports.html">zip_reports()</a></code> now disambiguates staged output names while keeping index links aligned with the copied files.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -146,7 +212,7 @@
 <h3 id="fixes-0-1-8">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-1-8"></a></h3>
 <ul><li>
 <code><a href="../reference/get_dataset_info.html">get_dataset_info()</a></code> handles <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code> columns (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/2" class="external-link">#2</a>). <code>Surv</code> objects are numeric matrices, so they were summarized as one flattened mean/SD of time and status together, and <code><a href="https://dplyr.tidyverse.org/reference/n_distinct.html" class="external-link">dplyr::n_distinct()</a></code> recursed infinitely on them. They are now summarized from their time/status columns. Variable labels also fall back to <code>attr(x, "label")</code> when <code><a href="https://larmarange.github.io/labelled/reference/var_label.html" class="external-link">labelled::var_label()</a></code> finds none.</li>
-<li>Example templates in <code>inst/templates/</code> generate synthetic data inline and no longer depend on <code>datasci</code> or a private dataset; the bundled example PDFs were re-rendered from them.</li>
+<li>Example templates in <code>inst/templates/</code> generate synthetic data inline and no longer depend on private internal datasets; the bundled example PDFs were re-rendered from them.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -191,7 +257,7 @@
 <div class="section level3">
 <h3 id="new-pca-functions-0-1-4">New PCA functions<a class="anchor" aria-label="anchor" href="#new-pca-functions-0-1-4"></a></h3>
 <ul><li>
-<code><a href="../reference/pca_biplot.html">pca_biplot()</a></code>: a real PCA loadings biplot. Unlike <code><a href="../reference/plot_pca_bi.html">plot_pca_bi()</a></code> (which draws each <em>observation</em> as an arrow to its PC score, labeled by an id column), <code><a href="../reference/pca_biplot.html">pca_biplot()</a></code> draws the observation scores as a muted point cloud and overlays the variable loading vectors (from <code>pca_model$rotation</code>) as labeled arrows from the origin – the classic two-panel-in-one biplot. Loadings are rescaled so their max extent is 80% of the score cloud’s max extent, since raw (unit-scale) loadings would otherwise be invisible next to the scores. Works directly off a fitted <code>prcomp</code> object; no <code>newdata</code> argument needed. Added as a new <code>type = "biplot"</code> option in <code><a href="../reference/plot.prcomp.html">plot.prcomp()</a></code>.</li>
+<code><a href="../reference/pca_biplot.html">pca_biplot()</a></code>: a real PCA loadings biplot. Unlike <code><a href="../reference/plot_pca_bi.html">plot_pca_bi()</a></code> (which draws each <em>observation</em> as an arrow to its PC score, labeled by an id column), <code><a href="../reference/pca_biplot.html">pca_biplot()</a></code> draws the observation scores as a muted point cloud and overlays the variable loading vectors (from <code>pca_model$rotation</code>) as labeled arrows from the origin – the classic two-panel-in-one biplot. Loadings are rescaled so their max extent is 80% of the score cloud’s max extent, since raw (unit-scale) loadings would otherwise be invisible next to the scores. Works directly off a fitted <code>prcomp</code> object; no <code>newdata</code> argument needed. Added as a new <code>type = "biplot"</code> option in <code>plot.prcomp()</code>.</li>
 <li>
 <code><a href="../reference/pca_loading_diff.html">pca_loading_diff()</a></code>: compares variable loadings between two independently-fit <code>prcomp</code> objects on the same variables (e.g. the same domain at baseline vs. a later timepoint). Handles PCA’s arbitrary component sign by sign-aligning each shared component of the comparison fit to the baseline before differencing, so a component that’s merely flipped (not truly changed) reads as ~0 difference instead of a spurious ~2x jump. Matches variables by name and falls back to the intersection if the two fits’ variable sets differ.</li>
 <li>
@@ -240,7 +306,7 @@
 <li>
 <code>print.step_famd()</code> always printed an empty column list due to an incorrect <code><a href="https://rdrr.io/r/base/names.html" class="external-link">names()</a></code> call; now uses <code><a href="https://recipes.tidymodels.org/reference/recipes-internal.html" class="external-link">recipes::print_step()</a></code> like other recipe steps.</li>
 <li>
-<code>tidy.step_famd()</code> returned fabricated placeholder values (<code>value = 1.0</code>, <code>component = "PC1"</code> for every term) instead of real per-component loadings/contributions.</li>
+<code><a href="../reference/step_famd.html">tidy.step_famd()</a></code> returned fabricated placeholder values (<code>value = 1.0</code>, <code>component = "PC1"</code> for every term) instead of real per-component loadings/contributions.</li>
 <li>
 <code>bake.step_famd()</code> silently returned the data unchanged if FactoMineR became unavailable after <code><a href="https://recipes.tidymodels.org/reference/prep.html" class="external-link">prep()</a></code>; now errors with a clear message.</li>
 <li>Added a clear error when <code><a href="../reference/step_famd.html">step_famd()</a></code> is given only quantitative or only qualitative columns (FAMD requires mixed data).</li>

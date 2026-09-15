@@ -29,7 +29,7 @@ summarize_tune_results(
 - ...:
 
   Arguments passed to \[glmnet_IBS()\] (\`recipe\`, \`feature_names\`,
-  \`time_data\`, \`id_col\`, \`censoring_weights\`, ...).
+  \`time_data\`, \`id_col\`, \`cox.ties\`, ...).
 
 - num_alpha_values:
 
@@ -61,4 +61,4 @@ column giving the split's position in \`object\$splits\`.
 
 ## See also
 
-\[glmnet_IBS()\], \[tune_over_alpha()\]
+\[glmnet_IBS()\], \[tune_over_alpha()\], \[nested_cv_coxnet()\]

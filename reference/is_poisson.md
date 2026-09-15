@@ -33,8 +33,8 @@ statistic (and deflates its p-value) regardless of true fit — the
 chi-squared test is the standard, correctly-calibrated tool for
 discrete/count goodness-of-fit.
 [`is_normal`](https://jkylearmstrong.github.io/TempleCBE/reference/is_normal.md)
-uses a Kolmogorov-Smirnov test because the normal distribution is
-continuous.
+uses the Lilliefors variant of the Kolmogorov-Smirnov test, which suits
+the continuous normal distribution.
 
 Since the Poisson distribution's support is the non-negative integers,
 this returns an empty tibble for vectors containing negative values or
@@ -47,12 +47,12 @@ is_poisson(rpois(n = 1000, lambda = 2))
 #> # A tibble: 1 × 8
 #>   statistic parameter p.value method  distribution.test p_value_sig distribution
 #>       <dbl>     <int>   <dbl> <chr>   <lgl>             <chr>       <chr>       
-#> 1      2.33         4   0.675 Chi-sq… TRUE              ""          poisson     
+#> 1      10.2         4  0.0369 Chi-sq… FALSE             *           poisson     
 #> # ℹ 1 more variable: is_int <lgl>
 is_poisson(runif(1000, min = 2, max = 4))
 #> # A tibble: 1 × 8
 #>   statistic parameter   p.value method             distribution.test p_value_sig
 #>       <dbl>     <int>     <dbl> <chr>              <lgl>             <chr>      
-#> 1      725.         4 1.41e-155 Chi-squared test … FALSE             ***        
+#> 1      760.         4 4.27e-163 Chi-squared test … FALSE             ***        
 #> # ℹ 2 more variables: distribution <chr>, is_int <lgl>
 ```

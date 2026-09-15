@@ -2,6 +2,194 @@
 
 ## TempleCBE (development version)
 
+### `use_temple_brand()` warns off-root installs; `create_report()` finds a root install
+
+- [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
+  gets a `check_root` argument (default `TRUE`): it now warns when
+  `path` isn’t the project root found by
+  [`here::here()`](https://here.r-lib.org/reference/here.html), since
+  installing the extension into each report’s own subfolder instead of
+  once at the root creates a separate, driftable `_extensions` copy per
+  report. Pass `check_root = FALSE` to install into a subfolder without
+  the warning (what `create_report(..., install_brand = TRUE)` does
+  internally, since that’s a deliberate one-report install).
+- [`create_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_report.md)’s
+  “install the extension” message no longer fires for a `"temple"`
+  report created under a project that already has the extension
+  installed at an ancestor directory (matching how Quarto itself
+  resolves `_extensions` from any project subfolder) — previously it
+  only checked `location` itself.
+
+### `create_report()` gets a `filename` argument
+
+- New `filename` argument names the report file independently of
+  `template_name`. Previously, two reports in the same `location`
+  (e.g. `analysis/analysis1.qmd` and `analysis/analysis2.qmd`) both
+  defaulted to `<template_name>.qmd`, so the second
+  [`create_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_report.md)
+  call silently overwrote the first.
+  [`create_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_report.md)
+  now warns before overwriting an existing report file, and `filename`
+  lets each report keep its own name:
+  `create_report("analysis", filename = "analysis1")`,
+  `create_report("analysis", filename = "analysis2")`.
+
+### Penalized Cox models for start/stop survival data
+
+- New
+  [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
+  fits an elastic-net Cox model with glmnet through the tidymodels
+  hardhat interface: formula, recipe, or predictors and outcome. The
+  outcome can be right-censored, `Surv(time, event)`, or start/stop,
+  `Surv(start, stop, event)`.
+  [`predict()`](https://rdrr.io/r/stats/predict.html) returns
+  `.pred_linear_pred` or a `.pred` list-column of survival probabilities
+  (Breslow baseline hazard), and
+  [`tidy()`](https://generics.r-lib.org/reference/tidy.html) returns
+  every coefficient.
+- New
+  [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+  is a tidymodels counterpart to
+  [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
+  Folds are grouped by `subject_id` (or a coarser `group`, such as
+  site), preprocessing from a recipe is learned inside each fold, and
+  every `mixture` and `penalty` is scored with a yardstick metric set:
+  by default the integrated Brier score, concordance, and the
+  time-specific Brier score and ROC AUC. It reports `lambda.min` and
+  `lambda.1se` for the chosen metric, and has
+  [`predict()`](https://rdrr.io/r/stats/predict.html),
+  [`tidy()`](https://generics.r-lib.org/reference/tidy.html),
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html),
+  and
+  [`tune::collect_metrics()`](https://tune.tidymodels.org/reference/collect_predictions.html)
+  methods. Bootstrap resamples, which repeat subjects, are scored with
+  each copy as its own subject.
+- New
+  [`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  runs
+  [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+  on the inner resamples of an
+  [`rsample::nested_cv()`](https://rsample.tidymodels.org/reference/nested_cv.html)
+  object, refits on each outer analysis set, and scores the outer
+  assessment set.
+- New
+  [`surv_subject_truth()`](https://jkylearmstrong.github.io/TempleCBE/reference/surv_subject_truth.md),
+  [`censoring_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md),
+  [`graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/graf_weights.md),
+  and
+  [`add_graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/add_graf_weights.md)
+  collapse start/stop outcomes to one row per subject and add
+  inverse-probability-of-censoring (Graf) weights, so any model’s
+  survival predictions can be scored with yardstick. Given start/stop
+  truth directly, yardstick returns numbers without complaint, but they
+  count every interval as a subject.
+- `hardhat` and `generics` added to Imports.
+
+### `glmnet_IBS()` rebuilt on `cv_coxnet()` (breaking)
+
+- **Results change.**
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md),
+  [`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md),
+  and
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  keep their arguments, but
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  now uses
+  [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md):
+  - The penalty is chosen by the integrated Brier score (or `metric =`)
+    on folds grouped by subject. `cv.glmnet()` chose it by concordance
+    on folds of rows, which put a subject’s intervals in both analysis
+    and assessment sets.
+  - Survival is predicted from the model’s own Breslow baseline hazard
+    along each subject’s covariate path. Previously it was a null
+    model’s hazard times a relative risk re-centred on the assessment
+    set.
+  - Missing relative risks were filled by averaging with the previous
+    row, which could belong to a different subject. That code is gone.
+- `censoring_weights = "none"` is removed and now errors: it scored
+  interval rows without censoring weights, so it was not a proper Brier
+  score. Install TempleCBE 0.2.0 to reproduce results that used it.
+- A failed fit returns `IBS = NA` (was 2) with a warning giving the
+  reason; `failure_ibs` still sets the value.
+- Output has one row per feature, including coefficients the penalty set
+  to zero.
+- New arguments: `eval_time`, `metric`, `rule` (`"min"` or `"1se"`), and
+  `covariates` (`"path"` or `"baseline"`). `type.measure = "C"` is
+  deprecated in favour of `metric = "concordance_survival"`, and
+  `parallel` is ignored.
+- glmnet’s `cox.ties` defaults to `"breslow"`, matching the baseline
+  hazard, so results don’t change with glmnet 5.1’s switch to Efron.
+
+### `step_famd()` fixes (breaking)
+
+- `num_comp` was capped at the number of selected variables, but FAMD
+  has more dimensions when categorical variables have several levels
+  (numeric variables plus one fewer than the number of levels, per
+  categorical variable). Components beyond the variable count were
+  silently dropped, and `threshold` only chose among the first few, so a
+  99% threshold could keep components covering far less. Both now use
+  all of FAMD’s dimensions.
+- Without FactoMineR installed,
+  [`prep()`](https://recipes.tidymodels.org/reference/prep.html)
+  silently ran a PCA on the numeric variables alone. It now asks for
+  FactoMineR.
+- New components are named `FAMD1`, `FAMD2`, …
+  ([`recipes::names0()`](https://recipes.tidymodels.org/reference/names0.html),
+  zero-padded from 10 components) instead of `PC1`, `PC2`, …, so
+  [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  and
+  [`step_pca()`](https://recipes.tidymodels.org/reference/step_pca.html)
+  can share a recipe. A name that already exists in the data is an error
+  rather than a duplicate column.
+- Character and logical variables are treated as factors, with levels
+  learned by
+  [`prep()`](https://recipes.tidymodels.org/reference/prep.html).
+  Categories unseen in training and missing values are informative
+  errors.
+- Frequency weights are passed to FAMD as row weights (importance
+  weights are ignored, as in
+  [`step_pca()`](https://recipes.tidymodels.org/reference/step_pca.html)),
+  and `tidy(type = "variance")` reports component variances as for
+  [`step_pca()`](https://recipes.tidymodels.org/reference/step_pca.html).
+- New
+  [`required_pkgs()`](https://generics.r-lib.org/reference/required_pkgs.html)
+  method, so tidymodels loads FactoMineR and TempleCBE on parallel
+  workers.
+- The README example selected only numeric predictors (iris with
+  `Species` as the outcome), which FAMD rejects; it now uses `Species`
+  as a predictor.
+
+### Other fixes
+
+- `plot.prcomp()` is removed. It replaced ’
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) method for
+  `prcomp` objects for anyone who loaded TempleCBE. Use the new
+  `pca_plot(pca_model, type = )`, which also no longer mistakes an `x =`
+  component argument for the PCA fit.
+- [`pdf_to_rtf()`](https://jkylearmstrong.github.io/TempleCBE/reference/pdf_to_rtf.md)
+  wrote page breaks as the literal text `\page`; they are now real page
+  breaks. Non-ASCII characters are written as RTF Unicode escapes. The
+  arguments are now `pdf` and `rtf` (defaulting to `pdf` with an `.rtf`
+  extension), with new `font_size` and `overwrite`.
+- [`is_normal()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_normal.md)
+  used a Kolmogorov-Smirnov test with the mean and standard deviation
+  estimated from the same data, which gives p-values that are far too
+  large. It now uses the Lilliefors test
+  ([`nortest::lillie.test()`](https://rdrr.io/pkg/nortest/man/lillie.test.html),
+  added to Imports). Above 5000 values it no longer runs Shapiro-Wilk on
+  a random subsample, so results are deterministic. New `alpha`
+  argument.
+- Minimum versions now match the features used: ggplot2 \>= 3.5.0 (the
+  Temple scales omit `scale_name`), ggridges \>= 0.5.0, pdftools \>=
+  2.0, scales \>= 0.5.0, hardhat \>= 1.3.0, and in Suggests furrr \>=
+  0.2.0, missRanger \>= 2.4.0, quarto \>= 1.4, rsample \>= 1.1.0,
+  testthat \>= 3.1.7, withr \>= 2.3.0, workflowsets \>= 1.1.0, yardstick
+  \>= 1.3.0, and zip \>= 2.3.0. `tools` is declared in Imports, and
+  `dials` (used by
+  [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)’s
+  [`tunable()`](https://generics.r-lib.org/reference/tunable.html)
+  method) in Suggests.
+
 ### `write_xlsx()` re-exported
 
 - [`write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
@@ -76,6 +264,16 @@
   copied into the build directory, so documents that use a project,
   brand, or extension format render there as they do in place. With
   `include_sources = TRUE` they are zipped under their relative paths.
+
+### `zip_reports()` fix
+
+- Reports that share the same source stem (for example
+  `analysis1/analysis.qmd` and `analysis2/analysis.qmd`) no longer
+  overwrite each other inside staged `pdf/`, `docx/`, or `html/`
+  folders.
+  [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
+  now disambiguates staged output names while keeping index links
+  aligned with the copied files.
 
 ## TempleCBE 0.2.0
 
@@ -307,8 +505,8 @@
   [`labelled::var_label()`](https://larmarange.github.io/labelled/reference/var_label.html)
   finds none.
 - Example templates in `inst/templates/` generate synthetic data inline
-  and no longer depend on `datasci` or a private dataset; the bundled
-  example PDFs were re-rendered from them.
+  and no longer depend on private internal datasets; the bundled example
+  PDFs were re-rendered from them.
 
 ## TempleCBE 0.1.7
 
@@ -457,7 +655,7 @@
   since raw (unit-scale) loadings would otherwise be invisible next to
   the scores. Works directly off a fitted `prcomp` object; no `newdata`
   argument needed. Added as a new `type = "biplot"` option in
-  [`plot.prcomp()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.prcomp.md).
+  `plot.prcomp()`.
 - [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md):
   compares variable loadings between two independently-fit `prcomp`
   objects on the same variables (e.g. the same domain at baseline vs. a
@@ -559,9 +757,10 @@
   uses
   [`recipes::print_step()`](https://recipes.tidymodels.org/reference/recipes-internal.html)
   like other recipe steps.
-- `tidy.step_famd()` returned fabricated placeholder values
-  (`value = 1.0`, `component = "PC1"` for every term) instead of real
-  per-component loadings/contributions.
+- [`tidy.step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  returned fabricated placeholder values (`value = 1.0`,
+  `component = "PC1"` for every term) instead of real per-component
+  loadings/contributions.
 - `bake.step_famd()` silently returned the data unchanged if FactoMineR
   became unavailable after
   [`prep()`](https://recipes.tidymodels.org/reference/prep.html); now

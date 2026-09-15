@@ -1,0 +1,75 @@
+# Add Censoring Weights to Survival Predictions for yardstick
+
+Fills the \`.weight_censored\` column of each element of a \`.pred\`
+list-column with \[graf_weights()\], so the data can go straight to
+\`yardstick::brier_survival()\`, \`brier_survival_integrated()\`, or
+\`roc_auc_survival()\`. Use it to score any model's per-subject survival
+predictions, including models fit to start/stop data.
+
+## Usage
+
+``` r
+add_graf_weights(
+  data,
+  truth = ".truth",
+  estimate = ".pred",
+  censoring,
+  trunc = 0.05
+)
+```
+
+## Arguments
+
+- data:
+
+  A data frame with one row per subject.
+
+- truth:
+
+  Column of \`data\` holding right-censored \`Surv\` truth.
+
+- estimate:
+
+  List-column of data frames with \`.eval_time\` and \`.pred_survival\`,
+  one data frame per row, all with the same evaluation times.
+
+- censoring:
+
+  A \[censoring_km()\] object, estimated on the training data.
+
+- trunc:
+
+  Lower bound for \\G\\, capping weights at \`1 / trunc\` (default 0.05,
+  as in tidymodels' \`parsnip\`).
+
+## Value
+
+\`data\`, with \`.weight_censored\` added to (or replaced in) every data
+frame in \`estimate\`.
+
+## See also
+
+\[surv_subject_truth()\], \[censoring_km()\]
+
+## Examples
+
+``` r
+if (requireNamespace("survival", quietly = TRUE) &&
+    requireNamespace("yardstick", quietly = TRUE)) {
+  train <- survival::Surv(c(2, 4, 6, 8), c(0, 1, 0, 1))
+  scored <- tibble::tibble(
+    .truth = survival::Surv(c(5, 7), c(1, 0)),
+    .pred = list(
+      tibble::tibble(.eval_time = c(3, 6), .pred_survival = c(0.9, 0.5)),
+      tibble::tibble(.eval_time = c(3, 6), .pred_survival = c(0.8, 0.6))
+    )
+  )
+  scored <- add_graf_weights(scored, censoring = censoring_km(train))
+  yardstick::brier_survival(scored, truth = .truth, .pred)
+}
+#> # A tibble: 2 × 4
+#>   .metric        .estimator .eval_time .estimate
+#>   <chr>          <chr>           <dbl>     <dbl>
+#> 1 brier_survival standard            3    0.0333
+#> 2 brier_survival standard            6    0.38  
+```

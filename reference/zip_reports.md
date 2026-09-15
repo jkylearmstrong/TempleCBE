@@ -71,7 +71,10 @@ rendered, e.g. by
 [`render_me`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md).
 Report order and staging is entirely the caller's decision (for example,
 the topological sort of a project's own dependency graph) — pass
-`reports` pre-ordered.
+`reports` pre-ordered. If multiple reports share the same source stem
+(for example `analysis1/analysis.qmd` and `analysis2/analysis.qmd`),
+staged output names are disambiguated to prevent overwrites within a
+stage/format folder.
 
 ## Examples
 
