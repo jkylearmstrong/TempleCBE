@@ -2,13 +2,15 @@
 % Please edit documentation in R/plot_cox.R
 \name{plot_cox_marginal}
 \alias{plot_cox_marginal}
-\title{Marginal Event Probability Diagnostic Plot}
+\title{Marginal Event Probability / Relative Hazard Diagnostic Plot}
 \usage{
 plot_cox_marginal(
   fit,
   data,
   feature = NULL,
   status_col = "status",
+  scale = c("prob", "hr", "log_hr"),
+  color = "#9D2235",
   base_size = 12
 )
 }
@@ -19,7 +21,14 @@ plot_cox_marginal(
 
 \item{feature}{Character name of continuous predictor column.}
 
-\item{status_col}{Character name of status/event column (0 = censored, 1 = event; default: "status").}
+\item{status_col}{Character name of status/event column (0 = censored, 1 = event; default: "status").
+Only used when \code{scale = "prob"}.}
+
+\item{scale}{One of \code{"prob"} (default; predicted probability of the event),
+\code{"hr"} (relative hazard, i.e. \code{exp()} of the centered linear predictor), or
+\code{"log_hr"} (the centered linear predictor itself).}
+
+\item{color}{Primary color for the fitted curve and CI band (default: Temple Cherry \code{"#9D2235"}).}
 
 \item{base_size}{Base font size (default: 12).}
 }
@@ -27,6 +36,6 @@ plot_cox_marginal(
 A ggplot2 object.
 }
 \description{
-Plots predicted probability of the event vs. a continuous predictor, overlaid
-with actual binary event observations and smoothed confidence intervals.
+Plots a continuous predictor against a model-derived curve, with a 95% CI band and,
+for \code{scale = "prob"}, overlaid actual binary event observations.
 }

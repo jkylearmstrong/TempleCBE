@@ -4,7 +4,7 @@
 \alias{cbe_cox_single}
 \title{Univariable Cox Proportional Hazards Screening Engine}
 \usage{
-cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95)
+cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95, ...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate feature.}
@@ -15,6 +15,8 @@ cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95)
 \item{feature}{Character string naming the candidate predictor column in \code{data}.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
+
+\item{...}{Additional arguments passed to \code{survival::coxph} (e.g., \code{weights}, \code{ties}).}
 }
 \value{
 An object of class \code{cbe_cox} containing:
@@ -36,4 +38,8 @@ An object of class \code{cbe_cox} containing:
 Fits a univariable Cox proportional hazards model, validates the proportional
 hazards assumption, formats coefficients with explicit reference levels,
 generates plain-language clinical interpretations, and gathers model fit metrics.
+}
+\seealso{
+[cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
+  [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 }
