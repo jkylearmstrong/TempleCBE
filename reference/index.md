@@ -234,6 +234,7 @@ biostatistical pipelines.
 - [`pipeline_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_config.md)
   : Get or set global pipeline configuration options
 - [`pipeline_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
+  [`summarize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
   : Produce an executive summary of the computational pipeline
 - [`as_pipeline_graph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_pipeline_graph.md)
   : Convert pipeline objects or igraph to a tidygraph tbl_graph

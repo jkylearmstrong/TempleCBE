@@ -58,3 +58,31 @@ print_pipeline(
   Optional title drawn on the plot itself. Leave NULL when the image is
   embedded with its own Quarto fig-cap, to avoid a duplicate- looking
   caption.
+
+- base_font_size:
+
+  Base font size (pt) for node labels; the title uses \`base_font_size +
+  4\`.
+
+- label_wrap_width:
+
+  Character width at which node labels are wrapped.
+
+- min_width_in, max_width_in:
+
+  Minimum and maximum plot width, in inches. Width scales with
+  \`width_per_node_in\` between these bounds.
+
+- min_height_in:
+
+  Minimum plot height, in inches; height also scales with the number of
+  pipeline layers.
+
+- width_per_node_in:
+
+  Width, in inches, added per node along the graph's horizontal extent,
+  before clamping to \`min_width_in\`/\`max_width_in\`.
+
+- dpi:
+
+  Resolution (dots per inch) of the saved PNG.

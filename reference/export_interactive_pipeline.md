@@ -35,6 +35,15 @@ export_interactive_pipeline(
 
   Logical. Default TRUE.
 
+- title:
+
+  Chart title. Defaults to the \`pipeline.study_name\` option, or
+  "Computational Pipeline" if unset.
+
+- subtitle:
+
+  Chart subtitle.
+
 ## Value
 
 The saved file path (invisibly).

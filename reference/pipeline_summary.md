@@ -7,6 +7,8 @@ and a stage-by-role breakdown table.
 
 ``` r
 pipeline_summary(object)
+
+summarize_pipeline(object)
 ```
 
 ## Arguments

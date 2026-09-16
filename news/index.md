@@ -1,6 +1,25 @@
 # Changelog
 
-## TempleCBE (development version)
+## TempleCBE 0.3.141593
+
+### Vendored `renv/activate.R` updated
+
+- Picks up upstream renv’s fix for a bootstrap crash: a missing or
+  corrupt downloaded archive during renv’s own first-run self-install
+  used to abort with a low-level connection error instead of failing
+  gracefully. See
+  [rstudio/renv@532d48d](https://github.com/rstudio/renv/commit/532d48d6303d88900aa11aac3a0a7f339466156d).
+
+### `proc_pca()` accepts raw data
+
+- [`proc_pca()`](https://jkylearmstrong.github.io/TempleCBE/reference/proc_pca.md)
+  no longer requires a pre-fitted `prcomp` object. Its argument is now
+  `data`, which can be either a `prcomp` object or a numeric matrix/data
+  frame; when given raw data, it fits the PCA itself via
+  [`stats::prcomp()`](https://rdrr.io/r/stats/prcomp.html). New `center`
+  and `scale` arguments (default `TRUE`) and `...` are passed through to
+  [`prcomp()`](https://rdrr.io/r/stats/prcomp.html) in that case, and
+  are ignored when `data` is already a `prcomp` object.
 
 ### `use_temple_brand()` warns off-root installs; `create_report()` finds a root install
 

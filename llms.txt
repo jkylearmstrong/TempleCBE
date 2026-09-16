@@ -13,8 +13,12 @@ MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](https:
 University’s **Center for Biostatistics and Epidemiology (CBE)**. It
 provides a clean, domain-agnostic suite of biostatistical testing
 functions, data quality and missingness visualizations, normalization
-utilities, custom Tidymodels recipe steps (`step_famd`), and clinical
-survival evaluation metrics (`glmnet_IBS`).
+utilities, correlation and PCA helpers, custom Tidymodels recipe steps
+(`step_famd`), and a tidymodels-native survival modeling toolkit
+([`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md),
+[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md),
+[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md))
+for start/stop clinical data.
 
 ------------------------------------------------------------------------
 
@@ -78,6 +82,11 @@ Generate a missingness summary plot:
 plot_features_percent_miss(df)
 ```
 
+See the [Exploratory Data Analysis, Missingness Auditing, and
+Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)
+vignette for a full walkthrough, including non-standard missing codes
+and outlier-aware EDA.
+
 ### 2. Normalization & Outlier Detection
 
 Standardize features or detect numerical outliers using Interquartile
@@ -95,7 +104,70 @@ z_norm(df$age)
 detect_outliers(data.frame(measurement = c(1, 2, 3, 4, 5, 100)))
 ```
 
-### 3. Infix Helper Operators
+### 3. Correlation & Principal Component Analysis
+
+Pairwise correlation tests across every numeric column, and PCA variance
+summaries straight from raw data (no need to fit
+[`prcomp()`](https://rdrr.io/r/stats/prcomp.html) yourself first):
+
+``` r
+
+# Every pairwise correlation, strongest positive correlation first
+corr_test_all(mtcars[, c("mpg", "hp", "wt", "qsec")], columns = "tidy", sort = "estimate")
+
+# proc_pca() fits the PCA and summarizes it in one step
+proc_pca(mtcars[, 1:4], scale = TRUE)
+```
+
+### 4. Penalized Cox Models for Survival Data
+
+[`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
+and
+[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+fit elastic-net Cox models through the tidymodels `hardhat` interface,
+supporting both right-censored and start/stop (counting-process)
+outcomes:
+
+``` r
+
+library(survival)
+
+lung_data <- na.omit(lung[, c("time", "status", "age", "sex", "ph.ecog", "wt.loss")])
+fit <- coxnet(Surv(time, status) ~ ., data = lung_data, penalty = 0.05, mixture = 0.5)
+
+generics::tidy(fit)
+predict(fit, lung_data[1:3, ], type = "survival", eval_time = c(180, 365))$.pred[[1]]
+```
+
+For repeated-measures/start-stop data,
+[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+tunes and scores a penalized Cox model with a proper, subject-grouped
+integrated Brier score. See the [Penalized Cox Models and Nested
+Cross-Validation for Start/Stop Survival
+Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)
+vignette for the full nested cross-validation workflow.
+
+### 5. Custom Tidymodels Recipe Step: `step_famd`
+
+Extract Factor Analysis of Mixed Data (FAMD) principal components
+seamlessly within the `tidymodels` framework:
+
+``` r
+
+library(recipes)
+
+# Define recipe with mixed numeric and categorical variables
+rec <- recipe(Species ~ ., data = iris) %>%
+  step_famd(all_predictors(), num_comp = 2)
+
+# Prep and bake
+prepped_rec <- prep(rec)
+baked_data <- bake(prepped_rec, new_data = NULL)
+
+head(baked_data)
+```
+
+### 6. Infix Helper Operators
 
 Convenient syntax for string matching and negation:
 
@@ -109,25 +181,31 @@ Convenient syntax for string matching and negation:
 5 %notin% c(1, 2, 3, 4)             # TRUE
 ```
 
-### 4. Custom Tidymodels Recipe Step: `step_famd`
+------------------------------------------------------------------------
 
-Extract Factor Analysis of Mixed Data (FAMD) principal components
-seamlessly within the `tidymodels` framework:
+## 📚 Vignettes
 
-``` r
+Beyond the quick-start snippets above, `TempleCBE` ships full
+worked-example vignettes:
 
-library(recipes)
+- **[Exploratory Data Analysis, Missingness Auditing, and
+  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)**
+  — non-standard missing codes, missingness visualization, and
+  outlier-aware normalization for messy clinical/EHR data.
+- **[Penalized Cox Models and Nested Cross-Validation for Start/Stop
+  Survival
+  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)**
+  — why row-level resampling leaks for counting-process data, and how
+  [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)/[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)/[`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  avoid it.
+- **[Visualizing Computational Pipeline
+  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html)**
+  — treating a multi-report analysis pipeline as a dependency graph with
+  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md).
 
-# Define recipe with mixed numeric and categorical variables
-rec <- recipe(~ ., data = iris) %>%
-  step_famd(all_predictors(), num_comp = 2)
-
-# Prep and bake
-prepped_rec <- prep(rec)
-baked_data <- bake(prepped_rec, new_data = NULL)
-
-head(baked_data)
-```
+Once installed, each is also available locally via
+[`vignette("eda_and_missingness", package = "TempleCBE")`](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md)
+(substituting the vignette name).
 
 ------------------------------------------------------------------------
 
@@ -399,6 +477,7 @@ biostatistical pipelines.
 - [`pipeline_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_config.md)
   : Get or set global pipeline configuration options
 - [`pipeline_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
+  [`summarize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
   : Produce an executive summary of the computational pipeline
 - [`as_pipeline_graph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_pipeline_graph.md)
   : Convert pipeline objects or igraph to a tidygraph tbl_graph

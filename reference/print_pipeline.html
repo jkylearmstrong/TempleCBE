@@ -15,7 +15,7 @@ too small to read and the arrows between boxes impossible to follow)."></head><b
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.141593</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,6 +104,34 @@ avoids a dense fan-in that conveys no real relationship.</p></dd>
 <dd><p>Optional title drawn on the plot itself. Leave NULL when the
 image is embedded with its own Quarto fig-cap, to avoid a duplicate-
 looking caption.</p></dd>
+
+
+<dt id="arg-base-font-size">base_font_size<a class="anchor" aria-label="anchor" href="#arg-base-font-size"></a></dt>
+<dd><p>Base font size (pt) for node labels; the title uses
+`base_font_size + 4`.</p></dd>
+
+
+<dt id="arg-label-wrap-width">label_wrap_width<a class="anchor" aria-label="anchor" href="#arg-label-wrap-width"></a></dt>
+<dd><p>Character width at which node labels are wrapped.</p></dd>
+
+
+<dt id="arg-min-width-in-max-width-in">min_width_in, max_width_in<a class="anchor" aria-label="anchor" href="#arg-min-width-in-max-width-in"></a></dt>
+<dd><p>Minimum and maximum plot width, in
+inches. Width scales with `width_per_node_in` between these bounds.</p></dd>
+
+
+<dt id="arg-min-height-in">min_height_in<a class="anchor" aria-label="anchor" href="#arg-min-height-in"></a></dt>
+<dd><p>Minimum plot height, in inches; height also scales
+with the number of pipeline layers.</p></dd>
+
+
+<dt id="arg-width-per-node-in">width_per_node_in<a class="anchor" aria-label="anchor" href="#arg-width-per-node-in"></a></dt>
+<dd><p>Width, in inches, added per node along the
+graph's horizontal extent, before clamping to `min_width_in`/`max_width_in`.</p></dd>
+
+
+<dt id="arg-dpi">dpi<a class="anchor" aria-label="anchor" href="#arg-dpi"></a></dt>
+<dd><p>Resolution (dots per inch) of the saved PNG.</p></dd>
 
 </dl></div>
 
