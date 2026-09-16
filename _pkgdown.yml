@@ -1,0 +1,214 @@
+url: https://jkylearmstrong.github.io/TempleCBE/
+template:
+  bootstrap: 5
+  params:
+    bootswatch: zephyr
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [github]
+
+articles:
+  - title: Articles & Workflows
+    navbar: ~
+    contents:
+      - compute_graph
+      - eda_and_missingness
+      - nested_survival_cv
+
+reference:
+  - title: Data Quality & Missingness Analysis
+    desc: Functions for missing data auditing, summary tables, and visualizations.
+    contents:
+      - SumNa
+      - features_percent_miss
+      - plot_features_percent_miss
+      - missmap
+      - add_missing
+      - my_summary_table
+      - get_dataset_info
+      - proc_contents
+
+  - title: Normalization & Outlier Detection
+    desc: Functions for scaling numeric features and flagging statistical outliers.
+    contents:
+      - min_max_norm
+      - z_norm
+      - range_norm
+      - detect_outliers
+      - calculate_fences
+      - flag_outliers
+
+  - title: Penalized Cox Models for Survival Data
+    desc: >
+      Elastic-net Cox regression for right-censored and start/stop outcomes,
+      cross-validation and nested cross-validation with yardstick survival
+      metrics, and helpers for scoring start/stop models correctly.
+    contents:
+      - coxnet
+      - predict.coxnet_model
+      - tidy.coxnet_model
+      - cv_coxnet
+      - cv_coxnet-methods
+      - nested_cv_coxnet
+      - surv_subject_truth
+      - censoring_km
+      - graf_weights
+      - add_graf_weights
+      - glmnet_IBS
+      - tune_over_alpha
+      - summarize_tune_results
+
+  - title: Tidymodels Recipe Steps & Modeling Utilities
+    desc: Recipe steps and workflow set helpers.
+    contents:
+      - step_famd
+      - get_model_parameters
+      - fit_n_rank
+
+  - title: Missing Data Imputation
+    desc: Per-column mtry sweeps for missForest and missRanger imputation.
+    contents:
+      - missforest_sweep_mtry
+      - missforest_oob_by_mtry
+      - missforest_impute_by_mtry
+      - missranger_sweep_mtry
+      - missranger_oob_by_mtry
+      - missranger_max_mtry
+
+  - title: Statistical Testing & EDA
+    desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
+    contents:
+      - single_t_test
+      - multiple_t_test
+      - one_vs_rest_t_test
+      - corr_test_all
+      - correlation_plot
+      - correlation_plot_split
+      - correlation_diff
+      - correlation_diff_heatmap
+      - find_correlation
+      - distribution_test
+      - distribution_plot
+      - is_normal
+      - is_poisson
+      - is.int
+      - significance_stars
+
+  - title: PCA & Dimensionality Reduction
+    desc: Principal Component Analysis utilities, loadings, and biplots.
+    contents:
+      - proc_pca
+      - pca_loadings
+      - pca_eqns
+      - pca_percent_var_explained
+      - pca_feature_loading_heatmap
+      - plot_pca_bi
+      - pca_biplot
+      - pca_loading_diff
+      - pca_loading_diff_heatmap
+      - rotation_matrix
+      - pca_plot
+
+  - title: Visualization & Reporting
+    desc: Manhattan/volcano plots, report generation, and document conversions.
+    contents:
+      - manhattan_plot
+      - volcano_plot
+      - create_report
+      - zip_render
+      - pdf_to_rtf
+      - create_toc_from_sas_pdf
+      - read_excel_multiple_headers
+      - read_workbook
+      - reexports
+      - km_summary_to_prism
+      - convert_pdf_to_docx
+      - convert_pdfs_to_docx
+      - check_docx_toolchain
+      - find_python
+      - find_soffice
+      - run_sas_script
+      - find_sas
+      - render_me
+      - zip_reports
+      - scan_data_io
+      - read_search
+      - write_search
+
+  - title: Pipeline & Computational Graph Architecture
+    desc: >
+      Language-, format-, and tool-agnostic dependency graphs, file-level metadata tracking,
+      and interactive DAG visualizations for reproducible biostatistical pipelines.
+    contents:
+      - compute_graph
+      - pipeline_config
+      - pipeline_summary
+      - as_pipeline_graph
+      - as_igraph
+      - as_tbl_graph.list
+      - summary.tbl_graph
+      - visualize_pipeline
+      - visualize_pipeline_interactive
+      - print_pipeline
+      - collapse_by_stage
+      - export_subgraph
+      - export_interactive_pipeline
+      - list_stage_data_artifacts
+      - controls_datasets
+      - create_qmd_renderer
+      - get_render_plan
+      - join_pipelines
+      - FilePath
+      - FilePath-class
+      - FileUses
+      - FileUses-class
+      - FileOutputs
+      - FileOutputs-class
+
+  - title: De-identification & Investigator Pseudonyms
+    desc: Functions to generate synthetic investigator names and anonymize real identities for reproducible reporting.
+    contents:
+      - pi_anonymizer
+      - generate_last_names
+      - generate_pseudonym_token
+      - generate_pi_names
+      - anonymize_pi
+
+  - title: Temple Brand
+    desc: >
+      Temple University colors, ggplot2 scales and theme, and setup for the
+      quarto_temple_brand Quarto extension.
+    contents:
+      - temple_colors
+      - temple_pal
+      - scale_colour_temple
+      - theme_temple
+      - temple_brand_path
+      - use_temple_brand
+
+  - title: Helper & Infix Operators
+    desc: Clean column naming, string matching, and vector manipulation.
+    contents:
+      - clean_names
+      - R_names
+      - make_excel_names
+      - keep_only
+      - delete_nul_files
+      - find_code
+      - sd.error
+      - profvis_summary
+      - normalize_safely
+      - parse_here_call_vec
+      - file_meta_fs
+      - extract_win_posix_paths
+      - extract_all_xlsx_tokens
+      - install.packages.no_lock
+      - infix_helpers
+      - "%like%"
+      - "%ilike%"
+      - "%flike%"
+      - "%plike%"
+      - "%notin%"
+      - "%!in%"
