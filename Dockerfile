@@ -82,6 +82,13 @@ WORKDIR /pkg
 # layer still caches independently of R/**, docs, etc.
 COPY renv.lock .Rprofile ./
 COPY renv/activate.R renv/settings.json ./renv/
+
+# Additional system packages required by renv-managed R packages (fs, igraph,
+# clipr, haven, pdftools) not covered by the toolchain installed above
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake libglpk-dev libx11-dev poppler-data \
+  && rm -rf /var/lib/apt/lists/*
+
 # Use the specified cache directory for renv to speed restores across builds
 RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); renv::restore(prompt = FALSE)'
 
