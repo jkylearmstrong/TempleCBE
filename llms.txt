@@ -218,14 +218,13 @@ instead of each maintaining their own private, unreviewed copy.
 
 **Public**:
 
-- **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**: this
-  package — biostatistical, EDA, testing, and modeling utilities.
 - **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
   longitudinal propensity score simulation, and the designated source of
   synthetic example/test data across the ecosystem.
 - **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
   OMOP CDM database creation/querying (DuckDB).
-- **`quarto_temple_brand`**: Quarto branding/report templates.
+- **[`quarto_temple_brand`](https://github.com/jkylearmstrong-temple/quarto_temple_brand)**:
+  Quarto branding/report templates.
 
 Several other Temple Center for Biostatistics and Epidemiology (CBE) PI
 studies and analyses import `TempleCBE` for their own private,
@@ -564,6 +563,108 @@ quarto_temple_brand Quarto extension.
   : Path to the Bundled Temple brand.yml
 - [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
   : Install the Temple Brand Quarto Extension Into a Project
+
+## Temple CBE Themes, Decks, & Formatters
+
+Center for Biostatistics & Epidemiology ggplot2 themes, institutional
+cherry palettes, deck styling, and clinical reporting formatters.
+
+- [`cbe_palette`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_palette.md)
+  : Temple CBE Color Palette
+- [`theme_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe.md)
+  : Temple University CBE ggplot2 Themes, Palettes, and Formatters
+- [`theme_cbe_deck()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe_deck.md)
+  : CBE ggplot2 Theme for Presentation Decks
+- [`scale_color_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_color_cbe.md)
+  : Discrete Color Scale for Temple CBE
+- [`scale_fill_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_fill_cbe.md)
+  : Discrete Fill Scale for Temple CBE
+- [`fmt_pct()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_pct.md)
+  : Format a Percentage
+- [`fmt_num()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_num.md)
+  : Format Numbers to Fixed Decimals
+- [`fmt_sig()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_sig.md)
+  : Format Significant Figures
+- [`fmt_p()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_p.md)
+  : Format P-Values
+- [`fmt_hr()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_hr.md)
+  : Format Hazard Ratio and Confidence Interval
+- [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
+  : Combine Character Vector into Natural-Language Words
+
+## Univariable Cox Models & Diagnostics
+
+Univariable Cox proportional hazards screening engine with automated
+clinical interpretations, proportional hazards tests, forest plots,
+predicted survival curves, and marginal risk curves.
+
+- [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
+  : Univariable Cox Proportional Hazards Screening Engine
+- [`print(`*`<cbe_cox>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox.md)
+  : Print Method for cbe_cox Object
+- [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md)
+  : Forest Plot of Hazard Ratios with Confidence Intervals
+- [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md)
+  : Model-Predicted Survival Curves Stratified by Predictor
+- [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
+  : Marginal Event Probability Diagnostic Plot
+
+## Presentation Deck & Clinical Summary Plots
+
+Presentation-ready Kaplan-Meier curves, longitudinal biomarker
+trajectories, group comparisons, data quality audits, and 2x2
+contingency tables.
+
+- [`plot_survival_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_survival_km.md)
+  : Standardized Kaplan-Meier Survival Curve
+- [`plot_dynamic_trajectory()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_dynamic_trajectory.md)
+  : Longitudinal Biomarker Trajectories by Cohort / Outcome
+- [`plot_group_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_group_comparison.md)
+  : Group Comparison Bar Chart with Standard Errors
+- [`plot_missingness()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_missingness.md)
+  : Missing Data Audit Plot
+- [`table_two_by_two()`](https://jkylearmstrong.github.io/TempleCBE/reference/table_two_by_two.md)
+  : Formatted 2x2 Contingency Table with Fisher's Exact Test
+
+## Data Snapshot Manifest & Schema Engine
+
+Tools to freeze, snapshot, and verify dataset copies against upstream
+sources via MD5 hashes, enforce schema mapping dictionaries, and
+simulate synthetic patient cohorts.
+
+- [`read_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_data_manifest.md)
+  : Read Data Manifest File
+- [`copy_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_data_manifest.md)
+  : Copy Datasets to Snapshot Directory
+- [`validate_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_data_manifest.md)
+  : Validate Data Snapshot Copies Against Upstream Sources
+- [`stop_if_invalid_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/stop_if_invalid_manifest.md)
+  : Stop Execution if Data Copies are Invalid or Stale
+- [`validate_column_mapping()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_column_mapping.md)
+  : Validate a Plug-and-Play Column Mapping
+- [`find_section_file()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_section_file.md)
+  : Find Section Data File in a Directory
+- [`read_raw_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_raw_table.md)
+  : Read Raw Table with Multi-Row Header Support
+- [`read_mapped_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_mapped_section_data.md)
+  : Read One Section's Data Using a Column Mapping
+- [`summarize_section_by_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_section_by_time.md)
+  : Summarize One Section By Its Time Variable
+- [`demo_cbe_mapping()`](https://jkylearmstrong.github.io/TempleCBE/reference/demo_cbe_mapping.md)
+  : Create Sample Plug-and-Play Mapping Dictionary
+- [`simulate_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/simulate_section_data.md)
+  : Simulate Synthetic Section Data From a Schema Mapping
+
+## Deliverable Packaging & Code Auditing
+
+Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables)
+into structured distribution archives, and audit source scripts for
+referenced deliverable tokens.
+
+- [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
+  : Package Pipeline Deliverables into a Structured Zip Archive
+- [`audit_report_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.md)
+  : Audit Deliverable File Tokens in Analysis Scripts
 
 ## Helper & Infix Operators
 

@@ -218,14 +218,13 @@ instead of each maintaining their own private, unreviewed copy.
 
 **Public**:
 
-- **[`TempleCBE`](https://github.com/jkylearmstrong/TempleCBE)**: this
-  package — biostatistical, EDA, testing, and modeling utilities.
 - **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
   longitudinal propensity score simulation, and the designated source of
   synthetic example/test data across the ecosystem.
 - **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
   OMOP CDM database creation/querying (DuckDB).
-- **`quarto_temple_brand`**: Quarto branding/report templates.
+- **[`quarto_temple_brand`](https://github.com/jkylearmstrong-temple/quarto_temple_brand)**:
+  Quarto branding/report templates.
 
 Several other Temple Center for Biostatistics and Epidemiology (CBE) PI
 studies and analyses import `TempleCBE` for their own private,

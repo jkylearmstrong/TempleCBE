@@ -35,6 +35,6 @@ file_meta_fs(f)
 #> # A tibble: 1 × 8
 #>   path       file_name dir_name dir_path m_time              c_time             
 #>   <chr>      <chr>     <chr>    <chr>    <dttm>              <dttm>             
-#> 1 /tmp/Rtmp… file1d98… RtmpDkV… /tmp/Rt… 2026-09-16 02:00:01 2026-09-16 02:00:01
+#> 1 /tmp/Rtmp… file1ed5… Rtmpk67… /tmp/Rt… 2026-09-16 05:38:34 2026-09-16 05:38:34
 #> # ℹ 2 more variables: size <dbl>, uname <chr>
 ```

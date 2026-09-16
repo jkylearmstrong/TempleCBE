@@ -1,6 +1,96 @@
 # Changelog
 
-## TempleCBE 0.3.141593
+## TempleCBE 0.3.2
+
+### Integrated Standard Biostatistical and Presentation Components from Wolfson
+
+- **Institutional CBE Themes & Formatters**:
+  - New
+    [`theme_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe.md)
+    and
+    [`theme_cbe_deck()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe_deck.md)
+    provide minimal, publication-ready and presentation-ready ggplot2
+    styling.
+  - New `cbe_palette` and discrete scales
+    [`scale_color_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_color_cbe.md)
+    and
+    [`scale_fill_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_fill_cbe.md)
+    supply Temple Cherry and complementary institutional palettes.
+  - New reporting formatters:
+    [`fmt_pct()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_pct.md),
+    [`fmt_num()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_num.md),
+    [`fmt_sig()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_sig.md),
+    [`fmt_p()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_p.md),
+    [`fmt_hr()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_hr.md),
+    and
+    [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md).
+- **Univariable Cox Screening & Diagnostics**:
+  - New
+    [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
+    screens candidate predictors with automatic proportional hazards
+    testing (`cox.zph`), tidy coefficient tables with explicit reference
+    rows for categorical variables, automated clinical interpretations,
+    and a formatted [`print()`](https://rdrr.io/r/base/print.html)
+    method.
+  - New
+    [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md),
+    [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md),
+    and
+    [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
+    provide diagnostic survival visualizations.
+  - New child template `inst/templates/template_cox_single.qmd`
+    automates univariable Cox screening sections in Quarto documents.
+- **Presentation Deck Visualizations**:
+  - New
+    [`plot_survival_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_survival_km.md)
+    generates standardized Kaplan-Meier survival curves using Temple
+    Cherry styling and percentage axes (supports `ggsurvfit` with
+    fallback).
+  - New
+    [`plot_dynamic_trajectory()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_dynamic_trajectory.md)
+    charts longitudinal biomarker trajectories with standard errors over
+    protocol time.
+  - New
+    [`plot_group_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_group_comparison.md)
+    and
+    [`plot_missingness()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_missingness.md)
+    build presentation-ready grouped bar charts and missing data quality
+    audits.
+  - New
+    [`table_two_by_two()`](https://jkylearmstrong.github.io/TempleCBE/reference/table_two_by_two.md)
+    formats 2x2 contingency tables with row percentages, margins, and
+    Fisher’s exact test p-values.
+- **Data Integrity & Schema Mapping Engine**:
+  - New
+    [`read_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_data_manifest.md),
+    [`copy_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_data_manifest.md),
+    [`validate_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_data_manifest.md),
+    and
+    [`stop_if_invalid_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/stop_if_invalid_manifest.md)
+    guarantee that downstream analytical reports and decks never execute
+    on stale data copies using cryptographic MD5 checksums.
+  - New
+    [`validate_column_mapping()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_column_mapping.md),
+    [`find_section_file()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_section_file.md),
+    [`read_raw_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_raw_table.md),
+    [`read_mapped_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_mapped_section_data.md),
+    and
+    [`summarize_section_by_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_section_by_time.md)
+    provide schema-enforced table ingestion, duplicate column
+    resolution, and longitudinal summaries.
+  - New
+    [`simulate_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/simulate_section_data.md)
+    generates synthetic cohorts conforming to mapping roles for
+    CI/testing without touching real patient data.
+- **Deliverable Packaging & Script Auditing**:
+  - New
+    [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
+    collects rendered reports (PDF/DOCX/HTML) and data deliverables
+    across compute graph stages into structured delivery ZIP archives.
+  - New
+    [`audit_report_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.md)
+    audits source scripts for referenced deliverable tokens and verifies
+    on-disk existence.
 
 ### Vendored `renv/activate.R` updated
 
