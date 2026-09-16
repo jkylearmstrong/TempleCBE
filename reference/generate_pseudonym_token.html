@@ -118,15 +118,15 @@ or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random cryptographic hash tokens</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_2e6be3dfef191e2b" "PI_f2327e8cb1432020" "PI_00b1738d6c3eddcc"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_c036ac12bea9d851" "PI_908269adc6333950" "PI_79d245e1f40c3c48"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short hash tokens (4 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_7fea" "PI_2ebc" "PI_edd5"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_925f" "PI_057c" "PI_99ef"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_909fd4f470f3d370" "pi_80b941a49b111528"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_ef1c92433359c5ca" "pi_6042dcd0fe7a3de5"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Stateless deterministic token with key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span><span class="st">"Franklin"</span>, key <span class="op">=</span> <span class="st">"study_salt"</span><span class="op">)</span></span></span>
