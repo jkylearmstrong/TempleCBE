@@ -13,13 +13,18 @@ ENV RENV_VERSION=${RENV_VERSION}
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
+    cmake \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
     libuv1-dev \
+    libuv1 \
     libpoppler-cpp-dev \
+    poppler-data \
     libfontconfig1-dev \
     libfreetype6-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
     libpng-dev \
     libtiff5-dev \
     libjpeg-dev \
@@ -28,8 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblzma-dev \
     libicu-dev \
     libv8-dev \
+    libglpk-dev \
+    libx11-dev \
     libgomp1 \
-    libuv1 libuv1-dev \
     ca-certificates \
     git \
     curl \
@@ -53,17 +59,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-science \
   && rm -rf /var/lib/apt/lists/*
 
-# Ensure libuv runtime is present for packages like fs that load libuv.so.1
-RUN apt-get update && apt-get install -y --no-install-recommends libuv1 || true
-# If libuv.so.1 is not available (Ubuntu may ship libuv v2), build libuv v1 from source as a fallback
-RUN apt-get update && apt-get install -y --no-install-recommends autoconf automake libtool pkg-config make ca-certificates curl && \
-    LIBUV_VER=1.44.2 && \
-    curl -fsSL https://dist.libuv.org/dist/v${LIBUV_VER}/libuv-v${LIBUV_VER}.tar.gz -o /tmp/libuv.tar.gz && \
-    mkdir -p /tmp/libuv-src && tar -xzf /tmp/libuv.tar.gz -C /tmp/libuv-src --strip-components=1 && \
-    cd /tmp/libuv-src && sh autogen.sh && ./configure && make -j"$(nproc)" && make install && ldconfig && \
-    rm -rf /tmp/libuv.* /tmp/libuv-src && apt-get purge -y --auto-remove autoconf automake libtool make curl pkg-config || true
-RUN rm -rf /var/lib/apt/lists/*
-
 # renv itself, pinned to the exact version recorded in renv/activate.R (keep the two
 # in sync -- renv::activate()/renv::upgrade() rewrite activate.R's embedded version
 # whenever the project's renv version changes). Installed before the lockfile/source
@@ -82,12 +77,6 @@ WORKDIR /pkg
 # layer still caches independently of R/**, docs, etc.
 COPY renv.lock .Rprofile ./
 COPY renv/activate.R renv/settings.json ./renv/
-
-# Additional system packages required by renv-managed R packages (fs, igraph,
-# clipr, haven, pdftools) not covered by the toolchain installed above
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    cmake libglpk-dev libx11-dev poppler-data \
-  && rm -rf /var/lib/apt/lists/*
 
 # Use the specified cache directory for renv to speed restores across builds
 RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); renv::restore(prompt = FALSE)'
