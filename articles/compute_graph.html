@@ -337,11 +337,15 @@ formally tracks semantic roles: - <code>raw_data</code>: Immutable
 source data (e.g. initial registry export). - <code>derived_data</code>:
 Standardized baseline dataset created from raw inputs. -
 <code>enhanced_data</code>: Statistically augmented data (e.g. multiple
-imputation). - <code>intermediate_data</code>: Stage-internal
-calculations or fitted model caches. - <code>report_source</code> &amp;
-<code>deliverable_report</code>: Executable documents and their
-deliverables. - <code>helper_script</code> &amp; <code>reference</code>:
-Child templates, macros, or lookup tables.</p>
+imputation).</p>
+<ul>
+<li><p><code>intermediate_data</code>: Stage-internal calculations or
+fitted model caches.</p></li>
+<li><p><code>report_source</code> &amp; <code>deliverable_report</code>:
+Executable documents and their deliverables.</p></li>
+<li><p><code>helper_script</code> &amp; <code>reference</code>: Child
+templates, macros, or lookup tables.</p></li>
+</ul>
 <p>This taxonomy provides transparent data provenance and auditability
 out of the box.</p>
 </div>
@@ -352,18 +356,22 @@ out of the box.</p>
 the software developer, but overwhelming and unintelligible to a
 clinical investigator, surgeon, or regulatory auditor.
 <code>TempleCBE</code> bridges this communication divide through
-multi-tiered visualization: - <strong>For analysts</strong>: Interactive
+multi-tiered visualization:</p>
+<ul>
+<li><p><strong>For analysts</strong>: Interactive
 <code>visNetwork</code> HTML widgets with rich tooltips detailing file
 paths, modification dates, roles, and staleness warnings. - <strong>For
 study sections</strong>: Focused ego-subgraphs
 (<code><a href="../reference/export_subgraph.html">export_subgraph()</a></code>) that isolate the neighborhood around a
-single deliverable or analytical stage. - <strong>For protocol
-deliverables &amp; manuscripts</strong>: Sized-to-fit static figures
-(<code><a href="../reference/print_pipeline.html">print_pipeline()</a></code>) with intelligent Sugiyama layout
-adjustments to prevent overlapping text labels. - <strong>For executive
-sponsors</strong>: Stage-level collapsed diagrams
-(<code><a href="../reference/collapse_by_stage.html">collapse_by_stage()</a></code>) that condense a 90-file pipeline into
-a clear 4-node study milestone overview.</p>
+single deliverable or analytical stage.</p></li>
+<li><p><strong>For protocol deliverables &amp; manuscripts</strong>:
+Sized-to-fit static figures (<code><a href="../reference/print_pipeline.html">print_pipeline()</a></code>) with
+intelligent Sugiyama layout adjustments to prevent overlapping text
+labels. -</p></li>
+<li><p><strong>For executive sponsors</strong>: Stage-level collapsed
+diagrams (<code><a href="../reference/collapse_by_stage.html">collapse_by_stage()</a></code>) that condense a 90-file
+pipeline into a clear 4-node study milestone overview.</p></li>
+</ul>
 </div>
 <div class="section level3">
 <h3 id="the-decoupled-execution-inspection-gap">5. The “Decoupled Execution &amp; Inspection” gap<a class="anchor" aria-label="anchor" href="#the-decoupled-execution-inspection-gap"></a>
@@ -465,7 +473,7 @@ case of “this <code>.qmd</code> renders to a PDF of the same name.”</p>
 <span><span class="co">#&gt;   Stage:       report </span></span>
 <span><span class="co">#&gt;   Role:        report_source </span></span>
 <span><span class="co">#&gt;   Renders:     TRUE </span></span>
-<span><span class="co">#&gt;   Modified:    2026-09-16 06:48:09 </span></span>
+<span><span class="co">#&gt;   Modified:    2026-09-16 08:31:11 </span></span>
 <span><span class="co">#&gt;   Description: Worked example of a one/two-sample t-test report </span></span>
 <span><span class="co">#&gt;   Dependencies:</span></span>
 <span><span class="co">#&gt;     - t_test_child</span></span>
@@ -730,7 +738,7 @@ your workflow using standard tidyverse grammar:</p>
 <h3 id="pattern-5-multi-analyst-pipeline-composition">Pattern 5: Multi-analyst pipeline composition<a class="anchor" aria-label="anchor" href="#pattern-5-multi-analyst-pipeline-composition"></a>
 </h3>
 <p>In large studies where different biostatisticians manage different
-domains (e.g. one analyst leads clinical safety, another leads genomics,
+domains (e.g. one analyst leads clinical safety, another leads genomics,
 and a third leads pharmacokinetics), each analyst can maintain their own
 sub-pipeline. Use <code><a href="../reference/join_pipelines.html">join_pipelines()</a></code> to combine them into an
 overarching study graph without duplicating shared nodes:</p>
@@ -791,8 +799,8 @@ is a <strong>two-layer hybrid architecture</strong>:</p>
 Heavy statistical simulation, model tuning, or imputation calculations
 are managed by <code>targets</code> inside an
 <code>analysis/models/</code> subfolder, writing final analytical
-datasets or tables to disk
-(e.g. <code>data/imputed_data.rds</code>).</li>
+datasets or tables to disk (e.g.
+<code>data/imputed_data.rds</code>).</li>
 <li>
 <strong>High-level governance layer
 (<code>TempleCBE</code>)</strong>: <code>TempleCBE</code> tracks the

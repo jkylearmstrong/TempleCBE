@@ -163,10 +163,16 @@ the data lifecycle. `TempleCBE` formally tracks semantic roles: -
 `raw_data`: Immutable source data (e.g. initial registry export). -
 `derived_data`: Standardized baseline dataset created from raw inputs. -
 `enhanced_data`: Statistically augmented data (e.g. multiple
-imputation). - `intermediate_data`: Stage-internal calculations or
-fitted model caches. - `report_source` & `deliverable_report`:
-Executable documents and their deliverables. - `helper_script` &
-`reference`: Child templates, macros, or lookup tables.
+imputation).
+
+- `intermediate_data`: Stage-internal calculations or fitted model
+  caches.
+
+- `report_source` & `deliverable_report`: Executable documents and their
+  deliverables.
+
+- `helper_script` & `reference`: Child templates, macros, or lookup
+  tables.
 
 This taxonomy provides transparent data provenance and auditability out
 of the box.
@@ -176,20 +182,25 @@ of the box.
 An execution DAG with 200 granular function targets is invaluable to the
 software developer, but overwhelming and unintelligible to a clinical
 investigator, surgeon, or regulatory auditor. `TempleCBE` bridges this
-communication divide through multi-tiered visualization: - **For
-analysts**: Interactive `visNetwork` HTML widgets with rich tooltips
-detailing file paths, modification dates, roles, and staleness
-warnings. - **For study sections**: Focused ego-subgraphs
-([`export_subgraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_subgraph.md))
-that isolate the neighborhood around a single deliverable or analytical
-stage. - **For protocol deliverables & manuscripts**: Sized-to-fit
-static figures
-([`print_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.md))
-with intelligent Sugiyama layout adjustments to prevent overlapping text
-labels. - **For executive sponsors**: Stage-level collapsed diagrams
-([`collapse_by_stage()`](https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.md))
-that condense a 90-file pipeline into a clear 4-node study milestone
-overview.
+communication divide through multi-tiered visualization:
+
+- **For analysts**: Interactive `visNetwork` HTML widgets with rich
+  tooltips detailing file paths, modification dates, roles, and
+  staleness warnings. - **For study sections**: Focused ego-subgraphs
+  ([`export_subgraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_subgraph.md))
+  that isolate the neighborhood around a single deliverable or
+  analytical stage.
+
+- **For protocol deliverables & manuscripts**: Sized-to-fit static
+  figures
+  ([`print_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.md))
+  with intelligent Sugiyama layout adjustments to prevent overlapping
+  text labels. -
+
+- **For executive sponsors**: Stage-level collapsed diagrams
+  ([`collapse_by_stage()`](https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.md))
+  that condense a 90-file pipeline into a clear 4-node study milestone
+  overview.
 
 ### 5. The “Decoupled Execution & Inspection” gap
 
@@ -272,7 +283,7 @@ report
 #>   Stage:       report 
 #>   Role:        report_source 
 #>   Renders:     TRUE 
-#>   Modified:    2026-09-16 06:48:09 
+#>   Modified:    2026-09-16 08:31:11 
 #>   Description: Worked example of a one/two-sample t-test report 
 #>   Dependencies:
 #>     - t_test_child
@@ -572,7 +583,7 @@ orphans <- tg |>
 ### Pattern 5: Multi-analyst pipeline composition
 
 In large studies where different biostatisticians manage different
-domains (e.g. one analyst leads clinical safety, another leads genomics,
+domains (e.g. one analyst leads clinical safety, another leads genomics,
 and a third leads pharmacokinetics), each analyst can maintain their own
 sub-pipeline. Use
 [`join_pipelines()`](https://jkylearmstrong.github.io/TempleCBE/reference/join_pipelines.md)
@@ -628,8 +639,8 @@ architecture**:
 1.  **Low-level compute layer (`targets`)**: Heavy statistical
     simulation, model tuning, or imputation calculations are managed by
     `targets` inside an `analysis/models/` subfolder, writing final
-    analytical datasets or tables to disk
-    (e.g. `data/imputed_data.rds`).
+    analytical datasets or tables to disk (e.g.
+    `data/imputed_data.rds`).
 2.  **High-level governance layer (`TempleCBE`)**: `TempleCBE` tracks
     the overall study graph from raw intake data, through the
     `targets`-generated artifacts, to the final Quarto reports and

@@ -69,15 +69,15 @@ Character vector of pseudonym tokens.
 ``` r
 # Random cryptographic hash tokens
 generate_pseudonym_token(n = 3)
-#> [1] "PI_d6861bed0d686dd8" "PI_b021ab69596dbc96" "PI_a4f0f5351ec0d8e8"
+#> [1] "PI_2e6be3dfef191e2b" "PI_f2327e8cb1432020" "PI_00b1738d6c3eddcc"
 
 # Short hash tokens (4 hex chars)
 generate_pseudonym_token(n = 3, n_chars = 4)
-#> [1] "PI_8bb2" "PI_6f40" "PI_3198"
+#> [1] "PI_7fea" "PI_2ebc" "PI_edd5"
 
 # Custom renaming function
 generate_pseudonym_token(n = 2, rename_fn = tolower)
-#> [1] "pi_12e0e05399b5796c" "pi_c2298385ff864205"
+#> [1] "pi_909fd4f470f3d370" "pi_80b941a49b111528"
 
 # Stateless deterministic token with key
 generate_pseudonym_token("Franklin", key = "study_salt")
