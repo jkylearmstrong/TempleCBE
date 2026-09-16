@@ -1,0 +1,61 @@
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Feature evaluation using TempleCBE standard engine
+feature_txt <- as.character(deparse(substitute({{feature}})))
+res <- TempleCBE::cbe_cox_single(survival_data, outcome = "outcome", feature = feature_txt)
+```
+
+\clearpage
+
+## `r res$var_label`
+
+### Proportional Hazards Assumption
+`r res$zph_text`
+
+```{r}
+#| label: tbl-cox.zph-{{feature}}
+#| tbl-cap: Test of Proportional Hazards Assumption for {{feature}}
+if (nrow(res$zph_table) > 0) {
+  knitr::kable(res$zph_table)
+}
+```
+
+### Model Coefficients & Clinical Interpretation
+
+```{r}
+#| label: tbl-cox-{{feature}}
+#| tbl-cap: Cox Proportional Hazards Model Coefficients for {{feature}}
+knitr::kable(res$table, align = c("l", "l", "c", "c", "c", "c"))
+```
+
+`r res$interpretation`
+
+### Goodness of Fit Statistics
+
+```{r}
+#| label: tbl-cox-{{feature}}-summary
+#| tbl-cap: Training Statistics for Cox Model with {{feature}}
+knitr::kable(res$glance, align = c("l", "r"))
+```
+
+### Model Survival Curves
+
+```{r}
+#| label: fig-survfit-cox-{{feature}}
+#| fig-cap: Model-Predicted Survival Curves for {{feature}}
+#| fig-width: 9
+#| fig-height: 5
+TempleCBE::plot_cox_survival(res$model, data = survival_data, feature = feature_txt)
+```
+
+```{r}
+#| label: fig-prob-death-{{feature}}
+#| fig-cap: Predicted Probability of Death vs. {{feature}}
+#| fig-width: 9
+#| fig-height: 4.5
+#| eval: !expr isTRUE(tryCatch(res$is_numeric, error = function(e) FALSE))
+TempleCBE::plot_cox_marginal(res$model, data = survival_data, feature = feature_txt)
+```

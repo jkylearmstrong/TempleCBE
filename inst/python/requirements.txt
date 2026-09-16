@@ -1,0 +1,24 @@
+# Python toolchain for the PDF -> DOCX conversion in R/pdf_to_docx.R
+# (convert_pdf_to_docx(), convert_pdfs_to_docx()).
+#
+# Install into the interpreter R will actually call. Check which one that is
+# with:  TempleCBE::check_docx_toolchain()
+#
+#   "<that interpreter>" -m pip install -r "$(Rscript -e 'cat(system.file("python", "requirements.txt", package = "TempleCBE"))')"
+#
+# Requires Python >= 3.10 (pdf2docx 0.5.13 requires_python >= 3.10).
+#
+# All of these ship prebuilt manylinux aarch64 wheels, so this installs on
+# linux/arm64 without any source builds:
+#   pdf2docx, python-docx, fire  -> py3-none-any (pure Python)
+#   PyMuPDF                      -> cp310-abi3-manylinux_2_28_aarch64
+#   opencv-python-headless       -> manylinux_2_17 + manylinux_2_28 aarch64
+#   fonttools                    -> manylinux aarch64 + py3-none-any
+# Note the headless OpenCV build: no X11/GUI system libraries are required.
+
+pdf2docx==0.5.13
+PyMuPDF==1.28.2
+python-docx==1.2.0
+opencv-python-headless==5.0.0.93
+fonttools==4.64.0
+fire==0.7.1
