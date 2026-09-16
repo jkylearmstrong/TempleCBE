@@ -2,7 +2,7 @@
 title: "Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data}
+  %\VignetteIndexEntry{02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

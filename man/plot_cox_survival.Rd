@@ -11,6 +11,7 @@ plot_cox_survival(
   id_col = NULL,
   n_tiles = 4,
   label_endpoints = TRUE,
+  overlay_km = FALSE,
   base_size = 12
 )
 }
@@ -26,6 +27,12 @@ plot_cox_survival(
 \item{n_tiles}{Number of quantile bins for continuous predictors (default: 4).}
 
 \item{label_endpoints}{Logical; if TRUE, repels labels for stratum values at the final time point.}
+
+\item{overlay_km}{Logical (default: \code{FALSE}). If \code{TRUE}, overlays observed
+Kaplan-Meier step curves (dashed) for each stratum on top of the Cox-predicted curves
+(solid), sharing color by stratum, with a linetype legend distinguishing
+"Cox-predicted" from "KM observed". The event time/status used are those the model
+was fit with (\code{fit$y}).}
 
 \item{base_size}{Base font size (default: 12).}
 }

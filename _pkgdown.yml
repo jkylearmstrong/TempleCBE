@@ -25,9 +25,10 @@ articles:
   - title: Articles & Workflows
     navbar: ~
     contents:
-      - compute_graph
-      - eda_and_missingness
-      - nested_survival_cv
+      - 01_eda_and_missingness
+      - 02_nested_survival_cv
+      - 03_compute_graph
+      - 04_sas_survival
 
 reference:
   - title: Data Quality & Missingness Analysis
@@ -217,16 +218,29 @@ reference:
       - fmt_hr
       - words
 
-  - title: Univariable Cox Models & Diagnostics
+  - title: Cox Models, Kaplan-Meier, & Diagnostics
     desc: >
-      Univariable Cox proportional hazards screening engine with automated clinical interpretations,
-      proportional hazards tests, forest plots, predicted survival curves, and marginal risk curves.
+      Univariable and multivariable Cox proportional hazards screening engines with automated
+      clinical interpretations, shared proportional hazards diagnostics, presentation tables,
+      a paired Kaplan-Meier/Cox helper, a factor-releveling utility, and forest, survival-curve,
+      and marginal-risk visualizations.
     contents:
       - cbe_cox_single
       - print.cbe_cox
+      - cbe_cox_multi
+      - print.cbe_cox_multi
+      - cbe_cox_check
+      - print.cbe_cox_check
+      - cbe_cox_table
+      - cbe_km_single
+      - print.cbe_km
+      - cbe_factor_reference
       - plot_cox_forest
+      - plot_cox_forest_multi
       - plot_cox_survival
       - plot_cox_marginal
+      - cbe_theme_survival
+      - tidy_tmerge_cox
 
   - title: Presentation Deck & Clinical Summary Plots
     desc: >

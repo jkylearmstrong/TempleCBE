@@ -14,6 +14,7 @@ NULL
 #'   (e.g., \code{"outcome"} or \code{"Surv(survival_time, status)"}).
 #' @param feature Character string naming the candidate predictor column in \code{data}.
 #' @param conf_level Numeric confidence level (default: 0.95).
+#' @param ... Additional arguments passed to \code{survival::coxph} (e.g., \code{weights}, \code{ties}).
 #' @return An object of class \code{cbe_cox} containing:
 #'   \itemize{
 #'     \item \code{model}: The fitted \code{survival::coxph} object.
@@ -28,8 +29,10 @@ NULL
 #'     \item \code{var_label}: Human-readable variable label.
 #'     \item \code{is_numeric}: Logical flag indicating whether predictor is continuous/numeric.
 #'   }
+#' @seealso [cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
+#'   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 #' @export
-cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
+cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ...) {
   if (!feature %in% names(data)) {
     stop(sprintf("Feature '%s' not found in provided data.", feature))
   }
@@ -47,28 +50,19 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
   # 1. Fit Cox Model
   fmla_str <- sprintf("%s ~ %s", outcome, feature)
   fmla <- stats::as.formula(fmla_str)
-  fit <- survival::coxph(fmla, data = data)
+  dots <- match.call(expand.dots = FALSE)$...
+  cph_call <- as.call(c(
+    list(quote(survival::coxph), formula = fmla, data = quote(data)),
+    as.list(dots)
+  ))
+  fit <- eval(cph_call, environment(), parent.frame())
 
   # 2. Test Proportional Hazards Assumption
-  zph_res <- tryCatch(
-    survival::cox.zph(fit),
-    error = function(e) NULL
-  )
-
-  if (!is.null(zph_res)) {
-    zph_tab <- as.data.frame(zph_res$table)
-    p_zph <- zph_tab[1, "p"]
-    zph_violated <- p_zph < 0.05
-    zph_text <- sprintf(
-      "Test of the proportional hazards assumption yields p = %.3f. Therefore, the proportional hazards assumption is %sviolated.",
-      p_zph, if (zph_violated) "" else "not "
-    )
-  } else {
-    zph_tab <- data.frame()
-    p_zph <- NA_real_
-    zph_violated <- FALSE
-    zph_text <- "Proportional hazards assumption could not be calculated."
-  }
+  check <- cbe_cox_check(fit)
+  zph_res <- check$zph
+  zph_tab <- check$zph_table
+  zph_violated <- if (is.null(zph_res)) FALSE else unname(check$zph_violated[1])
+  zph_text <- check$zph_text
 
   # 3. Tidy Model Coefficients
   td <- broom::tidy(fit, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE)

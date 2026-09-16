@@ -2,7 +2,7 @@
 title: "Exploratory Data Analysis, Missingness Auditing, and Normalization"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Exploratory Data Analysis, Missingness Auditing, and Normalization}
+  %\VignetteIndexEntry{01. Exploratory Data Analysis, Missingness Auditing, and Normalization}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
