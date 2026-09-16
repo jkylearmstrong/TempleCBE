@@ -1,7 +1,5 @@
 # TempleCBE
 
-# TempleCBE ![](inst/templates/Temple_Logo.png)
-
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
 [![Codecov test
 coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)

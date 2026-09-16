@@ -55,7 +55,7 @@ A character vector of length \`n\` (or a single character string if \`n
 generate_pi_names(1)
 #> [1] "Noubiland"
 generate_pi_names(3, format = "token")
-#> [1] "PI_c5bca68d567dcbe4" "PI_9caff472aab533c0" "PI_b5f5dce94065ef97"
+#> [1] "PI_920fed28d4945f65" "PI_1989874fbe4b0595" "PI_7aecb9a3e78849c0"
 generate_pi_names(3, format = "token", n_chars = 8)
-#> [1] "PI_68b3115f" "PI_ba53a6a1" "PI_32117c18"
+#> [1] "PI_ff39deb1" "PI_7dc20133" "PI_ae1802c5"
 ```
