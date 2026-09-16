@@ -132,7 +132,7 @@ For repeated-measures/start-stop data, `glmnet_IBS()` tunes and scores a
 penalized Cox model with a proper, subject-grouped integrated Brier
 score. See the [Penalized Cox Models and Nested Cross-Validation for
 Start/Stop Survival
-Data](https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html)
+Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)
 vignette for the full nested cross-validation workflow.
 
 ### 5. Custom Tidymodels Recipe Step: `step_famd`
@@ -175,26 +175,26 @@ Beyond the quick-start snippets above, `TempleCBE` ships full
 worked-example vignettes:
 
 - **[01. Exploratory Data Analysis, Missingness Auditing, and
-  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html)**
+  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)**
   — non-standard missing codes, missingness visualization, and
   outlier-aware normalization for messy clinical/EHR data.
 - **[02. Penalized Cox Models and Nested Cross-Validation for Start/Stop
   Survival
-  Data](https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html)**
+  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)**
   — why row-level resampling leaks for counting-process data, and how
   `coxnet()`/`cv_coxnet()`/`nested_cv_coxnet()` avoid it.
 - **[03. Visualizing Computational Pipeline
-  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/03_compute_graph.html)**
+  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html)**
   — treating a multi-report analysis pipeline as a dependency graph with
   `get_render_plan()` and project-level `MakeComputeGraph.R`.
 - **[04. Validation and Workflow Guide for SAS Users: Cox Models in
-  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/04_sas_survival.html)**
+  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html)**
   — cross-validating time-fixed and time-dependent Cox models against
   SAS PROC PHREG, with `survival::tmerge` and `tidy_tmerge_cox()`.
 
 Once installed, each is also available locally via
-`vignette("01_eda_and_missingness", package = "TempleCBE")`
-(substituting the vignette name).
+`vignette("eda_and_missingness", package = "TempleCBE")` (substituting
+the vignette name).
 
 ------------------------------------------------------------------------
 

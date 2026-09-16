@@ -51,12 +51,12 @@ tidy_tmerge_cox <- function(
       dplyr::group_by(!!id_sym) %>%
       dplyr::mutate(
         max_time = max(!!measure_time_sym, na.rm = TRUE),
-        !!event_time_sym := dplyr::if_else(!is.na(!!event_time_sym) & !!event_time_sym < max_time,
-                                           max_time,
+        !!event_time_sym := dplyr::if_else(!is.na(!!event_time_sym) & !!event_time_sym < .data$max_time,
+                                           .data$max_time,
                                            !!event_time_sym)
       ) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-max_time)
+      dplyr::select(-dplyr::all_of("max_time"))
   }
 
   # Build start-stop intervals
@@ -66,19 +66,21 @@ tidy_tmerge_cox <- function(
     dplyr::mutate(
       tstart = !!measure_time_sym,
       tstop  = dplyr::lead(!!measure_time_sym, default = dplyr::first(!!event_time_sym)),
-      event  = dplyr::if_else(!is.na(!!event_time_sym) & tstop == !!event_time_sym, 1, 0),
-      event_label = dplyr::if_else(event == 1, as.character(!!event_type_sym), NA_character_)
+      event  = dplyr::if_else(!is.na(!!event_time_sym) & .data$tstop == !!event_time_sym, 1, 0),
+      event_label = dplyr::if_else(.data$event == 1, as.character(!!event_type_sym), NA_character_)
     ) %>%
     dplyr::ungroup()
 
   # Remove post-event measurements if exclude mode
   if (post_event == "exclude") {
     df <- df %>%
-      dplyr::filter(is.na(!!event_time_sym) | tstart < !!event_time_sym)
+      dplyr::filter(is.na(!!event_time_sym) | .data$tstart < !!event_time_sym)
   }
 
   # Remove intervals with missing tstop
-  df <- df %>% dplyr::filter(!is.na(tstop))
+  df <- df %>% dplyr::filter(!is.na(.data$tstop))
 
   tibble::as_tibble(df)
 }
+
+utils::globalVariables(c("event", "max_time", "tstart", "tstop"))
