@@ -350,22 +350,46 @@ cherry palettes, deck styling, and clinical reporting formatters.
 - [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
   : Combine Character Vector into Natural-Language Words
 
-## Univariable Cox Models & Diagnostics
+## Cox Models, Kaplan-Meier, & Diagnostics
 
-Univariable Cox proportional hazards screening engine with automated
-clinical interpretations, proportional hazards tests, forest plots,
-predicted survival curves, and marginal risk curves.
+Univariable and multivariable Cox proportional hazards screening engines
+with automated clinical interpretations, shared proportional hazards
+diagnostics, presentation tables, a paired Kaplan-Meier/Cox helper, a
+factor-releveling utility, and forest, survival-curve, and marginal-risk
+visualizations.
 
 - [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
   : Univariable Cox Proportional Hazards Screening Engine
 - [`print(`*`<cbe_cox>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox.md)
   : Print Method for cbe_cox Object
+- [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md)
+  : Multivariable Cox Proportional Hazards Modeling Engine
+- [`print(`*`<cbe_cox_multi>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_multi.md)
+  : Print Method for cbe_cox_multi Object
+- [`cbe_cox_check()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_check.md)
+  : Tidy Proportional Hazards Diagnostics for Cox Models
+- [`print(`*`<cbe_cox_check>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_check.md)
+  : Print Method for cbe_cox_check Object
+- [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  : Presentation-Ready Cox Coefficient Table
+- [`cbe_km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.md)
+  : Univariable Kaplan-Meier and Cox Screening Engine
+- [`print(`*`<cbe_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_km.md)
+  : Print Method for cbe_km Object
+- [`cbe_factor_reference()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.md)
+  : Relevel a Factor's Reference Level
 - [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md)
   : Forest Plot of Hazard Ratios with Confidence Intervals
+- [`plot_cox_forest_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest_multi.md)
+  : Forest Plot of Hazard Ratios for a Multivariable Cox Model
 - [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md)
   : Model-Predicted Survival Curves Stratified by Predictor
 - [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
-  : Marginal Event Probability Diagnostic Plot
+  : Marginal Event Probability / Relative Hazard Diagnostic Plot
+- [`cbe_theme_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.md)
+  : CBE ggplot2 Theme for Survival Analysis Visualizations
+- [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md)
+  : Tidy Construction of Counting-Process (Start-Stop) Survival Data
 
 ## Presentation Deck & Clinical Summary Plots
 

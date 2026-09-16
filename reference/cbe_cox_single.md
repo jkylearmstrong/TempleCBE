@@ -8,7 +8,7 @@ gathers model fit metrics.
 ## Usage
 
 ``` r
-cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95)
+cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95, ...)
 ```
 
 ## Arguments
@@ -29,6 +29,12 @@ cbe_cox_single(data, outcome = "outcome", feature, conf_level = 0.95)
 - conf_level:
 
   Numeric confidence level (default: 0.95).
+
+- ...:
+
+  Additional arguments passed to
+  [`survival::coxph`](https://rdrr.io/pkg/survival/man/coxph.html)
+  (e.g., `weights`, `ties`).
 
 ## Value
 
@@ -63,3 +69,9 @@ An object of class `cbe_cox` containing:
 
 - `is_numeric`: Logical flag indicating whether predictor is
   continuous/numeric.
+
+## See also
+
+\[cbe_cox_multi()\], \[cbe_cox_check()\], \[cbe_km_single()\],
+\[cbe_cox_table()\], \[plot_cox_forest()\], \[plot_cox_survival()\],
+\[plot_cox_marginal()\]

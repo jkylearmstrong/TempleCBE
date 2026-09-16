@@ -14,6 +14,7 @@ plot_cox_survival(
   id_col = NULL,
   n_tiles = 4,
   label_endpoints = TRUE,
+  overlay_km = FALSE,
   base_size = 12
 )
 ```
@@ -47,6 +48,14 @@ plot_cox_survival(
 
   Logical; if TRUE, repels labels for stratum values at the final time
   point.
+
+- overlay_km:
+
+  Logical (default: `FALSE`). If `TRUE`, overlays observed Kaplan-Meier
+  step curves (dashed) for each stratum on top of the Cox-predicted
+  curves (solid), sharing color by stratum, with a linetype legend
+  distinguishing "Cox-predicted" from "KM observed". The event
+  time/status used are those the model was fit with (`fit$y`).
 
 - base_size:
 

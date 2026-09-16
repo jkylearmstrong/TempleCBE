@@ -14,6 +14,9 @@ plot_cox_forest(
   high_col = "conf.high",
   p_col = NULL,
   color = "#9D2235",
+  scale = c("hr", "log_hr"),
+  color_by = c("none", "significance"),
+  order_by = c("none", "magnitude", "pvalue"),
   x_limits = NULL,
   x_breaks = NULL,
   title = NULL,
@@ -36,24 +39,45 @@ plot_cox_forest(
 
 - hr_col:
 
-  Column name for hazard ratios (default: "estimate").
+  Column name for hazard ratios, always on the HR (not log) scale
+  (default: "estimate").
 
 - low_col:
 
-  Column name for lower CI bounds (default: "conf.low").
+  Column name for lower CI bounds, on the HR scale (default:
+  "conf.low").
 
 - high_col:
 
-  Column name for upper CI bounds (default: "conf.high").
+  Column name for upper CI bounds, on the HR scale (default:
+  "conf.high").
 
 - p_col:
 
-  Optional column name for p-values to display significance shapes.
+  Optional column name for p-values. Required for
+  `color_by = "significance"` and `order_by = "pvalue"`.
 
 - color:
 
   Primary color for points and error bars (default: Temple Cherry
   `"#9D2235"`).
+
+- scale:
+
+  One of `"hr"` (default; plots hazard ratios with a reference line
+  at 1) or `"log_hr"` (log-transforms `hr_col`/`low_col`/`high_col` for
+  plotting, with a reference line at 0).
+
+- color_by:
+
+  One of `"none"` (default) or `"significance"`, which colors
+  points/error bars by whether `p_col` is below 0.05 and adds a legend.
+
+- order_by:
+
+  One of `"none"` (default; original row order), `"magnitude"` (sorts by
+  `abs(log(estimate))` descending), or `"pvalue"` (sorts by `p_col`
+  ascending).
 
 - x_limits:
 
@@ -78,3 +102,7 @@ plot_cox_forest(
 ## Value
 
 A ggplot2 object.
+
+## See also
+
+\[plot_cox_forest_multi()\]

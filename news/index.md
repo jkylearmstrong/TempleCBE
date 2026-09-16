@@ -1,5 +1,111 @@
 # Changelog
 
+## TempleCBE 0.3.3
+
+### Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics
+
+- **Multivariable Cox Modeling**:
+  - New
+    [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md)
+    fits a multivariable Cox proportional hazards model (via `formula`,
+    or the `outcome`/`features` convenience pair), returning a tidy
+    coefficient table grouped by variable with explicit reference rows,
+    a `glance` fit summary, per-term and global proportional hazards
+    diagnostics, convergence status, and a formatted
+    [`print()`](https://rdrr.io/r/base/print.html) method.
+- **Proportional Hazards Diagnostics**:
+  - New
+    [`cbe_cox_check()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_check.md)
+    provides standalone, tidy
+    [`cox.zph()`](https://rdrr.io/pkg/survival/man/cox.zph.html)
+    diagnostics (per-term table, violation flags, and an automated text
+    summary, including the multivariate global test) for any `coxph`,
+    `cbe_cox`, or `cbe_cox_multi` object.
+    [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
+    now uses
+    [`cbe_cox_check()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_check.md)
+    internally.
+- **Kaplan-Meier**:
+  - New
+    [`cbe_km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.md)
+    pairs a univariable
+    [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
+    fit with the matching stratified Kaplan-Meier curve (quartile-binned
+    for continuous predictors) without refitting the Cox model twice,
+    returning the Cox object, the `survfit` object, a tidy KM table, the
+    hazard direction, a combined summary table, and a formatted
+    [`print()`](https://rdrr.io/r/base/print.html) method.
+- **Presentation & Utility Helpers**:
+  - New
+    [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+    formats a `cbe_cox`/`cbe_cox_multi` coefficient table for
+    presentation, adding a log(HR) column with optional sorting by
+    magnitude or p-value and significance-star annotation.
+  - New
+    [`cbe_factor_reference()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.md)
+    relevels a factor’s reference level before fitting, with the chosen
+    level reported via
+    [`message()`](https://rdrr.io/r/base/message.html) and recorded in a
+    `"cbe_reference_level"` attribute.
+  - New
+    [`cbe_theme_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.md)
+    gives a single consistent ggplot2 look across the Cox/KM
+    visualizations;
+    [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md),
+    [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md),
+    and
+    [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
+    now use it.
+- **Enhanced Visualizations**:
+  - [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md)
+    gains `scale` (`"hr"`/`"log_hr"`), `color_by`
+    (`"none"`/`"significance"`), and `order_by`
+    (`"none"`/`"magnitude"`/`"pvalue"`) arguments.
+  - New
+    [`plot_cox_forest_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest_multi.md)
+    renders a
+    [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md)
+    result as a forest plot with per-variable facet blocks, sharing the
+    same `scale`/`color_by`/`order_by` options as
+    [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md).
+  - [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md)
+    gains `overlay_km = FALSE`; when `TRUE`, observed Kaplan-Meier step
+    curves are overlaid (dashed) on the Cox-predicted curves (solid),
+    with a legend distinguishing the two.
+  - [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
+    gains `scale` (`"prob"`/`"hr"`/`"log_hr"`) to plot predicted event
+    probability or relative hazard (from the centered linear predictor),
+    and now draws its confidence band with
+- **SAS PROC PHREG Parity & Validation Datasets**:
+  - Added `...` argument passthrough to
+    [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md)
+    and
+    [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md),
+    supporting `ties = "breslow"`, `id = ID`, `cluster`, and advanced
+    [`survival::coxph`](https://rdrr.io/pkg/survival/man/coxph.html)
+    options.
+  - Added internal SAS Institute Example 85.7 validation datasets
+    [`tumor_wide()`](https://jkylearmstrong.github.io/TempleCBE/reference/tumor_wide.md)
+    (45 rodents, 19 variables) and
+    [`tumor_long()`](https://jkylearmstrong.github.io/TempleCBE/reference/tumor_long.md)
+    (102 counting-process intervals, 8 variables) for time-dependent
+    papilloma survival benchmarks.
+  - Added
+    [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md)
+    helper function to construct counting-process start/stop intervals
+    from repeated longitudinal measurements and event data frames with
+    baseline covariate integration.
+  - Added project-level pipeline orchestration script
+    `MakeComputeGraph.R` (in `vignettes/` and `inst/scripts/`)
+    simulating the Wolfson dependency graph architecture across all four
+    analytical stages.
+  - Renumbered all vignettes to `01`-`04` matching the recommended
+    progression in `README.qmd`:
+    - `01_eda_and_missingness.Rmd`
+    - `02_nested_survival_cv.Rmd`
+    - `03_compute_graph.Rmd`
+    - `04_sas_survival.Rmd`
+
 ## TempleCBE 0.3.2
 
 ### Integrated Standard Biostatistical and Presentation Components from Wolfson
@@ -159,7 +265,7 @@
 - New
   [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
   is a tidymodels counterpart to
-  [`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
+  [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
   Folds are grouped by `subject_id` (or a coarser `group`, such as
   site), preprocessing from a recipe is learned inside each fold, and
   every `mixture` and `penalty` is scored with a yardstick metric set:

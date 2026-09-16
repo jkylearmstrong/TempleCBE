@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,9 +41,10 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+<li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -70,15 +71,15 @@
 
 
 
-<link href="compute_graph_files/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
-<script src="compute_graph_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><script src="compute_graph_files/viz-1.8.2/viz.js"></script><link href="compute_graph_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
-<script src="compute_graph_files/grViz-binding-1.0.12/grViz.js"></script><div class="row">
+<link href="03_compute_graph_files/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
+<script src="03_compute_graph_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><script src="03_compute_graph_files/viz-1.8.2/viz.js"></script><link href="03_compute_graph_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
+<script src="03_compute_graph_files/grViz-binding-1.0.12/grViz.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Visualizing Computational Pipeline Dependencies</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/compute_graph.Rmd" class="external-link"><code>vignettes/compute_graph.Rmd</code></a></small>
-      <div class="d-none name"><code>compute_graph.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/03_compute_graph.Rmd" class="external-link"><code>vignettes/03_compute_graph.Rmd</code></a></small>
+      <div class="d-none name"><code>03_compute_graph.Rmd</code></div>
     </div>
 
     
@@ -473,7 +474,7 @@ case of “this <code>.qmd</code> renders to a PDF of the same name.”</p>
 <span><span class="co">#&gt;   Stage:       report </span></span>
 <span><span class="co">#&gt;   Role:        report_source </span></span>
 <span><span class="co">#&gt;   Renders:     TRUE </span></span>
-<span><span class="co">#&gt;   Modified:    2026-09-16 10:34:59 </span></span>
+<span><span class="co">#&gt;   Modified:    2026-09-16 20:44:38 </span></span>
 <span><span class="co">#&gt;   Description: Worked example of a one/two-sample t-test report </span></span>
 <span><span class="co">#&gt;   Dependencies:</span></span>
 <span><span class="co">#&gt;     - t_test_child</span></span>
@@ -587,76 +588,183 @@ can be integrated into any data science or biostatistical workflow. Here
 are five concrete patterns for adopting this technology in your own
 projects:</p>
 <div class="section level3">
-<h3 id="pattern-1-non-intrusive-auditing-of-an-existing-multi-stage-project">Pattern 1: Non-intrusive auditing of an existing multi-stage
-project<a class="anchor" aria-label="anchor" href="#pattern-1-non-intrusive-auditing-of-an-existing-multi-stage-project"></a>
+<h3 id="pattern-1-project-level-orchestration-with-makecomputegraph-r-wolfson-study-pattern">Pattern 1: Project-level orchestration with
+<code>MakeComputeGraph.R</code> (Wolfson study pattern)<a class="anchor" aria-label="anchor" href="#pattern-1-project-level-orchestration-with-makecomputegraph-r-wolfson-study-pattern"></a>
 </h3>
-<p>You can audit an existing repository without changing any analytical
-code. Create a single file (e.g. <code>_pipeline.R</code> or
-<code>build_graph.R</code>) that defines your files and their
-dependencies:</p>
+<p>In production biostatistical pipelines and collaborative studies
+(modeled after the architecture in the Wolfson study and
+<code>TempleCBE</code>), best practice is to encapsulate the entire
+project dependency structure in a centralized orchestration script named
+<code>MakeComputeGraph.R</code>.</p>
+<p>Rather than hardcoding ad-hoc graphs in interactive sessions,
+<code>MakeComputeGraph.R</code> provides a single source of truth for
+the entire study lifecycle:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Configures study stages &amp; visual identity</strong>: Uses
+<code><a href="../reference/pipeline_config.html">pipeline_config()</a></code> to establish human-readable labels and
+color coding for every analytical phase.</li>
+<li>
+<strong>Declares raw &amp; derived assets</strong>: Uses
+<code><a href="../reference/FilePath.html">FilePath()</a></code> with semantic roles (<code>raw_data</code>,
+<code>derived_data</code>) so analysts know which files are source
+registries vs. derived caches.</li>
+<li>
+<strong>Connects executable reports &amp; vignettes</strong>: Uses
+<code><a href="../reference/create_qmd_renderer.html">create_qmd_renderer()</a></code> to link reports to their explicit
+data dependencies and to each other in topological order.</li>
+</ol>
+<p><code>TempleCBE</code> ships with this exact architecture in
+<code>vignettes/MakeComputeGraph.R</code> (and
+<code>inst/scripts/MakeComputeGraph.R</code>), orchestrating all four
+analytical vignettes:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link">TempleCBE</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Configure study branding and stage definitions</span></span>
-<span><span class="fu"><a href="../reference/pipeline_config.html">pipeline_config</a></span><span class="op">(</span></span>
-<span>  study_name <span class="op">=</span> <span class="st">"Cardiology Clinical Trial Phase II"</span>,</span>
-<span>  stage_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"01_intake"</span>      <span class="op">=</span> <span class="st">"Data Intake &amp; Cleaning"</span>,</span>
-<span>    <span class="st">"02_eda"</span>         <span class="op">=</span> <span class="st">"Exploratory Analysis"</span>,</span>
-<span>    <span class="st">"03_imputation"</span>  <span class="op">=</span> <span class="st">"Missing Data Imputation"</span>,</span>
-<span>    <span class="st">"04_modeling"</span>    <span class="op">=</span> <span class="st">"Survival &amp; Cox Models"</span>,</span>
-<span>    <span class="st">"05_deliverable"</span> <span class="op">=</span> <span class="st">"Final Regulatory Reports"</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  stage_colors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="st">"01_intake"</span>      <span class="op">=</span> <span class="st">"#EBF5FB"</span>,</span>
-<span>    <span class="st">"02_eda"</span>         <span class="op">=</span> <span class="st">"#E8F8F5"</span>,</span>
-<span>    <span class="st">"03_imputation"</span>  <span class="op">=</span> <span class="st">"#FEF9E7"</span>,</span>
-<span>    <span class="st">"04_modeling"</span>    <span class="op">=</span> <span class="st">"#F4ECF7"</span>,</span>
-<span>    <span class="st">"05_deliverable"</span> <span class="op">=</span> <span class="st">"#EAECEE"</span></span>
+<span><span class="va">make_temple_compute_graph</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># 1. Project Pipeline Configuration</span></span>
+<span>  <span class="fu"><a href="../reference/pipeline_config.html">pipeline_config</a></span><span class="op">(</span></span>
+<span>    study_name <span class="op">=</span> <span class="st">"TempleCBE Biostatistical &amp; Survival Analysis Architecture"</span>,</span>
+<span>    stage_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>      <span class="st">"01_EDA"</span>            <span class="op">=</span> <span class="st">"Exploratory Data Analysis &amp; Quality Audit"</span>,</span>
+<span>      <span class="st">"02_Survival_CV"</span>    <span class="op">=</span> <span class="st">"Penalized Coxnet &amp; Nested Cross-Validation"</span>,</span>
+<span>      <span class="st">"03_Compute_Graph"</span>  <span class="op">=</span> <span class="st">"Pipeline Dependency &amp; Governance Graph"</span>,</span>
+<span>      <span class="st">"04_SAS_Validation"</span> <span class="op">=</span> <span class="st">"SAS PROC PHREG Benchmark Validation"</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    stage_colors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      <span class="st">"01_EDA"</span>            <span class="op">=</span> <span class="st">"#DDEBF7"</span>,</span>
+<span>      <span class="st">"02_Survival_CV"</span>    <span class="op">=</span> <span class="st">"#FCE4D6"</span>,</span>
+<span>      <span class="st">"03_Compute_Graph"</span>  <span class="op">=</span> <span class="st">"#E8DAEF"</span>,</span>
+<span>      <span class="st">"04_SAS_Validation"</span> <span class="op">=</span> <span class="st">"#D4EFDF"</span></span>
+<span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Define data inputs and multi-language scripts</span></span>
-<span><span class="va">raw_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"patient_registry_xlsx"</span>,</span>
-<span>  path <span class="op">=</span> <span class="st">"data/raw/patient_registry_2024.xlsx"</span>,</span>
-<span>  stage <span class="op">=</span> <span class="st">"01_intake"</span>,</span>
-<span>  artifact_role <span class="op">=</span> <span class="st">"raw_data"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"De-identified patient registry export from clinical site"</span></span>
-<span><span class="op">)</span></span>
+<span>  <span class="co"># 2. Raw Data Inputs</span></span>
+<span>  <span class="va">raw_clinical</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"raw_patient_registry"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"data/raw/patient_registry.csv"</span>,</span>
+<span>    renders <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    stage <span class="op">=</span> <span class="st">"01_EDA"</span>,</span>
+<span>    artifact_role <span class="op">=</span> <span class="st">"raw_data"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Raw clinical intake data with missing biomarker measurements"</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="co"># A Python or SAS script that outputs an RDS</span></span>
-<span><span class="va">clean_script</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FileOutputs.html">FileOutputs</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"clean_data_py"</span>,</span>
-<span>  path <span class="op">=</span> <span class="st">"scripts/01_clean_data.py"</span>,</span>
-<span>  dependencies <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">raw_data</span><span class="op">)</span>,</span>
-<span>  output <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
+<span>  <span class="va">sas_benchmark_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"tumor_wide_data"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"data/raw/Tumor.xlsx"</span>,</span>
+<span>    renders <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    stage <span class="op">=</span> <span class="st">"04_SAS_Validation"</span>,</span>
+<span>    artifact_role <span class="op">=</span> <span class="st">"raw_data"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"45-animal longitudinal papilloma count study (SAS Example 85.7)"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># 3. Stage 01: EDA &amp; Missingness Analysis</span></span>
+<span>  <span class="va">cleaned_cohort_rds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"cleaned_cohort_rds"</span>,</span>
 <span>    path <span class="op">=</span> <span class="st">"data/derived/cleaned_cohort.rds"</span>,</span>
-<span>    stage <span class="op">=</span> <span class="st">"01_intake"</span>,</span>
-<span>    artifact_role <span class="op">=</span> <span class="st">"derived_data"</span></span>
-<span>  <span class="op">)</span><span class="op">)</span>,</span>
-<span>  stage <span class="op">=</span> <span class="st">"01_intake"</span>,</span>
-<span>  artifact_role <span class="op">=</span> <span class="st">"helper_script"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"Python preprocessing script standardizing clinical biomarkers"</span></span>
-<span><span class="op">)</span></span>
+<span>    renders <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    stage <span class="op">=</span> <span class="st">"01_EDA"</span>,</span>
+<span>    artifact_role <span class="op">=</span> <span class="st">"derived_data"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Audited and normalized clinical cohort"</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3. Define Quarto reports</span></span>
-<span><span class="va">eda_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"02_eda_report"</span>,</span>
-<span>  path <span class="op">=</span> <span class="st">"reports/02_eda_summary.qmd"</span>,</span>
-<span>  deps <span class="op">=</span> <span class="va">clean_script</span><span class="op">@</span><span class="va">output</span>,</span>
-<span>  file_stage <span class="op">=</span> <span class="st">"02_eda"</span>,</span>
-<span>  output_format <span class="op">=</span> <span class="st">"pdf"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"Primary missingness and distribution auditing deliverable"</span></span>
-<span><span class="op">)</span></span>
+<span>  <span class="va">eda_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"01_eda_and_missingness"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/01_eda_and_missingness.Rmd"</span>,</span>
+<span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">raw_clinical</span><span class="op">)</span>,</span>
+<span>    file_stage <span class="op">=</span> <span class="st">"01_EDA"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Missingness auditing, outlier fences, and feature normalization"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">eda_report</span><span class="op">@</span><span class="va">output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">eda_report</span><span class="op">@</span><span class="va">output</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cleaned_cohort_rds</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 4. Assemble the pipeline and inspect</span></span>
-<span><span class="va">study_pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">raw_data</span>, <span class="va">clean_script</span>, <span class="va">eda_report</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pipeline_summary.html">pipeline_summary</a></span><span class="op">(</span><span class="va">study_pipeline</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="co"># 4. Stage 02: Penalized Coxnet &amp; Nested Cross-Validation</span></span>
+<span>  <span class="va">survival_cv_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"02_nested_survival_cv"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/02_nested_survival_cv.Rmd"</span>,</span>
+<span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cleaned_cohort_rds</span><span class="op">)</span>,</span>
+<span>    file_stage <span class="op">=</span> <span class="st">"02_Survival_CV"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Subject-grouped nested cross-validation and elastic-net Cox modeling"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># 5. Stage 04: SAS Validation &amp; Time-Dependent Covariates</span></span>
+<span>  <span class="va">tumor_cp_rds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/FilePath.html">FilePath</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"tumor_counting_process_rds"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"data/derived/Tumor1.rds"</span>,</span>
+<span>    renders <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    stage <span class="op">=</span> <span class="st">"04_SAS_Validation"</span>,</span>
+<span>    artifact_role <span class="op">=</span> <span class="st">"derived_data"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Start/stop counting-process records generated via tidy_tmerge_cox"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">sas_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"04_sas_survival"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/04_sas_survival.Rmd"</span>,</span>
+<span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">sas_benchmark_raw</span><span class="op">)</span>,</span>
+<span>    file_stage <span class="op">=</span> <span class="st">"04_SAS_Validation"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Numerical validation against SAS PROC PHREG and tidy start/stop merging"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">sas_report</span><span class="op">@</span><span class="va">output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sas_report</span><span class="op">@</span><span class="va">output</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">tumor_cp_rds</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># 6. Stage 03: Compute Graph &amp; Governance</span></span>
+<span>  <span class="va">graph_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
+<span>    name <span class="op">=</span> <span class="st">"03_compute_graph"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/03_compute_graph.Rmd"</span>,</span>
+<span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">eda_report</span>, <span class="va">survival_cv_report</span>, <span class="va">sas_report</span><span class="op">)</span>,</span>
+<span>    file_stage <span class="op">=</span> <span class="st">"03_Compute_Graph"</span>,</span>
+<span>    description <span class="op">=</span> <span class="st">"Dependency graph auditing, staleness detection, and pipeline governance"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Assemble full pipeline</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="va">raw_clinical</span>,</span>
+<span>    <span class="va">sas_benchmark_raw</span>,</span>
+<span>    <span class="va">eda_report</span>,</span>
+<span>    <span class="va">cleaned_cohort_rds</span>,</span>
+<span>    <span class="va">survival_cv_report</span>,</span>
+<span>    <span class="va">sas_report</span>,</span>
+<span>    <span class="va">tumor_cp_rds</span>,</span>
+<span>    <span class="va">graph_report</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>When this script is run, calling <code><a href="../reference/pipeline_summary.html">pipeline_summary()</a></code> on
+the resulting pipeline immediately yields a structured governance audit
+across all project stages:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcg_path</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"MakeComputeGraph.R"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="st">"MakeComputeGraph.R"</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"vignettes/MakeComputeGraph.R"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="st">"vignettes/MakeComputeGraph.R"</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"scripts"</span>, <span class="st">"MakeComputeGraph.R"</span>, package <span class="op">=</span> <span class="st">"TempleCBE"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">mcg_path</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">mcg_path</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="va">mcg_path</span><span class="op">)</span></span>
+<span>  <span class="va">temple_pipe</span> <span class="op">&lt;-</span> <span class="fu">make_temple_compute_graph</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/pipeline_summary.html">pipeline_summary</a></span><span class="op">(</span><span class="va">temple_pipe</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co">#&gt; ========================================================================</span></span>
+<span><span class="co">#&gt;                       Computational Pipeline Summary                    </span></span>
+<span><span class="co">#&gt; ========================================================================</span></span>
+<span><span class="co">#&gt; Total Nodes: 12 | Total Edges: 12 | Stale Nodes: 6 (Needs Re-render)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Artifact Roles:</span></span>
+<span><span class="co">#&gt;   - deliverable_report        :  4</span></span>
+<span><span class="co">#&gt;   - derived_data              :  2</span></span>
+<span><span class="co">#&gt;   - raw_data                  :  2</span></span>
+<span><span class="co">#&gt;   - report_source             :  4</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Pipeline Stages Breakdown:</span></span>
+<span><span class="co">#&gt;              stage Reports Data_Files Helpers Total</span></span>
+<span><span class="co">#&gt;             01_EDA       2          2       0     4</span></span>
+<span><span class="co">#&gt;     02_Survival_CV       2          0       0     2</span></span>
+<span><span class="co">#&gt;   03_Compute_Graph       2          0       0     2</span></span>
+<span><span class="co">#&gt;  04_SAS_Validation       2          2       0     4</span></span>
+<span><span class="co">#&gt; ========================================================================</span></span></code></pre></div>
 <p>You can also use <code><a href="../reference/list_stage_data_artifacts.html">list_stage_data_artifacts()</a></code> to scan
 directories and catalogue derived data files automatically:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inspect all data files in an imputation output folder</span></span>
 <span><span class="va">stage_artifacts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/list_stage_data_artifacts.html">list_stage_data_artifacts</a></span><span class="op">(</span></span>
 <span>  stage_dir <span class="op">=</span> <span class="st">"data/derived/imputation"</span>,</span>
@@ -671,7 +779,7 @@ collaborators<a class="anchor" aria-label="anchor" href="#pattern-2-delivering-i
 where a specific number or figure in a final report came from. You can
 export a self-contained HTML file with rich interactive cards and search
 bars:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Export full interactive HTML for stakeholder distribution</span></span>
 <span><span class="fu"><a href="../reference/export_interactive_pipeline.html">export_interactive_pipeline</a></span><span class="op">(</span></span>
 <span>  <span class="va">study_pipeline</span>,</span>
@@ -694,7 +802,7 @@ bars:</p>
 re-rendering all reports from scratch, use
 <code><a href="../reference/get_render_plan.html">get_render_plan()</a></code> to drive selective rendering in a build
 script or CI/CD workflow:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Detect out-of-date reports in topological dependency order</span></span>
 <span><span class="va">render_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_render_plan.html">get_render_plan</a></span><span class="op">(</span><span class="va">study_pipeline</span><span class="op">)</span></span>
 <span></span>
@@ -714,7 +822,7 @@ script or CI/CD workflow:</p>
 <p>Because <code><a href="../reference/as_pipeline_graph.html">as_pipeline_graph()</a></code> converts the pipeline
 directly to a <code><a href="https://tidygraph.data-imaginist.com/reference/tbl_graph.html" class="external-link">tidygraph::tbl_graph</a></code>, you can audit and query
 your workflow using standard tidyverse grammar:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidygraph.data-imaginist.com" class="external-link">tidygraph</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
@@ -742,7 +850,7 @@ domains (e.g. one analyst leads clinical safety, another leads genomics,
 and a third leads pharmacokinetics), each analyst can maintain their own
 sub-pipeline. Use <code><a href="../reference/join_pipelines.html">join_pipelines()</a></code> to combine them into an
 overarching study graph without duplicating shared nodes:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Merge clinical and genomics pipelines</span></span>
 <span><span class="va">full_study_graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/join_pipelines.html">join_pipelines</a></span><span class="op">(</span><span class="va">clinical_subpipeline</span>, <span class="va">genomics_subpipeline</span><span class="op">)</span></span>
 <span></span>

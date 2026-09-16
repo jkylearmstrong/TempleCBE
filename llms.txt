@@ -81,7 +81,7 @@ plot_features_percent_miss(df)
 ```
 
 See the [Exploratory Data Analysis, Missingness Auditing, and
-Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)
+Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html)
 vignette for a full walkthrough, including non-standard missing codes
 and outlier-aware EDA.
 
@@ -142,7 +142,7 @@ For repeated-measures/start-stop data,
 tunes and scores a penalized Cox model with a proper, subject-grouped
 integrated Brier score. See the [Penalized Cox Models and Nested
 Cross-Validation for Start/Stop Survival
-Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)
+Data](https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html)
 vignette for the full nested cross-validation workflow.
 
 ### 5. Custom Tidymodels Recipe Step: `step_famd`
@@ -186,23 +186,30 @@ Convenient syntax for string matching and negation:
 Beyond the quick-start snippets above, `TempleCBE` ships full
 worked-example vignettes:
 
-- **[Exploratory Data Analysis, Missingness Auditing, and
-  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)**
+- **[01. Exploratory Data Analysis, Missingness Auditing, and
+  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html)**
   — non-standard missing codes, missingness visualization, and
   outlier-aware normalization for messy clinical/EHR data.
-- **[Penalized Cox Models and Nested Cross-Validation for Start/Stop
+- **[02. Penalized Cox Models and Nested Cross-Validation for Start/Stop
   Survival
-  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)**
+  Data](https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html)**
   — why row-level resampling leaks for counting-process data, and how
   [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)/[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)/[`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
   avoid it.
-- **[Visualizing Computational Pipeline
-  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html)**
+- **[03. Visualizing Computational Pipeline
+  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/03_compute_graph.html)**
   — treating a multi-report analysis pipeline as a dependency graph with
-  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md).
+  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
+  and project-level `MakeComputeGraph.R`.
+- **[04. Validation and Workflow Guide for SAS Users: Cox Models in
+  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/04_sas_survival.html)**
+  — cross-validating time-fixed and time-dependent Cox models against
+  SAS PROC PHREG, with
+  [`survival::tmerge`](https://rdrr.io/pkg/survival/man/tmerge.html) and
+  [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md).
 
 Once installed, each is also available locally via
-[`vignette("eda_and_missingness", package = "TempleCBE")`](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md)
+[`vignette("01_eda_and_missingness", package = "TempleCBE")`](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.md)
 (substituting the vignette name).
 
 ------------------------------------------------------------------------
@@ -590,22 +597,46 @@ cherry palettes, deck styling, and clinical reporting formatters.
 - [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
   : Combine Character Vector into Natural-Language Words
 
-## Univariable Cox Models & Diagnostics
+## Cox Models, Kaplan-Meier, & Diagnostics
 
-Univariable Cox proportional hazards screening engine with automated
-clinical interpretations, proportional hazards tests, forest plots,
-predicted survival curves, and marginal risk curves.
+Univariable and multivariable Cox proportional hazards screening engines
+with automated clinical interpretations, shared proportional hazards
+diagnostics, presentation tables, a paired Kaplan-Meier/Cox helper, a
+factor-releveling utility, and forest, survival-curve, and marginal-risk
+visualizations.
 
 - [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md)
   : Univariable Cox Proportional Hazards Screening Engine
 - [`print(`*`<cbe_cox>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox.md)
   : Print Method for cbe_cox Object
+- [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md)
+  : Multivariable Cox Proportional Hazards Modeling Engine
+- [`print(`*`<cbe_cox_multi>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_multi.md)
+  : Print Method for cbe_cox_multi Object
+- [`cbe_cox_check()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_check.md)
+  : Tidy Proportional Hazards Diagnostics for Cox Models
+- [`print(`*`<cbe_cox_check>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_check.md)
+  : Print Method for cbe_cox_check Object
+- [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  : Presentation-Ready Cox Coefficient Table
+- [`cbe_km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.md)
+  : Univariable Kaplan-Meier and Cox Screening Engine
+- [`print(`*`<cbe_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_km.md)
+  : Print Method for cbe_km Object
+- [`cbe_factor_reference()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.md)
+  : Relevel a Factor's Reference Level
 - [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md)
   : Forest Plot of Hazard Ratios with Confidence Intervals
+- [`plot_cox_forest_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest_multi.md)
+  : Forest Plot of Hazard Ratios for a Multivariable Cox Model
 - [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md)
   : Model-Predicted Survival Curves Stratified by Predictor
 - [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
-  : Marginal Event Probability Diagnostic Plot
+  : Marginal Event Probability / Relative Hazard Diagnostic Plot
+- [`cbe_theme_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.md)
+  : CBE ggplot2 Theme for Survival Analysis Visualizations
+- [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md)
+  : Tidy Construction of Counting-Process (Start-Stop) Survival Data
 
 ## Presentation Deck & Clinical Summary Plots
 
@@ -713,10 +744,12 @@ Clean column naming, string matching, and vector manipulation.
 
 ### Articles & Workflows
 
-- [Visualizing Computational Pipeline
-  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.md):
 - [Exploratory Data Analysis, Missingness Auditing, and
-  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md):
+  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.md):
 - [Penalized Cox Models and Nested Cross-Validation for Start/Stop
   Survival
-  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.md):
+  Data](https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.md):
+- [Visualizing Computational Pipeline
+  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/03_compute_graph.md):
+- [Validation and Workflow Guide for SAS Users: Cox Models in
+  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/04_sas_survival.md):

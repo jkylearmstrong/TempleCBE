@@ -2,10 +2,11 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/404.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/LICENSE-text.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/LICENSE.html</loc></url>
-<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html</loc></url>
-<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/03_compute_graph.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/04_sas_survival.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/index.html</loc></url>
-<url><loc>https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/authors.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/index.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/news/index.html</loc></url>
@@ -27,8 +28,14 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/bundle_deliverables.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_check.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_palette.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/check_docx_toolchain.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/clean_names.html</loc></url>
@@ -123,6 +130,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest_multi.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_deck.html</loc></url>
@@ -135,6 +143,9 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plug_and_play_schema.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/predict.coxnet_model.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_check.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_multi.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_km.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/proc_pca.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/process_utils.html</loc></url>
@@ -173,6 +184,9 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe_deck.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/theme_temple.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tidy.coxnet_model.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tumor_long.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tumor_wide.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/validate_column_mapping.html</loc></url>

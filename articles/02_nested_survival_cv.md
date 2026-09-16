@@ -8,7 +8,7 @@ follow-up. Three things go wrong if those rows are treated as
 independent observations:
 
 1.  **Resampling leaks.** Row-level folds, like those of
-    [`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html),
+    [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html),
     put some of a subject’s intervals in the analysis set and others in
     the assessment set.
 2.  **Scoring is wrong, silently.** yardstick’s survival metrics expect
@@ -129,7 +129,7 @@ pipeline:
 
 ### Feature comparison matrix
 
-| Dimension | `survival` | [`glmnet::cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html) | `tidymodels` (native) | `TempleCBE` |
+| Dimension | `survival` | [`glmnet::cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html) | `tidymodels` (native) | `TempleCBE` |
 |:---|:---|:---|:---|:---|
 | **Counting-process (`tstart, tstop`)** | Full support | Partial (leaks rows in CV) | Limited in `censored` | Full leak-free support |
 | **Resampling grouping** | Manual | No (row-level only) | `group_vfold_cv()` | Native patient & site grouping |
@@ -349,7 +349,7 @@ collect_metrics(cv) |>
 autoplot(cv)
 ```
 
-![](nested_survival_cv_files/figure-html/cv_metrics-1.png)
+![](02_nested_survival_cv_files/figure-html/cv_metrics-1.png)
 
 ``` r
 

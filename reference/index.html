@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,9 +18,10 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -1047,9 +1048,9 @@
         </dt>
         <dd>Combine Character Vector into Natural-Language Words</dd>
       </dl></div><div class="section level2">
-      <h2 id="univariable-cox-models-diagnostics">Univariable Cox Models &amp; Diagnostics<a class="anchor" aria-label="anchor" href="#univariable-cox-models-diagnostics"></a></h2>
+      <h2 id="cox-models-kaplan-meier-diagnostics">Cox Models, Kaplan-Meier, &amp; Diagnostics<a class="anchor" aria-label="anchor" href="#cox-models-kaplan-meier-diagnostics"></a></h2>
 
-      <div class="section-desc"><p>Univariable Cox proportional hazards screening engine with automated clinical interpretations, proportional hazards tests, forest plots, predicted survival curves, and marginal risk curves.</p></div>
+      <div class="section-desc"><p>Univariable and multivariable Cox proportional hazards screening engines with automated clinical interpretations, shared proportional hazards diagnostics, presentation tables, a paired Kaplan-Meier/Cox helper, a factor-releveling utility, and forest, survival-curve, and marginal-risk visualizations.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1072,10 +1073,73 @@
 
         <dt>
 
+          <code><a href="cbe_cox_multi.html">cbe_cox_multi()</a></code>
+
+        </dt>
+        <dd>Multivariable Cox Proportional Hazards Modeling Engine</dd>
+
+        <dt>
+
+          <code><a href="print.cbe_cox_multi.html">print(<i>&lt;cbe_cox_multi&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print Method for cbe_cox_multi Object</dd>
+
+        <dt>
+
+          <code><a href="cbe_cox_check.html">cbe_cox_check()</a></code>
+
+        </dt>
+        <dd>Tidy Proportional Hazards Diagnostics for Cox Models</dd>
+
+        <dt>
+
+          <code><a href="print.cbe_cox_check.html">print(<i>&lt;cbe_cox_check&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print Method for cbe_cox_check Object</dd>
+
+        <dt>
+
+          <code><a href="cbe_cox_table.html">cbe_cox_table()</a></code>
+
+        </dt>
+        <dd>Presentation-Ready Cox Coefficient Table</dd>
+
+        <dt>
+
+          <code><a href="cbe_km_single.html">cbe_km_single()</a></code>
+
+        </dt>
+        <dd>Univariable Kaplan-Meier and Cox Screening Engine</dd>
+
+        <dt>
+
+          <code><a href="print.cbe_km.html">print(<i>&lt;cbe_km&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print Method for cbe_km Object</dd>
+
+        <dt>
+
+          <code><a href="cbe_factor_reference.html">cbe_factor_reference()</a></code>
+
+        </dt>
+        <dd>Relevel a Factor's Reference Level</dd>
+
+        <dt>
+
           <code><a href="plot_cox_forest.html">plot_cox_forest()</a></code>
 
         </dt>
         <dd>Forest Plot of Hazard Ratios with Confidence Intervals</dd>
+
+        <dt>
+
+          <code><a href="plot_cox_forest_multi.html">plot_cox_forest_multi()</a></code>
+
+        </dt>
+        <dd>Forest Plot of Hazard Ratios for a Multivariable Cox Model</dd>
 
         <dt>
 
@@ -1089,7 +1153,21 @@
           <code><a href="plot_cox_marginal.html">plot_cox_marginal()</a></code>
 
         </dt>
-        <dd>Marginal Event Probability Diagnostic Plot</dd>
+        <dd>Marginal Event Probability / Relative Hazard Diagnostic Plot</dd>
+
+        <dt>
+
+          <code><a href="cbe_theme_survival.html">cbe_theme_survival()</a></code>
+
+        </dt>
+        <dd>CBE ggplot2 Theme for Survival Analysis Visualizations</dd>
+
+        <dt>
+
+          <code><a href="tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code>
+
+        </dt>
+        <dd>Tidy Construction of Counting-Process (Start-Stop) Survival Data</dd>
       </dl></div><div class="section level2">
       <h2 id="presentation-deck-clinical-summary-plots">Presentation Deck &amp; Clinical Summary Plots<a class="anchor" aria-label="anchor" href="#presentation-deck-clinical-summary-plots"></a></h2>
 
