@@ -1,0 +1,60 @@
+Installed TempleCBE v0.3.141593 from GitHub via renv
+cd "C:\Users\jkyle\Documents\GitHub\armstrong"; & "C:\Program Files\R\bin\Rscript.bat" -e "renv::install('jkylearmstrong/TempleCBE@v0.3.141593')"
+- Querying repositories for available source packages ... Done!
+The following package(s) will be installed:
+- TempleCBE [jkylearmstrong/TempleCBE@09915fdf]
+These packages will be installed into "C:/Users/jkyle/AppData/Local/R/cache/R/renv/library/armstrong-c0b83d7b/windows/R-4.6/x86_64-w64-mingw32".
+
+# Downloading packages -------------------------------------------------------
+
+  (0/1) Downloading: TempleCBE                                                  
+                                                                                
+✔ TempleCBE 0.3.141593                     [533 kB in 1.2s]
+
+                                                                                
+Successfully downloaded 1 package in 2 seconds.
+
+# Installing packages --------------------------------------------------------
+
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+                                                                                
+✖ TempleCBE 0.3.141593                    
+
+The following package(s) were not installed successfully:
+- [TempleCBE]: install failed
+You may need to manually download and install these packages.
+
+Retried TempleCBE install capturing full error output
+cd "C:\Users\jkyle\Documents\GitHub\armstrong"; & "C:\Program Files\R\bin\Rscript.bat" -e "options(warn=1); tryCatch(renv::install('jkylearmstrong/TempleCBE@v0.3.141593'), error=function(e) print(e))" 2>&1
+The following package(s) will be installed:
+- TempleCBE [jkylearmstrong/TempleCBE@09915fdf]
+These packages will be installed into "C:/Users/jkyle/AppData/Local/R/cache/R/renv/library/armstrong-c0b83d7b/windows/R-4.6/x86_64-w64-mingw32".
+
+# Downloading packages -------------------------------------------------------
+
+  (0/1) Downloading: TempleCBE                                                  
+                                                                                
+✔ TempleCBE 0.3.141593                     [533 kB in 1.3s]
+
+                                                                                
+Successfully downloaded 1 package in 2.1 seconds.
+
+# Installing packages --------------------------------------------------------
+
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+  (0/1) Installing: TempleCBE                                                   
+                                                                                
+✖ TempleCBE 0.3.141593                    
+
+The following package(s) were not installed successfully:
+- [TempleCBE]: install failed
+You may need to manually download and install these packages.
