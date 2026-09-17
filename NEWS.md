@@ -1,4 +1,4 @@
-# TempleCBE 0.3.4
+# TempleCBE 0.3.403
 
 ## Exact Contingency Methods, Chi-Square Testing & Visualizations
 
