@@ -54,6 +54,7 @@ Imports:
     writexl
 Suggests:
     arsenal,
+    baguette (>= 1.1.0),
     caret,
     devtools,
     dials,
@@ -75,11 +76,13 @@ Suggests:
     openxlsx,
     parsnip,
     pkgload,
+    probably (>= 1.2.0),
     profvis,
     quarto (>= 1.4),
     reticulate,
     rmarkdown,
     rsample (>= 1.1.0),
+    stacks (>= 1.1.1),
     testthat (>= 3.1.7),
     tidymodels (>= 1.1.0),
     tune (>= 1.1.0),
