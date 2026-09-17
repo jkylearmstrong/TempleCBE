@@ -10,16 +10,19 @@ set -euo pipefail
 #   - Prevent accidental pushes of private history
 # ============================================================
 
-# Detect default branch ('master' or 'main')
+# Detect target publish branch (argument > current branch > master/main)
 TARGET_BRANCH="${1:-}"
+CURRENT_BRANCH=$(git branch --show-current)
 if [ -n "$TARGET_BRANCH" ]; then
     PUBLISH_BRANCH="$TARGET_BRANCH"
+elif [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "private-history" ]; then
+    PUBLISH_BRANCH="$CURRENT_BRANCH"
 elif git show-ref --verify --quiet refs/heads/master; then
     PUBLISH_BRANCH="master"
 elif git show-ref --verify --quiet refs/heads/main; then
     PUBLISH_BRANCH="main"
 else
-    PUBLISH_BRANCH=$(git branch --show-current)
+    PUBLISH_BRANCH="master"
 fi
 
 PRIVATE_BRANCH="private-history"

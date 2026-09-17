@@ -131,8 +131,8 @@ generate_last_names <- function(n = 10,
 #' @param prefix Character string, prefix prepended to each token (default `"PI_"`).
 #' @param key Character string, secret key / pepper for HMAC tokenization. Defaults to
 #'   the environment variable `Sys.getenv("TEMPLECBE_SECRET_KEY", unset = "")`.
-#' @param n_chars Integer, number of hex characters from the hash digest to include (default 8).
-#'   Can be shortened (e.g. 4 or 6) to produce compact/short tokens.
+#' @param n_chars Integer, number of hex characters from the hash digest to include (default 16).
+#'   Can be shortened (e.g. 4 or 8) to produce compact/short tokens.
 #' @param rename_fn Optional function to transform or rename tokens (e.g., `tolower`, `toupper`,
 #'   or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).
 #' @param seed Optional integer, random seed for reproducible random token generation when `name` is `NULL`.

@@ -13,8 +13,9 @@ add_missing(data, cols = dplyr::everything(), pct_na = 0.1)
 (default \code{dplyr::everything()}).}
 
 \item{pct_na}{Proportion of cells to set to \code{NA} in each selected
-column, between 0 and 1 (default 0.1). Each column gets
-\code{round(pct_na * nrow(data))} missing cells.}
+column, between 0 and 1 (default 0.1). Can be a single number applied to
+all selected columns, or a numeric vector with length equal to the number
+of selected columns specifying column-specific amputation rates.}
 }
 \value{
 \code{data} with missing values added. Its \code{"missing_cells"}
@@ -39,4 +40,9 @@ set.seed(1)
 amputed <- add_missing(mtcars, c(mpg, hp), pct_na = 0.25)
 features_percent_miss(amputed)
 head(attr(amputed, "missing_cells"))
+
+# Column-specific missingness proportions with a vector:
+p_vec <- c(mpg = 0.1, hp = 0.3)
+amputed2 <- add_missing(mtcars, c(mpg, hp), pct_na = p_vec)
+features_percent_miss(amputed2)
 }

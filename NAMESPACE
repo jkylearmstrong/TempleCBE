@@ -220,43 +220,31 @@ exportMethods(show)
 import(dplyr)
 importFrom(corrplot,corrplot)
 importFrom(dplyr,if_else)
-importFrom(generics,
-  required_pkgs,
-  tidy
-)
-importFrom(methods,
-  .hasSlot,
-  callNextMethod,
-  initialize,
-  is,
-  new,
-  setClass,
-  setGeneric,
-  setMethod,
-  show
-)
-importFrom(recipes,
-  add_step,
-  rand_id,
-  step
-)
-importFrom(rlang,
-  "%||%",
-  ":=",
-  .data,
-  enquo,
-  enquos,
-  na_chr,
-  na_dbl,
-  quo_is_null
-)
-importFrom(stats,
-  ecdf,
-  sd
-)
-importFrom(tibble,
-  as_tibble,
-  tibble
-)
+importFrom(generics,required_pkgs)
+importFrom(generics,tidy)
+importFrom(methods,.hasSlot)
+importFrom(methods,callNextMethod)
+importFrom(methods,initialize)
+importFrom(methods,is)
+importFrom(methods,new)
+importFrom(methods,setClass)
+importFrom(methods,setGeneric)
+importFrom(methods,setMethod)
+importFrom(methods,show)
+importFrom(recipes,add_step)
+importFrom(recipes,rand_id)
+importFrom(recipes,step)
+importFrom(rlang,"%||%")
+importFrom(rlang,":=")
+importFrom(rlang,.data)
+importFrom(rlang,enquo)
+importFrom(rlang,enquos)
+importFrom(rlang,na_chr)
+importFrom(rlang,na_dbl)
+importFrom(rlang,quo_is_null)
+importFrom(stats,ecdf)
+importFrom(stats,sd)
+importFrom(tibble,as_tibble)
+importFrom(tibble,tibble)
 importFrom(tidyr,pivot_longer)
 importFrom(writexl,write_xlsx)

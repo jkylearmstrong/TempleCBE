@@ -23,4 +23,12 @@ test_that("detect_outliers identifies IQR fence outliers", {
   res_vec <- detect_outliers(x)
   expect_equal(nrow(res_vec), 1)
   expect_equal(res_vec$value, 100)
+
+  # Test empty and all-NA vectors
+  fences_na <- calculate_fences(c(NA_real_, NA_real_))
+  expect_true(is.na(fences_na$lower_inner_fence))
+
+  flags_na <- flag_outliers(c(NA_real_, NA_real_))
+  expect_equal(as.character(flags_na$.outlier), c("FALSE", "FALSE"))
+  expect_equal(as.character(flags_na$.outlier_type), c("NONE", "NONE"))
 })

@@ -10,6 +10,14 @@
 #' calculate_fences(c(1, 2, 3, 4, 5, 100))
 calculate_fences <- function(col) {
   col_no_na <- stats::na.omit(col)
+  if (length(col_no_na) == 0) {
+    return(tibble::tibble(
+      lower_inner_fence = NA_real_,
+      upper_inner_fence = NA_real_,
+      lower_outer_fence = NA_real_,
+      upper_outer_fence = NA_real_
+    ))
+  }
   q1 <- stats::quantile(col_no_na, 0.25)
   q3 <- stats::quantile(col_no_na, 0.75)
   iqr <- stats::IQR(col_no_na)
@@ -26,7 +34,7 @@ calculate_fences <- function(col) {
 #'
 #' @param col A numeric vector or column.
 #' @return A one-column-input-turned-tibble with \code{value}, \code{.outlier}
-#'   (logical) and \code{.outlier_type} (factor: \code{"NONE"}, \code{"MILD"},
+#'   (factor: \code{FALSE}, \code{TRUE}) and \code{.outlier_type} (factor: \code{"NONE"}, \code{"MILD"},
 #'   or \code{"EXTREME"}).
 #' @export
 #' @examples
@@ -36,15 +44,20 @@ flag_outliers <- function(col) {
 
   tibble::tibble(value = col) |>
     dplyr::mutate(
-      .outlier = col <= fences$lower_inner_fence | col >= fences$upper_inner_fence,
+      .outlier = if (is.na(fences$lower_inner_fence)) {
+        FALSE
+      } else {
+        !is.na(col) & (col <= fences$lower_inner_fence | col >= fences$upper_inner_fence)
+      },
       .outlier_type = dplyr::case_when(
+        is.na(fences$lower_inner_fence) ~ "NONE",
         col <= fences$lower_outer_fence | col >= fences$upper_outer_fence ~ "EXTREME",
         col <= fences$lower_inner_fence | col >= fences$upper_inner_fence ~ "MILD",
         TRUE ~ "NONE"
       )
     ) |>
     dplyr::mutate(
-      .outlier = factor(.data$.outlier),
+      .outlier = factor(.data$.outlier, levels = c(FALSE, TRUE)),
       .outlier_type = factor(.data$.outlier_type, levels = c("NONE", "MILD", "EXTREME"))
     )
 }

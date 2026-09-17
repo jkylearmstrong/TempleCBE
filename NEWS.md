@@ -1,3 +1,25 @@
+# TempleCBE 0.3.4
+
+## Bug Fixes & Statistical Enhancements
+
+* **Missingness & Auditing (`SumNa`)**:
+  * Fixed a critical issue where `SumNa(df, na_list = ...)` failed to detect sentinel values on data frames due to `%in%` list dispatch. It now traverses columns column-by-column, correctly counting both standard `NA`s and multi-code institutional sentinels (e.g. `"999"`, `"-99"`, `"Unknown"`).
+* **Time-Dependent Survival (`tidy_tmerge_cox`)**:
+  * Fixed counting-process interval construction when events occur between scheduled longitudinal observation visits. Post-event filtering now occurs prior to interval lead calculations, correctly setting `tstop` to the event time and assigning `event = 1` for terminal intervals.
+* **Reporting Formatters (`theme_cbe::words`)**:
+  * Protected `words()` with `requireNamespace("knitr", quietly = TRUE)` and provided a native base R fallback for Oxford comma text formatting, preventing runtime crashes on minimal installs without `knitr`.
+* **Biostatistical Testing (`single_t_test`)**:
+  * Guarded `fold_change` and `log2_fold_change` against division by zero and negative values when baseline group mean is zero, safely returning `NA_real_`.
+* **Outlier Detection (`detect_outliers`)**:
+  * `calculate_fences()` now gracefully returns `NA_real_` bounds when input vectors contain zero non-NA values, preventing unhandled `quantile()` exceptions.
+  * Standardized `.outlier` factor levels to `c(FALSE, TRUE)` across all data subsets.
+* **PI Anonymizer (`scripts/pi_anonymizer.py` & `R/pi_anonymizer.R`)**:
+  * Aligned Python anonymizer with R security policies: default confidential mapping file is now stored in user-scoped data directories (`~/.TempleCBE/pi_mapping.json`) outside the git repository tree, with automated repository root detection and atomic file replacement.
+  * Synchronized `@param n_chars` documentation to reflect the default 16-character hexadecimal token length.
+* **Repository Safety**:
+  * Added `data/`, `*.xlsx`, `*.csv`, and `*.rds` patterns to root `.gitignore` to safeguard against accidental tracking of clinical datasets.
+  * Updated `scripts/clean_publish.sh` to default to the active working branch rather than falling back unconditionally to `master`.
+
 # TempleCBE 0.3.3141
 
 ## Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics
