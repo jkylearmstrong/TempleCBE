@@ -1,0 +1,6 @@
+name: Exploratory Data Analysis and Summary Tables
+description: >
+  Quarto report with baseline patient characteristics, gtsummary demographic
+  tables, exact2x2 contingency methods (zero-cell mid-p), and pairwise categorical
+  balloon plots.
+create_dir: true

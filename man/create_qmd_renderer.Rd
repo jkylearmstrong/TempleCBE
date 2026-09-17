@@ -2,27 +2,29 @@
 % Please edit documentation in R/compute_graph.R
 \name{create_qmd_renderer}
 \alias{create_qmd_renderer}
-\title{Create a FileOutputs object for a rendering QMD}
+\title{Create a FileOutputs object for a rendering QMD or R Markdown document}
 \usage{
 create_qmd_renderer(
   name,
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = "pdf",
+  output_format = getOption("pipeline.default_formats", "pdf"),
   description = NA_character_
 )
 }
 \arguments{
 \item{name}{The nickname for the file.}
 
-\item{path}{The full path to the .qmd file.}
+\item{path}{The full path to the .qmd or .Rmd file.}
 
 \item{deps}{A list of dependency objects (e.g., list(og_DATA)).}
 
 \item{file_stage}{The 'stage' for this file.}
 
-\item{output_format}{"pdf" or "html". Default is "pdf".}
+\item{output_format}{Output format(s): e.g. "pdf", "html", \code{c("pdf", "docx")},
+or \code{"yaml"} to automatically extract the output formats declared in the
+document's YAML frontmatter. Defaults to \code{getOption("pipeline.default_formats", "pdf")}.}
 
 \item{description}{A brief summary of the document.}
 }
@@ -30,5 +32,5 @@ create_qmd_renderer(
 A FileOutputs object.
 }
 \description{
-Create a FileOutputs object for a rendering QMD
+Create a FileOutputs object for a rendering QMD or R Markdown document
 }

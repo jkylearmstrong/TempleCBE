@@ -91,3 +91,13 @@ test_that("one_vs_rest_t_test runs one comparison per level of a multi-level fac
   expect_setequal(names(res), union(names(res), "var"))
   expect_true(all(grepl("mean in group (setosa|versicolor|virginica)", res$group1)))
 })
+
+test_that("single_t_test handles zero mean gracefully for fold_change", {
+  df <- data.frame(
+    val = c(0, 0, 0, 2, 4, 6),
+    grp = factor(c("A", "A", "A", "B", "B", "B"))
+  )
+  res <- single_t_test(df, "val", "grp")
+  expect_true(is.na(res$fold_change))
+  expect_true(is.na(res$log2_fold_change))
+})

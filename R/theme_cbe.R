@@ -162,5 +162,17 @@ fmt_hr <- function(hr, conf_low, conf_high, digits = 2) {
 #' @return Character string (e.g., "A, B, and C")
 #' @export
 words <- function(x, none = "none") {
-  if (length(x) == 0) none else as.character(knitr::combine_words(x))
+  if (length(x) == 0) return(none)
+  if (requireNamespace("knitr", quietly = TRUE)) {
+    as.character(knitr::combine_words(x))
+  } else {
+    n <- length(x)
+    if (n == 1) {
+      as.character(x)
+    } else if (n == 2) {
+      paste(x, collapse = " and ")
+    } else {
+      paste0(paste(x[-n], collapse = ", "), ", and ", x[n])
+    }
+  }
 }

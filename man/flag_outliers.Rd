@@ -11,7 +11,7 @@ flag_outliers(col)
 }
 \value{
 A one-column-input-turned-tibble with \code{value}, \code{.outlier}
-  (logical) and \code{.outlier_type} (factor: \code{"NONE"}, \code{"MILD"},
+  (factor: \code{FALSE}, \code{TRUE}) and \code{.outlier_type} (factor: \code{"NONE"}, \code{"MILD"},
   or \code{"EXTREME"}).
 }
 \description{

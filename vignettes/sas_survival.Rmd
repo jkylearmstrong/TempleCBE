@@ -17,6 +17,17 @@ knitr::opts_chunk$set(
   fig.height = 4.5,
   dev = "png"
 )
+
+# ------------------------------------------------------------------------------
+# CONDITIONAL SAS EXECUTION WORKFLOW:
+# To conditionally execute chunks that require a local SAS installation:
+#   has_sas <- !is.null(TempleCBE::find_sas())
+#
+# Chunks calling SAS batch scripts (e.g. TempleCBE::run_sas_script()) can set:
+#   ```{r sas_chunk_name, eval = has_sas}
+#   # Runs only when SAS executable is found on host
+#   ```
+# ------------------------------------------------------------------------------
 ```
 
 ## Introduction: Bridging SAS PROC PHREG and R
@@ -279,6 +290,47 @@ proc phreg data=Tumor1;
 run;
 ```
 
+<!-- 
+================================================================================
+DEVELOPER INSTRUCTIONS: CONDITIONAL SAS CHUNK RENDERING & FROZEN ARTIFACTS
+================================================================================
+How to modify this document to only re-render SAS chunks if SAS exists on machine:
+
+1. Conditional Chunk Evaluation via `TempleCBE::find_sas()`:
+   In R Markdown / knitr, define a logical flag in the setup chunk:
+     has_sas <- !is.null(TempleCBE::find_sas())
+
+   Then guard any chunk that requires live SAS execution:
+     ```r
+     # This chunk will only execute on a machine with a valid SAS installation
+     TempleCBE::run_sas_script(path = "inst/sas/example_85_7.sas")
+     ```
+
+2. Freezing Code Chunks (Quarto vs. R Markdown):
+   - In Quarto (.qmd): Setting `freeze: true` (or `freeze: auto`) in `_quarto.yml`
+     or document metadata is the gold standard! You can render the document
+     once on a workstation with a SAS license (`quarto render sas_survival.qmd`).
+     Quarto freezes all computational results and code block outputs into `_freeze/`.
+     Subsequent builds on machines without SAS (or in CI/CD like GitHub Actions)
+     will reuse the frozen outputs without re-running SAS.
+   - In R Markdown (.Rmd): Use chunk caching `cache = TRUE` or serialize SAS outputs.
+
+3. Storing Pre-computed SAS Outputs:
+   Store verified SAS outputs (ODS CSV, Listing, or .rds) in `inst/extdata/sas_outputs/`:
+     ```r
+     sas_rds <- system.file("extdata", "sas_example_85_7.rds", package = "TempleCBE")
+     if (!is.null(TempleCBE::find_sas())) {
+       # (Optional) Re-run live SAS script and update stored artifact:
+       # TempleCBE::run_sas_script("inst/sas/example_85_7.sas")
+       # sas_results <- read_sas_export(...)
+       # saveRDS(sas_results, sas_rds)
+     }
+     # On machines without SAS, downstream comparisons read the stored benchmark:
+     # sas_results <- readRDS(sas_rds)
+     ```
+================================================================================
+-->
+
 In `TempleCBE`, we pass the counting-process formula and forward `id = ID` and `ties = "breslow"` directly into `cbe_cox_multi()`:
 
 ```{r fit_tumor_model}
@@ -404,13 +456,13 @@ baseline <- tibble::tibble(
 
 # One-step tidy construction
 tidy_surv <- tidy_tmerge_cox(
-  measure_df  = measurements,
-  event_df    = endpoints,
+  measure_df = measurements,
+  event_df = endpoints,
   baseline_df = baseline,
-  id          = "subject_id",
+  id = "subject_id",
   measure_time = "time",
-  event_time  = "event_time",
-  event_type  = "event_type"
+  event_time = "event_time",
+  event_type = "event_type"
 )
 
 tidy_surv

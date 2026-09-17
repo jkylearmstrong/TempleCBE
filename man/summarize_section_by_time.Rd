@@ -4,7 +4,13 @@
 \alias{summarize_section_by_time}
 \title{Summarize One Section By Its Time Variable}
 \usage{
-summarize_section_by_time(df, mapping, index, id_cols = NULL)
+summarize_section_by_time(
+  df,
+  mapping,
+  index,
+  id_cols = NULL,
+  engine = c("gtsummary", "arsenal")
+)
 }
 \arguments{
 \item{df}{Data frame already renamed via \code{\link{read_mapped_section_data}}.}
@@ -14,11 +20,16 @@ summarize_section_by_time(df, mapping, index, id_cols = NULL)
 \item{index}{Character string identifying the section/domain.}
 
 \item{id_cols}{Column names to exclude from summary (defaults to columns with \code{ID_var == TRUE}).}
+
+\item{engine}{Character string specifying the summary engine: \code{"gtsummary"}
+(the default) or \code{"arsenal"}.}
 }
 \value{
-An \code{arsenal::tableby} summary object.
+A \code{\link[gtsummary]{tbl_summary}} object (when \code{engine = "gtsummary"})
+  or an \code{arsenal::tableby} summary object (when \code{engine = "arsenal"}).
 }
 \description{
-Generates summary tables (using \code{arsenal::tableby}) grouped by whichever
-column is flagged with \code{Time_var == TRUE} in the mapping dictionary.
+Generates summary tables (using \pkg{gtsummary} by default, or optionally
+\pkg{arsenal}) grouped by whichever column is flagged with \code{Time_var == TRUE}
+in the mapping dictionary.
 }

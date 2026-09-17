@@ -14,8 +14,9 @@
 #' @param cols Columns to add missing values to, as a tidyselect expression
 #'   (default \code{dplyr::everything()}).
 #' @param pct_na Proportion of cells to set to \code{NA} in each selected
-#'   column, between 0 and 1 (default 0.1). Each column gets
-#'   \code{round(pct_na * nrow(data))} missing cells.
+#'   column, between 0 and 1 (default 0.1). Can be a single number applied to
+#'   all selected columns, or a numeric vector with length equal to the number
+#'   of selected columns specifying column-specific amputation rates.
 #' @return \code{data} with missing values added. Its \code{"missing_cells"}
 #'   attribute is a tibble with one row per masked cell, giving its \code{row}
 #'   number and \code{feature} (column name). Most dplyr verbs drop this
@@ -26,12 +27,14 @@
 #' amputed <- add_missing(mtcars, c(mpg, hp), pct_na = 0.25)
 #' features_percent_miss(amputed)
 #' head(attr(amputed, "missing_cells"))
+#'
+#' # Column-specific missingness proportions with a vector:
+#' p_vec <- c(mpg = 0.1, hp = 0.3)
+#' amputed2 <- add_missing(mtcars, c(mpg, hp), pct_na = p_vec)
+#' features_percent_miss(amputed2)
 add_missing <- function(data, cols = dplyr::everything(), pct_na = 0.1) {
   if (!is.data.frame(data)) {
     stop("Input 'data' must be a data frame or tibble.")
-  }
-  if (!is.numeric(pct_na) || length(pct_na) != 1 || is.na(pct_na) || pct_na < 0 || pct_na > 1) {
-    stop("`pct_na` must be a single number between 0 and 1.")
   }
 
   selected <- names(dplyr::select(data, {{ cols }}))
@@ -41,17 +44,39 @@ add_missing <- function(data, cols = dplyr::everything(), pct_na = 0.1) {
          paste(already_missing, collapse = ", "))
   }
 
-  n_na <- round(pct_na * nrow(data))
-  missing_rows <- list()
-  for (col in selected) {
-    rows <- sort(sample.int(nrow(data), n_na))
+  if (!is.numeric(pct_na) || anyNA(pct_na) || any(pct_na < 0 | pct_na > 1)) {
+    stop("`pct_na` must contain numbers between 0 and 1.")
+  }
+
+  if (length(pct_na) == 1) {
+    pct_na_vec <- rep(pct_na, length(selected))
+  } else if (length(pct_na) == length(selected)) {
+    if (!is.null(names(pct_na)) && all(selected %in% names(pct_na))) {
+      pct_na_vec <- pct_na[selected]
+    } else {
+      pct_na_vec <- pct_na
+    }
+  } else {
+    stop(sprintf(
+      "`pct_na` must be a single number or a vector of length matching selected columns (%d), got length %d.",
+      length(selected), length(pct_na)
+    ))
+  }
+
+  missing_rows <- vector("list", length(selected))
+  names(missing_rows) <- selected
+
+  for (i in seq_along(selected)) {
+    col <- selected[i]
+    n_na <- round(pct_na_vec[i] * nrow(data))
+    rows <- if (n_na > 0) sort(sample.int(nrow(data), n_na)) else integer(0)
     data[[col]][rows] <- NA
     missing_rows[[col]] <- rows
   }
 
   attr(data, "missing_cells") <- tibble::tibble(
     row = as.integer(unlist(missing_rows, use.names = FALSE)),
-    feature = rep(selected, each = n_na)
+    feature = rep(selected, times = lengths(missing_rows))
   )
   data
 }

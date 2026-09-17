@@ -144,6 +144,7 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
+      - render
       - render_me
       - zip_reports
       - scan_data_io

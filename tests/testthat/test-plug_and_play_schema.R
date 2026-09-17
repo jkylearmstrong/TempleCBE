@@ -42,4 +42,11 @@ test_that("read_raw_table and read_mapped_section_data work with CSV files", {
   expect_s3_class(mapped_data, "tbl_df")
   expect_equal(names(mapped_data), c("subject_id", "time_point", "map_mean", "status"))
   expect_equal(mapped_data$subject_id, c("S1", "S2", "S3"))
+
+  # Test summarize_section_by_time with default gtsummary engine
+  if (requireNamespace("gtsummary", quietly = TRUE)) {
+    tbl_res <- summarize_section_by_time(mapped_data, mapping, index = "Demo", engine = "gtsummary")
+    expect_s3_class(tbl_res, "tbl_summary")
+  }
 })
+

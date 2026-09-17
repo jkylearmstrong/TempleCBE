@@ -7,3 +7,7 @@ docs
 secret_internal_NOTES_keep_local.md
 NOTES.md
 secrets/
+data/
+*.xlsx
+*.csv
+*.rds

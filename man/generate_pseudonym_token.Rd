@@ -25,8 +25,8 @@ a deterministic HMAC-SHA256 token for each non-NA name.}
 \item{key}{Character string, secret key / pepper for HMAC tokenization. Defaults to
 the environment variable `Sys.getenv("TEMPLECBE_SECRET_KEY", unset = "")`.}
 
-\item{n_chars}{Integer, number of hex characters from the hash digest to include (default 8).
-Can be shortened (e.g. 4 or 6) to produce compact/short tokens.}
+\item{n_chars}{Integer, number of hex characters from the hash digest to include (default 16).
+Can be shortened (e.g. 4 or 8) to produce compact/short tokens.}
 
 \item{rename_fn}{Optional function to transform or rename tokens (e.g., `tolower`, `toupper`,
 or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).}

@@ -88,7 +88,16 @@ single_t_test <- function(.data, .var, .class, .id = NULL, alternative = "two.si
   # unconditionally whenever paired = TRUE.
   mean_x <- mean(x_vec, na.rm = TRUE)
   mean_y <- mean(y_vec, na.rm = TRUE)
-  fold_change <- mean_y / mean_x
+  fold_change <- if (is.na(mean_x) || is.na(mean_y) || abs(mean_x) < .Machine$double.eps) {
+    NA_real_
+  } else {
+    mean_y / mean_x
+  }
+  log2_fc <- if (is.na(fold_change) || fold_change == 0) {
+    NA_real_
+  } else {
+    log2(abs(fold_change)) * sign(fold_change)
+  }
 
   broom::tidy(t_test_result) |>
     dplyr::mutate(
@@ -99,7 +108,7 @@ single_t_test <- function(.data, .var, .class, .id = NULL, alternative = "two.si
       sd_per_group = sd_per_group,
       log_p = -log10(.data$p.value),
       fold_change = fold_change,
-      log2_fold_change = log2(abs(fold_change)) * sign(fold_change)
+      log2_fold_change = log2_fc
     )
 }
 

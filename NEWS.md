@@ -1,3 +1,55 @@
+# TempleCBE 0.3.403
+
+## Exact Contingency Methods, Chi-Square Testing & Visualizations
+
+* **Exact 2x2 Inference with Automatic Mid-p Default (`cbe_exact2x2`, `cbe_exact2x2_ci`)**:
+  * New `cbe_exact2x2()` performs exact inference using `exact2x2`. If any cell count in a 2x2 table is zero (`min(tab) == 0`), it automatically defaults to the mid-p version of Central Fisher's exact test (`midp = TRUE`), preventing extreme conditional conservatism. For non-zero tables, it defaults to standard Central Fisher (`midp = FALSE`).
+  * New `cbe_exact2x2_ci()` generates publication-ready odds ratio and confidence interval strings (e.g. `"0.8 (0.3, 2.1)"`).
+* **Chi-Square & Exact Testing Suite (`cbe_test_categorical`)**:
+  * Added `test = c("auto", "exact", "chisq", "fisher")` and `correct = FALSE` (uncorrected Pearson $\chi^2$) to `cbe_test_categorical()`, providing a drop-in custom test for `gtsummary::add_p()` implementing institutional CBE testing guidelines.
+* **Standard 4-Quadrant Square Reports (`cbe_four_quadrant_report`, `cbe_square_plot`)**:
+  * New `cbe_four_quadrant_report()` generates the standard clinical 4-quadrant report (`q1 | q2 // q3 | q4 // p = pformat`) returning structured quadrant percentages, console-ready text cards, compact 3-line summaries, and ggplot square tiles with configurable test engines (`"auto"`, `"exact"`, `"chisq"`, `"fisher"`).
+  * Dedicated wrapper `cbe_square_plot()` provides direct access to 4-quadrant reports and square glyph plots.
+* **Publication p-value Formatter (`pformat`, `cbe_pformat`)**:
+  * New exported `pformat()` (and alias `cbe_pformat()`) formats numeric p-values into publication-ready strings (e.g. `pformat(0.042)` -> `"p = 0.042"`, `pformat(0.0001)` -> `"p < 0.001"`).
+* **Contingency Plotting Suite (`cbe_contingency_plot`)**:
+  * Unified contingency visualization supporting `balloon`, `bar` (`fill`, `dodge`, `stack`), `mosaic`, `heatmap`, `square`, and `corrplot` with automatic hypothesis test calculation (`test = "auto"`, `"exact"`, `"chisq"`, `"fisher"`).
+  * New `plot_categorical_associations()` creates pairwise categorical correlation matrices using Cramér's V or $-\log_{10}(p)$ via `corrplot` with Temple University brand palettes.
+  * New `cbe_pairwise_combos()` enumerates all pairwise categorical combinations with sequential indexing for child-document expansion.
+* **Quarto & R Markdown Multi-Format Rendering (`render`, `render_me`)**:
+  * Renamed primary function to `render()` with `render_me` preserved as an alias for full backwards compatibility.
+  * Enhanced `path` parameter to accept character vectors, lists of paths, S4 compute graph objects (`FileOutputs`, `FilePath`), render plans from `get_render_plan()`, and full pipeline lists (with automatic filtering to renderable targets).
+  * Added `...` forwarding to pass options (such as `params`, `execute_params`, `output_dir`, `quiet`) cleanly to the `quarto::quarto_render()` or `rmarkdown::render()` backend.
+  * Added automatic document YAML frontmatter format extraction via `extract_yaml_formats()` when `formats = "yaml"` or `formats = "auto"`.
+  * Integrated with `computeGraph`: document-level deliverable formats in `FileOutputs` or pipeline-level `pipeline_config(default_formats = ...)` seamlessly override package default `c("pdf", "docx")`.
+  * Expanded native support for both `.qmd` and `.Rmd` documents (`pattern = "\\.(qmd|Rmd|rmd)$"`).
+  * Added `engine = c("auto", "quarto", "rmarkdown")` with automatic shorthand format translation (`"pdf"` -> `"pdf_document"`, `"docx"` -> `"word_document"`, `"html"` -> `"html_document"`, `"gfm"` -> `"github_document"`).
+
+* **Institutional Quarto EDA Templates**:
+  * Added anonymized `eda_tables.qmd` and `child_eda_chi_square.qmd` under `inst/templates/` and `inst/rmarkdown/templates/eda-tables/` with missingness diagnostics, stacked `gtsummary` baseline tables, association matrices, and pairwise categorical comparisons.
+* **Replacement of `arsenal` with `gtsummary`**:
+  * `summarize_section_by_time()` now defaults to `engine = "gtsummary"`, retaining `engine = "arsenal"` as backwards-compatible fallback.
+
+## Bug Fixes & Statistical Enhancements
+
+* **Missingness & Auditing (`SumNa`)**:
+  * Fixed a critical issue where `SumNa(df, na_list = ...)` failed to detect sentinel values on data frames due to `%in%` list dispatch. It now traverses columns column-by-column, correctly counting both standard `NA`s and multi-code institutional sentinels (e.g. `"999"`, `"-99"`, `"Unknown"`).
+* **Time-Dependent Survival (`tidy_tmerge_cox`)**:
+  * Fixed counting-process interval construction when events occur between scheduled longitudinal observation visits. Post-event filtering now occurs prior to interval lead calculations, correctly setting `tstop` to the event time and assigning `event = 1` for terminal intervals.
+* **Reporting Formatters (`theme_cbe::words`)**:
+  * Protected `words()` with `requireNamespace("knitr", quietly = TRUE)` and provided a native base R fallback for Oxford comma text formatting, preventing runtime crashes on minimal installs without `knitr`.
+* **Biostatistical Testing (`single_t_test`)**:
+  * Guarded `fold_change` and `log2_fold_change` against division by zero and negative values when baseline group mean is zero, safely returning `NA_real_`.
+* **Outlier Detection (`detect_outliers`)**:
+  * `calculate_fences()` now gracefully returns `NA_real_` bounds when input vectors contain zero non-NA values, preventing unhandled `quantile()` exceptions.
+  * Standardized `.outlier` factor levels to `c(FALSE, TRUE)` across all data subsets.
+* **PI Anonymizer (`scripts/pi_anonymizer.py` & `R/pi_anonymizer.R`)**:
+  * Aligned Python anonymizer with R security policies: default confidential mapping file is now stored in user-scoped data directories (`~/.TempleCBE/pi_mapping.json`) outside the git repository tree, with automated repository root detection and atomic file replacement.
+  * Synchronized `@param n_chars` documentation to reflect the default 16-character hexadecimal token length.
+* **Repository Safety**:
+  * Added `data/`, `*.xlsx`, `*.csv`, and `*.rds` patterns to root `.gitignore` to safeguard against accidental tracking of clinical datasets.
+  * Updated `scripts/clean_publish.sh` to default to the active working branch rather than falling back unconditionally to `master`.
+
 # TempleCBE 0.3.3141
 
 ## Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics

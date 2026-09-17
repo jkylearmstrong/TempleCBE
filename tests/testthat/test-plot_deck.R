@@ -50,8 +50,24 @@ test_that("table_two_by_two constructs valid contingency table", {
 
   res <- table_two_by_two(df, row_var = "Treatment", col_var = "Response")
   expect_type(res, "list")
-  expect_named(res, c("table", "p_value", "note"))
+  expect_true(all(c("table", "p_value", "estimate", "conf.int", "method", "midp", "has_zero", "note") %in% names(res)))
   expect_s3_class(res$table, "tbl_df")
   expect_type(res$p_value, "double")
   expect_type(res$note, "character")
+  expect_false(res$has_zero)
 })
+
+test_that("table_two_by_two automatically defaults to mid-p when a zero-cell is present", {
+  df_zero <- data.frame(
+    Treatment = c(rep("Drug", 10), rep("Placebo", 10)),
+    Response  = c(rep("Yes", 6), rep("No", 4), rep("Yes", 0), rep("No", 10))
+  )
+
+  res_zero <- table_two_by_two(df_zero, row_var = "Treatment", col_var = "Response")
+  expect_true(res_zero$has_zero)
+  expect_true(res_zero$midp)
+  expect_match(res_zero$method, "mid-p")
+  expect_match(res_zero$note, "zero-cell detected")
+  expect_true(res_zero$p_value < 0.05)
+})
+

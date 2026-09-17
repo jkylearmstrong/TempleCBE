@@ -1,5 +1,33 @@
 
 
+- [<span class="toc-section-number">1</span> TempleCBE
+  <img src="man/figures/logo.png" align="right" height="138" alt="TempleCBE logo" />](#templecbe-)
+  - [<span class="toc-section-number">1.1</span> 📦
+    Installation](#package-installation)
+  - [<span class="toc-section-number">1.2</span> 🚀 Quick
+    Start](#rocket-quick-start)
+    - [<span class="toc-section-number">1.2.1</span> 1. Data Quality &
+      Missingness Analysis](#1-data-quality--missingness-analysis)
+    - [<span class="toc-section-number">1.2.2</span> 2. Normalization &
+      Outlier Detection](#2-normalization--outlier-detection)
+    - [<span class="toc-section-number">1.2.3</span> 3. Correlation &
+      Principal Component
+      Analysis](#3-correlation--principal-component-analysis)
+    - [<span class="toc-section-number">1.2.4</span> 4. Penalized Cox
+      Models for Survival
+      Data](#4-penalized-cox-models-for-survival-data)
+    - [<span class="toc-section-number">1.2.5</span> 5. Custom
+      Tidymodels Recipe Step:
+      `step_famd`](#5-custom-tidymodels-recipe-step-step_famd)
+    - [<span class="toc-section-number">1.2.6</span> 6. Infix Helper
+      Operators](#6-infix-helper-operators)
+  - [<span class="toc-section-number">1.3</span> 📚
+    Vignettes](#books-vignettes)
+  - [<span class="toc-section-number">1.4</span> 🏛️ Ecosystem
+    Architecture](#classical_building-ecosystem-architecture)
+  - [<span class="toc-section-number">1.5</span> 📄
+    License](#page_facing_up-license)
+
 <!-- README.md is generated from README.qmd. Please edit README.qmd -->
 
 # TempleCBE <img src="man/figures/logo.png" align="right" height="138" alt="TempleCBE logo" />

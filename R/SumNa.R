@@ -14,5 +14,12 @@
 #' SumNa(data.frame(a = c(1, NA), b = c(NA, 2)))
 #' SumNa(c(1, NA, "NA", 4), na_list = "NA")
 SumNa <- function(x, na_list = NULL) {
-  if (is.null(na_list)) sum(is.na(x)) else sum(is.na(x) | x %in% na_list)
+  if (is.null(na_list)) {
+    return(sum(is.na(x)))
+  }
+  if (is.data.frame(x)) {
+    sum(vapply(x, function(col) sum(is.na(col) | col %in% na_list), integer(1)))
+  } else {
+    sum(is.na(x) | x %in% na_list)
+  }
 }

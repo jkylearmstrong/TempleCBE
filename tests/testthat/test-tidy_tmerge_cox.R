@@ -68,6 +68,9 @@ test_that("tidy_tmerge_cox handles post_event exclude and include modes", {
   )
   expect_equal(nrow(res_ex), 2)
   expect_equal(res_ex$tstart, c(0, 20))
+  expect_equal(res_ex$tstop, c(20, 50))
+  expect_equal(res_ex$event, c(0, 1))
+  expect_equal(res_ex$event_label, c(NA_character_, "Relapse"))
 
   # Include mode pushes event_time forward
   res_in <- tidy_tmerge_cox(

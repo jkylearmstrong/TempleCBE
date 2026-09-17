@@ -1,0 +1,84 @@
+## Pairwise $\chi^2$ Tests
+
+Every pairwise combination of the categorical variables below is tested; this is exploratory and the resulting p-values are not adjusted for multiplicity, so they should be interpreted accordingly rather than as independent confirmatory findings. A subset of these variables are themselves derived from the same underlying angle-of-impact measurements -- "Perpendicular to" and the "Chest Wall Angle Category"/"Spine Angle Category" variables are all constructed from the same trajectory-angle data (see the Summary Statistics section above for how the angle categories are defined) -- so an association found between those specific variables reflects that shared construction rather than an independent finding. Additionally, the "Unknown" level present in some of these categorical variables represents missing/unresolved data rather than a substantive category; it is included in the tests below as-is.
+
+```{r}
+ABG_Biomechanics_cat <- ABG_Biomechanics %>%
+    select(-arl_number, -pp_chest_wall, -pp_to_spine, -pp_neither) %>%
+    select(-where(is.numeric)) %>%
+    select(where(is.character) | where(is.factor)) %>%
+    colnames()
+
+cat_combos <- combn(ABG_Biomechanics_cat, 2)
+
+cat_combos <- as.data.frame(cat_combos) %>%
+    pivot_longer(everything(), names_to = "match", values_to = "name") %>%
+    arrange(match) %>%
+    mutate(id = stringr::str_remove_all(match, "V")) %>%
+    mutate(id = as.numeric(id)) |>
+    left_join(new_labels_df, join_by(name == variable))
+```
+
+```{r}
+cat_ids <- cat_combos %>%
+    select(id) %>%
+    distinct() %>%
+    pull()
+```
+
+```{r}
+TT <- function(x) {
+    cur_combo <- cat_combos %>%
+        filter(id == x) %>%
+        select(name) %>%
+        pull()
+
+    cur_combo
+
+    ABG_Biomechanics %>%
+        select(all_of(cur_combo)) %>%
+        table()
+}
+```
+
+```{r}
+GG <- function(x) {
+    X <- chisq.test(TT(x), correct = FALSE)
+
+    cur_combo <- names(dimnames(TT(x)))
+
+    cur_combo <- new_labels_df |>
+        filter(variable %in% cur_combo) |>
+        pull(label)
+
+    p <- ggpubr::ggballoonplot(
+        as.data.frame(X$observed),
+        main = paste(cur_combo, collapse = " X "),
+        size.range = c(5, 20),
+        fill = "Freq",
+        show.label = TRUE,
+        font.label = list(color = "white"),
+        caption = paste0(
+            "Chi-Square Test: ",
+            scales::label_pvalue(
+                prefix = c("p < ", "p = ", "p > "),
+                add_p = TRUE
+            )(X$p.value)
+        )
+    ) +
+        ggpubr::gradient_fill(c("blue", "red")) +
+        guides(size = FALSE)
+    return(p)
+}
+```
+
+```{r}
+#| results: asis
+if (!interactive()) {
+    src <- lapply(cat_ids, function(x) {
+        knitr::knit_expand('child_eda_chi_square.qmd')
+    })
+    res <- knitr::knit_child(text = unlist(src), quiet = TRUE)
+    cat(res, sep = '\n')
+}
+```

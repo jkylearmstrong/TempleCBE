@@ -27,16 +27,19 @@ NULL
 #'
 #' Decouples project-specific parameters (study name, stage display labels,
 #' stage color palettes) from core pipeline mechanics and classes.
-#'
 #' @param study_name Character string for the main study title.
 #' @param stage_labels Named character vector mapping raw stage identifiers to human-readable labels.
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
+#' @param default_formats Optional character vector of default output formats
+#'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
+#'   the package default across \code{\link{render}} and \code{\link{create_qmd_renderer}}.
 #' @return A list containing the current configuration options.
 #' @export
 pipeline_config <- function(
   study_name = NULL,
   stage_labels = NULL,
-  stage_colors = NULL
+  stage_colors = NULL,
+  default_formats = NULL
 ) {
   if (!is.null(study_name)) {
     options(pipeline.study_name = study_name)
@@ -47,13 +50,18 @@ pipeline_config <- function(
   if (!is.null(stage_colors)) {
     options(pipeline.stage_colors = stage_colors)
   }
+  if (!is.null(default_formats)) {
+    options(pipeline.default_formats = default_formats)
+  }
 
   list(
     study_name = getOption("pipeline.study_name", "Computational Pipeline"),
     stage_labels = getOption("pipeline.stage_labels", list()),
-    stage_colors = getOption("pipeline.stage_colors", list())
+    stage_colors = getOption("pipeline.stage_colors", list()),
+    default_formats = getOption("pipeline.default_formats", NULL)
   )
 }
+
 
 
 # Classes -----------------
@@ -333,15 +341,15 @@ FileOutputs <- function(name,
 }
 
 
-# Helper & Visualization Functions -----------------
-
-#' Create a FileOutputs object for a rendering QMD
+#' Create a FileOutputs object for a rendering QMD or R Markdown document
 #'
 #' @param name The nickname for the file.
-#' @param path The full path to the .qmd file.
+#' @param path The full path to the .qmd or .Rmd file.
 #' @param deps A list of dependency objects (e.g., list(og_DATA)).
 #' @param file_stage The 'stage' for this file.
-#' @param output_format "pdf" or "html". Default is "pdf".
+#' @param output_format Output format(s): e.g. "pdf", "html", \code{c("pdf", "docx")},
+#'   or \code{"yaml"} to automatically extract the output formats declared in the
+#'   document's YAML frontmatter. Defaults to \code{getOption("pipeline.default_formats", "pdf")}.
 #' @param description A brief summary of the document.
 #' @return A FileOutputs object.
 #' @export
@@ -350,25 +358,31 @@ create_qmd_renderer <- function(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = "pdf",
+  output_format = getOption("pipeline.default_formats", "pdf"),
   description = NA_character_
 ) {
-  # 1. Define the output file path
-  output_ext <- paste0(".", output_format)
-  output_name_suffix <- paste0(" ", toupper(output_format))
-  output_path <- stringr::str_replace(path, "\\.qmd$", output_ext)
+  # 1. Resolve output format(s): if "yaml" or "auto", extract from YAML front matter
+  if (is.null(output_format) || identical(output_format, "yaml") || identical(output_format, "auto")) {
+    yaml_fmts <- extract_yaml_formats(path)
+    output_format <- if (length(yaml_fmts) > 0) yaml_fmts else "pdf"
+  }
 
-  # 2. Create the FilePath object for the output
-  output_file <- new(
-    "FilePath",
-    name = paste0(name, output_name_suffix),
-    path = output_path,
-    renders = FALSE,
-    stage = file_stage,
-    artifact_role = "deliverable_report"
-  )
+  # 2. Base path stripping .qmd or .Rmd extension
+  base_path <- sub("\\.(qmd|Rmd|rmd)$", "", path, ignore.case = TRUE)
 
-  # 3. Create the main FileOutputs object
+  # 3. Create FilePath objects for all specified output formats
+  output_files <- lapply(output_format, function(fmt) {
+    new(
+      "FilePath",
+      name = paste0(name, " ", toupper(fmt)),
+      path = paste0(base_path, ".", fmt),
+      renders = FALSE,
+      stage = file_stage,
+      artifact_role = "deliverable_report"
+    )
+  })
+
+  # 4. Create the main FileOutputs object
   new(
     "FileOutputs",
     name = name,
@@ -378,9 +392,10 @@ create_qmd_renderer <- function(
     stage = file_stage,
     artifact_role = "report_source",
     description = description,
-    output = list(output_file)
+    output = output_files
   )
 }
+
 
 #' Find the script object that produces a given file
 #' @noRd

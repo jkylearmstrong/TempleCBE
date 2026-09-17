@@ -59,6 +59,12 @@ tidy_tmerge_cox <- function(
       dplyr::select(-dplyr::all_of("max_time"))
   }
 
+  # Remove post-event measurements if exclude mode (must be done before lead intervals)
+  if (post_event == "exclude") {
+    df <- df %>%
+      dplyr::filter(is.na(!!event_time_sym) | !!measure_time_sym < !!event_time_sym)
+  }
+
   # Build start-stop intervals
   df <- df %>%
     dplyr::arrange(!!id_sym, !!measure_time_sym) %>%
@@ -70,12 +76,6 @@ tidy_tmerge_cox <- function(
       event_label = dplyr::if_else(.data$event == 1, as.character(!!event_type_sym), NA_character_)
     ) %>%
     dplyr::ungroup()
-
-  # Remove post-event measurements if exclude mode
-  if (post_event == "exclude") {
-    df <- df %>%
-      dplyr::filter(is.na(!!event_time_sym) | .data$tstart < !!event_time_sym)
-  }
 
   # Remove intervals with missing tstop
   df <- df %>% dplyr::filter(!is.na(.data$tstop))

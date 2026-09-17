@@ -2,14 +2,16 @@
 % Please edit documentation in R/plot_deck.R
 \name{table_two_by_two}
 \alias{table_two_by_two}
-\title{Formatted 2x2 Contingency Table with Fisher's Exact Test}
+\title{Formatted 2x2 Contingency Table with Exact Test}
 \usage{
 table_two_by_two(
   data,
   row_var,
   col_var,
   row_label = row_var,
-  col_label = col_var
+  col_label = col_var,
+  midp = NULL,
+  conf.level = 0.95
 )
 }
 \arguments{
@@ -22,11 +24,26 @@ table_two_by_two(
 \item{row_label}{Optional display label for the row variable.}
 
 \item{col_label}{Optional display label for the column variable.}
+
+\item{midp}{Logical or \code{NULL} (default). If \code{NULL}, defaults to
+\code{TRUE} when any cell in the 2x2 table is zero, and \code{FALSE} otherwise.}
+
+\item{conf.level}{Confidence level for the odds ratio confidence interval (default 0.95).}
 }
 \value{
-A list containing \code{table} (tibble) and \code{note} (character).
+A list containing:
+  \item{table}{Tibble with formatted cells and marginal totals.}
+  \item{p_value}{Exact test p-value.}
+  \item{estimate}{Estimated odds ratio.}
+  \item{conf.int}{Confidence interval for the odds ratio.}
+  \item{method}{Test method name.}
+  \item{midp}{Logical indicating whether mid-p adjustment was used.}
+  \item{has_zero}{Logical indicating whether any table cell had zero count.}
+  \item{note}{Formatted institutional table note.}
 }
 \description{
 Builds an institutional 2x2 contingency table with row counts, row percentages,
-marginal totals, and Fisher's exact test p-value.
+marginal totals, odds ratio estimates, confidence intervals, and exact test p-values.
+If any cell count is zero, it automatically defaults to the mid-p version of
+Central Fisher's exact test (\code{midp = TRUE}).
 }
