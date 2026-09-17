@@ -9,7 +9,7 @@
 #' Unlike \code{\link{zip_render}} (which renders and zips a single
 #' document), \code{zip_reports} does not render anything itself — it
 #' packages outputs that have already been rendered, e.g. by
-#' \code{\link{render_me}}. Report order and staging is entirely the
+#' \code{\link{render}} (or \code{\link{render_me}}). Report order and staging is entirely the
 #' caller's decision (for example, the topological sort of a project's own
 #' dependency graph) — pass \code{reports} pre-ordered. If multiple reports
 #' share the same source stem (for example \code{analysis1/analysis.qmd} and

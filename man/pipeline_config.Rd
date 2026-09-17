@@ -4,7 +4,12 @@
 \alias{pipeline_config}
 \title{Get or set global pipeline configuration options}
 \usage{
-pipeline_config(study_name = NULL, stage_labels = NULL, stage_colors = NULL)
+pipeline_config(
+  study_name = NULL,
+  stage_labels = NULL,
+  stage_colors = NULL,
+  default_formats = NULL
+)
 }
 \arguments{
 \item{study_name}{Character string for the main study title.}
@@ -12,6 +17,10 @@ pipeline_config(study_name = NULL, stage_labels = NULL, stage_colors = NULL)
 \item{stage_labels}{Named character vector mapping raw stage identifiers to human-readable labels.}
 
 \item{stage_colors}{Named list or character vector mapping stage identifiers to hex colors.}
+
+\item{default_formats}{Optional character vector of default output formats
+for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
+the package default across \code{\link{render}} and \code{\link{create_qmd_renderer}}.}
 }
 \value{
 A list containing the current configuration options.

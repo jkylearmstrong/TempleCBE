@@ -16,9 +16,15 @@
   * Unified contingency visualization supporting `balloon`, `bar` (`fill`, `dodge`, `stack`), `mosaic`, `heatmap`, `square`, and `corrplot` with automatic hypothesis test calculation (`test = "auto"`, `"exact"`, `"chisq"`, `"fisher"`).
   * New `plot_categorical_associations()` creates pairwise categorical correlation matrices using Cramér's V or $-\log_{10}(p)$ via `corrplot` with Temple University brand palettes.
   * New `cbe_pairwise_combos()` enumerates all pairwise categorical combinations with sequential indexing for child-document expansion.
-* **Quarto & R Markdown Multi-Format Rendering (`render_me`)**:
-  * Expanded `render_me()` to natively support both `.qmd` and `.Rmd` documents (`pattern = "\\.(qmd|Rmd|rmd)$"`).
+* **Quarto & R Markdown Multi-Format Rendering (`render`, `render_me`)**:
+  * Renamed primary function to `render()` with `render_me` preserved as an alias for full backwards compatibility.
+  * Enhanced `path` parameter to accept character vectors, lists of paths, S4 compute graph objects (`FileOutputs`, `FilePath`), render plans from `get_render_plan()`, and full pipeline lists (with automatic filtering to renderable targets).
+  * Added `...` forwarding to pass options (such as `params`, `execute_params`, `output_dir`, `quiet`) cleanly to the `quarto::quarto_render()` or `rmarkdown::render()` backend.
+  * Added automatic document YAML frontmatter format extraction via `extract_yaml_formats()` when `formats = "yaml"` or `formats = "auto"`.
+  * Integrated with `computeGraph`: document-level deliverable formats in `FileOutputs` or pipeline-level `pipeline_config(default_formats = ...)` seamlessly override package default `c("pdf", "docx")`.
+  * Expanded native support for both `.qmd` and `.Rmd` documents (`pattern = "\\.(qmd|Rmd|rmd)$"`).
   * Added `engine = c("auto", "quarto", "rmarkdown")` with automatic shorthand format translation (`"pdf"` -> `"pdf_document"`, `"docx"` -> `"word_document"`, `"html"` -> `"html_document"`, `"gfm"` -> `"github_document"`).
+
 * **Institutional Quarto EDA Templates**:
   * Added anonymized `eda_tables.qmd` and `child_eda_chi_square.qmd` under `inst/templates/` and `inst/rmarkdown/templates/eda-tables/` with missingness diagnostics, stacked `gtsummary` baseline tables, association matrices, and pairwise categorical comparisons.
 * **Replacement of `arsenal` with `gtsummary`**:
