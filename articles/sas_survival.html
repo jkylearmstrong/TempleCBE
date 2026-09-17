@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -77,7 +77,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/sas_survival.Rmd" class="external-link"><code>vignettes/sas_survival.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/vignettes/sas_survival.Rmd" class="external-link"><code>vignettes/sas_survival.Rmd</code></a></small>
       <div class="d-none name"><code>sas_survival.Rmd</code></div>
     </div>
 
@@ -480,6 +480,46 @@ proc phreg data=Tumor1;
    model (T1,T2)*Status(0) = Dose NPap / ties=breslow;
    id ID;
 run;</code></pre>
+<!-- 
+================================================================================
+DEVELOPER INSTRUCTIONS: CONDITIONAL SAS CHUNK RENDERING & FROZEN ARTIFACTS
+================================================================================
+How to modify this document to only re-render SAS chunks if SAS exists on machine:
+
+1. Conditional Chunk Evaluation via `TempleCBE::find_sas()`:
+   In R Markdown / knitr, define a logical flag in the setup chunk:
+     has_sas <- !is.null(TempleCBE::find_sas())
+
+   Then guard any chunk that requires live SAS execution:
+     ```r
+     # This chunk will only execute on a machine with a valid SAS installation
+     TempleCBE::run_sas_script(path = "inst/sas/example_85_7.sas")
+     ```
+
+2. Freezing Code Chunks (Quarto vs. R Markdown):
+   - In Quarto (.qmd): Setting `freeze: true` (or `freeze: auto`) in `_quarto.yml`
+     or document metadata is the gold standard! You can render the document
+     once on a workstation with a SAS license (`quarto render sas_survival.qmd`).
+     Quarto freezes all computational results and code block outputs into `_freeze/`.
+     Subsequent builds on machines without SAS (or in CI/CD like GitHub Actions)
+     will reuse the frozen outputs without re-running SAS.
+   - In R Markdown (.Rmd): Use chunk caching `cache = TRUE` or serialize SAS outputs.
+
+3. Storing Pre-computed SAS Outputs:
+   Store verified SAS outputs (ODS CSV, Listing, or .rds) in `inst/extdata/sas_outputs/`:
+     ```r
+     sas_rds <- system.file("extdata", "sas_example_85_7.rds", package = "TempleCBE")
+     if (!is.null(TempleCBE::find_sas())) {
+       # (Optional) Re-run live SAS script and update stored artifact:
+       # TempleCBE::run_sas_script("inst/sas/example_85_7.sas")
+       # sas_results <- read_sas_export(...)
+       # saveRDS(sas_results, sas_rds)
+     }
+     # On machines without SAS, downstream comparisons read the stored benchmark:
+     # sas_results <- readRDS(sas_rds)
+     ```
+================================================================================
+-->
 <p>In <code>TempleCBE</code>, we pass the counting-process formula and
 forward <code>id = ID</code> and <code>ties = "breslow"</code> directly
 into <code><a href="../reference/cbe_cox_multi.html">cbe_cox_multi()</a></code>:</p>
@@ -721,13 +761,13 @@ intervals:</p>
 <span></span>
 <span><span class="co"># One-step tidy construction</span></span>
 <span><span class="va">tidy_surv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidy_tmerge_cox.html">tidy_tmerge_cox</a></span><span class="op">(</span></span>
-<span>  measure_df  <span class="op">=</span> <span class="va">measurements</span>,</span>
-<span>  event_df    <span class="op">=</span> <span class="va">endpoints</span>,</span>
+<span>  measure_df <span class="op">=</span> <span class="va">measurements</span>,</span>
+<span>  event_df <span class="op">=</span> <span class="va">endpoints</span>,</span>
 <span>  baseline_df <span class="op">=</span> <span class="va">baseline</span>,</span>
-<span>  id          <span class="op">=</span> <span class="st">"subject_id"</span>,</span>
+<span>  id <span class="op">=</span> <span class="st">"subject_id"</span>,</span>
 <span>  measure_time <span class="op">=</span> <span class="st">"time"</span>,</span>
-<span>  event_time  <span class="op">=</span> <span class="st">"event_time"</span>,</span>
-<span>  event_type  <span class="op">=</span> <span class="st">"event_type"</span></span>
+<span>  event_time <span class="op">=</span> <span class="st">"event_time"</span>,</span>
+<span>  event_type <span class="op">=</span> <span class="st">"event_type"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tidy_surv</span></span>

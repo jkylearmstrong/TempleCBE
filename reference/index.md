@@ -212,8 +212,10 @@ Manhattan/volcano plots, report generation, and document conversions.
   : Run a SAS Program in Batch Mode
 - [`find_sas()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_sas.md)
   : Locate a SAS Executable
-- [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)
-  : Render Quarto Documents to Multiple Formats With Timing
+- [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+  : Render Quarto and R Markdown Documents to Multiple Formats With
+  Timing
 - [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
   : Package Multiple Already-Rendered Reports Into an Indexed Zip
 - [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
@@ -267,7 +269,8 @@ biostatistical pipelines.
   : Check if a FileOutputs object controls datasets (outputs an rds,
   xlsx, etc. file)
 - [`create_qmd_renderer()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_qmd_renderer.md)
-  : Create a FileOutputs object for a rendering QMD
+  : Create a FileOutputs object for a rendering QMD or R Markdown
+  document
 - [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
   : Get the topologically sorted list of QMDs that need to be
   re-rendered
@@ -345,6 +348,9 @@ cherry palettes, deck styling, and clinical reporting formatters.
   : Format Significant Figures
 - [`fmt_p()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_p.md)
   : Format P-Values
+- [`pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md)
+  [`cbe_pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md)
+  : Format p-values for Biostatistical and Clinical Reporting
 - [`fmt_hr()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_hr.md)
   : Format Hazard Ratio and Confidence Interval
 - [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
@@ -406,7 +412,38 @@ contingency tables.
 - [`plot_missingness()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_missingness.md)
   : Missing Data Audit Plot
 - [`table_two_by_two()`](https://jkylearmstrong.github.io/TempleCBE/reference/table_two_by_two.md)
-  : Formatted 2x2 Contingency Table with Fisher's Exact Test
+  : Formatted 2x2 Contingency Table with Exact Test
+
+## Categorical Association & Contingency Tables
+
+Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and
+publication-ready association visualizations (balloon, bar, contingency,
+mosaic, heatmap, and square plots).
+
+- [`cbe_exact2x2()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2.md)
+  : Exact Test for 2x2 Tables with Automatic Zero-Cell Mid-p Default
+- [`cbe_exact2x2_ci()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.md)
+  : Format Exact 2x2 Odds Ratio and Confidence Interval
+- [`cbe_test_categorical()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_test_categorical.md)
+  : Institutional Categorical Hypothesis Test for gtsummary
+- [`cbe_four_quadrant_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_four_quadrant_report.md)
+  : Standard 4-Quadrant Clinical Contingency Report
+- [`cbe_contingency_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  : Visualizations for 2-Way Contingency Tables and Categorical Tests
+- [`cbe_balloon_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_balloon_plot.md)
+  : Balloon Plot for 2-Way Contingency Tables
+- [`cbe_bar_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_bar_plot.md)
+  : Bar Chart for 2-Way Contingency Tables
+- [`cbe_mosaic_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_mosaic_plot.md)
+  : Mosaic Plot for 2-Way Contingency Tables
+- [`cbe_heatmap_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_heatmap_plot.md)
+  : Heatmap Plot for 2-Way Contingency Tables
+- [`cbe_square_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_square_plot.md)
+  : Square Plot: Standard 4-Quadrant Contingency Report
+- [`cbe_pairwise_combos()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_pairwise_combos.md)
+  : Generate All Pairwise Categorical Combinations
+- [`plot_categorical_associations()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_categorical_associations.md)
+  : Plot Categorical Association Matrix Using corrplot
 
 ## Data Snapshot Manifest & Schema Engine
 
@@ -440,13 +477,15 @@ simulate synthetic patient cohorts.
 ## Deliverable Packaging & Code Auditing
 
 Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables)
-into structured distribution archives, and audit source scripts for
-referenced deliverable tokens.
+into structured distribution archives, audit source scripts for
+referenced deliverable tokens, and extract YAML metadata formats.
 
 - [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
   : Package Pipeline Deliverables into a Structured Zip Archive
 - [`audit_report_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.md)
   : Audit Deliverable File Tokens in Analysis Scripts
+- [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
+  : Extract Output Formats From Document YAML Front Matter
 
 ## Helper & Infix Operators
 

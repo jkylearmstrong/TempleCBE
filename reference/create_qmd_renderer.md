@@ -1,6 +1,6 @@
-# Create a FileOutputs object for a rendering QMD
+# Create a FileOutputs object for a rendering QMD or R Markdown document
 
-Create a FileOutputs object for a rendering QMD
+Create a FileOutputs object for a rendering QMD or R Markdown document
 
 ## Usage
 
@@ -10,7 +10,7 @@ create_qmd_renderer(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = "pdf",
+  output_format = getOption("pipeline.default_formats", "pdf"),
   description = NA_character_
 )
 ```
@@ -23,7 +23,7 @@ create_qmd_renderer(
 
 - path:
 
-  The full path to the .qmd file.
+  The full path to the .qmd or .Rmd file.
 
 - deps:
 
@@ -35,7 +35,10 @@ create_qmd_renderer(
 
 - output_format:
 
-  "pdf" or "html". Default is "pdf".
+  Output format(s): e.g. "pdf", "html", `c("pdf", "docx")`, or `"yaml"`
+  to automatically extract the output formats declared in the document's
+  YAML frontmatter. Defaults to
+  `getOption("pipeline.default_formats", "pdf")`.
 
 - description:
 

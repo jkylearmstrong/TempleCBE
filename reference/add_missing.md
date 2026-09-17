@@ -25,8 +25,9 @@ add_missing(data, cols = dplyr::everything(), pct_na = 0.1)
 - pct_na:
 
   Proportion of cells to set to `NA` in each selected column, between 0
-  and 1 (default 0.1). Each column gets `round(pct_na * nrow(data))`
-  missing cells.
+  and 1 (default 0.1). Can be a single number applied to all selected
+  columns, or a numeric vector with length equal to the number of
+  selected columns specifying column-specific amputation rates.
 
 ## Value
 
@@ -73,4 +74,23 @@ head(attr(amputed, "missing_cells"))
 #> 4     7 mpg    
 #> 5    11 mpg    
 #> 6    14 mpg    
+
+# Column-specific missingness proportions with a vector:
+p_vec <- c(mpg = 0.1, hp = 0.3)
+amputed2 <- add_missing(mtcars, c(mpg, hp), pct_na = p_vec)
+features_percent_miss(amputed2)
+#> # A tibble: 11 × 5
+#>    feature SumNa SumComp  PctNa PctComp
+#>    <chr>   <int>   <int>  <dbl>   <dbl>
+#>  1 hp         10      22 0.312    0.688
+#>  2 mpg         3      29 0.0938   0.906
+#>  3 cyl         0      32 0        1    
+#>  4 disp        0      32 0        1    
+#>  5 drat        0      32 0        1    
+#>  6 wt          0      32 0        1    
+#>  7 qsec        0      32 0        1    
+#>  8 vs          0      32 0        1    
+#>  9 am          0      32 0        1    
+#> 10 gear        0      32 0        1    
+#> 11 carb        0      32 0        1    
 ```

@@ -2,7 +2,7 @@
 
 ### Articles & Workflows
 
-- [Exploratory Data Analysis, Missingness Auditing, and
+- [01. Exploratory Data Analysis, Missingness Auditing, and
   Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md):
 - [Penalized Cox Models and Nested Cross-Validation for Start/Stop
   Survival

@@ -16,8 +16,9 @@ flag_outliers(col)
 
 ## Value
 
-A one-column-input-turned-tibble with `value`, `.outlier` (logical) and
-`.outlier_type` (factor: `"NONE"`, `"MILD"`, or `"EXTREME"`).
+A one-column-input-turned-tibble with `value`, `.outlier` (factor:
+`FALSE`, `TRUE`) and `.outlier_type` (factor: `"NONE"`, `"MILD"`, or
+`"EXTREME"`).
 
 ## Examples
 

@@ -172,16 +172,16 @@ if (requireNamespace("FactoMineR", quietly = TRUE)) {
 #> # A tibble: 12 × 4
 #>    terms                        value component id        
 #>    <chr>                        <dbl>     <int> <chr>     
-#>  1 variance                     3.87          1 famd_IfjPL
-#>  2 variance                     1.34          2 famd_IfjPL
-#>  3 variance                     0.592         3 famd_IfjPL
-#>  4 cumulative variance          3.87          1 famd_IfjPL
-#>  5 cumulative variance          5.21          2 famd_IfjPL
-#>  6 cumulative variance          5.80          3 famd_IfjPL
-#>  7 percent variance            64.5           1 famd_IfjPL
-#>  8 percent variance            22.4           2 famd_IfjPL
-#>  9 percent variance             9.86          3 famd_IfjPL
-#> 10 cumulative percent variance 64.5           1 famd_IfjPL
-#> 11 cumulative percent variance 86.9           2 famd_IfjPL
-#> 12 cumulative percent variance 96.7           3 famd_IfjPL
+#>  1 variance                     3.87          1 famd_HbsqH
+#>  2 variance                     1.34          2 famd_HbsqH
+#>  3 variance                     0.592         3 famd_HbsqH
+#>  4 cumulative variance          3.87          1 famd_HbsqH
+#>  5 cumulative variance          5.21          2 famd_HbsqH
+#>  6 cumulative variance          5.80          3 famd_HbsqH
+#>  7 percent variance            64.5           1 famd_HbsqH
+#>  8 percent variance            22.4           2 famd_HbsqH
+#>  9 percent variance             9.86          3 famd_HbsqH
+#> 10 cumulative percent variance 64.5           1 famd_HbsqH
+#> 11 cumulative percent variance 86.9           2 famd_HbsqH
+#> 12 cumulative percent variance 96.7           3 famd_HbsqH
 ```

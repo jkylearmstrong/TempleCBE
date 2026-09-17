@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,7 +18,7 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -41,9 +41,93 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.403" id="templecbe-03403">TempleCBE 0.3.403<a class="anchor" aria-label="anchor" href="#templecbe-03403"></a></h2>
+<div class="section level3">
+<h3 id="exact-contingency-methods-chi-square-testing--visualizations-0-3-403">Exact Contingency Methods, Chi-Square Testing &amp; Visualizations<a class="anchor" aria-label="anchor" href="#exact-contingency-methods-chi-square-testing--visualizations-0-3-403"></a></h3>
+<ul><li>
+<strong>Exact 2x2 Inference with Automatic Mid-p Default (<code>cbe_exact2x2</code>, <code>cbe_exact2x2_ci</code>)</strong>:
+<ul><li>New <code><a href="../reference/cbe_exact2x2.html">cbe_exact2x2()</a></code> performs exact inference using <code>exact2x2</code>. If any cell count in a 2x2 table is zero (<code>min(tab) == 0</code>), it automatically defaults to the mid-p version of Central Fisher’s exact test (<code>midp = TRUE</code>), preventing extreme conditional conservatism. For non-zero tables, it defaults to standard Central Fisher (<code>midp = FALSE</code>).</li>
+<li>New <code><a href="../reference/cbe_exact2x2_ci.html">cbe_exact2x2_ci()</a></code> generates publication-ready odds ratio and confidence interval strings (e.g. <code>"0.8 (0.3, 2.1)"</code>).</li>
+</ul></li>
+<li>
+<strong>Chi-Square &amp; Exact Testing Suite (<code>cbe_test_categorical</code>)</strong>:
+<ul><li>Added <code>test = c("auto", "exact", "chisq", "fisher")</code> and <code>correct = FALSE</code> (uncorrected Pearson <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>χ</mi><mn>2</mn></msup><annotation encoding="application/x-tex">\chi^2</annotation></semantics></math>) to <code><a href="../reference/cbe_test_categorical.html">cbe_test_categorical()</a></code>, providing a drop-in custom test for <code><a href="https://www.danieldsjoberg.com/gtsummary/reference/add_p.html" class="external-link">gtsummary::add_p()</a></code> implementing institutional CBE testing guidelines.</li>
+</ul></li>
+<li>
+<strong>Standard 4-Quadrant Square Reports (<code>cbe_four_quadrant_report</code>, <code>cbe_square_plot</code>)</strong>:
+<ul><li>New <code><a href="../reference/cbe_four_quadrant_report.html">cbe_four_quadrant_report()</a></code> generates the standard clinical 4-quadrant report (<code>q1 | q2 // q3 | q4 // p = pformat</code>) returning structured quadrant percentages, console-ready text cards, compact 3-line summaries, and ggplot square tiles with configurable test engines (<code>"auto"</code>, <code>"exact"</code>, <code>"chisq"</code>, <code>"fisher"</code>).</li>
+<li>Dedicated wrapper <code><a href="../reference/cbe_square_plot.html">cbe_square_plot()</a></code> provides direct access to 4-quadrant reports and square glyph plots.</li>
+</ul></li>
+<li>
+<strong>Publication p-value Formatter (<code>pformat</code>, <code>cbe_pformat</code>)</strong>:
+<ul><li>New exported <code><a href="../reference/pformat.html">pformat()</a></code> (and alias <code><a href="../reference/pformat.html">cbe_pformat()</a></code>) formats numeric p-values into publication-ready strings (e.g. <code>pformat(0.042)</code> -&gt; <code>"p = 0.042"</code>, <code>pformat(0.0001)</code> -&gt; <code>"p &lt; 0.001"</code>).</li>
+</ul></li>
+<li>
+<strong>Contingency Plotting Suite (<code>cbe_contingency_plot</code>)</strong>:
+<ul><li>Unified contingency visualization supporting <code>balloon</code>, <code>bar</code> (<code>fill</code>, <code>dodge</code>, <code>stack</code>), <code>mosaic</code>, <code>heatmap</code>, <code>square</code>, and <code>corrplot</code> with automatic hypothesis test calculation (<code>test = "auto"</code>, <code>"exact"</code>, <code>"chisq"</code>, <code>"fisher"</code>).</li>
+<li>New <code><a href="../reference/plot_categorical_associations.html">plot_categorical_associations()</a></code> creates pairwise categorical correlation matrices using Cramér’s V or <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><msub><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mn>10</mn></msub><mo stretchy="false" form="prefix">(</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">-\log_{10}(p)</annotation></semantics></math> via <code>corrplot</code> with Temple University brand palettes.</li>
+<li>New <code><a href="../reference/cbe_pairwise_combos.html">cbe_pairwise_combos()</a></code> enumerates all pairwise categorical combinations with sequential indexing for child-document expansion.</li>
+</ul></li>
+<li>
+<strong>Quarto &amp; R Markdown Multi-Format Rendering (<code>render</code>, <code>render_me</code>)</strong>:
+<ul><li>Renamed primary function to <code><a href="../reference/render.html">render()</a></code> with <code>render_me</code> preserved as an alias for full backwards compatibility.</li>
+<li>Enhanced <code>path</code> parameter to accept character vectors, lists of paths, S4 compute graph objects (<code>FileOutputs</code>, <code>FilePath</code>), render plans from <code><a href="../reference/get_render_plan.html">get_render_plan()</a></code>, and full pipeline lists (with automatic filtering to renderable targets).</li>
+<li>Added <code>...</code> forwarding to pass options (such as <code>params</code>, <code>execute_params</code>, <code>output_dir</code>, <code>quiet</code>) cleanly to the <code><a href="https://quarto-dev.github.io/quarto-r/reference/quarto_render.html" class="external-link">quarto::quarto_render()</a></code> or <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">rmarkdown::render()</a></code> backend.</li>
+<li>Added automatic document YAML frontmatter format extraction via <code><a href="../reference/extract_yaml_formats.html">extract_yaml_formats()</a></code> when <code>formats = "yaml"</code> or <code>formats = "auto"</code>.</li>
+<li>Integrated with <code>computeGraph</code>: document-level deliverable formats in <code>FileOutputs</code> or pipeline-level <code>pipeline_config(default_formats = ...)</code> seamlessly override package default <code>c("pdf", "docx")</code>.</li>
+<li>Expanded native support for both <code>.qmd</code> and <code>.Rmd</code> documents (<code>pattern = "\\.(qmd|Rmd|rmd)$"</code>).</li>
+<li>Added <code>engine = c("auto", "quarto", "rmarkdown")</code> with automatic shorthand format translation (<code>"pdf"</code> -&gt; <code>"pdf_document"</code>, <code>"docx"</code> -&gt; <code>"word_document"</code>, <code>"html"</code> -&gt; <code>"html_document"</code>, <code>"gfm"</code> -&gt; <code>"github_document"</code>).</li>
+</ul></li>
+<li>
+<strong>Institutional Quarto EDA Templates</strong>:
+<ul><li>Added anonymized <code>eda_tables.qmd</code> and <code>child_eda_chi_square.qmd</code> under <code>inst/templates/</code> and <code>inst/rmarkdown/templates/eda-tables/</code> with missingness diagnostics, stacked <code>gtsummary</code> baseline tables, association matrices, and pairwise categorical comparisons.</li>
+</ul></li>
+<li>
+<strong>Replacement of <code>arsenal</code> with <code>gtsummary</code></strong>:
+<ul><li>
+<code><a href="../reference/summarize_section_by_time.html">summarize_section_by_time()</a></code> now defaults to <code>engine = "gtsummary"</code>, retaining <code>engine = "arsenal"</code> as backwards-compatible fallback.</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes--statistical-enhancements-0-3-403">Bug Fixes &amp; Statistical Enhancements<a class="anchor" aria-label="anchor" href="#bug-fixes--statistical-enhancements-0-3-403"></a></h3>
+<ul><li>
+<strong>Missingness &amp; Auditing (<code>SumNa</code>)</strong>:
+<ul><li>Fixed a critical issue where <code>SumNa(df, na_list = ...)</code> failed to detect sentinel values on data frames due to <code>%in%</code> list dispatch. It now traverses columns column-by-column, correctly counting both standard <code>NA</code>s and multi-code institutional sentinels (e.g. <code>"999"</code>, <code>"-99"</code>, <code>"Unknown"</code>).</li>
+</ul></li>
+<li>
+<strong>Time-Dependent Survival (<code>tidy_tmerge_cox</code>)</strong>:
+<ul><li>Fixed counting-process interval construction when events occur between scheduled longitudinal observation visits. Post-event filtering now occurs prior to interval lead calculations, correctly setting <code>tstop</code> to the event time and assigning <code>event = 1</code> for terminal intervals.</li>
+</ul></li>
+<li>
+<strong>Reporting Formatters (<code>theme_cbe::words</code>)</strong>:
+<ul><li>Protected <code><a href="../reference/words.html">words()</a></code> with <code><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace("knitr", quietly = TRUE)</a></code> and provided a native base R fallback for Oxford comma text formatting, preventing runtime crashes on minimal installs without <code>knitr</code>.</li>
+</ul></li>
+<li>
+<strong>Biostatistical Testing (<code>single_t_test</code>)</strong>:
+<ul><li>Guarded <code>fold_change</code> and <code>log2_fold_change</code> against division by zero and negative values when baseline group mean is zero, safely returning <code>NA_real_</code>.</li>
+</ul></li>
+<li>
+<strong>Outlier Detection (<code>detect_outliers</code>)</strong>:
+<ul><li>
+<code><a href="../reference/calculate_fences.html">calculate_fences()</a></code> now gracefully returns <code>NA_real_</code> bounds when input vectors contain zero non-NA values, preventing unhandled <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile()</a></code> exceptions.</li>
+<li>Standardized <code>.outlier</code> factor levels to <code>c(FALSE, TRUE)</code> across all data subsets.</li>
+</ul></li>
+<li>
+<strong>PI Anonymizer (<code>scripts/pi_anonymizer.py</code> &amp; <code>R/pi_anonymizer.R</code>)</strong>:
+<ul><li>Aligned Python anonymizer with R security policies: default confidential mapping file is now stored in user-scoped data directories (<code>~/.TempleCBE/pi_mapping.json</code>) outside the git repository tree, with automated repository root detection and atomic file replacement.</li>
+<li>Synchronized <code>@param n_chars</code> documentation to reflect the default 16-character hexadecimal token length.</li>
+</ul></li>
+<li>
+<strong>Repository Safety</strong>:
+<ul><li>Added <code>data/</code>, <code>*.xlsx</code>, <code>*.csv</code>, and <code>*.rds</code> patterns to root <code>.gitignore</code> to safeguard against accidental tracking of clinical datasets.</li>
+<li>Updated <code>scripts/clean_publish.sh</code> to default to the active working branch rather than falling back unconditionally to <code>master</code>.</li>
+</ul></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.3141" id="templecbe-033141">TempleCBE 0.3.3141<a class="anchor" aria-label="anchor" href="#templecbe-033141"></a></h2>
 <div class="section level3">
@@ -152,7 +236,7 @@
 <div class="section level3">
 <h3 id="penalized-cox-models-for-startstop-survival-data-0-3-2">Penalized Cox models for start/stop survival data<a class="anchor" aria-label="anchor" href="#penalized-cox-models-for-startstop-survival-data-0-3-2"></a></h3>
 <ul><li>New <code><a href="../reference/coxnet.html">coxnet()</a></code> fits an elastic-net Cox model with glmnet through the tidymodels hardhat interface: formula, recipe, or predictors and outcome. The outcome can be right-censored, <code>Surv(time, event)</code>, or start/stop, <code>Surv(start, stop, event)</code>. <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> returns <code>.pred_linear_pred</code> or a <code>.pred</code> list-column of survival probabilities (Breslow baseline hazard), and <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code> returns every coefficient.</li>
-<li>New <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code> is a tidymodels counterpart to <code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>. Folds are grouped by <code>subject_id</code> (or a coarser <code>group</code>, such as site), preprocessing from a recipe is learned inside each fold, and every <code>mixture</code> and <code>penalty</code> is scored with a yardstick metric set: by default the integrated Brier score, concordance, and the time-specific Brier score and ROC AUC. It reports <code>lambda.min</code> and <code>lambda.1se</code> for the chosen metric, and has <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>, and <code><a href="https://tune.tidymodels.org/reference/collect_predictions.html" class="external-link">tune::collect_metrics()</a></code> methods. Bootstrap resamples, which repeat subjects, are scored with each copy as its own subject.</li>
+<li>New <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code> is a tidymodels counterpart to <code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>. Folds are grouped by <code>subject_id</code> (or a coarser <code>group</code>, such as site), preprocessing from a recipe is learned inside each fold, and every <code>mixture</code> and <code>penalty</code> is scored with a yardstick metric set: by default the integrated Brier score, concordance, and the time-specific Brier score and ROC AUC. It reports <code>lambda.min</code> and <code>lambda.1se</code> for the chosen metric, and has <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>, and <code><a href="https://tune.tidymodels.org/reference/collect_predictions.html" class="external-link">tune::collect_metrics()</a></code> methods. Bootstrap resamples, which repeat subjects, are scored with each copy as its own subject.</li>
 <li>New <code><a href="../reference/nested_cv_coxnet.html">nested_cv_coxnet()</a></code> runs <code><a href="../reference/cv_coxnet.html">cv_coxnet()</a></code> on the inner resamples of an <code><a href="https://rsample.tidymodels.org/reference/nested_cv.html" class="external-link">rsample::nested_cv()</a></code> object, refits on each outer analysis set, and scores the outer assessment set.</li>
 <li>New <code><a href="../reference/surv_subject_truth.html">surv_subject_truth()</a></code>, <code><a href="../reference/censoring_km.html">censoring_km()</a></code>, <code><a href="../reference/graf_weights.html">graf_weights()</a></code>, and <code><a href="../reference/add_graf_weights.html">add_graf_weights()</a></code> collapse start/stop outcomes to one row per subject and add inverse-probability-of-censoring (Graf) weights, so any model’s survival predictions can be scored with yardstick. Given start/stop truth directly, yardstick returns numbers without complaint, but they count every interval as a subject.</li>
 <li>
@@ -264,7 +348,7 @@
 <code><a href="../reference/normalize_safely.html">normalize_safely()</a></code> returns forward slashes on every platform, consistent with <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>.</li>
 <li>
 <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> documents <code>max_depth</code>, <code><a href="../reference/zip_render.html">zip_render()</a></code>’s documentation is regenerated to match its code, and <code>yaml</code> (used by <code><a href="../reference/zip_render.html">zip_render()</a></code>) is declared in Suggests. These were the two <code>R CMD check</code> warnings on <code>master</code>.</li>
-<li>The pkgdown reference index lists every exported topic, adding the <code>mtry</code> sweeps, <code><a href="../reference/render_me.html">render_me()</a></code>, <code><a href="../reference/read_search.html">read_search()</a></code>, <code><a href="../reference/write_search.html">write_search()</a></code>, <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>, and <code><a href="../reference/zip_reports.html">zip_reports()</a></code>.</li>
+<li>The pkgdown reference index lists every exported topic, adding the <code>mtry</code> sweeps, <code><a href="../reference/render.html">render_me()</a></code>, <code><a href="../reference/read_search.html">read_search()</a></code>, <code><a href="../reference/write_search.html">write_search()</a></code>, <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code>, and <code><a href="../reference/zip_reports.html">zip_reports()</a></code>.</li>
 <li>The Docker image installs <code>libuv1-dev</code>, which <code>fs</code> needs at load time.</li>
 </ul></div>
 </div>
@@ -298,13 +382,13 @@
 <div class="section level3">
 <h3 id="new-reporting-utilities-0-1-8">New reporting utilities (<a href="https://github.com/jkylearmstrong/TempleCBE/issues/1" class="external-link">#1</a>)<a class="anchor" aria-label="anchor" href="#new-reporting-utilities-0-1-8"></a></h3>
 <ul><li>
-<code><a href="../reference/render_me.html">render_me()</a></code> renders Quarto documents, optionally in parallel (<code>future</code>/<code>furrr</code>/<code>quarto</code> in Suggests).</li>
+<code><a href="../reference/render.html">render_me()</a></code> renders Quarto documents, optionally in parallel (<code>future</code>/<code>furrr</code>/<code>quarto</code> in Suggests).</li>
 <li>
 <code><a href="../reference/read_search.html">read_search()</a></code> / <code><a href="../reference/write_search.html">write_search()</a></code> locate read and write calls in code.</li>
 <li>
 <code><a href="../reference/zip_reports.html">zip_reports()</a></code> packages already-rendered reports and a data folder into one indexed, hyperlinked zip, given a plain ordered data frame. DOCX generation is a caller-supplied <code>docx_from_pdf()</code> callback.</li>
 <li>
-<code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> cross-references read/write calls in code against files on disk, for any file extension and project root. Fixed while porting: the full-path regex could never match, so full-path resolution silently found nothing. Also fixed after the port: inconsistent result schema on <code><a href="../reference/render_me.html">render_me()</a></code>’s parallel path, the path separator on non-Windows platforms, and <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> failing on paths with repeated separators.</li>
+<code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> cross-references read/write calls in code against files on disk, for any file extension and project root. Fixed while porting: the full-path regex could never match, so full-path resolution silently found nothing. Also fixed after the port: inconsistent result schema on <code><a href="../reference/render.html">render_me()</a></code>’s parallel path, the path separator on non-Windows platforms, and <code><a href="../reference/scan_data_io.html">scan_data_io()</a></code> failing on paths with repeated separators.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="fixes-0-1-8">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-1-8"></a></h3>

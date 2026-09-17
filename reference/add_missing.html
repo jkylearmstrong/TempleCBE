@@ -13,7 +13,7 @@ and compare the imputed cells with the originals."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,7 +24,7 @@ and compare the imputed cells with the originals."><meta property="og:image" con
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -47,7 +47,7 @@ and compare the imputed cells with the originals."><meta property="og:image" con
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Add Missing Values Completely at Random</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/add_missing.R" class="external-link"><code>R/add_missing.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/R/add_missing.R" class="external-link"><code>R/add_missing.R</code></a></small>
       <div class="d-none name"><code>add_missing.Rd</code></div>
     </div>
 
@@ -78,8 +78,9 @@ and compare the imputed cells with the originals.</p>
 
 <dt id="arg-pct-na">pct_na<a class="anchor" aria-label="anchor" href="#arg-pct-na"></a></dt>
 <dd><p>Proportion of cells to set to <code>NA</code> in each selected
-column, between 0 and 1 (default 0.1). Each column gets
-<code>round(pct_na * nrow(data))</code> missing cells.</p></dd>
+column, between 0 and 1 (default 0.1). Can be a single number applied to
+all selected columns, or a numeric vector with length equal to the number
+of selected columns specifying column-specific amputation rates.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -126,6 +127,25 @@ share of <code>NA</code>s equals <code>pct_na</code> (to the nearest whole row),
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>     7 mpg    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>    11 mpg    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>    14 mpg    </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Column-specific missingness proportions with a vector:</span></span></span>
+<span class="r-in"><span><span class="va">p_vec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mpg <span class="op">=</span> <span class="fl">0.1</span>, hp <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">amputed2</span> <span class="op">&lt;-</span> <span class="fu">add_missing</span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">mpg</span>, <span class="va">hp</span><span class="op">)</span>, pct_na <span class="op">=</span> <span class="va">p_vec</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">amputed2</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 11 × 5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    feature SumNa SumComp  PctNa PctComp</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> hp         10      22 0.312    0.688</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> mpg         3      29 0.093<span style="text-decoration: underline;">8</span>   0.906</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> cyl         0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> disp        0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> drat        0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> wt          0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> qsec        0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> vs          0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> am          0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> gear        0      32 0        1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> carb        0      32 0        1    </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

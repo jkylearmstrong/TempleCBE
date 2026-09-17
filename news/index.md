@@ -1,5 +1,152 @@
 # Changelog
 
+## TempleCBE 0.3.403
+
+### Exact Contingency Methods, Chi-Square Testing & Visualizations
+
+- **Exact 2x2 Inference with Automatic Mid-p Default (`cbe_exact2x2`,
+  `cbe_exact2x2_ci`)**:
+  - New
+    [`cbe_exact2x2()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2.md)
+    performs exact inference using `exact2x2`. If any cell count in a
+    2x2 table is zero (`min(tab) == 0`), it automatically defaults to
+    the mid-p version of Central Fisher’s exact test (`midp = TRUE`),
+    preventing extreme conditional conservatism. For non-zero tables, it
+    defaults to standard Central Fisher (`midp = FALSE`).
+  - New
+    [`cbe_exact2x2_ci()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.md)
+    generates publication-ready odds ratio and confidence interval
+    strings (e.g. `"0.8 (0.3, 2.1)"`).
+- **Chi-Square & Exact Testing Suite (`cbe_test_categorical`)**:
+  - Added `test = c("auto", "exact", "chisq", "fisher")` and
+    `correct = FALSE` (uncorrected Pearson $`\chi^2`$) to
+    [`cbe_test_categorical()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_test_categorical.md),
+    providing a drop-in custom test for
+    [`gtsummary::add_p()`](https://www.danieldsjoberg.com/gtsummary/reference/add_p.html)
+    implementing institutional CBE testing guidelines.
+- **Standard 4-Quadrant Square Reports (`cbe_four_quadrant_report`,
+  `cbe_square_plot`)**:
+  - New
+    [`cbe_four_quadrant_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_four_quadrant_report.md)
+    generates the standard clinical 4-quadrant report
+    (`q1 | q2 // q3 | q4 // p = pformat`) returning structured quadrant
+    percentages, console-ready text cards, compact 3-line summaries, and
+    ggplot square tiles with configurable test engines (`"auto"`,
+    `"exact"`, `"chisq"`, `"fisher"`).
+  - Dedicated wrapper
+    [`cbe_square_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_square_plot.md)
+    provides direct access to 4-quadrant reports and square glyph plots.
+- **Publication p-value Formatter (`pformat`, `cbe_pformat`)**:
+  - New exported
+    [`pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md)
+    (and alias
+    [`cbe_pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md))
+    formats numeric p-values into publication-ready strings
+    (e.g. `pformat(0.042)` -\> `"p = 0.042"`, `pformat(0.0001)` -\>
+    `"p < 0.001"`).
+- **Contingency Plotting Suite (`cbe_contingency_plot`)**:
+  - Unified contingency visualization supporting `balloon`, `bar`
+    (`fill`, `dodge`, `stack`), `mosaic`, `heatmap`, `square`, and
+    `corrplot` with automatic hypothesis test calculation
+    (`test = "auto"`, `"exact"`, `"chisq"`, `"fisher"`).
+  - New
+    [`plot_categorical_associations()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_categorical_associations.md)
+    creates pairwise categorical correlation matrices using Cramér’s V
+    or $`-\log_{10}(p)`$ via `corrplot` with Temple University brand
+    palettes.
+  - New
+    [`cbe_pairwise_combos()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_pairwise_combos.md)
+    enumerates all pairwise categorical combinations with sequential
+    indexing for child-document expansion.
+- **Quarto & R Markdown Multi-Format Rendering (`render`,
+  `render_me`)**:
+  - Renamed primary function to
+    [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+    with `render_me` preserved as an alias for full backwards
+    compatibility.
+  - Enhanced `path` parameter to accept character vectors, lists of
+    paths, S4 compute graph objects (`FileOutputs`, `FilePath`), render
+    plans from
+    [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md),
+    and full pipeline lists (with automatic filtering to renderable
+    targets).
+  - Added `...` forwarding to pass options (such as `params`,
+    `execute_params`, `output_dir`, `quiet`) cleanly to the
+    [`quarto::quarto_render()`](https://quarto-dev.github.io/quarto-r/reference/quarto_render.html)
+    or
+    [`rmarkdown::render()`](https://pkgs.rstudio.com/rmarkdown/reference/render.html)
+    backend.
+  - Added automatic document YAML frontmatter format extraction via
+    [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
+    when `formats = "yaml"` or `formats = "auto"`.
+  - Integrated with `computeGraph`: document-level deliverable formats
+    in `FileOutputs` or pipeline-level
+    `pipeline_config(default_formats = ...)` seamlessly override package
+    default `c("pdf", "docx")`.
+  - Expanded native support for both `.qmd` and `.Rmd` documents
+    (`pattern = "\\.(qmd|Rmd|rmd)$"`).
+  - Added `engine = c("auto", "quarto", "rmarkdown")` with automatic
+    shorthand format translation (`"pdf"` -\> `"pdf_document"`, `"docx"`
+    -\> `"word_document"`, `"html"` -\> `"html_document"`, `"gfm"` -\>
+    `"github_document"`).
+- **Institutional Quarto EDA Templates**:
+  - Added anonymized `eda_tables.qmd` and `child_eda_chi_square.qmd`
+    under `inst/templates/` and `inst/rmarkdown/templates/eda-tables/`
+    with missingness diagnostics, stacked `gtsummary` baseline tables,
+    association matrices, and pairwise categorical comparisons.
+- **Replacement of `arsenal` with `gtsummary`**:
+  - [`summarize_section_by_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_section_by_time.md)
+    now defaults to `engine = "gtsummary"`, retaining
+    `engine = "arsenal"` as backwards-compatible fallback.
+
+### Bug Fixes & Statistical Enhancements
+
+- **Missingness & Auditing (`SumNa`)**:
+  - Fixed a critical issue where `SumNa(df, na_list = ...)` failed to
+    detect sentinel values on data frames due to `%in%` list dispatch.
+    It now traverses columns column-by-column, correctly counting both
+    standard `NA`s and multi-code institutional sentinels (e.g. `"999"`,
+    `"-99"`, `"Unknown"`).
+- **Time-Dependent Survival (`tidy_tmerge_cox`)**:
+  - Fixed counting-process interval construction when events occur
+    between scheduled longitudinal observation visits. Post-event
+    filtering now occurs prior to interval lead calculations, correctly
+    setting `tstop` to the event time and assigning `event = 1` for
+    terminal intervals.
+- **Reporting Formatters (`theme_cbe::words`)**:
+  - Protected
+    [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
+    with
+    [`requireNamespace("knitr", quietly = TRUE)`](https://rdrr.io/r/base/ns-load.html)
+    and provided a native base R fallback for Oxford comma text
+    formatting, preventing runtime crashes on minimal installs without
+    `knitr`.
+- **Biostatistical Testing (`single_t_test`)**:
+  - Guarded `fold_change` and `log2_fold_change` against division by
+    zero and negative values when baseline group mean is zero, safely
+    returning `NA_real_`.
+- **Outlier Detection (`detect_outliers`)**:
+  - [`calculate_fences()`](https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.md)
+    now gracefully returns `NA_real_` bounds when input vectors contain
+    zero non-NA values, preventing unhandled
+    [`quantile()`](https://rdrr.io/r/stats/quantile.html) exceptions.
+  - Standardized `.outlier` factor levels to `c(FALSE, TRUE)` across all
+    data subsets.
+- **PI Anonymizer (`scripts/pi_anonymizer.py` & `R/pi_anonymizer.R`)**:
+  - Aligned Python anonymizer with R security policies: default
+    confidential mapping file is now stored in user-scoped data
+    directories (`~/.TempleCBE/pi_mapping.json`) outside the git
+    repository tree, with automated repository root detection and atomic
+    file replacement.
+  - Synchronized `@param n_chars` documentation to reflect the default
+    16-character hexadecimal token length.
+- **Repository Safety**:
+  - Added `data/`, `*.xlsx`, `*.csv`, and `*.rds` patterns to root
+    `.gitignore` to safeguard against accidental tracking of clinical
+    datasets.
+  - Updated `scripts/clean_publish.sh` to default to the active working
+    branch rather than falling back unconditionally to `master`.
+
 ## TempleCBE 0.3.3141
 
 ### Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics
@@ -265,7 +412,7 @@
 - New
   [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
   is a tidymodels counterpart to
-  [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
+  [`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
   Folds are grouped by `subject_id` (or a coarser `group`, such as
   site), preprocessing from a recipe is learned inside each fold, and
   every `mixture` and `penalty` is scored with a yardstick metric set:
@@ -613,7 +760,7 @@
   `master`.
 - The pkgdown reference index lists every exported topic, adding the
   `mtry` sweeps,
-  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md),
+  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md),
   [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md),
   [`write_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_search.md),
   [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md),
@@ -684,7 +831,7 @@
 
 ### New reporting utilities ([\#1](https://github.com/jkylearmstrong/TempleCBE/issues/1))
 
-- [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)
+- [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
   renders Quarto documents, optionally in parallel
   (`future`/`furrr`/`quarto` in Suggests).
 - [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md)
@@ -701,7 +848,7 @@
   full-path regex could never match, so full-path resolution silently
   found nothing. Also fixed after the port: inconsistent result schema
   on
-  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md)’s
+  [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)’s
   parallel path, the path separator on non-Windows platforms, and
   [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
   failing on paths with repeated separators.

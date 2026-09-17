@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,7 +18,7 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -657,10 +657,10 @@
 
         <dt>
 
-          <code><a href="render_me.html">render_me()</a></code>
+          <code><a href="render.html">render()</a></code> <code><a href="render.html">render_me()</a></code>
 
         </dt>
-        <dd>Render Quarto Documents to Multiple Formats With Timing</dd>
+        <dd>Render Quarto and R Markdown Documents to Multiple Formats With Timing</dd>
 
         <dt>
 
@@ -809,7 +809,7 @@
           <code><a href="create_qmd_renderer.html">create_qmd_renderer()</a></code>
 
         </dt>
-        <dd>Create a FileOutputs object for a rendering QMD</dd>
+        <dd>Create a FileOutputs object for a rendering QMD or R Markdown document</dd>
 
         <dt>
 
@@ -1036,6 +1036,13 @@
 
         <dt>
 
+          <code><a href="pformat.html">pformat()</a></code> <code><a href="pformat.html">cbe_pformat()</a></code>
+
+        </dt>
+        <dd>Format p-values for Biostatistical and Clinical Reporting</dd>
+
+        <dt>
+
           <code><a href="fmt_hr.html">fmt_hr()</a></code>
 
         </dt>
@@ -1211,7 +1218,100 @@
           <code><a href="table_two_by_two.html">table_two_by_two()</a></code>
 
         </dt>
-        <dd>Formatted 2x2 Contingency Table with Fisher's Exact Test</dd>
+        <dd>Formatted 2x2 Contingency Table with Exact Test</dd>
+      </dl></div><div class="section level2">
+      <h2 id="categorical-association-contingency-tables">Categorical Association &amp; Contingency Tables<a class="anchor" aria-label="anchor" href="#categorical-association-contingency-tables"></a></h2>
+
+      <div class="section-desc"><p>Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and publication-ready association visualizations (balloon, bar, contingency, mosaic, heatmap, and square plots).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="cbe_exact2x2.html">cbe_exact2x2()</a></code>
+
+        </dt>
+        <dd>Exact Test for 2x2 Tables with Automatic Zero-Cell Mid-p Default</dd>
+
+        <dt>
+
+          <code><a href="cbe_exact2x2_ci.html">cbe_exact2x2_ci()</a></code>
+
+        </dt>
+        <dd>Format Exact 2x2 Odds Ratio and Confidence Interval</dd>
+
+        <dt>
+
+          <code><a href="cbe_test_categorical.html">cbe_test_categorical()</a></code>
+
+        </dt>
+        <dd>Institutional Categorical Hypothesis Test for gtsummary</dd>
+
+        <dt>
+
+          <code><a href="cbe_four_quadrant_report.html">cbe_four_quadrant_report()</a></code>
+
+        </dt>
+        <dd>Standard 4-Quadrant Clinical Contingency Report</dd>
+
+        <dt>
+
+          <code><a href="cbe_contingency_plot.html">cbe_contingency_plot()</a></code>
+
+        </dt>
+        <dd>Visualizations for 2-Way Contingency Tables and Categorical Tests</dd>
+
+        <dt>
+
+          <code><a href="cbe_balloon_plot.html">cbe_balloon_plot()</a></code>
+
+        </dt>
+        <dd>Balloon Plot for 2-Way Contingency Tables</dd>
+
+        <dt>
+
+          <code><a href="cbe_bar_plot.html">cbe_bar_plot()</a></code>
+
+        </dt>
+        <dd>Bar Chart for 2-Way Contingency Tables</dd>
+
+        <dt>
+
+          <code><a href="cbe_mosaic_plot.html">cbe_mosaic_plot()</a></code>
+
+        </dt>
+        <dd>Mosaic Plot for 2-Way Contingency Tables</dd>
+
+        <dt>
+
+          <code><a href="cbe_heatmap_plot.html">cbe_heatmap_plot()</a></code>
+
+        </dt>
+        <dd>Heatmap Plot for 2-Way Contingency Tables</dd>
+
+        <dt>
+
+          <code><a href="cbe_square_plot.html">cbe_square_plot()</a></code>
+
+        </dt>
+        <dd>Square Plot: Standard 4-Quadrant Contingency Report</dd>
+
+        <dt>
+
+          <code><a href="cbe_pairwise_combos.html">cbe_pairwise_combos()</a></code>
+
+        </dt>
+        <dd>Generate All Pairwise Categorical Combinations</dd>
+
+        <dt>
+
+          <code><a href="plot_categorical_associations.html">plot_categorical_associations()</a></code>
+
+        </dt>
+        <dd>Plot Categorical Association Matrix Using corrplot</dd>
       </dl></div><div class="section level2">
       <h2 id="data-snapshot-manifest-schema-engine">Data Snapshot Manifest &amp; Schema Engine<a class="anchor" aria-label="anchor" href="#data-snapshot-manifest-schema-engine"></a></h2>
 
@@ -1301,7 +1401,7 @@
       </dl></div><div class="section level2">
       <h2 id="deliverable-packaging-code-auditing">Deliverable Packaging &amp; Code Auditing<a class="anchor" aria-label="anchor" href="#deliverable-packaging-code-auditing"></a></h2>
 
-      <div class="section-desc"><p>Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables) into structured distribution archives, and audit source scripts for referenced deliverable tokens.</p></div>
+      <div class="section-desc"><p>Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables) into structured distribution archives, audit source scripts for referenced deliverable tokens, and extract YAML metadata formats.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1321,6 +1421,13 @@
 
         </dt>
         <dd>Audit Deliverable File Tokens in Analysis Scripts</dd>
+
+        <dt>
+
+          <code><a href="extract_yaml_formats.html">extract_yaml_formats()</a></code>
+
+        </dt>
+        <dd>Extract Output Formats From Document YAML Front Matter</dd>
       </dl></div><div class="section level2">
       <h2 id="helper-infix-operators">Helper &amp; Infix Operators<a class="anchor" aria-label="anchor" href="#helper-infix-operators"></a></h2>
 

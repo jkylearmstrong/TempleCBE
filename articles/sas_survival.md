@@ -558,13 +558,13 @@ baseline <- tibble::tibble(
 
 # One-step tidy construction
 tidy_surv <- tidy_tmerge_cox(
-  measure_df  = measurements,
-  event_df    = endpoints,
+  measure_df = measurements,
+  event_df = endpoints,
   baseline_df = baseline,
-  id          = "subject_id",
+  id = "subject_id",
   measure_time = "time",
-  event_time  = "event_time",
-  event_type  = "event_type"
+  event_time = "event_time",
+  event_type = "event_type"
 )
 
 tidy_surv

@@ -258,6 +258,10 @@ pipeline_config(
 #> 
 #> $stage_colors$report
 #> [1] "#D4EFDF"
+#> 
+#> 
+#> $default_formats
+#> NULL
 
 helper <- FilePath(
   name = "t_test_child",
@@ -283,7 +287,7 @@ report
 #>   Stage:       report 
 #>   Role:        report_source 
 #>   Renders:     TRUE 
-#>   Modified:    2026-09-17 02:04:54 
+#>   Modified:    2026-09-17 12:36:30 
 #>   Description: Worked example of a one/two-sample t-test report 
 #>   Dependencies:
 #>     - t_test_child

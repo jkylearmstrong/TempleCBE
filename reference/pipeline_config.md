@@ -6,7 +6,12 @@ stage color palettes) from core pipeline mechanics and classes.
 ## Usage
 
 ``` r
-pipeline_config(study_name = NULL, stage_labels = NULL, stage_colors = NULL)
+pipeline_config(
+  study_name = NULL,
+  stage_labels = NULL,
+  stage_colors = NULL,
+  default_formats = NULL
+)
 ```
 
 ## Arguments
@@ -24,6 +29,15 @@ pipeline_config(study_name = NULL, stage_labels = NULL, stage_colors = NULL)
 
   Named list or character vector mapping stage identifiers to hex
   colors.
+
+- default_formats:
+
+  Optional character vector of default output formats for pipeline
+  renderers (e.g. `c("pdf", "docx")`). When set, this overrides the
+  package default across
+  [`render`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+  and
+  [`create_qmd_renderer`](https://jkylearmstrong.github.io/TempleCBE/reference/create_qmd_renderer.md).
 
 ## Value
 

@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -77,7 +77,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/nested_survival_cv.Rmd" class="external-link"><code>vignettes/nested_survival_cv.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/vignettes/nested_survival_cv.Rmd" class="external-link"><code>vignettes/nested_survival_cv.Rmd</code></a></small>
       <div class="d-none name"><code>nested_survival_cv.Rmd</code></div>
     </div>
 
@@ -93,7 +93,7 @@ as independent observations:</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Resampling leaks.</strong> Row-level folds, like those of
-<code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>, put some of a subject’s intervals in
+<code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet()</a></code>, put some of a subject’s intervals in
 the analysis set and others in the assessment set.</li>
 <li>
 <strong>Scoring is wrong, silently.</strong> yardstick’s survival
@@ -282,7 +282,7 @@ deliverables.</li>
 <thead><tr class="header">
 <th align="left">Dimension</th>
 <th align="left"><code>survival</code></th>
-<th align="left"><code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet</a></code></th>
+<th align="left"><code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet</a></code></th>
 <th align="left">
 <code>tidymodels</code> (native)</th>
 <th align="left"><code>TempleCBE</code></th>

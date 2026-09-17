@@ -46,7 +46,7 @@ generate_pseudonym_token(
 - n_chars:
 
   Integer, number of hex characters from the hash digest to include
-  (default 8). Can be shortened (e.g. 4 or 6) to produce compact/short
+  (default 16). Can be shortened (e.g. 4 or 8) to produce compact/short
   tokens.
 
 - rename_fn:
@@ -69,15 +69,15 @@ Character vector of pseudonym tokens.
 ``` r
 # Random cryptographic hash tokens
 generate_pseudonym_token(n = 3)
-#> [1] "PI_d799323012749e6f" "PI_09a5bf05d40a6fcb" "PI_7258ab0397a951e1"
+#> [1] "PI_738acc0d3264d6ff" "PI_f21cb1bb857ed968" "PI_0668fb518b98c225"
 
 # Short hash tokens (4 hex chars)
 generate_pseudonym_token(n = 3, n_chars = 4)
-#> [1] "PI_9889" "PI_aa31" "PI_5af2"
+#> [1] "PI_185f" "PI_c0de" "PI_6c5d"
 
 # Custom renaming function
 generate_pseudonym_token(n = 2, rename_fn = tolower)
-#> [1] "pi_72d6810290d93fdf" "pi_949bebcb0ae27266"
+#> [1] "pi_4c772cd1855ed092" "pi_bff078d31a933903"
 
 # Stateless deterministic token with key
 generate_pseudonym_token("Franklin", key = "study_salt")

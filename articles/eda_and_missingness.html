@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Exploratory Data Analysis, Missingness Auditing, and Normalization • TempleCBE</title>
+<title>01. Exploratory Data Analysis, Missingness Auditing, and Normalization • TempleCBE</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -18,7 +18,7 @@
 <link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Exploratory Data Analysis, Missingness Auditing, and Normalization">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="01. Exploratory Data Analysis, Missingness Auditing, and Normalization">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
     <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
@@ -74,10 +74,10 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Exploratory Data Analysis, Missingness Auditing, and Normalization</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>01. Exploratory Data Analysis, Missingness Auditing, and Normalization</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/eda_and_missingness.Rmd" class="external-link"><code>vignettes/eda_and_missingness.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/vignettes/eda_and_missingness.Rmd" class="external-link"><code>vignettes/eda_and_missingness.Rmd</code></a></small>
       <div class="d-none name"><code>eda_and_missingness.Rmd</code></div>
     </div>
 
@@ -103,7 +103,8 @@ features, classify clinical outliers under formal IQR standards, and
 transition seamlessly into tuned machine-learning imputation.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link">TempleCBE</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -122,8 +123,8 @@ its value for clinical biostatisticians and data managers.</p>
 <strong><code>naniar</code> &amp; <code>visdat</code></strong>:
 Pioneered tidy representation and visualization of missing data
 (<code>vis_miss()</code>, <code>gg_miss_var()</code>). However, they
-primarily operate on existing <code>NA</code> values. When raw clinical
-data contains sentinel values (such as <code>"999"</code>,
+operate exclusively on existing <code>NA</code> values. When raw
+clinical data contains sentinel values (such as <code>"999"</code>,
 <code>"-99"</code>, or blank strings), users must first apply mutating
 functions like <code>replace_with_na_all()</code>, which can
 accidentally alter legitimate numerical values, modify factor levels, or
@@ -166,18 +167,19 @@ and <strong>EXTREME</strong>
 outliers and returning structured classification flags that preserve
 patient keys.</li>
 <li>
-<strong>Seamless transition to tuned imputation</strong>:
-<code>TempleCBE</code> links missingness auditing directly to
-high-performance imputation engines (<code>missforest_mtry()</code> and
-<code>missranger_mtry()</code>) that automatically optimize random
-forest hyperparameters (<code>mtry</code>) for the specific missingness
-rate of the clinical cohort.</li>
-<li>
 <strong>Controlled imputation benchmarking</strong>: The
 <code><a href="../reference/add_missing.html">add_missing()</a></code> function allows statisticians to simulate
 controlled Missing Completely at Random (MCAR) mechanisms on complete
-datasets to empirically validate downstream imputation performance
-before deploying models.</li>
+datasets, tracking the exact row-and-column coordinates of every amputed
+cell to empirically validate downstream imputation performance.</li>
+<li>
+<strong>Seamless transition to tuned imputation</strong>:
+<code>TempleCBE</code> links missingness auditing directly to
+high-performance imputation engines
+(<code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code> and
+<code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code>) that automatically optimize random
+forest hyperparameters (<code>mtry</code>) independently for each
+clinical feature.</li>
 </ol>
 </div>
 <div class="section level3">
@@ -221,7 +223,8 @@ S3 plot)</td>
 <td align="left">Not built-in</td>
 <td align="left"><code>vis_miss()</code></td>
 <td align="left">
-<code><a href="../reference/missmap.html">missmap()</a></code> (custom clinical palette)</td>
+<code><a href="../reference/missmap.html">missmap()</a></code> (custom clinical palette &amp;
+grouping)</td>
 </tr>
 <tr class="even">
 <td align="left"><strong>Outlier classification</strong></td>
@@ -241,14 +244,6 @@ S3 plot)</td>
 </td>
 </tr>
 <tr class="even">
-<td align="left"><strong>Imputation handoff</strong></td>
-<td align="left">External</td>
-<td align="left">External</td>
-<td align="left">Integrated <code>missforest_mtry()</code> /
-<code>missranger_mtry()</code>
-</td>
-</tr>
-<tr class="odd">
 <td align="left"><strong>Controlled amputation</strong></td>
 <td align="left">External (<code>mice::ampute</code>)</td>
 <td align="left">Limited</td>
@@ -256,301 +251,401 @@ S3 plot)</td>
 <code><a href="../reference/add_missing.html">add_missing()</a></code> with tracked cell
 coordinates</td>
 </tr>
+<tr class="odd">
+<td align="left"><strong>Imputation handoff</strong></td>
+<td align="left">External</td>
+<td align="left">External</td>
+<td align="left">Integrated <code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code> /
+<code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code>
+</td>
+</tr>
 </tbody>
 </table>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="specific-gaps-addressed-by-templecbe">Specific gaps addressed by <code>TempleCBE</code><a class="anchor" aria-label="anchor" href="#specific-gaps-addressed-by-templecbe"></a>
+<h2 id="starting-with-a-full-synthetic-clinical-cohort">1. Starting with a Full Synthetic Clinical Cohort<a class="anchor" aria-label="anchor" href="#starting-with-a-full-synthetic-clinical-cohort"></a>
 </h2>
+<p>To demonstrate missingness auditing and empirically evaluate
+imputation accuracy, we begin with a relatively full synthetic cohort of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>120</mn></mrow><annotation encoding="application/x-tex">N = 120</annotation></semantics></math>
+clinical patients. In real-world studies, true underlying values are
+unknown once lost. By generating a complete cohort with realistic
+physiological correlations first, we establish a verifiable
+<strong>ground truth</strong> that enables downstream recovery
+benchmarking:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">120</span></span>
+<span></span>
+<span><span class="co"># Realistic clinical covariance structure</span></span>
+<span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">58</span>, sd <span class="op">=</span> <span class="fl">9</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">bmi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">27.0</span>, sd <span class="op">=</span> <span class="fl">3.8</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">systolic_bp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">95</span> <span class="op">+</span> <span class="fl">0.45</span> <span class="op">*</span> <span class="va">age</span> <span class="op">+</span> <span class="fl">0.65</span> <span class="op">*</span> <span class="va">bmi</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cholesterol</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">155</span> <span class="op">+</span> <span class="fl">0.55</span> <span class="op">*</span> <span class="va">age</span> <span class="op">+</span> <span class="fl">1.10</span> <span class="op">*</span> <span class="va">bmi</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">15</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">glucose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">72</span> <span class="op">+</span> <span class="fl">0.35</span> <span class="op">*</span> <span class="va">age</span> <span class="op">+</span> <span class="fl">0.95</span> <span class="op">*</span> <span class="va">bmi</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">smoker</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"No"</span>, <span class="st">"Yes"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.65</span>, <span class="fl">0.35</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">hypertension</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">systolic_bp</span> <span class="op">&gt;=</span> <span class="fl">135</span> <span class="op">|</span> <span class="op">(</span><span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">62</span> <span class="op">&amp;</span> <span class="va">bmi</span> <span class="op">&gt;=</span> <span class="fl">28</span><span class="op">)</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">disease_stage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Stage I"</span>, <span class="st">"Stage II"</span>, <span class="st">"Stage III"</span>, <span class="st">"Stage IV"</span><span class="op">)</span>, <span class="va">n</span>,</span>
+<span>  replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.30</span>, <span class="fl">0.25</span>, <span class="fl">0.15</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cohort_clean</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  patient_id    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"PT_%03d"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  age           <span class="op">=</span> <span class="va">age</span>,</span>
+<span>  systolic_bp   <span class="op">=</span> <span class="va">systolic_bp</span>,</span>
+<span>  bmi           <span class="op">=</span> <span class="va">bmi</span>,</span>
+<span>  cholesterol   <span class="op">=</span> <span class="va">cholesterol</span>,</span>
+<span>  glucose       <span class="op">=</span> <span class="va">glucose</span>,</span>
+<span>  smoker        <span class="op">=</span> <span class="va">smoker</span>,</span>
+<span>  hypertension  <span class="op">=</span> <span class="va">hypertension</span>,</span>
+<span>  disease_stage <span class="op">=</span> <span class="va">disease_stage</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Preview the clean cohort</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cohort_clean</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 9</span></span></span>
+<span><span class="co">#&gt;   patient_id   age systolic_bp   bmi cholesterol glucose smoker hypertension</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> PT_001        63         147  34.2         244     133 Yes    Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> PT_002        48         140  35.1         189     134 No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> PT_003        59         148  27.9         187     117 No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> PT_004        57         146  30.4         200     111 No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> PT_005        52         132  20.4         222     128 No     No          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> PT_006        35         129  28.8         219     128 Yes    No          </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: disease_stage &lt;fct&gt;</span></span></span>
+<span></span>
+<span><span class="co"># Verify complete data integrity (zero missingness)</span></span>
+<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">cohort_clean</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>The dataset contains: - Continuous biomarkers: <code>age</code>,
+<code>systolic_bp</code>, <code>bmi</code>, <code>cholesterol</code>,
+and <code>glucose</code>. - Categorical clinical factors:
+<code>smoker</code>, <code>hypertension</code>, and
+<code>disease_stage</code>. - Unique identifier:
+<code>patient_id</code>.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="controlled-amputation-with-add_missing">2. Controlled Amputation with <code>add_missing()</code><a class="anchor" aria-label="anchor" href="#controlled-amputation-with-add_missing"></a>
+</h2>
+<p>In validation studies, biostatisticians simulate controlled Missing
+Completely at Random (MCAR) mechanisms using <code><a href="../reference/add_missing.html">add_missing()</a></code>.
+This allows us to observe how data-auditing tools detect missingness and
+how machine-learning algorithms reconstruct true values.</p>
+<p>Here, we amputate <strong>15% missingness</strong> across 7 clinical
+predictors, leaving <code>patient_id</code> and
+<code>disease_stage</code> 100% complete:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">amputed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_missing.html">add_missing</a></span><span class="op">(</span></span>
+<span>  <span class="va">cohort_clean</span>,</span>
+<span>  cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">systolic_bp</span>, <span class="va">bmi</span>, <span class="va">cholesterol</span>, <span class="va">glucose</span>, <span class="va">smoker</span>, <span class="va">hypertension</span><span class="op">)</span>,</span>
+<span>  pct_na <span class="op">=</span> <span class="fl">0.15</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Inspect the amputed cohort preview</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">amputed</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 9</span></span></span>
+<span><span class="co">#&gt;   patient_id   age systolic_bp   bmi cholesterol glucose smoker hypertension</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> PT_001        63         147  34.2         244     133 Yes    <span style="color: #BB0000;">NA</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> PT_002        48         140  35.1          <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span> No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> PT_003        <span style="color: #BB0000;">NA</span>          <span style="color: #BB0000;">NA</span>  27.9          <span style="color: #BB0000;">NA</span>     117 No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> PT_004        57         146  <span style="color: #BB0000;">NA</span>           200     111 No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> PT_005        52          <span style="color: #BB0000;">NA</span>  20.4          <span style="color: #BB0000;">NA</span>     128 No     No          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> PT_006        35         129  28.8          <span style="color: #BB0000;">NA</span>     128 Yes    No          </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: disease_stage &lt;fct&gt;</span></span></span></code></pre></div>
 <div class="section level3">
-<h3 id="the-dirty-intake-gap-in-clinical-registries">1. The “Dirty Intake” gap in clinical registries<a class="anchor" aria-label="anchor" href="#the-dirty-intake-gap-in-clinical-registries"></a>
+<h3 id="tracking-masked-coordinates-for-ground-truth-validation">Tracking masked coordinates for ground-truth validation<a class="anchor" aria-label="anchor" href="#tracking-masked-coordinates-for-ground-truth-validation"></a>
 </h3>
-<p>Clinical data extracted from Electronic Data Capture (EDC) platforms
-like REDCap or hospital registries frequently blends numeric sentinel
-values (<code>999</code>, <code>-99</code>) and text placeholders
-(<code>"Not Recorded"</code>, <code>"Declined"</code>, <code>""</code>).
-Recoding these in place often converts columns from numeric to
-character, or loses the ability to distinguish why data was uncollected.
-<code>TempleCBE</code> audits all codes in their native types without
-destructive modifications.</p>
+<p>A crucial feature of <code><a href="../reference/add_missing.html">add_missing()</a></code> is that it attaches
+an attribute named <code>"missing_cells"</code>. This attribute stores a
+tibble of every masked cell’s exact <code>row</code> number and
+<code>feature</code> name:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Extract the ground-truth coordinate lookup table</span></span>
+<span><span class="va">missing_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">amputed</span>, <span class="st">"missing_cells"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total cells amputed:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">missing_cells</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Total cells amputed: 126</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">missing_cells</span>, <span class="fl">8</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 2</span></span></span>
+<span><span class="co">#&gt;     row feature</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     3 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>    18 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>    20 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>    24 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    25 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>    26 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span>    37 age    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span>    41 age</span></span></code></pre></div>
+<p>Because most <code>dplyr</code> verbs strip custom attributes upon
+transformation, always extract
+<code>missing_cells &lt;- attr(amputed, "missing_cells")</code>
+immediately following amputation when benchmarking imputation
+pipelines.</p>
 </div>
 <div class="section level3">
-<h3 id="the-clinical-outlier-governance-gap">2. The “Clinical Outlier Governance” gap<a class="anchor" aria-label="anchor" href="#the-clinical-outlier-governance-gap"></a>
+<h3 id="heterogeneous-missingness-column-specific-proportions-via-vector-pct_na">Heterogeneous missingness: Column-specific proportions via vector
+<code>pct_na</code><a class="anchor" aria-label="anchor" href="#heterogeneous-missingness-column-specific-proportions-via-vector-pct_na"></a>
 </h3>
-<p>In clinical trials, an extreme lab measurement (e.g. a blood glucose
-of 650 mg/dL) might represent a life-threatening clinical event rather
-than a measurement error. Blindly trimming or imputing values without
-clinician review violates regulatory guidelines (FDA/ICH E9).
-<code><a href="../reference/detect_outliers.html">detect_outliers()</a></code> provides a transparent audit table
-flagging both mild and extreme outliers, allowing biostatisticians and
-medical monitors to audit values systematically.</p>
-</div>
-<div class="section level3">
-<h3 id="the-imputation-hyperparameter-gap">3. The “Imputation Hyperparameter” gap<a class="anchor" aria-label="anchor" href="#the-imputation-hyperparameter-gap"></a>
-</h3>
-<p>Random forest imputation (<code>missForest</code> /
-<code>missRanger</code>) is widely considered the gold standard for
-mixed clinical data with non-linear relationships. However, analysts
-routinely accept default <code>mtry</code> settings, which can lead to
-suboptimal imputation or excessive computational runtimes on large
-patient cohorts. <code>TempleCBE</code> integrates automated
-<code>mtry</code> grid search directly into the imputation pipeline.</p>
+<p>In real-world clinical cohorts, different variables rarely share an
+identical missingness rate. Routine clinical covariates (such as
+<code>age</code> or <code>bmi</code>) may only be missing in 5–10% of
+records, whereas specialized laboratory panels (such as
+<code>cholesterol</code> or <code>glucose</code>) may be uncollected in
+25–35% of patients.</p>
+<p><code><a href="../reference/add_missing.html">add_missing()</a></code> supports a numeric vector for
+<code>pct_na</code> whose length matches the number of selected
+columns:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Generate column-specific missingness proportions with runif()</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">cols_ampute</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"systolic_bp"</span>, <span class="st">"bmi"</span>, <span class="st">"cholesterol"</span>, <span class="st">"glucose"</span>, <span class="st">"smoker"</span>, <span class="st">"hypertension"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_vector</span> <span class="op">&lt;-</span> <span class="va">cols_ampute</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span>min <span class="op">=</span> <span class="fl">0.05</span>, max <span class="op">=</span> <span class="fl">0.30</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">p_vector</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">cols_ampute</span></span>
+<span><span class="va">p_vector</span></span>
+<span><span class="co">#&gt;          age  systolic_bp          bmi  cholesterol      glucose       smoker </span></span>
+<span><span class="co">#&gt;         0.28         0.28         0.12         0.26         0.21         0.18 </span></span>
+<span><span class="co">#&gt; hypertension </span></span>
+<span><span class="co">#&gt;         0.23</span></span>
+<span></span>
+<span><span class="co"># Amputate each column according to its specific proportion</span></span>
+<span><span class="va">amputed_hetero</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_missing.html">add_missing</a></span><span class="op">(</span></span>
+<span>  <span class="va">cohort_clean</span>,</span>
+<span>  cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">systolic_bp</span>, <span class="va">bmi</span>, <span class="va">cholesterol</span>, <span class="va">glucose</span>, <span class="va">smoker</span>, <span class="va">hypertension</span><span class="op">)</span>,</span>
+<span>  pct_na <span class="op">=</span> <span class="va">p_vector</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Inspect how features_percent_miss captures the heterogeneous rates</span></span>
+<span><span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">amputed_hetero</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 5</span></span></span>
+<span><span class="co">#&gt;   feature       SumNa SumComp PctNa PctComp</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> age              34      86 0.283   0.717</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> systolic_bp      34      86 0.283   0.717</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> cholesterol      31      89 0.258   0.742</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> hypertension     28      92 0.233   0.767</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> glucose          25      95 0.208   0.792</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> smoker           22      98 0.183   0.817</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> bmi              14     106 0.117   0.883</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> patient_id        0     120 0       1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> disease_stage     0     120 0       1</span></span></code></pre></div>
+<p>Notice how <code><a href="../reference/features_percent_miss.html">features_percent_miss()</a></code> directly reflects
+each column’s distinct amputation share, and the
+<code>missing_cells</code> attribute accurately tracks the varying
+number of masked cells per feature.</p>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="auditing-missing-data">1. Auditing Missing Data<a class="anchor" aria-label="anchor" href="#auditing-missing-data"></a>
+<h2 id="auditing-missing-data">3. Auditing Missing Data<a class="anchor" aria-label="anchor" href="#auditing-missing-data"></a>
 </h2>
+<p>Now that missingness has been induced, we audit the dataset using
+<code>TempleCBE</code>’s non-destructive auditing suite.</p>
 <div class="section level3">
 <h3 id="total-missingness-with-sumna">Total missingness with <code>SumNa()</code><a class="anchor" aria-label="anchor" href="#total-missingness-with-sumna"></a>
 </h3>
 <p><code><a href="../reference/SumNa.html">SumNa()</a></code> evaluates total missing cells across an entire
-vector, data frame, or matrix. When working with raw registry extracts,
-specify custom sentinel codes in <code>na_list</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Sample vector with default and non-standard missing codes</span></span>
-<span><span class="va">vec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">14</span>, <span class="cn">NA</span>, <span class="fl">999</span>, <span class="fl">18</span>, <span class="st">""</span>, <span class="st">"Unknown"</span><span class="op">)</span></span>
+vector, data frame, or matrix. When working with raw hospital extracts
+containing non-standard placeholders, specify custom sentinel codes in
+<code>na_list</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Total missing cells in our amputed cohort (18 rows * 7 features = 126 cells)</span></span>
+<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 126</span></span>
 <span></span>
-<span><span class="co"># Count standard NAs only</span></span>
-<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">vec</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 1</span></span>
-<span></span>
-<span><span class="co"># Count NAs and sentinel codes simultaneously</span></span>
-<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">vec</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"999"</span>, <span class="st">""</span>, <span class="st">"Unknown"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 4</span></span></code></pre></div>
+<span><span class="co"># Demonstrating multi-sentinel code auditing without modifying data types</span></span>
+<span><span class="va">vec_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">14</span>, <span class="cn">NA</span>, <span class="fl">999</span>, <span class="fl">18</span>, <span class="st">""</span>, <span class="st">"Unknown"</span>, <span class="op">-</span><span class="fl">99</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">vec_raw</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"999"</span>, <span class="st">"-99"</span>, <span class="st">""</span>, <span class="st">"Unknown"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 5</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="feature-level-missingness-table-with-features_percent_miss">Feature-level missingness table with
-<code>features_percent_miss()</code><a class="anchor" aria-label="anchor" href="#feature-level-missingness-table-with-features_percent_miss"></a>
+<h3 id="feature-level-completeness-table-with-features_percent_miss">Feature-level completeness table with
+<code>features_percent_miss()</code><a class="anchor" aria-label="anchor" href="#feature-level-completeness-table-with-features_percent_miss"></a>
 </h3>
 <p>In clinical study preparation, biostatisticians need a sorted summary
 showing which variables exceed missingness thresholds (e.g. variables
 with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>20</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">&gt;20\%</annotation></semantics></math>
 missingness that cannot be reliably imputed):</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Synthetic clinical cohort</span></span>
-<span><span class="va">df_clinical</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  patient_id  <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,</span>
-<span>  age         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">52</span>, <span class="cn">NA</span>, <span class="fl">61</span>, <span class="fl">38</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>  systolic_bp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">120</span>, <span class="fl">135</span>, <span class="cn">NA</span>, <span class="fl">140</span>, <span class="fl">118</span>, <span class="fl">125</span><span class="op">)</span>,</span>
-<span>  bmi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">22.5</span>, <span class="cn">NA</span>, <span class="fl">29.1</span>, <span class="cn">NA</span>, <span class="fl">31.0</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>  smoker      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"No"</span>, <span class="st">"Yes"</span>, <span class="st">""</span>, <span class="st">"No"</span>, <span class="st">"NA"</span>, <span class="st">"Yes"</span><span class="op">)</span>,</span>
-<span>  hba1c       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.6</span>, <span class="fl">999</span>, <span class="fl">6.2</span>, <span class="fl">7.1</span>, <span class="fl">999</span>, <span class="fl">5.8</span><span class="op">)</span>,</span>
-<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Audit missingness including blank strings and sentinel '999' codes</span></span>
-<span><span class="va">miss_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">df_clinical</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">miss_tbl</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
-<span><span class="co">#&gt;   feature     SumNa SumComp PctNa PctComp</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bmi             3       3 0.5     0.5  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> age             2       4 0.333   0.667</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> smoker          2       4 0.333   0.667</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> hba1c           2       4 0.333   0.667</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> systolic_bp     1       5 0.167   0.833</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> patient_id      0       6 0       1</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">miss_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span></span>
+<span><span class="va">miss_summary</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 5</span></span></span>
+<span><span class="co">#&gt;   feature       SumNa SumComp PctNa PctComp</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> age              18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> systolic_bp      18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> bmi              18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cholesterol      18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> glucose          18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> smoker           18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> hypertension     18     102  0.15    0.85</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> patient_id        0     120  0       1   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> disease_stage     0     120  0       1</span></span></code></pre></div>
+<p>Notice that: - All 7 amputed features exhibit exactly
+<code>PctNa = 0.15</code> (18 missing cells out of 120 rows). - The
+un-amputed columns (<code>patient_id</code> and
+<code>disease_stage</code>) correctly report <code>PctNa = 0.00</code>.
+- The output is automatically sorted in descending order of missingness
+proportion.</p>
 </div>
 <div class="section level3">
-<h3 id="visualizing-missingness-with-plot_features_percent_miss-and-missmap">Visualizing missingness with
-<code>plot_features_percent_miss()</code> and
-<code>missmap()</code><a class="anchor" aria-label="anchor" href="#visualizing-missingness-with-plot_features_percent_miss-and-missmap"></a>
+<h3 id="visualizing-missingness-with-plot_features_percent_miss">Visualizing missingness with
+<code>plot_features_percent_miss()</code><a class="anchor" aria-label="anchor" href="#visualizing-missingness-with-plot_features_percent_miss"></a>
 </h3>
-<p><code><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss()</a></code> (or its S3 method
-<code>plot(miss_tbl)</code>) generates a clean horizontal bar chart
-sorted by missingness frequency:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Plot missingness across all features</span></span>
-<span><span class="fu"><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">df_clinical</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Isolate only the top 3 most missing variables</span></span>
-<span><span class="fu"><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">df_clinical</span>, top_n <span class="op">=</span> <span class="fl">3</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss()</a></code> (or calling
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> on a <code>features_percent_miss</code> object)
+produces a clean horizontal bar chart displaying feature-level
+missingness:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/plot_miss_summary-1.png" class="r-plt" alt="" width="672"></p>
+<p>We can also isolate the top features or enforce custom
+thresholds:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">amputed</span>, top_n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/plot_miss_top-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level3">
+<h3 id="missingness-heatmaps-with-missmap">Missingness heatmaps with <code>missmap()</code><a class="anchor" aria-label="anchor" href="#missingness-heatmaps-with-missmap"></a>
+</h3>
+<p>The <code><a href="../reference/missmap.html">missmap()</a></code> function visualizes missingness patterns
+across the cohort.</p>
 <div class="section level4">
-<h4 id="heatmaps-with-missmap-row-level-and-group-level-views">Heatmaps with <code>missmap()</code>: Row-level and Group-level
-views<a class="anchor" aria-label="anchor" href="#heatmaps-with-missmap-row-level-and-group-level-views"></a>
+<h4 id="patient-level-heatmap-row_order-false">1. Patient-level heatmap (<code>row_order = FALSE</code>)<a class="anchor" aria-label="anchor" href="#patient-level-heatmap-row_order-false"></a>
 </h4>
-<p>The <code><a href="../reference/missmap.html">missmap()</a></code> function visualizes co-occurrence and
-missingness clustering across the dataset:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Per-row / Per-column view</strong>: Visualizes each
-observation individually, sorting rows and features by descending
-missingness count when <code>row_order = FALSE</code>:</li>
-</ol>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Render full patient-level missingness heatmap</span></span>
-<span><span class="fu"><a href="../reference/missmap.html">missmap</a></span><span class="op">(</span><span class="va">df_clinical</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<ol start="2" style="list-style-type: decimal">
-<li>
-<strong>Group-aggregated view
-(<code>by_column = ...</code>)</strong>: In multi-center clinical
-trials, auditing missingness aggregated by hospital site, study arm, or
-visit number is critical for monitoring trial conduct:</li>
-</ol>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Synthetic multi-site clinical cohort</span></span>
-<span><span class="va">df_multisite</span> <span class="op">&lt;-</span> <span class="va">df_clinical</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Hospital_A"</span>, <span class="st">"Hospital_A"</span>, <span class="st">"Hospital_B"</span>, <span class="st">"Hospital_B"</span>, <span class="st">"Hospital_C"</span>, <span class="st">"Hospital_C"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Aggregate missingness counts per site across clinical features</span></span>
-<span><span class="co"># Displays a continuous gradient from black to Temple cherry</span></span>
-<span><span class="fu"><a href="../reference/missmap.html">missmap</a></span><span class="op">(</span><span class="va">df_multisite</span>, by_column <span class="op">=</span> <span class="va">site</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span>, fill <span class="op">=</span> <span class="st">"count"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or display binary presence/absence per site</span></span>
-<span><span class="fu"><a href="../reference/missmap.html">missmap</a></span><span class="op">(</span><span class="va">df_multisite</span>, by_column <span class="op">=</span> <span class="va">site</span>, na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">"NA"</span>, <span class="fl">999</span><span class="op">)</span>, fill <span class="op">=</span> <span class="st">"binary"</span><span class="op">)</span></span></code></pre></div>
+<p>Visualizes every patient row and feature column. Rows and columns are
+sorted by missingness density, allowing visual identification of
+patients with clustered missing labs:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/missmap.html">missmap</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/missmap_patient-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level4">
+<h4 id="group-aggregated-heatmap-by_column----">2. Group-aggregated heatmap (<code>by_column = ...</code>)<a class="anchor" aria-label="anchor" href="#group-aggregated-heatmap-by_column----"></a>
+</h4>
+<p>In clinical trials, auditing missingness aggregated by study arm,
+hospital site, or disease stage is critical for trial monitoring:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Aggregate missingness counts per disease stage</span></span>
+<span><span class="fu"><a href="../reference/missmap.html">missmap</a></span><span class="op">(</span><span class="va">amputed</span>, by_column <span class="op">=</span> <span class="va">disease_stage</span>, fill <span class="op">=</span> <span class="st">"count"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/missmap_stage-1.png" class="r-plt" alt="" width="672"></p>
 <hr>
 </div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="feature-normalization">2. Feature Normalization<a class="anchor" aria-label="anchor" href="#feature-normalization"></a>
+<h2 id="clinical-outlier-governance-and-feature-normalization">4. Clinical Outlier Governance and Feature Normalization<a class="anchor" aria-label="anchor" href="#clinical-outlier-governance-and-feature-normalization"></a>
 </h2>
-<p>Machine learning models and penalized regressions require predictors
-to be scaled comparably. <code>TempleCBE</code> provides three
-straightforward vector transformations:</p>
-<ul>
-<li>
-<strong><code><a href="../reference/min_max_norm.html">min_max_norm()</a></code></strong>: Scales values strictly
-into the bounded interval
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>.</li>
-<li>
-<strong><code><a href="../reference/z_norm.html">z_norm()</a></code></strong>: Centers values to mean
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu = 0</annotation></semantics></math>
-and scales to standard deviation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\sigma = 1</annotation></semantics></math>.</li>
-<li>
-<strong><code><a href="../reference/range_norm.html">range_norm()</a></code></strong>: Scales relative to
-combined distribution bounds across features.</li>
-</ul>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">30</span>, <span class="fl">40</span>, <span class="fl">50</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Min-Max normalization [0, 1]</span></span>
-<span><span class="fu"><a href="../reference/min_max_norm.html">min_max_norm</a></span><span class="op">(</span><span class="va">vals</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.00 0.25 0.50 0.75 1.00</span></span>
-<span></span>
-<span><span class="co"># Z-Score standardization (mean = 0, sd = 1)</span></span>
-<span><span class="fu"><a href="../reference/z_norm.html">z_norm</a></span><span class="op">(</span><span class="va">vals</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -1.2649111 -0.6324555  0.0000000  0.6324555  1.2649111</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="two-tier-outlier-detection">3. Two-Tier Outlier Detection<a class="anchor" aria-label="anchor" href="#two-tier-outlier-detection"></a>
-</h2>
-<p><code><a href="../reference/detect_outliers.html">detect_outliers()</a></code> audits numerical vectors or data frame
-columns using Tukey’s interquartile range criteria: - <strong>Mild
-Outliers</strong>: Values lying outside
+<p>Before proceeding to imputation, exploratory clinical workflows
+require screening for distributional anomalies and scaling features.</p>
+<div class="section level3">
+<h3 id="two-tier-tukey-outlier-detection">Two-tier Tukey outlier detection<a class="anchor" aria-label="anchor" href="#two-tier-tukey-outlier-detection"></a>
+</h3>
+<p><code><a href="../reference/detect_outliers.html">detect_outliers()</a></code> audits numerical features using
+Tukey’s formal IQR criteria: - <strong>Mild Outliers</strong>: Values
+lying outside
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><msub><mi>Q</mi><mn>1</mn></msub><mo>−</mo><mn>1.5</mn><mo>×</mo><mtext mathvariant="normal">IQR</mtext><mo>,</mo><msub><mi>Q</mi><mn>3</mn></msub><mo>+</mo><mn>1.5</mn><mo>×</mo><mtext mathvariant="normal">IQR</mtext><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[Q_1 - 1.5 \times \text{IQR}, Q_3 + 1.5 \times \text{IQR}]</annotation></semantics></math>.
 - <strong>Extreme Outliers</strong>: Values lying outside
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><msub><mi>Q</mi><mn>1</mn></msub><mo>−</mo><mn>3.0</mn><mo>×</mo><mtext mathvariant="normal">IQR</mtext><mo>,</mo><msub><mi>Q</mi><mn>3</mn></msub><mo>+</mo><mn>3.0</mn><mo>×</mo><mtext mathvariant="normal">IQR</mtext><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[Q_1 - 3.0 \times \text{IQR}, Q_3 + 3.0 \times \text{IQR}]</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">clinical_labs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="fl">14</span>, <span class="fl">15</span>, <span class="fl">14</span>, <span class="fl">16</span>, <span class="fl">15</span>, <span class="fl">14</span>, <span class="fl">45</span>, <span class="fl">120</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Detect mild and extreme anomalies</span></span>
-<span><span class="va">outlier_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_outliers.html">detect_outliers</a></span><span class="op">(</span><span class="va">clinical_labs</span><span class="op">)</span></span>
-<span><span class="va">outlier_report</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Screen cholesterol for mild and extreme clinical anomalies</span></span>
+<span><span class="va">outlier_chol</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_outliers.html">detect_outliers</a></span><span class="op">(</span><span class="va">cohort_clean</span><span class="op">$</span><span class="va">cholesterol</span><span class="op">)</span></span>
+<span><span class="va">outlier_chol</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   column value .outlier .outlier_type</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> value     45 TRUE     EXTREME      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> value    120 TRUE     EXTREME</span></span></code></pre></div>
-<p>When evaluated on data frames, <code><a href="../reference/detect_outliers.html">detect_outliers()</a></code> returns
-a structured summary detailing outlier counts, threshold fences, and row
-indices for clinical auditing.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> value    274 TRUE     MILD</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="distributional-testing">Distributional testing<a class="anchor" aria-label="anchor" href="#distributional-testing"></a>
+</h3>
+<p>Before applying parametric survival or regression models, test
+distributional assumptions with <code><a href="../reference/distribution_test.html">distribution_test()</a></code>:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/distribution_test.html">distribution_test</a></span><span class="op">(</span><span class="va">cohort_clean</span><span class="op">$</span><span class="va">glucose</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 8</span></span></span>
+<span><span class="co">#&gt;   statistic parameter p.value method  distribution.test p_value_sig distribution</span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   12.6            8   0.125 Chi-sq… TRUE              <span style="color: #949494;">""</span>          poisson     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>    0.994         <span style="color: #BB0000;">NA</span>   0.883 Shapir… TRUE              <span style="color: #949494;">""</span>          normal      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>    0.072<span style="text-decoration: underline;">1</span>        <span style="color: #BB0000;">NA</span>   0.131 Lillie… TRUE              <span style="color: #949494;">""</span>          normal      </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: is_int &lt;lgl&gt;</span></span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="feature-normalization">Feature normalization<a class="anchor" aria-label="anchor" href="#feature-normalization"></a>
+</h3>
+<p><code>TempleCBE</code> provides three standard vector transformations
+for preparing predictors for penalized regressions or distance-based
+algorithms: - <code><a href="../reference/min_max_norm.html">min_max_norm()</a></code>: Scales values strictly to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>.
+- <code><a href="../reference/z_norm.html">z_norm()</a></code>: Centers to mean
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\mu = 0</annotation></semantics></math>
+and scales to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\sigma = 1</annotation></semantics></math>.
+- <code><a href="../reference/range_norm.html">range_norm()</a></code>: Scales relative to combined distribution
+bounds.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Sample values from baseline systolic blood pressure</span></span>
+<span><span class="va">bp_sample</span> <span class="op">&lt;-</span> <span class="va">cohort_clean</span><span class="op">$</span><span class="va">systolic_bp</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  raw     <span class="op">=</span> <span class="va">bp_sample</span>,</span>
+<span>  min_max <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/min_max_norm.html">min_max_norm</a></span><span class="op">(</span><span class="va">bp_sample</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  z_score <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/z_norm.html">z_norm</a></span><span class="op">(</span><span class="va">bp_sample</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
+<span><span class="co">#&gt;     raw min_max z_score</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   147   0.938   0.657</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>   140   0.5    -<span style="color: #BB0000;">0.388</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>   148   1       0.807</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>   146   0.875   0.508</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>   132   0      -<span style="color: #BB0000;">1.58</span></span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="pairwise-correlation-screening-with-corr_test_all">Pairwise correlation screening with
+<code>corr_test_all()</code><a class="anchor" aria-label="anchor" href="#pairwise-correlation-screening-with-corr_test_all"></a>
+</h3>
+<p>Screening for multicollinearity across clinical biomarkers helps
+identify redundant covariates before regression modeling and confirms
+the underlying covariance that imputation engines exploit:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Pairwise correlation across continuous clinical biomarkers</span></span>
+<span><span class="va">corr_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/corr_test_all.html">corr_test_all</a></span><span class="op">(</span></span>
+<span>  <span class="va">cohort_clean</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"systolic_bp"</span>, <span class="st">"bmi"</span>, <span class="st">"cholesterol"</span>, <span class="st">"glucose"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">corr_tbl</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 4</span></span></span>
+<span><span class="co">#&gt;   var1        var2            r  p_value</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> age         systolic_bp 0.524 8.21<span style="color: #949494;">e</span><span style="color: #BB0000;">-10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> systolic_bp bmi         0.379 1.92<span style="color: #949494;">e</span><span style="color: #BB0000;">- 5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> bmi         glucose     0.292 1.19<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cholesterol glucose     0.286 1.54<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> age         glucose     0.257 4.62<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> systolic_bp cholesterol 0.244 7.29<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span></span></span></code></pre></div>
 <hr>
 </div>
-<div class="section level2">
-<h2 id="complementary-biostatistical-tools-in-templecbe">4. Complementary Biostatistical Tools in <code>TempleCBE</code><a class="anchor" aria-label="anchor" href="#complementary-biostatistical-tools-in-templecbe"></a>
-</h2>
-<p>In addition to missingness and scaling, <code>TempleCBE</code>
-provides statistical auditing utilities that bridge early EDA with
-formal statistical testing:</p>
-<div class="section level3">
-<h3 id="normality-testing-and-distribution-plots">Normality testing and distribution plots<a class="anchor" aria-label="anchor" href="#normality-testing-and-distribution-plots"></a>
-</h3>
-<p>Before applying parametric tests (e.g. Student’s t-test or ANOVA),
-assess distributional assumptions using <code><a href="../reference/distribution_test.html">distribution_test()</a></code>
-and <code><a href="../reference/distribution_plot.html">distribution_plot()</a></code>:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Sample biomarker data</span></span>
-<span><span class="va">biomarker</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span>, mean <span class="op">=</span> <span class="fl">25</span>, sd <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>, <span class="fl">65</span>, <span class="fl">72</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Conduct Anderson-Darling and Shapiro-Wilk tests</span></span>
-<span><span class="fu"><a href="../reference/distribution_test.html">distribution_test</a></span><span class="op">(</span><span class="va">biomarker</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 8</span></span></span>
-<span><span class="co">#&gt;   statistic parameter  p.value method distribution.test p_value_sig distribution</span></span>
-<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    16.4           8 3.72<span style="color: #949494;">e</span><span style="color: #BB0000;">- 2</span> Chi-s… FALSE             *           poisson     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     0.615        <span style="color: #BB0000;">NA</span> 1.95<span style="color: #949494;">e</span><span style="color: #BB0000;">-10</span> Shapi… FALSE             ***         normal      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     0.258        <span style="color: #BB0000;">NA</span> 2.32<span style="color: #949494;">e</span><span style="color: #BB0000;">- 9</span> Lilli… FALSE             ***         normal      </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: is_int &lt;lgl&gt;</span></span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Visual inspection with density overlay and Q-Q plots</span></span>
-<span><span class="fu"><a href="../reference/distribution_plot.html">distribution_plot</a></span><span class="op">(</span><span class="va">biomarker</span>, feature_name <span class="op">=</span> <span class="st">"Serum Biomarker (ng/mL)"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="automated-correlation-matrices-with-corr_test_all">Automated correlation matrices with
-<code>corr_test_all()</code><a class="anchor" aria-label="anchor" href="#automated-correlation-matrices-with-corr_test_all"></a>
-</h3>
-<p>Screen for multi-collinearity across high-dimensional clinical
-features:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Compute pairwise correlations with p-values and confidence intervals</span></span>
-<span><span class="va">corrs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/corr_test_all.html">corr_test_all</a></span><span class="op">(</span><span class="va">df_clinical</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">systolic_bp</span>, <span class="va">bmi</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Visualize with correlation heatmap</span></span>
-<span><span class="fu"><a href="../reference/correlation_plot.html">correlation_plot</a></span><span class="op">(</span><span class="va">corrs</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="controlled-imputation-benchmarking-with-add_missing">Controlled imputation benchmarking with
-<code>add_missing()</code><a class="anchor" aria-label="anchor" href="#controlled-imputation-benchmarking-with-add_missing"></a>
-</h3>
-<p>When developing and validating statistical pipelines,
-<code><a href="../reference/add_missing.html">add_missing()</a></code> injects known MCAR missingness into complete
-datasets:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">complete_data</span> <span class="op">&lt;-</span> <span class="va">iris</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co"># Mask 20% of values across selected features</span></span>
-<span><span class="va">amputed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_missing.html">add_missing</a></span><span class="op">(</span><span class="va">complete_data</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">Sepal.Length</span>, <span class="va">Petal.Length</span><span class="op">)</span>, pct_na <span class="op">=</span> <span class="fl">0.20</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Inspect resulting missingness</span></span>
-<span><span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 5</span></span></span>
-<span><span class="co">#&gt;   feature      SumNa SumComp PctNa PctComp</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Sepal.Length    30     120   0.2     0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Petal.Length    30     120   0.2     0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Sepal.Width      0     150   0       1  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Petal.Width      0     150   0       1</span></span>
-<span></span>
-<span><span class="co"># The 'missing_cells' attribute tracks exact amputed coordinates for scoring</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">amputed</span>, <span class="st">"missing_cells"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 2</span></span></span>
-<span><span class="co">#&gt;     row feature     </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     3 Sepal.Length</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     5 Sepal.Length</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>    20 Sepal.Length</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>    24 Sepal.Length</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    27 Sepal.Length</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>    34 Sepal.Length</span></span></code></pre></div>
-</div>
 </div>
 <div class="section level2">
-<h2 id="tuned-random-forest-imputation-missforest-missranger">5. Tuned Random Forest Imputation (<code>missForest</code> &amp;
-<code>missRanger</code>)<a class="anchor" aria-label="anchor" href="#tuned-random-forest-imputation-missforest-missranger"></a>
+<h2 id="tuned-random-forest-imputation-with-missforest_sweep_mtry">5. Tuned Random Forest Imputation with
+<code>missforest_sweep_mtry()</code><a class="anchor" aria-label="anchor" href="#tuned-random-forest-imputation-with-missforest_sweep_mtry"></a>
 </h2>
-<p>Once missingness patterns have been audited, biostatisticians must
-decide how to handle missing values. Complete-case analysis discards
-valuable clinical data and introduces bias. Random forest imputation is
-widely considered the state of the art for mixed clinical data because
-it accommodates non-linear relationships and complex interactions
+<p>Once missingness patterns and outliers have been audited,
+biostatisticians must handle missing values. Random forest imputation is
+widely considered the gold standard for mixed clinical data because it
+captures non-linear physiological relationships and complex interactions
 without requiring parametric distribution assumptions.</p>
 <div class="section level3">
 <h3 id="the-mtry-dilemma-in-clinical-data">The <code>mtry</code> dilemma in clinical data<a class="anchor" aria-label="anchor" href="#the-mtry-dilemma-in-clinical-data"></a>
@@ -565,92 +660,289 @@ predictive biomarkers may be missed at key splits. - If
 clinical features.</p>
 <p>Critically, <strong>different clinical variables perform best at
 different <code>mtry</code> values</strong>. A continuous biomarker
-(e.g. serum creatinine) may achieve minimal error at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">mtry = 2</annotation></semantics></math>,
-whereas a multi-level categorical diagnosis (e.g. ICD-10 disease
-subtype) may require
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">mtry = 5</annotation></semantics></math>.
-Standard implementations force the analyst to choose a single global
-<code>mtry</code> for the entire dataset.</p>
+(e.g. <code>systolic_bp</code>) may achieve minimal error at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">mtry = 3</annotation></semantics></math>,
+whereas a binary factor (e.g. <code>smoker</code>) may perform best at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">mtry = 1</annotation></semantics></math>.
+Standard implementations force analysts to choose a single global
+<code>mtry</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="the-templecbe-solution-independent-per-column-best-mtry-assembly">The <code>TempleCBE</code> solution: Independent per-column best
-<code>mtry</code> assembly<a class="anchor" aria-label="anchor" href="#the-templecbe-solution-independent-per-column-best-mtry-assembly"></a>
+<h3 id="templecbes-solution-independent-per-column-best-mtry-assembly">
+<code>TempleCBE</code>’s solution: Independent per-column best
+<code>mtry</code> assembly<a class="anchor" aria-label="anchor" href="#templecbes-solution-independent-per-column-best-mtry-assembly"></a>
 </h3>
-<p><code>TempleCBE</code> provides two complementary swept imputation
-engines: - <strong><code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code></strong>: Based
-on the gold-standard [missForest::missForest()] algorithm. -
-<strong><code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code></strong>: High-performance
-alternative powered by [missRanger::missRanger()] and the C++
-<code>ranger</code> library, with support for Predictive Mean Matching
-(PMM).</p>
-<p>Both functions follow a unified, mathematically principled workflow:
-1. <strong>Sweep</strong>: Fit the forest across a grid of candidate
-<code>mtry</code> values (e.g. <code>1:(p - 1)</code>). 2.
-<strong>Score</strong>: Track variable-wise out-of-bag (OOB) error for
-every column at every <code>mtry</code>. 3. <strong>Assemble
-(<code>assemble_by_best_mtry</code>)</strong>: Pull each column
-independently from the specific run where that column achieved its
-minimal OOB error! 4. <strong>Guardrails</strong>: Exclude identifiers
-(<code>exclude</code>), enforce sparsity limits
-(<code>max_pct_missing</code>), and refuse all-<code>NA</code> columns
-(<code>check_no_all_na_columns</code>).</p>
-</div>
-<div class="section level3">
-<h3 id="high-accuracy-imputation-with-missforest_sweep_mtry">High-accuracy imputation with
-<code>missforest_sweep_mtry()</code><a class="anchor" aria-label="anchor" href="#high-accuracy-imputation-with-missforest_sweep_mtry"></a>
-</h3>
-<p><code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code> reports raw Mean Squared Error
-(MSE) for numeric columns and Proportion of Falsely Classified (PFC) for
-categorical factors:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Synthetic clinical data with missing values</span></span>
-<span><span class="va">clinical_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  patient_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PT_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span>,</span>
-<span>  age        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">52</span>, <span class="cn">NA</span>, <span class="fl">61</span>, <span class="fl">38</span>, <span class="fl">59</span>, <span class="fl">63</span>, <span class="cn">NA</span>, <span class="fl">49</span>, <span class="fl">55</span>, <span class="fl">71</span>, <span class="fl">42</span><span class="op">)</span>,</span>
-<span>  systolic_bp<span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">120</span>, <span class="fl">135</span>, <span class="cn">NA</span>, <span class="fl">140</span>, <span class="fl">118</span>, <span class="fl">125</span>, <span class="fl">138</span>, <span class="fl">144</span>, <span class="cn">NA</span>, <span class="fl">130</span>, <span class="fl">150</span>, <span class="fl">122</span><span class="op">)</span>,</span>
-<span>  bmi        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">22.5</span>, <span class="cn">NA</span>, <span class="fl">29.1</span>, <span class="cn">NA</span>, <span class="fl">31.0</span>, <span class="fl">26.4</span>, <span class="fl">28.2</span>, <span class="fl">33.1</span>, <span class="fl">24.8</span>, <span class="cn">NA</span>, <span class="fl">27.5</span>, <span class="fl">23.9</span><span class="op">)</span>,</span>
-<span>  smoker     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"No"</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>, <span class="st">"No"</span>, <span class="st">"Yes"</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>, <span class="st">"No"</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  stage      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"I"</span>, <span class="st">"II"</span>, <span class="st">"II"</span>, <span class="st">"III"</span>, <span class="st">"I"</span>, <span class="st">"II"</span>, <span class="st">"IV"</span>, <span class="st">"III"</span>, <span class="st">"I"</span>, <span class="st">"II"</span>, <span class="st">"III"</span>, <span class="st">"I"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Impute with mtry sweep (1 to 4), excluding patient_id</span></span>
+<p><code><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry()</a></code> sweeps across candidate
+<code>mtry</code> values, tracks out-of-bag (OOB) error for every column
+at every <code>mtry</code>, and pulls each column independently from the
+specific run where that column achieved its minimal error.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run missForest sweep across mtry = 1:4</span></span>
+<span><span class="co"># We exclude patient_id and disease_stage from imputation predictors</span></span>
 <span><span class="va">res_forest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/missforest_sweep_mtry.html">missforest_sweep_mtry</a></span><span class="op">(</span></span>
-<span>  data            <span class="op">=</span> <span class="va">clinical_data</span>,</span>
-<span>  exclude         <span class="op">=</span> <span class="st">"patient_id"</span>,</span>
-<span>  mtry_values     <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>  ntree           <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  max_pct_missing <span class="op">=</span> <span class="fl">0.50</span>,</span>
-<span>  parallel        <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 1. Inspect the completed dataset (patient_id reattached in original order)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res_forest</span><span class="op">$</span><span class="va">imp_data</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 2. Inspect the winning mtry per column</span></span>
-<span><span class="va">res_forest</span><span class="op">$</span><span class="va">best</span></span>
-<span></span>
-<span><span class="co"># 3. View the full OOB error grid across swept mtry values</span></span>
-<span><span class="va">res_forest</span><span class="op">$</span><span class="va">oob_error</span></span></code></pre></div>
+<span>  data            <span class="op">=</span> <span class="va">amputed</span>,</span>
+<span>  exclude         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"patient_id"</span>, <span class="st">"disease_stage"</span><span class="op">)</span>,</span>
+<span>  mtry_values     <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span>
+<span>  ntree           <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>  maxiter         <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  parallel        <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  seed            <span class="op">=</span> <span class="fl">123</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="fast-large-scale-imputation-with-missranger_sweep_mtry">Fast, large-scale imputation with
-<code>missranger_sweep_mtry()</code><a class="anchor" aria-label="anchor" href="#fast-large-scale-imputation-with-missranger_sweep_mtry"></a>
+<h3 id="inspecting-the-winning-mtry-per-feature">Inspecting the winning <code>mtry</code> per feature<a class="anchor" aria-label="anchor" href="#inspecting-the-winning-mtry-per-feature"></a>
 </h3>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Winning mtry and minimum OOB error per column</span></span>
+<span><span class="va">res_forest</span><span class="op">$</span><span class="va">best</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 4</span></span></span>
+<span><span class="co">#&gt;   column       error_type     error  mtry</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> smoker       PFC          0.304       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> glucose      MSE         92.7         2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> hypertension PFC          0.009<span style="text-decoration: underline;">80</span>     2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> systolic_bp  MSE         25.2         3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> cholesterol  MSE        269.          3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> age          MSE         56.2         4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> bmi          MSE         11.1         4</span></span></code></pre></div>
+<p>Notice that: - Features optimize at <strong>different</strong>
+<code>mtry</code> values (e.g. <code>smoker</code> at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">mtry = 1</annotation></semantics></math>,
+<code>hypertension</code> and <code>glucose</code> at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">mtry = 2</annotation></semantics></math>,
+<code>systolic_bp</code> and <code>cholesterol</code> at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">mtry = 3</annotation></semantics></math>,
+<code>age</code> and <code>bmi</code> at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">mtry = 4</annotation></semantics></math>).
+- Categorical features report Proportion of Falsely Classified
+(<strong>PFC</strong>), while continuous features report Mean Squared
+Error (<strong>MSE</strong>). - <code>imp_data</code> contains the
+completed cohort with <code>patient_id</code> and
+<code>disease_stage</code> re-attached in place:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res_forest</span><span class="op">$</span><span class="va">imp_data</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 9</span></span></span>
+<span><span class="co">#&gt;   patient_id   age systolic_bp   bmi cholesterol glucose smoker hypertension</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> PT_001      63          147   34.2        244     133  Yes    Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> PT_002      48          140   35.1        223.    118. No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> PT_003      59.9        140.  27.9        222.    117  No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> PT_004      57          146   26.4        200     111  No     Yes         </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> PT_005      52          130.  20.4        214.    128  No     No          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> PT_006      35          129   28.8        213.    128  Yes    No          </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: disease_stage &lt;fct&gt;</span></span></span>
+<span></span>
+<span><span class="co"># Verify that all missing values have been successfully resolved</span></span>
+<span><span class="fu"><a href="../reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">res_forest</span><span class="op">$</span><span class="va">imp_data</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="comparing-differences-in-errors">6. Comparing Differences in Errors<a class="anchor" aria-label="anchor" href="#comparing-differences-in-errors"></a>
+</h2>
+<p>A rigorous validation workflow evaluates errors along two dimensions:
+1. <strong>Model-reported Out-of-Bag (OOB) errors</strong> across
+candidate <code>mtry</code> values. 2. <strong>Empirical recovery
+errors</strong> comparing imputed values directly against the known
+ground truth.</p>
+<div class="section level3">
+<h3 id="comparison-1-differences-in-oob-errors-across-mtry-values">Comparison 1: Differences in OOB errors across <code>mtry</code>
+values<a class="anchor" aria-label="anchor" href="#comparison-1-differences-in-oob-errors-across-mtry-values"></a>
+</h3>
+<p>We first examine how out-of-bag error varies across the swept
+<code>mtry</code> values for each feature:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Tidy OOB error across all mtry values</span></span>
+<span><span class="va">res_forest</span><span class="op">$</span><span class="va">oob_error</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">column</span>, <span class="va">mtry</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 28 × 4</span></span></span>
+<span><span class="co">#&gt;    column      error_type error  mtry</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> age         MSE         68.6     1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> age         MSE         58.0     2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> age         MSE         61.7     3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> age         MSE         56.2     4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> bmi         MSE         12.1     1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> bmi         MSE         11.9     2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> bmi         MSE         11.5     3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> bmi         MSE         11.1     4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> cholesterol MSE        277.      1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> cholesterol MSE        279.      2</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 18 more rows</span></span></span></code></pre></div>
+<p>We can visualize this trajectory to see why variable-wise selection
+outperforms a single global <code>mtry</code>:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">res_forest</span><span class="op">$</span><span class="va">oob_error</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">mtry</span>, y <span class="op">=</span> <span class="va">error</span>, color <span class="op">=</span> <span class="va">column</span>, group <span class="op">=</span> <span class="va">column</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">error_type</span>, scales <span class="op">=</span> <span class="st">"free_y"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Out-of-Bag (OOB) Imputation Error Across mtry Settings"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Continuous features report MSE; Categorical features report PFC"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"Candidate mtry Value"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Out-of-Bag Error"</span>,</span>
+<span>    color <span class="op">=</span> <span class="st">"Clinical Feature"</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_x_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/oob_comparison_plot-1.png" class="r-plt" alt="" width="672"></p>
+<p>Notice the key biostatistical insights: - If a global setting of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">mtry = 1</annotation></semantics></math>
+had been enforced, continuous features like <code>systolic_bp</code> and
+<code>cholesterol</code> would suffer significantly elevated MSE. - If a
+global setting of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mi>t</mi><mi>r</mi><mi>y</mi><mo>=</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">mtry = 4</annotation></semantics></math>
+had been enforced, binary features like <code>smoker</code> and
+<code>hypertension</code> would suffer increased misclassification. -
+<code>TempleCBE</code>’s independent column assembly selects the global
+minimum for every variable simultaneously.</p>
+</div>
+<div class="section level3">
+<h3 id="comparison-2-imputation-recovery-vs--known-ground-truth">Comparison 2: Imputation Recovery vs. Known Ground Truth<a class="anchor" aria-label="anchor" href="#comparison-2-imputation-recovery-vs--known-ground-truth"></a>
+</h3>
+<p>Because we started with a complete dataset
+(<code>cohort_clean</code>) and used <code><a href="../reference/add_missing.html">add_missing()</a></code> to
+induce missingness, we can cross-reference every imputed cell with its
+original, unmasked ground truth:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Match imputed cells to true values via missing_cells coordinates</span></span>
+<span><span class="va">truth_vs_imp</span> <span class="op">&lt;-</span> <span class="va">missing_cells</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    true_val    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cohort_clean</span><span class="op">[[</span><span class="va">feature</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">row</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    imputed_val <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">res_forest</span><span class="op">$</span><span class="va">imp_data</span><span class="op">[[</span><span class="va">feature</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">row</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Sample of ground truth vs imputed predictions</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">truth_vs_imp</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 10 × 4</span></span></span>
+<span><span class="co">#&gt;      row feature true_val imputed_val     </span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>     3 age     59       59.9303571428572</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>    18 age     60       59.9879443241943</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>    20 age     64       54.6236375661376</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>    24 age     71       63.4742791005291</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>    25 age     58       53.0240145502645</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>    26 age     75       61.758664021164 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>    37 age     63       56.1781216931217</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>    41 age     48       57.6436417748918</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>    47 age     64       58.2681746031746</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>    49 age     65       58.1386375661376</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="continuous-feature-recovery-metrics">Continuous feature recovery metrics<a class="anchor" aria-label="anchor" href="#continuous-feature-recovery-metrics"></a>
+</h4>
+<p>For continuous biomarkers, we quantify recovery fidelity using: -
+<strong>Mean Absolute Error (MAE)</strong>: Average magnitude of
+prediction errors. - <strong>Root Mean Squared Error (RMSE)</strong>:
+Penalizes larger deviations. - <strong>Pearson Correlation
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>)</strong>:
+Measures linear agreement between true and recovered values.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cont_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"systolic_bp"</span>, <span class="st">"bmi"</span>, <span class="st">"cholesterol"</span>, <span class="st">"glucose"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cont_metrics</span> <span class="op">&lt;-</span> <span class="va">truth_vs_imp</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">feature</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">cont_features</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    true_num <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">true_val</span><span class="op">)</span>,</span>
+<span>    imp_num  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">imputed_val</span><span class="op">)</span>,</span>
+<span>    diff     <span class="op">=</span> <span class="va">imp_num</span> <span class="op">-</span> <span class="va">true_num</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">feature</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>    n_masked  <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    MAE       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">diff</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>    RMSE      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">diff</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>    Corr      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">imp_num</span>, <span class="va">true_num</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    .groups   <span class="op">=</span> <span class="st">"drop"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">cont_metrics</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
+<span><span class="co">#&gt;   feature     n_masked   MAE  RMSE  Corr</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> age               18  6.98  8.17 0.5  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> bmi               18  2.04  2.67 0.208</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> cholesterol       18 17.0  22.4  0.207</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> glucose           18  8.43  9.92 0.353</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> systolic_bp       18  5.55  7.01 0.636</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="categorical-feature-recovery-metrics">Categorical feature recovery metrics<a class="anchor" aria-label="anchor" href="#categorical-feature-recovery-metrics"></a>
+</h4>
+<p>For binary clinical factors, we evaluate classification accuracy and
+misclassification rate:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cat_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smoker"</span>, <span class="st">"hypertension"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cat_metrics</span> <span class="op">&lt;-</span> <span class="va">truth_vs_imp</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">feature</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">cat_features</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">feature</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>    n_masked      <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    accuracy      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">true_val</span> <span class="op">==</span> <span class="va">imputed_val</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    mismatch_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">true_val</span> <span class="op">!=</span> <span class="va">imputed_val</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    .groups       <span class="op">=</span> <span class="st">"drop"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">cat_metrics</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
+<span><span class="co">#&gt;   feature      n_masked accuracy mismatch_rate</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> hypertension       18    0.944         0.056</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> smoker             18    0.611         0.389</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="visualizing-recovery-fidelity">Visualizing recovery fidelity<a class="anchor" aria-label="anchor" href="#visualizing-recovery-fidelity"></a>
+</h3>
+<p>We can visually evaluate recovery by plotting true values versus
+imputed values for continuous predictors:</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">truth_vs_imp</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">feature</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"systolic_bp"</span>, <span class="st">"age"</span>, <span class="st">"glucose"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    true_num <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">true_val</span><span class="op">)</span>,</span>
+<span>    imp_num  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">imputed_val</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">true_num</span>, y <span class="op">=</span> <span class="va">imp_num</span>, color <span class="op">=</span> <span class="va">feature</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span>, color <span class="op">=</span> <span class="st">"grey50"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2.5</span>, alpha <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">feature</span>, scales <span class="op">=</span> <span class="st">"free"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"True vs. Imputed Values for Amputed Clinical Biomarkers"</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="st">"Dashed line indicates perfect recovery (y = x)"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"True Value (Ground Truth)"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Imputed Value (TempleCBE missForest)"</span>,</span>
+<span>    color <span class="op">=</span> <span class="st">"Feature"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="eda_and_missingness_files/figure-html/recovery_scatter-1.png" class="r-plt" alt="" width="672"></p>
+<p>The recovery results confirm that: - Strongly correlated features
+like <code>systolic_bp</code> and <code>hypertension</code> achieve high
+recovery precision (correlation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>&gt;</mo><mn>0.63</mn></mrow><annotation encoding="application/x-tex">r &gt; 0.63</annotation></semantics></math>
+and classification accuracy
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>94</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">&gt; 94\%</annotation></semantics></math>).
+- Out-of-bag error tracks closely with true empirical recovery error,
+confirming that optimizing <code>mtry</code> per feature leads to
+tangible gains in reconstructing real patient data.</p>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="fast-large-scale-imputation-with-missranger_sweep_mtry">7. Fast, Large-Scale Imputation with
+<code>missranger_sweep_mtry()</code><a class="anchor" aria-label="anchor" href="#fast-large-scale-imputation-with-missranger_sweep_mtry"></a>
+</h2>
 <p>For large clinical cohorts
 (e.g. <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>10</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">&gt; 10,000</annotation></semantics></math>
-patients or
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">&gt; 100</annotation></semantics></math>
-variables), <code>missForest</code> can be computationally intensive.
-<code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code> leverages the C++
-<code>ranger</code> implementation for high speed:</p>
+patients or high-dimensional panels), <code>missForest</code> can be
+computationally intensive. <code><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry()</a></code>
+leverages the C++ <code>ranger</code> engine and supports Predictive
+Mean Matching (PMM):</p>
 <ul>
-<li>
-<strong>Scaled OOB error</strong>: Reports
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">1 - R^2</annotation></semantics></math>
-for numeric columns (where values near 0 indicate near-perfect recovery
-and values near 1 indicate performance no better than predicting the
-mean).</li>
 <li>
 <strong>Predictive Mean Matching (<code>pmm.k</code>)</strong>:
 Setting <code>pmm.k &gt; 0</code> (e.g. <code>pmm.k = 3</code>) ensures
@@ -660,18 +952,17 @@ clinical scores (e.g. integer counts, survey scores).</li>
 <li>
 <strong>Parallel evaluation</strong>: Uses <code>furrr</code> to
 evaluate candidate <code>mtry</code> values across CPU cores in parallel
-without thread oversubscription (<code>num.threads = 1</code> inside
-<code>ranger</code>).</li>
+without thread oversubscription.</li>
 </ul>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/futureverse/furrr" class="external-link">furrr</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fast sweep with predictive mean matching</span></span>
 <span><span class="va">res_ranger</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/missranger_sweep_mtry.html">missranger_sweep_mtry</a></span><span class="op">(</span></span>
-<span>  data        <span class="op">=</span> <span class="va">clinical_data</span>,</span>
-<span>  exclude     <span class="op">=</span> <span class="st">"patient_id"</span>,</span>
-<span>  mtry_values <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
+<span>  data        <span class="op">=</span> <span class="va">amputed</span>,</span>
+<span>  exclude     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"patient_id"</span>, <span class="st">"disease_stage"</span><span class="op">)</span>,</span>
+<span>  mtry_values <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span>
 <span>  num.trees   <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>  pmm.k       <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  seed        <span class="op">=</span> <span class="fl">2026</span>,</span>
@@ -680,7 +971,6 @@ without thread oversubscription (<code>num.threads = 1</code> inside
 <span></span>
 <span><span class="co"># Inspect winning mtry values from ranger</span></span>
 <span><span class="va">res_ranger</span><span class="op">$</span><span class="va">best</span></span></code></pre></div>
-</div>
 <div class="section level3">
 <h3 id="safety-and-data-governance-guardrails">Safety and data governance guardrails<a class="anchor" aria-label="anchor" href="#safety-and-data-governance-guardrails"></a>
 </h3>
@@ -705,7 +995,7 @@ user so schema integrity is never compromised.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="how-others-can-use-this-technology-adoption-patterns">How others can use this technology (Adoption Patterns)<a class="anchor" aria-label="anchor" href="#how-others-can-use-this-technology-adoption-patterns"></a>
+<h2 id="practical-adoption-patterns">8. Practical Adoption Patterns<a class="anchor" aria-label="anchor" href="#practical-adoption-patterns"></a>
 </h2>
 <p>Here are three common patterns for applying <code>TempleCBE</code>’s
 EDA tools to real-world studies:</p>
@@ -714,24 +1004,24 @@ EDA tools to real-world studies:</p>
 </h3>
 <p>Create a standardized data quality intake report for newly exported
 registry data:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">audit_clinical_intake</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">raw_df</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Auditing Clinical Intake..."</span><span class="op">)</span></span>
-<span>  </span>
+<span></span>
 <span>  <span class="co"># 1. Quantify missingness including institutional sentinel values</span></span>
 <span>  <span class="va">miss_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span></span>
-<span>    <span class="va">raw_df</span>, </span>
+<span>    <span class="va">raw_df</span>,</span>
 <span>    na_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"999"</span>, <span class="st">"-99"</span>, <span class="st">"Unknown"</span>, <span class="st">"Refused"</span>, <span class="st">""</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span>  </span>
+<span></span>
 <span>  <span class="co"># 2. Flag variables with severe missingness (&gt; 30%)</span></span>
 <span>  <span class="va">flagged_vars</span> <span class="op">&lt;-</span> <span class="va">miss_summary</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">PctNa</span> <span class="op">&gt;</span> <span class="fl">0.30</span><span class="op">)</span></span>
-<span>  </span>
+<span></span>
 <span>  <span class="co"># 3. Screen continuous lab values for extreme clinical outliers</span></span>
 <span>  <span class="va">num_cols</span> <span class="op">&lt;-</span> <span class="va">raw_df</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">outliers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">num_cols</span>, <span class="va">detect_outliers</span><span class="op">)</span></span>
-<span>  </span>
+<span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    missing_summary <span class="op">=</span> <span class="va">miss_summary</span>,</span>
 <span>    severe_missing  <span class="op">=</span> <span class="va">flagged_vars</span>,</span>
@@ -745,34 +1035,35 @@ CSRs<a class="anchor" aria-label="anchor" href="#pattern-2-regulatory-missingnes
 </h3>
 <p>Clinical Study Reports (CSRs) submitted to regulatory agencies (FDA,
 EMA) require clear tables of missing baseline covariates:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Export publication-ready missingness tables</span></span>
-<span><span class="va">csr_missing_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">study_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="va">csr_missing_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">amputed</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span></span>
-<span>    `Clinical Variable` <span class="op">=</span> <span class="va">Feature</span>,</span>
-<span>    `Missing Count (n)` <span class="op">=</span> <span class="va">N_Missing</span>,</span>
+<span>    `Clinical Variable` <span class="op">=</span> <span class="va">feature</span>,</span>
+<span>    `Missing Count (n)` <span class="op">=</span> <span class="va">SumNa</span>,</span>
 <span>    `Missing Rate (%)`  <span class="op">=</span> <span class="va">PctNa</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>`Missing Rate (%)` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%.1f%%"</span>, <span class="va">`Missing Rate (%)`</span> <span class="op">*</span> <span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Print or write to Excel/RTF</span></span>
-<span><span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="va">csr_missing_table</span>, <span class="st">"tables/CSR_Table_14_1_Missingness.xlsx"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="va">csr_missing_table</span>, <span class="st">"CSR_Table_14_1_Missingness.xlsx"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pattern-3-outlier-screening-preserving-subject-record-keys">Pattern 3: Outlier screening preserving subject record keys<a class="anchor" aria-label="anchor" href="#pattern-3-outlier-screening-preserving-subject-record-keys"></a>
 </h3>
 <p>Flag outliers while maintaining patient identifiers for case review
 with clinical investigators:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Screen lab values and join back to patient IDs</span></span>
-<span><span class="va">iqr_audit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_outliers.html">detect_outliers</a></span><span class="op">(</span><span class="va">study_data</span><span class="op">$</span><span class="va">troponin_t</span><span class="op">)</span></span>
+<span><span class="va">iqr_audit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_outliers.html">detect_outliers</a></span><span class="op">(</span><span class="va">cohort_clean</span><span class="op">$</span><span class="va">cholesterol</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">flagged_patients</span> <span class="op">&lt;-</span> <span class="va">study_data</span> <span class="op">|&gt;</span></span>
+<span><span class="va">flagged_patients</span> <span class="op">&lt;-</span> <span class="va">cohort_clean</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">iqr_audit</span><span class="op">$</span><span class="va">mild_indices</span>, <span class="va">iqr_audit</span><span class="op">$</span><span class="va">extreme_indices</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">patient_id</span>, <span class="va">site_id</span>, <span class="va">troponin_t</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">patient_id</span>, <span class="va">disease_stage</span>, <span class="va">cholesterol</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
-<span>    flag <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">patient_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">study_data</span><span class="op">$</span><span class="va">patient_id</span><span class="op">[</span><span class="va">iqr_audit</span><span class="op">$</span><span class="va">extreme_indices</span><span class="op">]</span>,</span>
-<span>                  <span class="st">"EXTREME_OUTLIER"</span>, <span class="st">"MILD_OUTLIER"</span><span class="op">)</span></span>
+<span>    flag <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">patient_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">cohort_clean</span><span class="op">$</span><span class="va">patient_id</span><span class="op">[</span><span class="va">iqr_audit</span><span class="op">$</span><span class="va">extreme_indices</span><span class="op">]</span>,</span>
+<span>      <span class="st">"EXTREME_OUTLIER"</span>, <span class="st">"MILD_OUTLIER"</span></span>
+<span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <hr>
 </div>

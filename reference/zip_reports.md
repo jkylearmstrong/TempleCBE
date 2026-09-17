@@ -68,7 +68,9 @@ Unlike
 (which renders and zips a single document), `zip_reports` does not
 render anything itself — it packages outputs that have already been
 rendered, e.g. by
-[`render_me`](https://jkylearmstrong.github.io/TempleCBE/reference/render_me.md).
+[`render`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+(or
+[`render_me`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)).
 Report order and staging is entirely the caller's decision (for example,
 the topological sort of a project's own dependency graph) — pass
 `reports` pre-ordered. If multiple reports share the same source stem
