@@ -22,7 +22,7 @@ plot_categorical_associations(
 \item{cols}{Optional character vector of column names to include. If \code{NULL},
 all factor and character columns are selected.}
 
-\item{method}{Association metric: \code{"cramer_v"} (Cram\u00e9r's V correlation,
+\item{method}{Association metric: \code{"cramer_v"} (Cramer's V correlation,
 default) or \code{"p_value"} (\eqn{-\log_{10}(p)} from categorical tests).}
 
 \item{title}{Plot title (defaults to \code{"Categorical Association Matrix"}).}

@@ -301,7 +301,7 @@ How to modify this document to only re-render SAS chunks if SAS exists on machin
      has_sas <- !is.null(TempleCBE::find_sas())
 
    Then guard any chunk that requires live SAS execution:
-     ```{r run_sas_benchmark, eval = has_sas}
+     ```r
      # This chunk will only execute on a machine with a valid SAS installation
      TempleCBE::run_sas_script(path = "inst/sas/example_85_7.sas")
      ```
@@ -317,7 +317,7 @@ How to modify this document to only re-render SAS chunks if SAS exists on machin
 
 3. Storing Pre-computed SAS Outputs:
    Store verified SAS outputs (ODS CSV, Listing, or .rds) in `inst/extdata/sas_outputs/`:
-     ```{r load_sas_results, eval = TRUE}
+     ```r
      sas_rds <- system.file("extdata", "sas_example_85_7.rds", package = "TempleCBE")
      if (!is.null(TempleCBE::find_sas())) {
        # (Optional) Re-run live SAS script and update stored artifact:

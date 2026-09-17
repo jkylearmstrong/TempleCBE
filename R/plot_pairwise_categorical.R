@@ -907,7 +907,7 @@ cbe_square_plot <- function(data, var1 = NULL, var2 = NULL,
 #' @param data A data frame or tibble.
 #' @param cols Optional character vector of column names to include. If \code{NULL},
 #'   all factor and character columns are selected.
-#' @param method Association metric: \code{"cramer_v"} (Cram\u00e9r's V correlation,
+#' @param method Association metric: \code{"cramer_v"} (Cramer's V correlation,
 #'   default) or \code{"p_value"} (\eqn{-\log_{10}(p)} from categorical tests).
 #' @param title Plot title (defaults to \code{"Categorical Association Matrix"}).
 #' @param fill_colors Character vector for the color gradient (defaults to Temple palette).
