@@ -1,5 +1,29 @@
 # TempleCBE 0.3.4
 
+## Exact Contingency Methods, Chi-Square Testing & Visualizations
+
+* **Exact 2x2 Inference with Automatic Mid-p Default (`cbe_exact2x2`, `cbe_exact2x2_ci`)**:
+  * New `cbe_exact2x2()` performs exact inference using `exact2x2`. If any cell count in a 2x2 table is zero (`min(tab) == 0`), it automatically defaults to the mid-p version of Central Fisher's exact test (`midp = TRUE`), preventing extreme conditional conservatism. For non-zero tables, it defaults to standard Central Fisher (`midp = FALSE`).
+  * New `cbe_exact2x2_ci()` generates publication-ready odds ratio and confidence interval strings (e.g. `"0.8 (0.3, 2.1)"`).
+* **Chi-Square & Exact Testing Suite (`cbe_test_categorical`)**:
+  * Added `test = c("auto", "exact", "chisq", "fisher")` and `correct = FALSE` (uncorrected Pearson $\chi^2$) to `cbe_test_categorical()`, providing a drop-in custom test for `gtsummary::add_p()` implementing institutional CBE testing guidelines.
+* **Standard 4-Quadrant Square Reports (`cbe_four_quadrant_report`, `cbe_square_plot`)**:
+  * New `cbe_four_quadrant_report()` generates the standard clinical 4-quadrant report (`q1 | q2 // q3 | q4 // p = pformat`) returning structured quadrant percentages, console-ready text cards, compact 3-line summaries, and ggplot square tiles with configurable test engines (`"auto"`, `"exact"`, `"chisq"`, `"fisher"`).
+  * Dedicated wrapper `cbe_square_plot()` provides direct access to 4-quadrant reports and square glyph plots.
+* **Publication p-value Formatter (`pformat`, `cbe_pformat`)**:
+  * New exported `pformat()` (and alias `cbe_pformat()`) formats numeric p-values into publication-ready strings (e.g. `pformat(0.042)` -> `"p = 0.042"`, `pformat(0.0001)` -> `"p < 0.001"`).
+* **Contingency Plotting Suite (`cbe_contingency_plot`)**:
+  * Unified contingency visualization supporting `balloon`, `bar` (`fill`, `dodge`, `stack`), `mosaic`, `heatmap`, `square`, and `corrplot` with automatic hypothesis test calculation (`test = "auto"`, `"exact"`, `"chisq"`, `"fisher"`).
+  * New `plot_categorical_associations()` creates pairwise categorical correlation matrices using Cramér's V or $-\log_{10}(p)$ via `corrplot` with Temple University brand palettes.
+  * New `cbe_pairwise_combos()` enumerates all pairwise categorical combinations with sequential indexing for child-document expansion.
+* **Quarto & R Markdown Multi-Format Rendering (`render_me`)**:
+  * Expanded `render_me()` to natively support both `.qmd` and `.Rmd` documents (`pattern = "\\.(qmd|Rmd|rmd)$"`).
+  * Added `engine = c("auto", "quarto", "rmarkdown")` with automatic shorthand format translation (`"pdf"` -> `"pdf_document"`, `"docx"` -> `"word_document"`, `"html"` -> `"html_document"`, `"gfm"` -> `"github_document"`).
+* **Institutional Quarto EDA Templates**:
+  * Added anonymized `eda_tables.qmd` and `child_eda_chi_square.qmd` under `inst/templates/` and `inst/rmarkdown/templates/eda-tables/` with missingness diagnostics, stacked `gtsummary` baseline tables, association matrices, and pairwise categorical comparisons.
+* **Replacement of `arsenal` with `gtsummary`**:
+  * `summarize_section_by_time()` now defaults to `engine = "gtsummary"`, retaining `engine = "arsenal"` as backwards-compatible fallback.
+
 ## Bug Fixes & Statistical Enhancements
 
 * **Missingness & Auditing (`SumNa`)**:

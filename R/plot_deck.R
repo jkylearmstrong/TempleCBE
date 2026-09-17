@@ -225,19 +225,33 @@ plot_missingness <- function(data,
   p
 }
 
-#' Formatted 2x2 Contingency Table with Fisher's Exact Test
+#' Formatted 2x2 Contingency Table with Exact Test
 #'
 #' Builds an institutional 2x2 contingency table with row counts, row percentages,
-#' marginal totals, and Fisher's exact test p-value.
+#' marginal totals, odds ratio estimates, confidence intervals, and exact test p-values.
+#' If any cell count is zero, it automatically defaults to the mid-p version of
+#' Central Fisher's exact test (\code{midp = TRUE}).
 #'
 #' @param data Data frame containing the categorical variables.
 #' @param row_var Character name of the row variable.
 #' @param col_var Character name of the column variable.
 #' @param row_label Optional display label for the row variable.
 #' @param col_label Optional display label for the column variable.
-#' @return A list containing \code{table} (tibble) and \code{note} (character).
+#' @param midp Logical or \code{NULL} (default). If \code{NULL}, defaults to
+#'   \code{TRUE} when any cell in the 2x2 table is zero, and \code{FALSE} otherwise.
+#' @param conf.level Confidence level for the odds ratio confidence interval (default 0.95).
+#' @return A list containing:
+#'   \item{table}{Tibble with formatted cells and marginal totals.}
+#'   \item{p_value}{Exact test p-value.}
+#'   \item{estimate}{Estimated odds ratio.}
+#'   \item{conf.int}{Confidence interval for the odds ratio.}
+#'   \item{method}{Test method name.}
+#'   \item{midp}{Logical indicating whether mid-p adjustment was used.}
+#'   \item{has_zero}{Logical indicating whether any table cell had zero count.}
+#'   \item{note}{Formatted institutional table note.}
 #' @export
-table_two_by_two <- function(data, row_var, col_var, row_label = row_var, col_label = col_var) {
+table_two_by_two <- function(data, row_var, col_var, row_label = row_var, col_label = col_var,
+                             midp = NULL, conf.level = 0.95) {
   d <- data |> dplyr::filter(!is.na(.data[[row_var]]), !is.na(.data[[col_var]]))
   tab <- table(d[[row_var]], d[[col_var]])
   n <- sum(tab)
@@ -255,19 +269,47 @@ table_two_by_two <- function(data, row_var, col_var, row_label = row_var, col_la
     Total = as.character(n)
   )
 
-  ft <- stats::fisher.test(tab)
+  dims <- dim(tab)
+  is_2x2 <- identical(as.integer(dims), c(2L, 2L))
+  has_zero <- any(tab == 0L)
+  use_midp <- if (is.null(midp)) has_zero else isTRUE(midp)
+
+  if (is_2x2) {
+    tst <- exact2x2::exact2x2(tab, midp = use_midp, conf.level = conf.level)
+    p_val <- unname(tst$p.value)
+    est <- unname(tst$estimate)
+    ci <- tst$conf.int
+    method_desc <- if (use_midp) {
+      if (has_zero) "Central Fisher's exact test (mid-p, zero-cell detected)" else "Central Fisher's exact test (mid-p)"
+    } else {
+      "Fisher's exact test"
+    }
+  } else {
+    tst <- stats::fisher.test(tab, conf.level = conf.level)
+    p_val <- unname(tst$p.value)
+    est <- if (!is.null(tst$estimate)) unname(tst$estimate) else NA_real_
+    ci <- if (!is.null(tst$conf.int)) tst$conf.int else c(NA_real_, NA_real_)
+    method_desc <- "Fisher's exact test"
+  }
 
   list(
     table = dplyr::bind_rows(body, total_row),
-    p_value = ft$p.value,
+    p_value = p_val,
+    estimate = est,
+    conf.int = ci,
+    method = method_desc,
+    midp = use_midp,
+    has_zero = has_zero,
     note = sprintf(
-      "n = %d%s. Cells are n (row %%). Fisher's exact test, %s (unadjusted).",
+      "n = %d%s. Cells are n (row %%). %s, %s (unadjusted).",
       n,
       if (n_excluded > 0) sprintf(" (%d excluded for missingness)", n_excluded) else "",
-      fmt_p(ft$p.value)
+      method_desc,
+      fmt_p(p_val)
     )
   )
 }
+
 
 utils::globalVariables(c(
   "se", "parameter", "pct", "method", "time", "estimate", "conf.low", "conf.high"

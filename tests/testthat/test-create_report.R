@@ -77,3 +77,14 @@ test_that("create_report rejects an empty `filename`", {
   loc <- withr::local_tempdir("create_report_bad_filename")
   expect_error(create_report(loc, filename = "  "), "`filename`")
 })
+
+test_that("create_report `eda_tables` copies report and child template", {
+  loc <- withr::local_tempdir("create_report_eda_tables")
+  res <- create_report(loc, template_name = "eda_tables", child = TRUE)
+
+  expect_true(res$template_created)
+  expect_true(res$child_created)
+  expect_true(file.exists(file.path(loc, "eda_tables.qmd")))
+  expect_true(file.exists(file.path(loc, "child_eda_chi_square.qmd")))
+})
+

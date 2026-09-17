@@ -1,0 +1,274 @@
+---
+title: "Exploratory Data Analysis & Baseline Cohort Summary"
+subtitle: "Standardized Institutional Protocol with gtsummary and Exact Contingency Methods"
+author:
+  - name: "Center for Biostatistics & Epidemiology"
+    affiliation: "Lewis Katz School of Medicine at Temple University"
+    email: "biostat.core@temple.edu"
+date: today
+date-format: medium
+geometry: margin=1in
+fontsize: 10pt
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    smooth-scroll: true
+    number-sections: true
+  pdf:
+    toc: true
+    number-sections: true
+    documentclass: article
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{pdflscape}
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+#| warning: false
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.retina = 2
+)
+
+library(TempleCBE)
+library(dplyr)
+library(ggplot2)
+library(gtsummary)
+
+# Optional dependencies checked safely
+has_gt <- requireNamespace("gt", quietly = TRUE)
+has_grateful <- requireNamespace("grateful", quietly = TRUE)
+```
+
+# Introduction & Cohort Overview
+
+This exploratory report provides standard quality diagnostics, missingness evaluations, baseline covariate tables stratified by group, and pairwise categorical association analyses adhering to the Center for Biostatistics & Epidemiology (CBE) clinical reporting guidelines.
+
+```{r load-data}
+# Load analysis data (demonstration uses TempleCBE benchmark data if no external data provided)
+eda_data <- if (exists("cohort_data", envir = .GlobalEnv)) {
+  get("cohort_data", envir = .GlobalEnv)
+} else {
+  TempleCBE::tumor_wide |>
+    dplyr::transmute(
+      group = factor(ifelse(treatment == 1, "Active Therapy", "Control")),
+      sex = factor(sex),
+      site = factor(site),
+      age = age,
+      overall_survival = time,
+      status = factor(ifelse(status == 1, "Event", "Censored"))
+    )
+}
+
+strata_var <- "group"
+```
+
+## Data Structure & Quality Metrics
+
+```{r tbl-data-intro}
+#| label: tbl-data-intro
+#| tbl-cap: "Data Attribute Summary & Completeness"
+
+intro_summary <- tibble::tibble(
+  Attribute = c("Total Observations", "Total Variables", "Numeric Features", "Categorical Features"),
+  Count = c(
+    nrow(eda_data),
+    ncol(eda_data),
+    sum(vapply(eda_data, is.numeric, logical(1))),
+    sum(vapply(eda_data, function(x) is.factor(x) || is.character(x), logical(1)))
+  )
+)
+
+knitr::kable(intro_summary, booktabs = TRUE)
+```
+
+\pagebreak
+
+# Missing Data Diagnostics
+
+Evaluating patterns of missingness identifies features requiring imputation or sensitivity adjustments.
+
+```{r fig-missing-data}
+#| label: fig-missing-data
+#| fig-cap: "Missing Data Proportion Across Cohort Features"
+#| fig-width: 8
+#| fig-height: 4.5
+
+miss_obj <- TempleCBE::features_percent_miss(eda_data)
+plot(miss_obj, add.label = TRUE)
+```
+
+\pagebreak
+
+# Baseline Clinical Summary Tables
+
+Baseline characteristics stratified by **`r strata_var`** are summarized below. Continuous variables are reported with means (standard deviations), medians (interquartile ranges), and ranges. Categorical features are reported with frequencies and percentages.
+
+Categorical differences between groups are evaluated using **Central Fisher's Exact Test** with automatic mid-p adjustment when zero-cell margins occur, and Pearson's $\chi^2$ test when cell counts are adequate.
+
+```{r tbl-baseline-summary}
+#| label: tbl-baseline-summary
+#| tbl-cap: "Baseline Demographic and Clinical Characteristics by Group"
+
+cont_vars <- names(eda_data)[vapply(eda_data, is.numeric, logical(1))]
+cat_vars <- setdiff(names(eda_data)[vapply(eda_data, function(x) is.factor(x) || is.character(x), logical(1))], strata_var)
+
+# Continuous summary table
+tbl_cont <- if (length(cont_vars) > 0) {
+  eda_data |>
+    dplyr::select(dplyr::all_of(c(strata_var, cont_vars))) |>
+    gtsummary::tbl_summary(
+      by = dplyr::all_of(strata_var),
+      type = gtsummary::all_continuous() ~ "continuous2",
+      statistic = gtsummary::all_continuous() ~ c(
+        "{mean} ({sd})",
+        "{median} ({p25}, {p75})",
+        "{median} ({min} \u2013 {max})"
+      ),
+      digits = gtsummary::everything() ~ 1,
+      missing = "ifany"
+    ) |>
+    gtsummary::add_overall(last = TRUE, col_label = "**Overall**") |>
+    gtsummary::add_p(pvalue_fun = ~ scales::pvalue(.x, accuracy = 0.001)) |>
+    gtsummary::separate_p_footnotes()
+} else {
+  NULL
+}
+
+# Categorical summary table with CBE exact2x2 zero-cell mid-p test
+tbl_cat <- if (length(cat_vars) > 0) {
+  eda_data |>
+    dplyr::select(dplyr::all_of(c(strata_var, cat_vars))) |>
+    gtsummary::tbl_summary(
+      by = dplyr::all_of(strata_var),
+      type = list(gtsummary::all_categorical() ~ "categorical"),
+      missing = "ifany"
+    ) |>
+    gtsummary::add_overall(last = TRUE, col_label = "**Overall**") |>
+    gtsummary::add_p(
+      test = gtsummary::all_categorical() ~ TempleCBE::cbe_test_categorical,
+      pvalue_fun = ~ scales::pvalue(.x, accuracy = 0.001)
+    ) |>
+    gtsummary::separate_p_footnotes()
+} else {
+  NULL
+}
+
+# Combine and render
+tbl_combined <- if (!is.null(tbl_cat) && !is.null(tbl_cont)) {
+  gtsummary::tbl_stack(list(tbl_cat, tbl_cont))
+} else if (!is.null(tbl_cat)) {
+  tbl_cat
+} else {
+  tbl_cont
+}
+
+tbl_combined
+```
+
+\pagebreak
+
+# Categorical Association Matrix & Pairwise Comparisons
+
+The correlation between categorical predictors is evaluated using Cramér's V association coefficients and pairwise balloon contingency plots.
+
+```{r fig-cat-association}
+#| label: fig-cat-association
+#| fig-cap: "Pairwise Categorical Association Matrix (Cram\u00e9r's V)"
+#| fig-width: 7.5
+#| fig-height: 6
+
+if (length(cat_vars) >= 2) {
+  TempleCBE::plot_categorical_associations(
+    data = eda_data,
+    cols = c(strata_var, cat_vars),
+    method = "cramer_v",
+    title = "Categorical Covariate Association Matrix"
+  )
+}
+```
+
+## Pairwise Categorical Visualizations & Tests
+
+Every pairwise combination of categorical factors can be evaluated below. Visualizations can be configured as balloon plots, proportional bar charts, mosaic plots, shaded heatmaps, or standard 4-quadrant square reports (q1 | q2 // q3 | q4 // p = pformat) using `TempleCBE::cbe_contingency_plot(type = "balloon" | "bar" | "mosaic" | "heatmap" | "square")`.
+
+```{r setup-pairwise}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Selected plot style for pairwise categorical comparisons:
+# Options: "balloon" (bubble frequencies), "bar" (proportional bar chart),
+#          "mosaic" (area proportional), "heatmap" (shaded tiles),
+#          or "square" (standard 4-quadrant report: q1 | q2 // q3 | q4 // p = pformat)
+contingency_plot_type <- "balloon"
+
+# Hypothesis test engine for pairwise comparisons:
+# Options: "auto" (default CBE hierarchy: mid-p exact for 0-cells, exact for sparse, chisq for dense),
+#          "chisq" (force Pearson Chi-squared test), "exact" (force exact test)
+contingency_test_type <- "auto"
+
+pairwise_combos <- TempleCBE::cbe_pairwise_combos(
+  data = eda_data,
+  cols = c(strata_var, cat_vars)
+)
+```
+
+```{r render-pairwise-children}
+#| results: asis
+#| echo: false
+
+if (nrow(pairwise_combos) > 0) {
+  child_template <- system.file("templates", "child_eda_chi_square.qmd", package = "TempleCBE")
+  if (!nzchar(child_template) || !file.exists(child_template)) {
+    child_template <- "child_eda_chi_square.qmd"
+  }
+  
+  if (file.exists(child_template)) {
+    src <- lapply(pairwise_combos$id, function(x) {
+      knitr::knit_expand(child_template, x = x)
+    })
+    res <- knitr::knit_child(text = unlist(src), quiet = TRUE)
+    cat(res, sep = "\n\n")
+  }
+}
+```
+
+\pagebreak
+
+# Software Environment
+
+```{r software-citation}
+#| results: asis
+if (has_grateful) {
+  grateful::cite_packages(output = "paragraph", passive.voice = TRUE)
+} else {
+  knitr::kable(
+    tibble::tibble(
+      Package = c("R", "TempleCBE", "gtsummary", "exact2x2", "ggplot2"),
+      Version = c(
+        paste(R.version$major, R.version$minor, sep = "."),
+        as.character(utils::packageVersion("TempleCBE")),
+        as.character(utils::packageVersion("gtsummary")),
+        as.character(utils::packageVersion("exact2x2")),
+        as.character(utils::packageVersion("ggplot2"))
+      )
+    ),
+    booktabs = TRUE,
+    caption = "Computational Environment & Core Package Versions"
+  )
+}
+```

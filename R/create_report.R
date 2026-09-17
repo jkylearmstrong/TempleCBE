@@ -55,7 +55,7 @@
 create_report <- function(location = getwd(), template_name = "t_test_example",
                            child = TRUE, type = ".qmd", include_bib = TRUE, include_tex = TRUE,
                            install_brand = FALSE, filename = NULL) {
-  template_list <- c("t_test_example", "example", "temple")
+  template_list <- c("t_test_example", "example", "temple", "eda_tables")
   if (!(template_name %in% template_list)) {
     warning("`template_name` should be one of: ", paste(template_list, collapse = ", "), ". Using t_test_example.")
     template_name <- "t_test_example"
@@ -68,8 +68,9 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
   }
 
   is_temple <- template_name == "temple"
-  if (is_temple && type != ".qmd") {
-    warning("The `temple` template is Quarto-only. Using .qmd.")
+  is_eda <- template_name == "eda_tables"
+  if ((is_temple || is_eda) && type != ".qmd") {
+    warning("The `", template_name, "` template is Quarto-only. Using .qmd.")
     type <- ".qmd"
   }
 
@@ -97,7 +98,8 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
   report_name <- if (is.null(filename)) template_name else filename
 
   template_path <- system.file("templates", paste0(template_name, type), package = "TempleCBE")
-  child_path <- system.file("templates", paste0("t_test_child", type), package = "TempleCBE")
+  child_file <- if (is_eda) "child_eda_chi_square.qmd" else paste0("t_test_child", type)
+  child_path <- system.file("templates", child_file, package = "TempleCBE")
   bib_path <- system.file("templates", "bib.bib", package = "TempleCBE")
   title_path <- system.file("templates", "title.tex", package = "TempleCBE")
 
@@ -109,7 +111,7 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
       call. = FALSE
     )
   }
-  new_child_path <- file.path(location, paste0("t_test_child", type))
+  new_child_path <- file.path(location, child_file)
   new_bib_path <- file.path(location, "bib.bib")
   new_title_path <- file.path(location, "title.tex")
 
@@ -143,21 +145,23 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
     check_target_dst(new_bib_path)
   }
 
-  if (include_tex && !is_temple) {
+  has_tex <- include_tex && !is_temple && !is_eda
+  if (has_tex) {
     check_template_src(title_path, "title.tex")
     check_target_dst(new_title_path)
   }
 
-  if (child && !is_temple) {
-    check_template_src(child_path, paste0("t_test_child", type))
+  has_child <- child && !is_temple && nzchar(child_path) && file.exists(child_path)
+  if (has_child) {
+    check_template_src(child_path, child_file)
     check_target_dst(new_child_path)
   }
 
   created <- list(
     template_created = file.copy(template_path, new_report_path, overwrite = TRUE),
     bib_created = if (include_bib) file.copy(bib_path, new_bib_path, overwrite = TRUE) else FALSE,
-    title_tex_created = if (include_tex && !is_temple) file.copy(title_path, new_title_path, overwrite = TRUE) else FALSE,
-    child_created = if (child && !is_temple) file.copy(child_path, new_child_path, overwrite = TRUE) else FALSE
+    title_tex_created = if (has_tex) file.copy(title_path, new_title_path, overwrite = TRUE) else FALSE,
+    child_created = if (has_child) file.copy(child_path, new_child_path, overwrite = TRUE) else FALSE
   )
 
   if (is_temple) {
@@ -172,3 +176,4 @@ create_report <- function(location = getwd(), template_name = "t_test_example",
 
   created
 }
+

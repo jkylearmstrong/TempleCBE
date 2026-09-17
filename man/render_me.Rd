@@ -2,24 +2,32 @@
 % Please edit documentation in R/render_me.R
 \name{render_me}
 \alias{render_me}
-\title{Render Quarto Documents to Multiple Formats With Timing}
+\title{Render Quarto and R Markdown Documents to Multiple Formats With Timing}
 \usage{
 render_me(
   path,
   formats = c("pdf", "docx"),
-  pattern = "\\\\.qmd$",
+  pattern = "\\\\.(qmd|Rmd|rmd)$",
+  engine = c("auto", "quarto", "rmarkdown"),
   workers = NULL
 )
 }
 \arguments{
-\item{path}{Character string specifying a path to a \code{.qmd} file, or a
-directory containing \code{.qmd} files.}
+\item{path}{Character string specifying a path to a \code{.qmd} or \code{.Rmd} file,
+or a directory containing such documents.}
 
 \item{formats}{Character vector of output formats to generate. Defaults to
-\code{c("pdf", "docx")}.}
+\code{c("pdf", "docx")}. Standard shorthand formats (\code{"pdf"}, \code{"docx"},
+\code{"html"}, \code{"gfm"}) are automatically translated to R Markdown equivalents
+(\code{"pdf_document"}, \code{"word_document"}, \code{"html_document"}, \code{"github_document"})
+when rendering with \pkg{rmarkdown}.}
 
-\item{pattern}{Optional regular expression to filter files when
-\code{path} is a directory. Defaults to \code{"\\.qmd$"}.}
+\item{pattern}{Optional regular expression to filter files when \code{path} is a directory.
+Defaults to \code{"\\.(qmd|Rmd|rmd)$"}.}
+
+\item{engine}{Rendering engine: \code{"auto"} (default), \code{"quarto"}, or \code{"rmarkdown"}.
+When \code{"auto"}, \code{.qmd} files are rendered via \pkg{quarto}, and \code{.Rmd} files
+are rendered via \pkg{quarto} if available or \pkg{rmarkdown} otherwise.}
 
 \item{workers}{Integer specifying the number of multisession parallel
 workers when rendering multiple documents. Defaults to \code{NULL},
@@ -35,18 +43,21 @@ A data frame containing:
   \item{status}{"success" or error condition message}
 }
 \description{
-Renders one or more Quarto (\code{.qmd}) documents to multiple output
-formats (by default both PDF and DOCX) sequentially or in parallel,
-recording execution duration for each document/format combination. Useful
+Renders one or more Quarto (\code{.qmd}) or R Markdown (\code{.Rmd}) documents
+to multiple output formats (by default both PDF and DOCX) sequentially or in
+parallel, recording execution duration for each document/format combination. Useful
 for workflows where reviewers need a Word (\code{.docx}) file for track
 changes/edits while publication and archival copies need PDF.
 }
 \examples{
 \dontrun{
-# Render a single report to both PDF and DOCX
+# Render a single Quarto report to both PDF and DOCX
 render_me(here::here("analysis", "report.qmd"))
 
-# Render all QMD reports in a directory in parallel
+# Render a single R Markdown report to both PDF and Word
+render_me(here::here("analysis", "report.Rmd"))
+
+# Render all QMD and Rmd reports in a directory in parallel
 render_me("analysis/")
 }
 }

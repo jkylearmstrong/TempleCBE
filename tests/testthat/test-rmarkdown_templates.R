@@ -10,6 +10,10 @@ skeleton_sources <- list(
     t_test_child.Rmd = "t_test_child.Rmd",
     bib.bib = "bib.bib",
     "grateful-refs.bib" = "grateful-refs.bib"
+  ),
+  "eda-tables" = c(
+    skeleton.Rmd = "eda_tables.qmd",
+    child_eda_chi_square.qmd = "child_eda_chi_square.qmd"
   )
 )
 

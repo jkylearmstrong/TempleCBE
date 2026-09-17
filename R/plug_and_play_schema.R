@@ -211,16 +211,22 @@ read_mapped_section_data <- function(mapping,
 
 #' Summarize One Section By Its Time Variable
 #'
-#' Generates summary tables (using \code{arsenal::tableby}) grouped by whichever
-#' column is flagged with \code{Time_var == TRUE} in the mapping dictionary.
+#' Generates summary tables (using \pkg{gtsummary} by default, or optionally
+#' \pkg{arsenal}) grouped by whichever column is flagged with \code{Time_var == TRUE}
+#' in the mapping dictionary.
 #'
 #' @param df Data frame already renamed via \code{\link{read_mapped_section_data}}.
 #' @param mapping Validated column mapping table.
 #' @param index Character string identifying the section/domain.
 #' @param id_cols Column names to exclude from summary (defaults to columns with \code{ID_var == TRUE}).
-#' @return An \code{arsenal::tableby} summary object.
+#' @param engine Character string specifying the summary engine: \code{"gtsummary"}
+#'   (the default) or \code{"arsenal"}.
+#' @return A \code{\link[gtsummary]{tbl_summary}} object (when \code{engine = "gtsummary"})
+#'   or an \code{arsenal::tableby} summary object (when \code{engine = "arsenal"}).
 #' @export
-summarize_section_by_time <- function(df, mapping, index, id_cols = NULL) {
+summarize_section_by_time <- function(df, mapping, index, id_cols = NULL,
+                                      engine = c("gtsummary", "arsenal")) {
+  engine <- match.arg(engine)
   section_map <- dplyr::filter(mapping, .data$INDEX == index)
 
   if (is.null(id_cols)) {
@@ -235,14 +241,33 @@ summarize_section_by_time <- function(df, mapping, index, id_cols = NULL) {
   all_na <- non_time[vapply(body[non_time], function(x) all(is.na(x)), logical(1))]
   body <- body[, setdiff(names(body), all_na), drop = FALSE]
 
+  if (ncol(body) == 0) {
+    stop("Nothing left to summarize for INDEX '", index, "' -- every column is entirely missing.", call. = FALSE)
+  }
+
+  if (engine == "gtsummary") {
+    if (!requireNamespace("gtsummary", quietly = TRUE)) {
+      stop("gtsummary package is required when engine = 'gtsummary'.", call. = FALSE)
+    }
+
+    if (length(time_cols) == 0) {
+      return(gtsummary::tbl_summary(body))
+    }
+
+    time_col <- time_cols[[1]]
+    if (length(setdiff(names(body), time_col)) == 0) {
+      stop("Nothing left to summarize for INDEX '", index, "' -- every non-time column is entirely missing.", call. = FALSE)
+    }
+
+    return(gtsummary::tbl_summary(body, by = dplyr::all_of(time_col)))
+  }
+
+  # Fallback engine: arsenal
   if (!requireNamespace("arsenal", quietly = TRUE)) {
-    stop("arsenal package required for summarize_section_by_time().", call. = FALSE)
+    stop("arsenal package required for summarize_section_by_time() when engine = 'arsenal'.", call. = FALSE)
   }
 
   if (length(time_cols) == 0) {
-    if (ncol(body) == 0) {
-      stop("Nothing left to summarize for INDEX '", index, "' -- every column is entirely missing.", call. = FALSE)
-    }
     return(arsenal::tableby(~., data = body))
   }
 
