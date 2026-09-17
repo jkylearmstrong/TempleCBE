@@ -1,0 +1,17 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+docs
+.claude
+secret_internal_NOTES_keep_local.md
+NOTES.md
+secrets/
+data/
+*.xlsx
+*.csv
+!inst/extdata/*
+*.rds
+Rplots.pdf
+tests/testthat/Rplots.pdf
+.quarto/

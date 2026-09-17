@@ -1,0 +1,128 @@
+1                                           The SAS System          13:31 Thursday, September 17, 2026
+
+NOTE: Copyright (c) 2023 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M8) 
+      Licensed to TEMPLE UNIVERSITY - T&R - SFA, Site 70092167.
+NOTE: This session is executing on the X64_WIN+HOME  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.3
+      SAS/ETS 15.3
+      SAS/OR 15.3
+      SAS/IML 15.3
+      SAS/QC 15.3
+
+NOTE: Additional host information:
+
+ X64_WIN+HOME WIN 10.0.26200  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.57 seconds
+      cpu time            0.43 seconds
+      
+1          /*==============================================================================
+2            TempleCBE SAS Validation Benchmark: Example 85.7 / 91.7
+3            "Time-Dependent Repeated Measurements of a Covariate"
+4            Source: SAS/STAT User's Guide (PROC PHREG Examples)
+5          
+6            Can be executed directly from R:
+7              TempleCBE::run_sas_script(
+8                TempleCBE::cbe_sas_macro_path("example_85_7.sas")
+9              )
+10         ==============================================================================*/
+11         
+12         /* 1. Transcribe 45-animal tumor dataset */
+13         data Tumor;
+14            input ID Time Dead Dose P1-P15;
+15         datalines;
+
+NOTE: The data set WORK.TUMOR has 45 observations and 19 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+61         ;
+62         run;
+63         
+64         /* 2. Transform to Counting-Process Start/Stop Data */
+65         data Tumor1(keep=ID Time Dead Dose T1 T2 NPap Status);
+66            array pp{*} P1-P14;
+67            array qq{*} P2-P15;
+68            array tt{1:15} _temporary_
+69               (27 34 37 41 43 45 46 47 49 50 51 53 65 67 71);
+2                                           The SAS System          13:31 Thursday, September 17, 2026
+
+70            set Tumor;
+71            T1 = 0; T2 = 0; Status = 0;
+72            if ( Time = tt[1] ) then do;
+73               T2 = tt[1]; NPap = p1; Status = Dead; output;
+74            end;
+75            else do _i_=1 to dim(pp);
+76               if ( tt[_i_] = Time ) then do;
+77                  T2 = Time; NPap = pp[_i_]; Status = Dead; output;
+78               end;
+79               else if (tt[_i_] < Time ) then do;
+80                  if (pp[_i_] ^= qq[_i_] ) then do;
+81                     if qq[_i_] = . then T2 = Time;
+82                     else                T2 = tt[_i_];
+83                     NPap = pp[_i_]; Status = 0; output;
+84                     T1 = T2;
+85                  end;
+86               end;
+87            end;
+88            if ( Time >= tt[15] ) then do;
+89               T2 = Time; NPap = P15; Status = Dead; output;
+90            end;
+91         run;
+
+NOTE: There were 45 observations read from the data set WORK.TUMOR.
+NOTE: The data set WORK.TUMOR1 has 102 observations and 8 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+92         
+93         /* 3. Model Fitting with PROC PHREG */
+94         ods output ParameterEstimates = work.tumor_estimates
+95                    FitStatistics      = work.tumor_fit;
+96         
+97         proc phreg data=Tumor1;
+98            model (T1,T2)*Status(0) = Dose NPap / ties=breslow;
+99            id ID;
+100        run;
+
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set WORK.TUMOR_FIT has 3 observations and 3 variables.
+NOTE: The data set WORK.TUMOR_ESTIMATES has 2 observations and 7 variables.
+NOTE: The PROCEDURE PHREG printed pages 1-2.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.04 seconds
+      
+
+101        
+102        title1 "SAS/STAT Example 85.7: Counting Process Parameter Estimates";
+103        proc print data=work.tumor_estimates noobs;
+104        run;
+
+3                                           The SAS System          13:31 Thursday, September 17, 2026
+
+NOTE: There were 2 observations read from the data set WORK.TUMOR_ESTIMATES.
+NOTE: The PROCEDURE PRINT printed page 3.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+105        title1;
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           0.71 seconds
+      cpu time            0.56 seconds
+      

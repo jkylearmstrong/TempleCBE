@@ -1,0 +1,91 @@
+---
+title: "Report Title"
+subtitle: "Center for Biostatistics & Epidemiology"
+author:
+  - name: Author Name, PhD
+    email: author@temple.edu
+    corresponding: true
+    affiliations:
+      - name: Lewis Katz School of Medicine at Temple University
+        department: Center for Biostatistics & Epidemiology
+  - name: Jordan Tramoun, PhD
+    email: tramoun@temple.edu
+    affiliations:
+      - name: Lewis Katz School of Medicine at Temple University
+        department: Center for Biostatistics & Epidemiology
+date: today
+date-format: medium
+bibliography: bib.bib
+# titlepage-corresponding-only: only authors marked `corresponding: true`
+# (Author Name here) are listed under Correspondence on the temple-pdf
+# title page; without it, every author with an email is listed.
+titlepage-corresponding-only: true
+# titlepage-corner: the cherry corner graphic on the temple-pdf title page;
+# set to false to drop it (title then starts 1in from the top instead of 3in).
+titlepage-corner: true
+# The temple-* formats come from the quarto_temple_brand extension.
+# Install it next to this file with TempleCBE::use_temple_brand().
+format:
+  temple-html: default
+  temple-pdf: default
+  temple-typst: default
+  docx:
+    toc: true
+    number-sections: true
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+#| label: setup
+library(ggplot2)
+library(TempleCBE)
+
+theme_set(theme_temple())
+```
+
+# Introduction
+
+This template renders to four formats. `temple-html` and `temple-typst` need
+only Quarto; `temple-pdf` needs a LaTeX installation (e.g.
+`tinytex::install_tinytex()`) and adds the Temple title page. With
+`titlepage-corresponding-only: true`, only the author marked
+`corresponding: true` appears under Correspondence; `titlepage-corner: false`
+would drop the cherry corner graphic instead. References come from `bib.bib`
+[@Al-Helali2021-as].
+
+# Data
+
+```{r}
+#| label: tbl-mtcars
+#| tbl-cap: "First rows of `mtcars`."
+knitr::kable(head(mtcars[, 1:6]))
+```
+
+# Figures
+
+`theme_temple()` and the `scale_*_temple()` scales keep figures in the brand
+palette, as in @fig-scatter and @fig-missing.
+
+```{r}
+#| label: fig-scatter
+#| fig-cap: "Mileage by weight and cylinder count."
+ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
+  geom_point(size = 2) +
+  scale_colour_temple() +
+  labs(x = "Weight (1000 lb)", y = "Miles per gallon", colour = "Cylinders")
+```
+
+```{r}
+#| label: fig-missing
+#| fig-cap: "Share of missing values per feature."
+df <- airquality
+plot_features_percent_miss(df)
+```
+
+# References {.unnumbered}
+
+::: {#refs}
+:::

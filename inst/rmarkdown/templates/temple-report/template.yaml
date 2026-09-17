@@ -1,0 +1,6 @@
+name: Temple report
+description: >
+  Quarto report with the Temple brand (temple-html, temple-pdf, temple-typst,
+  docx). Render with Quarto after running TempleCBE::use_temple_brand() in the
+  new directory.
+create_dir: true

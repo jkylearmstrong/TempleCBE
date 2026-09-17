@@ -1,0 +1,16 @@
+template:
+  bslib:
+    version: 5
+    primary: "#a41e35"
+    secondary: "#005a70"
+    success: "#1fceb6"
+    info: "#12d0ff"
+    warning: "#f3aa00"
+    danger: "#fe649f"
+    base_font:
+      google: "Faustina"
+    heading_font:
+      google: "Roboto"
+    code_font:
+      google: "JetBrains Mono"
+  light-switch: true
