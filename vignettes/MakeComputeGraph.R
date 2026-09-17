@@ -58,7 +58,7 @@ make_temple_compute_graph <- function() {
 
   eda_report <- create_qmd_renderer(
     name = "01_eda_and_missingness",
-    path = "vignettes/01_eda_and_missingness.Rmd",
+    path = "vignettes/eda_and_missingness.Rmd",
     deps = list(raw_clinical),
     file_stage = "01_EDA",
     description = "Missingness auditing, outlier fences, and feature normalization"
@@ -68,7 +68,7 @@ make_temple_compute_graph <- function() {
   # 4. Stage 02: Penalized Coxnet & Nested Cross-Validation ------------------
   survival_cv_report <- create_qmd_renderer(
     name = "02_nested_survival_cv",
-    path = "vignettes/02_nested_survival_cv.Rmd",
+    path = "vignettes/nested_survival_cv.Rmd",
     deps = list(cleaned_cohort_rds),
     file_stage = "02_Survival_CV",
     description = "Subject-grouped nested cross-validation and elastic-net Cox modeling"
@@ -86,7 +86,7 @@ make_temple_compute_graph <- function() {
 
   sas_report <- create_qmd_renderer(
     name = "04_sas_survival",
-    path = "vignettes/04_sas_survival.Rmd",
+    path = "vignettes/sas_survival.Rmd",
     deps = list(sas_benchmark_raw),
     file_stage = "04_SAS_Validation",
     description = "Numerical validation against SAS PROC PHREG and tidy start/stop merging"
@@ -96,7 +96,7 @@ make_temple_compute_graph <- function() {
   # 6. Stage 03: Compute Graph & Governance ----------------------------------
   graph_report <- create_qmd_renderer(
     name = "03_compute_graph",
-    path = "vignettes/03_compute_graph.Rmd",
+    path = "vignettes/compute_graph.Rmd",
     deps = list(eda_report, survival_cv_report, sas_report),
     file_stage = "03_Compute_Graph",
     description = "Dependency graph auditing, staleness detection, and pipeline governance"

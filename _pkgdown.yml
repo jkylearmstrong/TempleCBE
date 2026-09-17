@@ -25,10 +25,10 @@ articles:
   - title: Articles & Workflows
     navbar: ~
     contents:
-      - 01_eda_and_missingness
-      - 02_nested_survival_cv
-      - 03_compute_graph
-      - 04_sas_survival
+      - eda_and_missingness
+      - nested_survival_cv
+      - compute_graph
+      - sas_survival
 
 reference:
   - title: Data Quality & Missingness Analysis

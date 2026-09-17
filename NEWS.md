@@ -1,4 +1,4 @@
-# TempleCBE 0.3.3
+# TempleCBE 0.3.3141
 
 ## Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics
 
@@ -37,11 +37,11 @@
   * Added internal SAS Institute Example 85.7 validation datasets `tumor_wide()` (45 rodents, 19 variables) and `tumor_long()` (102 counting-process intervals, 8 variables) for time-dependent papilloma survival benchmarks.
   * Added `tidy_tmerge_cox()` helper function to construct counting-process start/stop intervals from repeated longitudinal measurements and event data frames with baseline covariate integration.
   * Added project-level pipeline orchestration script `MakeComputeGraph.R` (in `vignettes/` and `inst/scripts/`) simulating the Wolfson dependency graph architecture across all four analytical stages.
-  * Renumbered all vignettes to `01`-`04` matching the recommended progression in `README.qmd`:
-    * `01_eda_and_missingness.Rmd`
-    * `02_nested_survival_cv.Rmd`
-    * `03_compute_graph.Rmd`
-    * `04_sas_survival.Rmd`
+  * Organized vignette sequence into `01`–`04` numbered stages in documentation and articles navigation:
+    * `01. eda_and_missingness.Rmd`
+    * `02. nested_survival_cv.Rmd`
+    * `03. compute_graph.Rmd`
+    * `04. sas_survival.Rmd`
 
 # TempleCBE 0.3.2
 
