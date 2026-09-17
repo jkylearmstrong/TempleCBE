@@ -41,7 +41,7 @@ default) or \code{"p_value"} (\eqn{-\log_{10}(p)} from categorical tests).}
 Invisibly, the association matrix.
 }
 \description{
-Computes pairwise associations (Cram\u00e9r's V or -log10 p-values) across all
+Computes pairwise associations (Cramer's V or -log10 p-values) across all
 categorical/factor columns in a data frame and renders an association matrix plot
 via \pkg{corrplot}. This complements \code{\link{correlation_plot}} for numeric
 variables.

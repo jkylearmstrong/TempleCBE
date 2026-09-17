@@ -899,7 +899,7 @@ cbe_square_plot <- function(data, var1 = NULL, var2 = NULL,
 
 #' Plot Categorical Association Matrix Using corrplot
 #'
-#' Computes pairwise associations (Cram\u00e9r's V or -log10 p-values) across all
+#' Computes pairwise associations (Cramer's V or -log10 p-values) across all
 #' categorical/factor columns in a data frame and renders an association matrix plot
 #' via \pkg{corrplot}. This complements \code{\link{correlation_plot}} for numeric
 #' variables.
