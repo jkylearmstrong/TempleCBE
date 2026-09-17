@@ -349,7 +349,7 @@ collect_metrics(cv) |>
 autoplot(cv)
 ```
 
-![](02_nested_survival_cv_files/figure-html/cv_metrics-1.png)
+![](nested_survival_cv_files/figure-html/cv_metrics-1.png)
 
 ``` r
 

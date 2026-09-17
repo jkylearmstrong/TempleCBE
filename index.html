@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,10 +44,10 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
-    <li><a class="dropdown-item" href="articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+<li><a class="dropdown-item" href="articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -161,7 +161,7 @@
 <span></span>
 <span><span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">lung_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">180</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">.pred</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p>For repeated-measures/start-stop data, <code><a href="reference/glmnet_IBS.html">glmnet_IBS()</a></code> tunes and scores a penalized Cox model with a proper, subject-grouped integrated Brier score. See the <a href="https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a> vignette for the full nested cross-validation workflow.</p>
+<p>For repeated-measures/start-stop data, <code><a href="reference/glmnet_IBS.html">glmnet_IBS()</a></code> tunes and scores a penalized Cox model with a proper, subject-grouped integrated Brier score. See the <a href="https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a> vignette for the full nested cross-validation workflow.</p>
 </div>
 <div class="section level3">
 <h3 id="id_5-custom-tidymodels-recipe-step-step_famd">5. Custom Tidymodels Recipe Step: <code>step_famd</code>
@@ -201,15 +201,15 @@
 <p>Beyond the quick-start snippets above, <code>TempleCBE</code> ships full worked-example vignettes:</p>
 <ul>
 <li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></strong> — non-standard missing codes, missingness visualization, and outlier-aware normalization for messy clinical/EHR data.</li>
+<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></strong> — non-standard missing codes, missingness visualization, and outlier-aware normalization for messy clinical/EHR data.</li>
 <li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/02_nested_survival_cv.html">02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></strong> — why row-level resampling leaks for counting-process data, and how <code><a href="reference/coxnet.html">coxnet()</a></code>/<code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code>/<code><a href="reference/nested_cv_coxnet.html">nested_cv_coxnet()</a></code> avoid it.</li>
+<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html">02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></strong> — why row-level resampling leaks for counting-process data, and how <code><a href="reference/coxnet.html">coxnet()</a></code>/<code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code>/<code><a href="reference/nested_cv_coxnet.html">nested_cv_coxnet()</a></code> avoid it.</li>
 <li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/03_compute_graph.html">03. Visualizing Computational Pipeline Dependencies</a></strong> — treating a multi-report analysis pipeline as a dependency graph with <code><a href="reference/get_render_plan.html">get_render_plan()</a></code> and project-level <code>MakeComputeGraph.R</code>.</li>
+<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html">03. Visualizing Computational Pipeline Dependencies</a></strong> — treating a multi-report analysis pipeline as a dependency graph with <code><a href="reference/get_render_plan.html">get_render_plan()</a></code> and project-level <code>MakeComputeGraph.R</code>.</li>
 <li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/04_sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></strong> — cross-validating time-fixed and time-dependent Cox models against SAS PROC PHREG, with <code><a href="https://rdrr.io/pkg/survival/man/tmerge.html" class="external-link">survival::tmerge</a></code> and <code><a href="reference/tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code>.</li>
+<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></strong> — cross-validating time-fixed and time-dependent Cox models against SAS PROC PHREG, with <code><a href="https://rdrr.io/pkg/survival/man/tmerge.html" class="external-link">survival::tmerge</a></code> and <code><a href="reference/tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code>.</li>
 </ul>
-<p>Once installed, each is also available locally via <code><a href="articles/01_eda_and_missingness.html">vignette("01_eda_and_missingness", package = "TempleCBE")</a></code> (substituting the vignette name).</p>
+<p>Once installed, each is also available locally via <code><a href="articles/eda_and_missingness.html">vignette("eda_and_missingness", package = "TempleCBE")</a></code> (substituting the vignette name).</p>
 <hr>
 </div>
 <div class="section level2">

@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,10 +41,10 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
-    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,8 +77,8 @@
       <img src="../logo.png" class="logo" alt=""><h1>Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/02_nested_survival_cv.Rmd" class="external-link"><code>vignettes/02_nested_survival_cv.Rmd</code></a></small>
-      <div class="d-none name"><code>02_nested_survival_cv.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/nested_survival_cv.Rmd" class="external-link"><code>vignettes/nested_survival_cv.Rmd</code></a></small>
+      <div class="d-none name"><code>nested_survival_cv.Rmd</code></div>
     </div>
 
     
@@ -548,7 +548,7 @@ at deciles of the observed event times.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>    0.25  0.067<span style="text-decoration: underline;">2</span> brier_survival_int… standard           <span style="color: #BB0000;">NA</span> 0.142     5 0.007<span style="text-decoration: underline;">75</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 104 more rows</span></span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cv</span><span class="op">)</span></span></code></pre></div>
-<p><img src="02_nested_survival_cv_files/figure-html/cv_metrics-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="nested_survival_cv_files/figure-html/cv_metrics-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">cv</span>, penalty <span class="op">=</span> <span class="st">"lambda.1se"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>

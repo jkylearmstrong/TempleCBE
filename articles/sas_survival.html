@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,10 +41,10 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
-    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,8 +77,8 @@
       <img src="../logo.png" class="logo" alt=""><h1>Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/04_sas_survival.Rmd" class="external-link"><code>vignettes/04_sas_survival.Rmd</code></a></small>
-      <div class="d-none name"><code>04_sas_survival.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/sas_survival.Rmd" class="external-link"><code>vignettes/sas_survival.Rmd</code></a></small>
+      <div class="d-none name"><code>sas_survival.Rmd</code></div>
     </div>
 
     
@@ -277,7 +277,7 @@ graphics adhering to CBE styling.</p>
 </h4>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_cox_forest.html">plot_cox_forest</a></span><span class="op">(</span><span class="va">res_age</span><span class="op">)</span></span></code></pre></div>
-<p><img src="04_sas_survival_files/figure-html/plot_forest_single-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="sas_survival_files/figure-html/plot_forest_single-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level4">
 <h4 id="survival-curve-overlay">Survival Curve Overlay<a class="anchor" aria-label="anchor" href="#survival-curve-overlay"></a>
@@ -296,7 +296,7 @@ Kaplan-Meier curves (<code>overlay_km = TRUE</code>) to visually verify
 fit adequacy:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_cox_survival.html">plot_cox_survival</a></span><span class="op">(</span><span class="va">res_age</span>, data <span class="op">=</span> <span class="va">lung_data</span>, overlay_km <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="04_sas_survival_files/figure-html/plot_surv_single-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="sas_survival_files/figure-html/plot_surv_single-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level4">
 <h4 id="marginal-hazard-ratio-curve">Marginal Hazard Ratio Curve<a class="anchor" aria-label="anchor" href="#marginal-hazard-ratio-curve"></a>
@@ -306,7 +306,7 @@ smoothly across the range of the predictor, use
 <code><a href="../reference/plot_cox_marginal.html">plot_cox_marginal()</a></code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_cox_marginal.html">plot_cox_marginal</a></span><span class="op">(</span><span class="va">res_age</span>, data <span class="op">=</span> <span class="va">lung_data</span>, scale <span class="op">=</span> <span class="st">"hr"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="04_sas_survival_files/figure-html/plot_marginal_single-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="sas_survival_files/figure-html/plot_marginal_single-1.png" class="r-plt" alt="" width="672"></p>
 <hr>
 </div>
 </div>
@@ -355,7 +355,7 @@ multivariate global test:</p>
 <p>Faceted or multi-predictor forest visualization:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_cox_forest_multi.html">plot_cox_forest_multi</a></span><span class="op">(</span><span class="va">res_multi</span><span class="op">)</span></span></code></pre></div>
-<p><img src="04_sas_survival_files/figure-html/plot_multi_forest-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="sas_survival_files/figure-html/plot_multi_forest-1.png" class="r-plt" alt="" width="672"></p>
 <p>And presentation table formatting with global sorting options:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cbe_cox_table.html">cbe_cox_table</a></span><span class="op">(</span><span class="va">res_multi</span>, sort <span class="op">=</span> <span class="st">"magnitude"</span><span class="op">)</span></span>

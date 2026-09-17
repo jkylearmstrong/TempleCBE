@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,10 +41,10 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
-    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+<li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -71,15 +71,15 @@
 
 
 
-<link href="03_compute_graph_files/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
-<script src="03_compute_graph_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><script src="03_compute_graph_files/viz-1.8.2/viz.js"></script><link href="03_compute_graph_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
-<script src="03_compute_graph_files/grViz-binding-1.0.12/grViz.js"></script><div class="row">
+<link href="compute_graph_files/htmltools-fill-0.5.9/fill.css" rel="stylesheet">
+<script src="compute_graph_files/htmlwidgets-1.6.4/htmlwidgets.js"></script><script src="compute_graph_files/viz-1.8.2/viz.js"></script><link href="compute_graph_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
+<script src="compute_graph_files/grViz-binding-1.0.12/grViz.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Visualizing Computational Pipeline Dependencies</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/03_compute_graph.Rmd" class="external-link"><code>vignettes/03_compute_graph.Rmd</code></a></small>
-      <div class="d-none name"><code>03_compute_graph.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/compute_graph.Rmd" class="external-link"><code>vignettes/compute_graph.Rmd</code></a></small>
+      <div class="d-none name"><code>compute_graph.Rmd</code></div>
     </div>
 
     
@@ -474,7 +474,7 @@ case of “this <code>.qmd</code> renders to a PDF of the same name.”</p>
 <span><span class="co">#&gt;   Stage:       report </span></span>
 <span><span class="co">#&gt;   Role:        report_source </span></span>
 <span><span class="co">#&gt;   Renders:     TRUE </span></span>
-<span><span class="co">#&gt;   Modified:    2026-09-16 20:44:38 </span></span>
+<span><span class="co">#&gt;   Modified:    2026-09-17 02:04:54 </span></span>
 <span><span class="co">#&gt;   Description: Worked example of a one/two-sample t-test report </span></span>
 <span><span class="co">#&gt;   Dependencies:</span></span>
 <span><span class="co">#&gt;     - t_test_child</span></span>
@@ -671,7 +671,7 @@ analytical vignettes:</p>
 <span></span>
 <span>  <span class="va">eda_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"01_eda_and_missingness"</span>,</span>
-<span>    path <span class="op">=</span> <span class="st">"vignettes/01_eda_and_missingness.Rmd"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/eda_and_missingness.Rmd"</span>,</span>
 <span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">raw_clinical</span><span class="op">)</span>,</span>
 <span>    file_stage <span class="op">=</span> <span class="st">"01_EDA"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Missingness auditing, outlier fences, and feature normalization"</span></span>
@@ -681,7 +681,7 @@ analytical vignettes:</p>
 <span>  <span class="co"># 4. Stage 02: Penalized Coxnet &amp; Nested Cross-Validation</span></span>
 <span>  <span class="va">survival_cv_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"02_nested_survival_cv"</span>,</span>
-<span>    path <span class="op">=</span> <span class="st">"vignettes/02_nested_survival_cv.Rmd"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/nested_survival_cv.Rmd"</span>,</span>
 <span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cleaned_cohort_rds</span><span class="op">)</span>,</span>
 <span>    file_stage <span class="op">=</span> <span class="st">"02_Survival_CV"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Subject-grouped nested cross-validation and elastic-net Cox modeling"</span></span>
@@ -699,7 +699,7 @@ analytical vignettes:</p>
 <span></span>
 <span>  <span class="va">sas_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"04_sas_survival"</span>,</span>
-<span>    path <span class="op">=</span> <span class="st">"vignettes/04_sas_survival.Rmd"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/sas_survival.Rmd"</span>,</span>
 <span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">sas_benchmark_raw</span><span class="op">)</span>,</span>
 <span>    file_stage <span class="op">=</span> <span class="st">"04_SAS_Validation"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Numerical validation against SAS PROC PHREG and tidy start/stop merging"</span></span>
@@ -709,7 +709,7 @@ analytical vignettes:</p>
 <span>  <span class="co"># 6. Stage 03: Compute Graph &amp; Governance</span></span>
 <span>  <span class="va">graph_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_qmd_renderer.html">create_qmd_renderer</a></span><span class="op">(</span></span>
 <span>    name <span class="op">=</span> <span class="st">"03_compute_graph"</span>,</span>
-<span>    path <span class="op">=</span> <span class="st">"vignettes/03_compute_graph.Rmd"</span>,</span>
+<span>    path <span class="op">=</span> <span class="st">"vignettes/compute_graph.Rmd"</span>,</span>
 <span>    deps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">eda_report</span>, <span class="va">survival_cv_report</span>, <span class="va">sas_report</span><span class="op">)</span>,</span>
 <span>    file_stage <span class="op">=</span> <span class="st">"03_Compute_Graph"</span>,</span>
 <span>    description <span class="op">=</span> <span class="st">"Dependency graph auditing, staleness detection, and pipeline governance"</span></span>

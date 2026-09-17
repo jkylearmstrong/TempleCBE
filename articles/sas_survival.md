@@ -163,7 +163,7 @@ graphics adhering to CBE styling.
 plot_cox_forest(res_age)
 ```
 
-![](04_sas_survival_files/figure-html/plot_forest_single-1.png)
+![](sas_survival_files/figure-html/plot_forest_single-1.png)
 
 #### Survival Curve Overlay
 
@@ -190,7 +190,7 @@ adequacy:
 plot_cox_survival(res_age, data = lung_data, overlay_km = TRUE)
 ```
 
-![](04_sas_survival_files/figure-html/plot_surv_single-1.png)
+![](sas_survival_files/figure-html/plot_surv_single-1.png)
 
 #### Marginal Hazard Ratio Curve
 
@@ -203,7 +203,7 @@ smoothly across the range of the predictor, use
 plot_cox_marginal(res_age, data = lung_data, scale = "hr")
 ```
 
-![](04_sas_survival_files/figure-html/plot_marginal_single-1.png)
+![](sas_survival_files/figure-html/plot_marginal_single-1.png)
 
 ------------------------------------------------------------------------
 
@@ -265,7 +265,7 @@ Faceted or multi-predictor forest visualization:
 plot_cox_forest_multi(res_multi)
 ```
 
-![](04_sas_survival_files/figure-html/plot_multi_forest-1.png)
+![](sas_survival_files/figure-html/plot_multi_forest-1.png)
 
 And presentation table formatting with global sorting options:
 

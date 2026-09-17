@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3141</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,10 +18,10 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
-    <li><a class="dropdown-item" href="../articles/02_nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
-    <li><a class="dropdown-item" href="../articles/03_compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/04_sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
+    <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -45,9 +45,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.3" id="templecbe-033">TempleCBE 0.3.3<a class="anchor" aria-label="anchor" href="#templecbe-033"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.3141" id="templecbe-033141">TempleCBE 0.3.3141<a class="anchor" aria-label="anchor" href="#templecbe-033141"></a></h2>
 <div class="section level3">
-<h3 id="multivariable-cox-modeling-kaplan-meier-and-shared-diagnostics-0-3-3">Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics<a class="anchor" aria-label="anchor" href="#multivariable-cox-modeling-kaplan-meier-and-shared-diagnostics-0-3-3"></a></h3>
+<h3 id="multivariable-cox-modeling-kaplan-meier-and-shared-diagnostics-0-3-3141">Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics<a class="anchor" aria-label="anchor" href="#multivariable-cox-modeling-kaplan-meier-and-shared-diagnostics-0-3-3141"></a></h3>
 <ul><li>
 <strong>Multivariable Cox Modeling</strong>:
 <ul><li>New <code><a href="../reference/cbe_cox_multi.html">cbe_cox_multi()</a></code> fits a multivariable Cox proportional hazards model (via <code>formula</code>, or the <code>outcome</code>/<code>features</code> convenience pair), returning a tidy coefficient table grouped by variable with explicit reference rows, a <code>glance</code> fit summary, per-term and global proportional hazards diagnostics, convergence status, and a formatted <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> method.</li>
@@ -82,11 +82,11 @@
 <li>Added internal SAS Institute Example 85.7 validation datasets <code><a href="../reference/tumor_wide.html">tumor_wide()</a></code> (45 rodents, 19 variables) and <code><a href="../reference/tumor_long.html">tumor_long()</a></code> (102 counting-process intervals, 8 variables) for time-dependent papilloma survival benchmarks.</li>
 <li>Added <code><a href="../reference/tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code> helper function to construct counting-process start/stop intervals from repeated longitudinal measurements and event data frames with baseline covariate integration.</li>
 <li>Added project-level pipeline orchestration script <code>MakeComputeGraph.R</code> (in <code>vignettes/</code> and <code>inst/scripts/</code>) simulating the Wolfson dependency graph architecture across all four analytical stages.</li>
-<li>Renumbered all vignettes to <code>01</code>-<code>04</code> matching the recommended progression in <code>README.qmd</code>:
-<ul><li><code>01_eda_and_missingness.Rmd</code></li>
-<li><code>02_nested_survival_cv.Rmd</code></li>
-<li><code>03_compute_graph.Rmd</code></li>
-<li><code>04_sas_survival.Rmd</code></li>
+<li>Organized vignette sequence into <code>01</code>–<code>04</code> numbered stages in documentation and articles navigation:
+<ul><li><code>01. eda_and_missingness.Rmd</code></li>
+<li><code>02. nested_survival_cv.Rmd</code></li>
+<li><code>03. compute_graph.Rmd</code></li>
+<li><code>04. sas_survival.Rmd</code></li>
 </ul></li>
 </ul></li>
 </ul></div>
