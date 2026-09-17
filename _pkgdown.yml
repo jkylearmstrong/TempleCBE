@@ -29,6 +29,8 @@ articles:
       - nested_survival_cv
       - compute_graph
       - sas_survival
+      - R_to_SAS
+      - reticulate_export
 
 reference:
   - title: Data Quality & Missingness Analysis
@@ -72,6 +74,32 @@ reference:
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+      - cbe_loco_mp_coxnet
+
+  - title: Joint Survival-Status-Time Models
+    desc: >
+      Coordinated multi-paradigm modeling blending penalized Cox survival, binary event
+      classification, follow-up duration regression, and calibrated stacked ensembles.
+    contents:
+      - joint_model
+      - predict.joint_model
+      - tidy.joint_model
+      - print.joint_model
+      - cv_joint_model
+      - nested_cv_joint_model
+      - autoplot.cv_joint_model
+      - extract_surv_components
+      - step_lencode_joint_model
+
+  - title: Model Explainability & Variable Attributions
+    desc: >
+      Unified explainability across survival and joint models using survex and DALEX,
+      custom IPCW Integrated Brier loss functions, and SurvSHAP(t) attributions.
+    contents:
+      - cbe_explain_survival
+      - cbe_explain
+      - cbe_predict_parts_shap
+      - cbe_survex_loss_ibs
 
   - title: Tidymodels Recipe Steps & Modeling Utilities
     desc: Recipe steps and workflow set helpers.
@@ -144,6 +172,9 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
+      - cbe_sas_macro_dir
+      - cbe_sas_macro_path
+      - rossi_data
       - render
       - render_me
       - zip_reports

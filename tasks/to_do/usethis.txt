@@ -1,0 +1,19 @@
+# ==============================================================================
+# Pharmaverse & Clinical Reporting Evaluation (Backlog / Future Tasks)
+# ==============================================================================
+
+# COMPLETED:
+# [x] Added ggsurvfit to Imports in DESCRIPTION
+# [x] Added gtsummary to Imports in DESCRIPTION
+# [x] Added exact2x2 to Imports in DESCRIPTION with gtsummary add_p integration
+
+# PENDING EVALUATION / FUTURE CONSIDERATION:
+# 1. Parallel Fisher/Exact Tests with cards & furrr:
+#    https://github.com/pharmaverse/cards/pull/575
+#    Evaluate using furrr with pharmaverse/cards for large-scale contingency tables.
+
+# 2. Multi-format Clinical TLG Packages:
+#    - rtables: https://pharmaverse.github.io/rtables/ (HTML, ASCII, LaTeX, PDF, XML)
+#    - tidytlg: https://github.com/pharmaverse/tidytlg
+#    - pkglite: https://merck.github.io/pkglite/
+#    - metatools: https://pharmaverse.github.io/metatools/

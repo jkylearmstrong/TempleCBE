@@ -89,3 +89,16 @@ code {
   padding: 0.15em 0.35em;
   border-radius: 4px;
 }
+
+// Package Logo Constraints & Sizing
+.pkgdown-header img,
+img[alt*="logo" i],
+img[src*="logo.png" i],
+.contents img[src*="logo.png" i],
+.page-header img {
+  height: 138px !important;
+  max-height: 138px !important;
+  width: auto !important;
+  max-width: 138px !important;
+  object-fit: contain;
+}

@@ -1,29 +1,45 @@
-#' Summarize a Data Frame's Columns
+#' Summarize a Data Frame or Joint Model's Columns and Components
 #'
 #' Per-column metadata: class, variable label (if set via \pkg{labelled}),
 #' mean/sd for numeric columns, most-frequent value, distinct-value count,
 #' and missingness. \code{survival::Surv} columns are summarized from their
-#' underlying time/status matrix rather than unrolled as plain numerics.
+#' underlying time/status or start/stop counting-process matrix rather than
+#' unrolled as plain numerics. When provided a \code{\link[TempleCBE]{joint_model}}
+#' object, summarizes the fitted training data and attaches model metadata.
 #'
-#' @param df A data frame or tibble.
-#' @return A tibble with one row per column of \code{df}: \code{dataset_name},
+#' @param x A data frame, tibble, or a fitted \code{\link[TempleCBE]{joint_model}} object.
+#' @param ... Additional arguments passed to methods.
+#' @return A tibble with one row per column of \code{x}: \code{dataset_name},
 #'   \code{labels}, \code{columns}, \code{class}, \code{mean}, \code{sd},
-#'   \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}.
+#'   \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}, and
+#'   optionally \code{variable_type} when \code{subject_id} is specified.
 #' @export
 #' @examples
 #' get_dataset_info(mtcars)
-get_dataset_info <- function(df) {
-  dataset_name <- deparse(substitute(df))
+get_dataset_info <- function(x, ...) {
+  UseMethod("get_dataset_info")
+}
+
+#' @rdname get_dataset_info
+#' @param subject_id Optional character string specifying the subject identifier column
+#'   for repeated-measures longitudinal datasets to audit time-varying vs. baseline features.
+#' @param dataset_name Optional character string overriding the displayed dataset name.
+#' @export
+get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NULL, ...) {
+  df <- x
+  if (is.null(dataset_name)) {
+    dataset_name <- deparse(substitute(x))
+  }
   columns <- colnames(df)
 
-  is_surv <- vapply(df, function(x) inherits(x, "Surv"), logical(1))
+  is_surv <- vapply(df, function(col) inherits(col, "Surv"), logical(1))
   surv_cols <- columns[is_surv]
 
   # is.numeric() is TRUE for Surv objects (they're numeric matrices under the
   # hood), so exclude them here rather than flattening time+status together.
   numeric_cols <- setdiff(names(dplyr::select(df, dplyr::where(is.numeric))), surv_cols)
 
-  class <- unname(vapply(columns, function(col) {
+  class_vec <- unname(vapply(columns, function(col) {
     trimws(sub("labelled", "", paste0(class(df[[col]]), collapse = "")))
   }, character(1)))
 
@@ -45,7 +61,7 @@ get_dataset_info <- function(df) {
   labels <- tibble::tibble(columns = columns, labels = unname(vapply(columns, label_for, character(1))))
 
   na_info <- if (ncol(df) > 0) {
-    dplyr::summarise(df, dplyr::across(dplyr::everything(), \(x) SumNa(x))) |>
+    dplyr::summarise(df, dplyr::across(dplyr::everything(), \(v) SumNa(v))) |>
       tidyr::pivot_longer(dplyr::everything(), names_to = "columns", values_to = "SumNa") |>
       dplyr::mutate(PctNa = .data$SumNa / nrow(df))
   } else {
@@ -56,7 +72,7 @@ get_dataset_info <- function(df) {
   # for the class), so those columns are counted separately via base R below.
   n_distinct_cols <- setdiff(columns, surv_cols)
   n_distinct <- if (length(n_distinct_cols) > 0) {
-    dplyr::summarise(df, dplyr::across(dplyr::all_of(n_distinct_cols), \(x) tryCatch(dplyr::n_distinct(x), error = \(e) NA))) |>
+    dplyr::summarise(df, dplyr::across(dplyr::all_of(n_distinct_cols), \(v) tryCatch(dplyr::n_distinct(v), error = \(e) NA))) |>
       tidyr::pivot_longer(dplyr::everything(), names_to = "columns", values_to = "n_distinct")
   } else {
     tibble::tibble(columns = character(), n_distinct = numeric())
@@ -80,23 +96,48 @@ get_dataset_info <- function(df) {
     sd_tbl <- tibble::tibble(columns = character(), sd = numeric())
   }
 
-  # Surv columns: report mean/sd of follow-up time and an event-rate summary
-  # in most_freq, rather than treating time+status as one flattened vector.
+  # Surv columns: report mean/sd of duration/follow-up time and event summary
+  # supporting both right-censored and counting process Surv(start, stop, status).
   surv_summary <- function(col) {
-    m <- unclass(df[[col]])
+    s_obj <- df[[col]]
+    s_type <- attr(s_obj, "type") %||% "right"
+    m <- unclass(s_obj)
     cn <- colnames(m)
-    time_idx <- if (!is.null(cn) && "time" %in% cn) which(cn == "time") else 1L
-    status_idx <- if (!is.null(cn) && "status" %in% cn) which(cn == "status") else ncol(m)
-    time <- m[, time_idx]
-    status <- m[, status_idx]
-    n_events <- sum(status == 1, na.rm = TRUE)
-    pct_events <- if (length(status) > 0) round(100 * n_events / length(status), 1) else NA_real_
-    tibble::tibble(
-      columns = col,
-      mean = mean(time, na.rm = TRUE),
-      sd = stats::sd(time, na.rm = TRUE),
-      most_freq = paste0("Events: ", n_events, " (", pct_events, "%)")
-    )
+
+    if (identical(s_type, "counting")) {
+      start_idx <- if (!is.null(cn) && "start" %in% cn) which(cn == "start") else 1L
+      stop_idx <- if (!is.null(cn) && "stop" %in% cn) which(cn == "stop") else 2L
+      status_idx <- if (!is.null(cn) && "status" %in% cn) which(cn == "status") else ncol(m)
+
+      start_t <- m[, start_idx]
+      stop_t <- m[, stop_idx]
+      status <- m[, status_idx]
+      duration <- stop_t - start_t
+      n_events <- sum(status == 1, na.rm = TRUE)
+      pct_events <- if (length(status) > 0) round(100 * n_events / length(status), 1) else NA_real_
+
+      tibble::tibble(
+        columns = col,
+        mean = mean(duration, na.rm = TRUE),
+        sd = stats::sd(duration, na.rm = TRUE),
+        most_freq = paste0("Counting (Events: ", n_events, " [", pct_events, "%], Median Stop: ",
+                           round(stats::median(stop_t, na.rm = TRUE), 1), ")")
+      )
+    } else {
+      time_idx <- if (!is.null(cn) && "time" %in% cn) which(cn == "time") else 1L
+      status_idx <- if (!is.null(cn) && "status" %in% cn) which(cn == "status") else ncol(m)
+      time <- m[, time_idx]
+      status <- m[, status_idx]
+      n_events <- sum(status == 1, na.rm = TRUE)
+      pct_events <- if (length(status) > 0) round(100 * n_events / length(status), 1) else NA_real_
+
+      tibble::tibble(
+        columns = col,
+        mean = mean(time, na.rm = TRUE),
+        sd = stats::sd(time, na.rm = TRUE),
+        most_freq = paste0("Events: ", n_events, " (", pct_events, "%)")
+      )
+    }
   }
   surv_tbl <- if (length(surv_cols) > 0) {
     dplyr::bind_rows(lapply(surv_cols, surv_summary))
@@ -113,7 +154,7 @@ get_dataset_info <- function(df) {
   }
 
   mf_cols <- setdiff(names(dplyr::select(df, dplyr::where(is.factor) | dplyr::where(is.character) |
-                                    dplyr::where(is.logical) | dplyr::where(is.numeric))), surv_cols)
+                                          dplyr::where(is.logical) | dplyr::where(is.numeric))), surv_cols)
   most_freq <- if (length(mf_cols) > 0) {
     dplyr::summarise(df, dplyr::across(dplyr::all_of(mf_cols), most_freq_val)) |>
       tidyr::pivot_longer(dplyr::everything(), names_to = "columns", values_to = "most_freq")
@@ -122,7 +163,7 @@ get_dataset_info <- function(df) {
   }
   most_freq <- dplyr::bind_rows(most_freq, dplyr::select(surv_tbl, "columns", "most_freq"))
 
-  tibble::tibble(columns = columns, class = class) |>
+  out <- tibble::tibble(columns = columns, class = class_vec) |>
     dplyr::mutate(dataset_name = dataset_name) |>
     dplyr::left_join(labels, by = "columns") |>
     dplyr::relocate("labels") |>
@@ -132,6 +173,40 @@ get_dataset_info <- function(df) {
     dplyr::left_join(most_freq, by = "columns") |>
     dplyr::left_join(n_distinct, by = "columns") |>
     dplyr::left_join(na_info, by = "columns")
+
+  # Longitudinal repeated-measures covariate classification if subject_id is supplied
+  if (!is.null(subject_id) && subject_id %in% columns) {
+    var_types <- unname(vapply(columns, function(col) {
+      if (col == subject_id) return("Subject ID")
+      if (nrow(df) == 0) return("Unknown")
+      vals_per_sub <- tapply(df[[col]], df[[subject_id]], function(v) length(unique(v[!is.na(v)])))
+      varies <- any(vals_per_sub > 1L, na.rm = TRUE)
+      if (isTRUE(varies)) "Longitudinal (Time-Varying)" else "Baseline (Time-Invariant)"
+    }, character(1)))
+    out <- dplyr::mutate(out, variable_type = var_types)
+  }
+
+  out
+}
+
+#' @rdname get_dataset_info
+#' @export
+get_dataset_info.joint_model <- function(x, ...) {
+  comp <- x$components
+  df <- comp$predictors
+  resp_name <- deparse(comp$formula[[2L]])
+  df[[resp_name]] <- comp$surv_obj
+
+  res <- get_dataset_info.data.frame(df, dataset_name = paste0("joint_model(", x$engine, ")"), ...)
+  attr(res, "joint_model_summary") <- list(
+    engine = x$engine,
+    calibration = x$calibration,
+    n_obs = length(comp$time),
+    n_events = sum(comp$status),
+    event_pct = round(100 * mean(comp$status), 1),
+    median_followup = stats::median(comp$time)
+  )
+  res
 }
 
 #' @rdname get_dataset_info

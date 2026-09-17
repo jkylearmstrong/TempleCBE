@@ -1,0 +1,267 @@
+                                            The SAS System      13:32 Thursday, September 17, 2026   1
+
+                                         The PHREG Procedure
+
+                                          Model Information
+
+                                  Data Set                 WORK.LUNG
+                                  Dependent Variable       time     
+                                  Censoring Variable       event    
+                                  Censoring Value(s)       0        
+                                  Ties Handling            BRESLOW  
+
+
+                               Number of Observations Read          31
+                               Number of Observations Used          31
+
+
+                          Summary of the Number of Event and Censored Values
+ 
+                                                                  Percent
+                                Total       Event    Censored    Censored
+
+                                   31          28           3        9.68
+
+
+                                          Convergence Status
+
+                            Convergence criterion (GCONV=1E-8) satisfied.          
+
+
+                                        Model Fit Statistics
+ 
+                                                Without           With
+                               Criterion     Covariates     Covariates
+
+                               -2 LOG L         151.215        150.436
+                               AIC              151.215        156.436
+                               SBC              151.215        160.432
+
+
+                               Testing Global Null Hypothesis: BETA=0
+ 
+                       Test                 Chi-Square       DF     Pr > ChiSq
+
+                       Likelihood Ratio         0.7791        3         0.8545
+                       Score                    0.7756        3         0.8553
+                       Wald                     0.7737        3         0.8557
+
+
+                                            The SAS System      13:32 Thursday, September 17, 2026   2
+
+                                         The PHREG Procedure
+
+                              Analysis of Maximum Likelihood Estimates
+ 
+                   Parameter     Standard                               Hazard     95% Hazard Ratio
+ Parameter   DF     Estimate        Error   Chi-Square   Pr > ChiSq      Ratio    Confidence Limits
+
+ age          1     -0.03043      0.03797       0.6424       0.4228      0.970      0.900      1.045
+ sex          1      0.15475      0.44542       0.1207       0.7283      1.167      0.488      2.795
+ ph_karno     1     -0.00865      0.01338       0.4183       0.5178      0.991      0.966      1.018
+
+
+                         Supremum Test for Proportionals Hazards Assumption
+ 
+                                Maximum
+                               Absolute                                      Pr > 
+                   Variable       Value    Replications          Seed    MaxAbsVal
+
+                   age           1.4394            1000           123       0.0790
+                   sex           1.1433            1000           123       0.1120
+                   ph_karno      0.6845            1000           123       0.4400
+                  TempleCBE: Cox Proportional Hazards Model Estimates (TIES=BRESLOW)                 3
+                                                                    13:32 Thursday, September 17, 2026
+
+                                std_                             hazard_    hr_lower_    hr_upper_
+    Estimate    term           error    statistic    p_value       ratio       95           95
+
+     -0.0304    age           0.0380        0.64     0.4228        0.970       0.900        1.045 
+      0.1547    sex           0.4454        0.12     0.7283        1.167       0.488        2.795 
+     -0.0087    ph_karno      0.0134        0.42     0.5178        0.991       0.966        1.018 
+                 TempleCBE: Time-Dependent Brier Score Evaluation (IPCW Graf Method)                 4
+                                                                    13:32 Thursday, September 17, 2026
+
+                          eval_              n_events_    n_at_      brier_
+                           time    n_eval       by_t       risk       score
+
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           100       31          4          27      0.10716
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                           200       31          8          23      0.18166
+                 TempleCBE: Time-Dependent Brier Score Evaluation (IPCW Graf Method)                 5
+                                                                    13:32 Thursday, September 17, 2026
+
+                          eval_              n_events_    n_at_      brier_
+                           time    n_eval       by_t       risk       score
+
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           200       31           8         23      0.18166
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           300       31          14         17      0.23406
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                 TempleCBE: Time-Dependent Brier Score Evaluation (IPCW Graf Method)                 6
+                                                                    13:32 Thursday, September 17, 2026
+
+                          eval_              n_events_    n_at_      brier_
+                           time    n_eval       by_t       risk       score
+
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           400       31          18         13      0.23940
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                 TempleCBE: Time-Dependent Brier Score Evaluation (IPCW Graf Method)                 7
+                                                                    13:32 Thursday, September 17, 2026
+
+                          eval_              n_events_    n_at_      brier_
+                           time    n_eval       by_t       risk       score
+
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                           500       31          20         11      0.22992
+                               TempleCBE: Integrated Brier Score (IBS)                               8
+                                                                    13:32 Thursday, September 17, 2026
+
+                                     eval_       eval_
+                                   time_min    time_max         ibs
+
+                                      100         500       0.16473

@@ -246,10 +246,6 @@ summarize_section_by_time <- function(df, mapping, index, id_cols = NULL,
   }
 
   if (engine == "gtsummary") {
-    if (!requireNamespace("gtsummary", quietly = TRUE)) {
-      stop("gtsummary package is required when engine = 'gtsummary'.", call. = FALSE)
-    }
-
     if (length(time_cols) == 0) {
       return(gtsummary::tbl_summary(body))
     }
