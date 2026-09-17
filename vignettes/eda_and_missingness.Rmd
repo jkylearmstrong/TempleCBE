@@ -356,6 +356,20 @@ tibble::tibble(
 )
 ```
 
+### Pairwise correlation screening with `corr_test_all()`
+
+Screening for multicollinearity across clinical biomarkers helps identify redundant
+covariates before regression modeling and confirms the underlying covariance that
+imputation engines exploit:
+
+```{r corr_test_demo}
+# Pairwise correlation across continuous clinical biomarkers
+corr_tbl <- corr_test_all(
+  cohort_clean[, c("age", "systolic_bp", "bmi", "cholesterol", "glucose")]
+)
+head(corr_tbl, 6)
+```
+
 ---
 
 ## 5. Tuned Random Forest Imputation with `missforest_sweep_mtry()`
