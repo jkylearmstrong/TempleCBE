@@ -11,3 +11,5 @@ data/
 *.xlsx
 *.csv
 *.rds
+Rplots.pdf
+tests/testthat/Rplots.pdf

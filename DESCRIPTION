@@ -1,7 +1,7 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.3.403
+Version: 0.3.403.2026.09.17.11.39
 Authors@R: 
     person("J Kyle", "Armstrong", email = "j.kyle.armstrong@temple.edu", role = c("aut", "cre"),
            comment = c(

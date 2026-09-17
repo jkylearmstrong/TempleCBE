@@ -216,6 +216,7 @@ reference:
       - fmt_num
       - fmt_sig
       - fmt_p
+      - pformat
       - fmt_hr
       - words
 
@@ -254,6 +255,24 @@ reference:
       - plot_missingness
       - table_two_by_two
 
+  - title: Categorical Association & Contingency Tables
+    desc: >
+      Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and publication-ready
+      association visualizations (balloon, bar, contingency, mosaic, heatmap, and square plots).
+    contents:
+      - cbe_exact2x2
+      - cbe_exact2x2_ci
+      - cbe_test_categorical
+      - cbe_four_quadrant_report
+      - cbe_contingency_plot
+      - cbe_balloon_plot
+      - cbe_bar_plot
+      - cbe_mosaic_plot
+      - cbe_heatmap_plot
+      - cbe_square_plot
+      - cbe_pairwise_combos
+      - plot_categorical_associations
+
   - title: Data Snapshot Manifest & Schema Engine
     desc: >
       Tools to freeze, snapshot, and verify dataset copies against upstream sources via MD5 hashes,
@@ -274,10 +293,12 @@ reference:
   - title: Deliverable Packaging & Code Auditing
     desc: >
       Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables) into structured
-      distribution archives, and audit source scripts for referenced deliverable tokens.
+      distribution archives, audit source scripts for referenced deliverable tokens, and extract
+      YAML metadata formats.
     contents:
       - package_deliverables
       - audit_report_deliverables
+      - extract_yaml_formats
 
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
