@@ -117,10 +117,12 @@ joint_model <- function(data,
       ...
     )
   } else {
+    # coxnet() fits a single model with no CV fold-splitting, so `subject_id`
+    # (which only affects grouped resampling, as in cv_coxnet()) isn't
+    # accepted here.
     coxnet(
       comp$formula,
       data = data,
-      subject_id = subject_id,
       mixture = mixture,
       penalty = penalty,
       ...
@@ -342,7 +344,7 @@ predict.joint_model <- function(object, new_data = NULL, eval_time = NULL, ...) 
   # 2. Status predictions
   status_raw <- if (inherits(object$status_model, "cv.glmnet")) {
     as.numeric(stats::predict(object$status_model, newx = x_mat, s = "lambda.min", type = "response"))
-  } else if (inherits(object$status_model, "_model_fit")) {
+  } else if (inherits(object$status_model, "model_fit")) {
     as.numeric(stats::predict(object$status_model, new_data = new_data, type = "prob")$.pred_event)
   } else {
     rep(NA_real_, nrow(new_data))
@@ -366,7 +368,7 @@ predict.joint_model <- function(object, new_data = NULL, eval_time = NULL, ...) 
   # 3. Time predictions
   time_pred <- if (inherits(object$time_model, "cv.glmnet")) {
     as.numeric(stats::predict(object$time_model, newx = x_mat, s = "lambda.min"))
-  } else if (inherits(object$time_model, "_model_fit")) {
+  } else if (inherits(object$time_model, "model_fit")) {
     as.numeric(stats::predict(object$time_model, new_data = new_data)$.pred)
   } else {
     rep(NA_real_, nrow(new_data))
@@ -469,6 +471,11 @@ tidy.joint_model <- function(x, ...) {
 #' @param parallel Logical; whether to run folds in parallel via \pkg{furrr}.
 #' @param ... Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.
 #'
+#' @note Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+#'   supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+#'   scoring needs one row per subject, but predictions are one row per
+#'   interval. Use \code{Surv(time, status)} outcomes for cross-validation.
+#'
 #' @return An S3 object of class \code{c("cv_joint_model", "tbl_df")} summarizing
 #'   comparative metrics across folds.
 #' @export
@@ -484,6 +491,16 @@ cv_joint_model <- function(data,
   engine <- match.arg(engine)
   rlang::check_installed(c("rsample", "yardstick", "survival", "glmnet"),
                          reason = "for cross-validation of joint_model.")
+
+  if (identical(extract_surv_components(data, outcome, subject_id)$type, "counting")) {
+    stop(
+      "cv_joint_model() does not yet support counting-process Surv(start, stop, event) ",
+      "outcomes: scoring needs one prediction row per subject, but joint_model() predicts ",
+      "one row per input row (per interval). Collapse to one row per subject with ",
+      "surv_subject_truth() first, or fit joint_model() directly without cross-validation.",
+      call. = FALSE
+    )
+  }
 
   # Create resamples if not provided
   if (is.null(resamples)) {
@@ -597,6 +614,11 @@ cv_joint_model <- function(data,
 #' @param parallel Logical; whether to run outer splits in parallel.
 #' @param ... Additional arguments.
 #'
+#' @note Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+#'   supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+#'   scoring needs one row per subject, but predictions are one row per
+#'   interval. Use \code{Surv(time, status)} outcomes for cross-validation.
+#'
 #' @return An S3 object of class \code{c("nested_cv_joint_model", "tbl_df")}.
 #' @export
 nested_cv_joint_model <- function(object,
@@ -610,6 +632,16 @@ nested_cv_joint_model <- function(object,
     stop("`object` must be an rsample::nested_cv() object.", call. = FALSE)
   }
   engine <- match.arg(engine)
+
+  if (identical(extract_surv_components(object$splits[[1]]$data, outcome, subject_id)$type, "counting")) {
+    stop(
+      "nested_cv_joint_model() does not yet support counting-process Surv(start, stop, event) ",
+      "outcomes: scoring needs one prediction row per subject, but joint_model() predicts ",
+      "one row per input row (per interval). Collapse to one row per subject with ",
+      "surv_subject_truth() first, or fit joint_model() directly without cross-validation.",
+      call. = FALSE
+    )
+  }
 
   run_outer <- function(i) {
     outer_split <- object$splits[[i]]

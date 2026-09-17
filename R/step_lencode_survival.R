@@ -189,7 +189,7 @@ print.step_lencode_coxnet <- function(x, width = max(20, options()$width - 30), 
 
 #' @export
 tidy.step_lencode_coxnet <- function(x, ...) {
-  if (is_trained(x)) {
+  if (recipes::is_trained(x)) {
     if (length(x$mapping) == 0) {
       res <- tibble::tibble(terms = character(), level = character(), value = numeric(), id = character())
     } else {
@@ -339,14 +339,25 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
       stats::as.formula(paste0("survival::Surv(", outcome_names[1], ", ", outcome_names[2], ", ", outcome_names[3], ") ~ ", col))
     }
 
+    # Only the Cox component's .pred_risk_score is used below, so calibration
+    # (which needs the `probably` package and fits extra classification/
+    # regression models we never look at) is switched off.
     jm_fit <- tryCatch({
       joint_model(
         sub_df,
         outcome = surv_formula,
         engine = x$engine,
-        penalty = x$penalty
+        penalty = x$penalty,
+        calibration = FALSE
       )
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      warning(
+        "step_lencode_joint_model(): failed to fit a joint_model() for column '", col,
+        "'; encoding all levels to 0. Original error: ", conditionMessage(e),
+        call. = FALSE
+      )
+      NULL
+    })
 
     if (is.null(jm_fit)) {
       mapping[[col]] <- stats::setNames(rep(0, length(levs)), levs)
@@ -399,7 +410,7 @@ print.step_lencode_joint_model <- function(x, width = max(20, options()$width - 
 
 #' @export
 tidy.step_lencode_joint_model <- function(x, ...) {
-  if (is_trained(x)) {
+  if (recipes::is_trained(x)) {
     if (length(x$mapping) == 0) {
       res <- tibble::tibble(terms = character(), level = character(), value = numeric(), id = character())
     } else {

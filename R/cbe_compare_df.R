@@ -273,7 +273,7 @@ print.cbe_compare_df <- function(x, max_print = 10, ...) {
     }
   } else {
     cat(sprintf("Variables with Differences: %d / %d\n\n", n_diff_vars, nrow(x$summary)))
-    diff_summary <- x$summary %>% dplyr::filter(.data$n_diff > 0)
+    diff_summary <- dplyr::filter(x$summary, .data$n_diff > 0)
     print(as.data.frame(diff_summary), row.names = FALSE)
 
     cat(sprintf("\nDiscrepant Values (showing up to %d rows):\n", max_print))

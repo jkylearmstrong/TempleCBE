@@ -66,10 +66,9 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
   )
 
   dots <- match.call(expand.dots = FALSE)$...
-  cph_call <- as.call(c(
-    list(quote(survival::coxph), formula = fmla, data = quote(data), model = TRUE),
-    as.list(dots)
-  ))
+  base_args <- list(quote(survival::coxph), formula = fmla, data = quote(data))
+  if (!"model" %in% names(dots)) base_args$model <- TRUE
+  cph_call <- as.call(c(base_args, as.list(dots)))
   fit <- eval(cph_call, environment(), parent.frame())
   fit$call$data <- match.call()$data
 

@@ -257,7 +257,20 @@ cbe_test_categorical <- function(data,
                                  simulate.p.value = NULL,
                                  parallel = FALSE,
                                  n_chunks = 4L,
+                                 group = NULL,
+                                 type = NULL,
+                                 test.args = NULL,
+                                 adj.vars = NULL,
+                                 conf.level = NULL,
+                                 tbl = NULL,
+                                 continuous_variable = NULL,
                                  ...) {
+  # `group`, `type`, `test.args`, `adj.vars`, `conf.level`, `tbl`, and
+  # `continuous_variable` are always supplied by gtsummary::add_p()'s custom-
+  # test calling convention (see gtsummary:::.calculate_one_test); declaring
+  # them here absorbs them so they never leak into `...` and reach
+  # stats::chisq.test()/stats::fisher.test(), neither of which has a `...`
+  # to swallow them.
   test <- match.arg(test)
 
   # Support formula syntax: response ~ by or var1 + var2 ~ by

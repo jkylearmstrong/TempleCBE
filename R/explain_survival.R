@@ -150,9 +150,17 @@ cbe_explain_survival <- function(model,
   # 3. Build default risk prediction function
   if (is.null(predict_risk_function)) {
     predict_risk_function <- function(m, new_data, times = NULL, ...) {
-      # Try linear predictor first
+      # Try linear predictor first. For coxnet_model/cv_coxnet, `increasing`
+      # controls the sign: TRUE (their predict() default, used elsewhere for
+      # .pred_linear_pred) means higher = longer survival, but a *risk*
+      # function must return higher = higher risk, so request glmnet's native
+      # sign explicitly here.
       lp <- tryCatch({
-        p <- stats::predict(m, new_data = new_data, type = "linear_pred")
+        p <- if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
+          stats::predict(m, new_data = new_data, type = "linear_pred", increasing = FALSE)
+        } else {
+          stats::predict(m, new_data = new_data, type = "linear_pred")
+        }
         if (ncol(p) > 0) as.numeric(p[[1]]) else NULL
       }, error = function(e) NULL)
 

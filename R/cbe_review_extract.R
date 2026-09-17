@@ -594,9 +594,12 @@ find_pipeline_manifest <- function(start_dir = NULL) {
   }
   candidates <- c(
     candidates,
-    file.path(getwd(), "analysis", "2024_09", "reports_to_render.xlsx"),
-    file.path("S:", "Clinical Science", "Staff", "Wolfson", "analysis", "2024_09", "reports_to_render.xlsx")
+    file.path(getwd(), "analysis", "2024_09", "reports_to_render.xlsx")
   )
+  env_root <- Sys.getenv("TEMPLECBE_ANALYSIS_ROOT", unset = NA)
+  if (!is.na(env_root) && nzchar(env_root)) {
+    candidates <- c(candidates, file.path(env_root, "analysis", "2024_09", "reports_to_render.xlsx"))
+  }
   for (cand in candidates) {
     if (file.exists(cand)) return(normalizePath(cand, mustWork = TRUE))
   }
@@ -778,10 +781,13 @@ build_docxwalk_df <- function(files, catalog, qmd_index = NULL) {
 find_default_review_input_dir <- function() {
   candidates <- c(
     file.path(getwd(), "tasks", "edits"),
-    file.path(getwd(), "tasks", "to_do", "review_tracker"),
-    file.path("S:", "Clinical Science", "Staff", "Wolfson", "tasks", "edits"),
-    getwd()
+    file.path(getwd(), "tasks", "to_do", "review_tracker")
   )
+  env_root <- Sys.getenv("TEMPLECBE_ANALYSIS_ROOT", unset = NA)
+  if (!is.na(env_root) && nzchar(env_root)) {
+    candidates <- c(candidates, file.path(env_root, "tasks", "edits"))
+  }
+  candidates <- c(candidates, getwd())
   for (c in candidates) {
     if (dir.exists(c) && length(list.files(c, pattern = "\\.docx$", ignore.case = TRUE)) > 0) {
       return(c)
