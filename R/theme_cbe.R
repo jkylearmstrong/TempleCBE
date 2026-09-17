@@ -57,6 +57,28 @@ theme_cbe_deck <- function(base_size = 14) {
     )
 }
 
+#' CBE ggplot2 Theme for Survival Analysis Visualizations
+#'
+#' A variant of \code{theme_cbe()} tuned for Cox model and Kaplan-Meier plots
+#' (forest plots, predicted/observed survival curves, marginal risk curves), giving a
+#' single consistent look across \code{plot_cox_forest()}, \code{plot_cox_forest_multi()},
+#' \code{plot_cox_survival()}, and \code{plot_cox_marginal()}.
+#'
+#' @param base_size Base font size (default: 12)
+#' @param base_family Base font family (default: "")
+#' @return A ggplot2 theme object
+#' @seealso [theme_cbe()], [theme_cbe_deck()]
+#' @export
+cbe_theme_survival <- function(base_size = 12, base_family = "") {
+  theme_cbe(base_size = base_size, base_family = base_family) +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_line(color = "grey90"),
+      panel.grid.major.y = ggplot2::element_blank(),
+      axis.line.x        = ggplot2::element_line(color = "grey40"),
+      legend.title        = ggplot2::element_text(face = "bold", size = ggplot2::rel(0.9))
+    )
+}
+
 #' Discrete Color Scale for Temple CBE
 #'
 #' @param ... Arguments passed to \code{ggplot2::scale_color_manual}

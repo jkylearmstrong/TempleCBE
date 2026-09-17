@@ -1,3 +1,48 @@
+# TempleCBE 0.3.3141
+
+## Multivariable Cox Modeling, Kaplan-Meier, and Shared Diagnostics
+
+* **Multivariable Cox Modeling**:
+  * New `cbe_cox_multi()` fits a multivariable Cox proportional hazards model (via `formula`, or the
+    `outcome`/`features` convenience pair), returning a tidy coefficient table grouped by variable with
+    explicit reference rows, a `glance` fit summary, per-term and global proportional hazards diagnostics,
+    convergence status, and a formatted `print()` method.
+* **Proportional Hazards Diagnostics**:
+  * New `cbe_cox_check()` provides standalone, tidy `cox.zph()` diagnostics (per-term table, violation
+    flags, and an automated text summary, including the multivariate global test) for any `coxph`,
+    `cbe_cox`, or `cbe_cox_multi` object. `cbe_cox_single()` now uses `cbe_cox_check()` internally.
+* **Kaplan-Meier**:
+  * New `cbe_km_single()` pairs a univariable `cbe_cox_single()` fit with the matching stratified
+    Kaplan-Meier curve (quartile-binned for continuous predictors) without refitting the Cox model twice,
+    returning the Cox object, the `survfit` object, a tidy KM table, the hazard direction, a combined
+    summary table, and a formatted `print()` method.
+* **Presentation & Utility Helpers**:
+  * New `cbe_cox_table()` formats a `cbe_cox`/`cbe_cox_multi` coefficient table for presentation, adding a
+    log(HR) column with optional sorting by magnitude or p-value and significance-star annotation.
+  * New `cbe_factor_reference()` relevels a factor's reference level before fitting, with the chosen level
+    reported via `message()` and recorded in a `"cbe_reference_level"` attribute.
+  * New `cbe_theme_survival()` gives a single consistent ggplot2 look across the Cox/KM visualizations;
+    `plot_cox_forest()`, `plot_cox_survival()`, and `plot_cox_marginal()` now use it.
+* **Enhanced Visualizations**:
+  * `plot_cox_forest()` gains `scale` (`"hr"`/`"log_hr"`), `color_by` (`"none"`/`"significance"`), and
+    `order_by` (`"none"`/`"magnitude"`/`"pvalue"`) arguments.
+  * New `plot_cox_forest_multi()` renders a `cbe_cox_multi()` result as a forest plot with per-variable
+    facet blocks, sharing the same `scale`/`color_by`/`order_by` options as `plot_cox_forest()`.
+  * `plot_cox_survival()` gains `overlay_km = FALSE`; when `TRUE`, observed Kaplan-Meier step curves are
+    overlaid (dashed) on the Cox-predicted curves (solid), with a legend distinguishing the two.
+  * `plot_cox_marginal()` gains `scale` (`"prob"`/`"hr"`/`"log_hr"`) to plot predicted event probability or
+    relative hazard (from the centered linear predictor), and now draws its confidence band with
+* **SAS PROC PHREG Parity & Validation Datasets**:
+  * Added `...` argument passthrough to `cbe_cox_multi()` and `cbe_cox_single()`, supporting `ties = "breslow"`, `id = ID`, `cluster`, and advanced `survival::coxph` options.
+  * Added internal SAS Institute Example 85.7 validation datasets `tumor_wide()` (45 rodents, 19 variables) and `tumor_long()` (102 counting-process intervals, 8 variables) for time-dependent papilloma survival benchmarks.
+  * Added `tidy_tmerge_cox()` helper function to construct counting-process start/stop intervals from repeated longitudinal measurements and event data frames with baseline covariate integration.
+  * Added project-level pipeline orchestration script `MakeComputeGraph.R` (in `vignettes/` and `inst/scripts/`) simulating the Wolfson dependency graph architecture across all four analytical stages.
+  * Organized vignette sequence into `01`–`04` numbered stages in documentation and articles navigation:
+    * `01. eda_and_missingness.Rmd`
+    * `02. nested_survival_cv.Rmd`
+    * `03. compute_graph.Rmd`
+    * `04. sas_survival.Rmd`
+
 # TempleCBE 0.3.2
 
 ## Integrated Standard Biostatistical and Presentation Components from Wolfson

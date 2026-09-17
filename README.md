@@ -106,7 +106,7 @@ plot_features_percent_miss(df)
 ```
 
 See the [Exploratory Data Analysis, Missingness Auditing, and
-Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)
+Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html)
 vignette for a full walkthrough, including non-standard missing codes
 and outlier-aware EDA.
 
@@ -202,19 +202,23 @@ Convenient syntax for string matching and negation:
 Beyond the quick-start snippets above, `TempleCBE` ships full
 worked-example vignettes:
 
-- **[Exploratory Data Analysis, Missingness Auditing, and
+- **[01. Exploratory Data Analysis, Missingness Auditing, and
   Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)**
   — non-standard missing codes, missingness visualization, and
   outlier-aware normalization for messy clinical/EHR data.
-- **[Penalized Cox Models and Nested Cross-Validation for Start/Stop
+- **[02. Penalized Cox Models and Nested Cross-Validation for Start/Stop
   Survival
   Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)**
   — why row-level resampling leaks for counting-process data, and how
   `coxnet()`/`cv_coxnet()`/`nested_cv_coxnet()` avoid it.
-- **[Visualizing Computational Pipeline
+- **[03. Visualizing Computational Pipeline
   Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html)**
   — treating a multi-report analysis pipeline as a dependency graph with
-  `get_render_plan()`.
+  `get_render_plan()` and project-level `MakeComputeGraph.R`.
+- **[04. Validation and Workflow Guide for SAS Users: Cox Models in
+  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html)**
+  — cross-validating time-fixed and time-dependent Cox models against
+  SAS PROC PHREG, with `survival::tmerge` and `tidy_tmerge_cox()`.
 
 Once installed, each is also available locally via
 `vignette("eda_and_missingness", package = "TempleCBE")` (substituting

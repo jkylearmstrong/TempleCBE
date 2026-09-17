@@ -12,6 +12,9 @@ plot_cox_forest(
   high_col = "conf.high",
   p_col = NULL,
   color = "#9D2235",
+  scale = c("hr", "log_hr"),
+  color_by = c("none", "significance"),
+  order_by = c("none", "magnitude", "pvalue"),
   x_limits = NULL,
   x_breaks = NULL,
   title = NULL,
@@ -24,15 +27,26 @@ plot_cox_forest(
 
 \item{label_col}{Column name for labels / terms (character string or unquoted).}
 
-\item{hr_col}{Column name for hazard ratios (default: "estimate").}
+\item{hr_col}{Column name for hazard ratios, always on the HR (not log) scale (default: "estimate").}
 
-\item{low_col}{Column name for lower CI bounds (default: "conf.low").}
+\item{low_col}{Column name for lower CI bounds, on the HR scale (default: "conf.low").}
 
-\item{high_col}{Column name for upper CI bounds (default: "conf.high").}
+\item{high_col}{Column name for upper CI bounds, on the HR scale (default: "conf.high").}
 
-\item{p_col}{Optional column name for p-values to display significance shapes.}
+\item{p_col}{Optional column name for p-values. Required for \code{color_by = "significance"}
+and \code{order_by = "pvalue"}.}
 
 \item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).}
+
+\item{scale}{One of \code{"hr"} (default; plots hazard ratios with a reference line at 1) or
+\code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with
+a reference line at 0).}
+
+\item{color_by}{One of \code{"none"} (default) or \code{"significance"}, which colors points/error
+bars by whether \code{p_col} is below 0.05 and adds a legend.}
+
+\item{order_by}{One of \code{"none"} (default; original row order), \code{"magnitude"} (sorts by
+\code{abs(log(estimate))} descending), or \code{"pvalue"} (sorts by \code{p_col} ascending).}
 
 \item{x_limits}{Optional 2-element numeric vector for x-axis limits.}
 
@@ -49,4 +63,7 @@ A ggplot2 object.
 }
 \description{
 Generates a publication/deck-ready horizontal forest plot of hazard ratios.
+}
+\seealso{
+[plot_cox_forest_multi()]
 }
