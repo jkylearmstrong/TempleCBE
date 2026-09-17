@@ -1,0 +1,24 @@
+
+```{r}
+iter <- 
+  {{x}} |>
+    TT() |>
+      dimnames() |>
+        names() #|>
+          #paste(collapse = " X ") 
+```
+
+```{r}
+iter <- new_labels_df |>
+    filter(variable %in% iter) |>
+    pull(label)
+
+iter <-  paste(iter, collapse = " X ")
+```
+
+### `r iter`
+
+```{r}
+GG({{x}})
+```
+
