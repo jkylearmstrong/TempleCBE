@@ -182,10 +182,11 @@ pformat <- function(p, accuracy = 0.001, add_p = TRUE, digits = NULL) {
 #' @export
 cbe_pformat <- pformat
 
-#' Institutional Categorical Hypothesis Test for gtsummary
+#' Institutional Categorical Hypothesis Test for gtsummary and Batch Testing
 #'
 #' Standard categorical hypothesis testing engine conforming to the CBE statistical
-#' protocol and designed as a drop-in custom test for \code{\link[gtsummary]{add_p}}.
+#' protocol. Operates as a drop-in custom test for \code{\link[gtsummary]{add_p}}
+#' or as a standalone batch testing engine with optional \pkg{furrr} parallelization.
 #'
 #' The function follows a rigorous 4-rule hierarchy:
 #' \enumerate{
@@ -202,32 +203,133 @@ cbe_pformat <- pformat
 #'     (\code{\link[stats]{chisq.test}} with \code{correct = FALSE}).
 #' }
 #'
-#' @param data Data frame supplied by \pkg{gtsummary}.
-#' @param variable Character string column name for the feature being tested.
+#' @param data Data frame supplied directly or by \pkg{gtsummary}.
+#' @param variable Character string column name for the feature being tested,
+#'   a character vector of variable names for batch testing, or a two-sided
+#'   \code{\link[stats]{formula}} of the form \code{response ~ grouping_var} or
+#'   \code{var1 + var2 ~ grouping_var}. If \code{NULL}, all categorical/factor
+#'   columns in \code{data} (excluding \code{by}) are tested.
 #' @param by Character string column name for the stratifying/grouping variable.
+#'   Can be omitted when \code{variable} is a formula.
 #' @param test Hypothesis test engine: \code{"auto"} (default CBE hierarchy),
 #'   \code{"exact"} (force Central Fisher exact test for 2x2 or simulated Fisher for RxC),
 #'   \code{"chisq"} (force Pearson's Chi-squared test via \code{\link[stats]{chisq.test}}),
 #'   or \code{"fisher"} (force \code{\link[stats]{fisher.test}}).
 #' @param correct Logical; whether to apply continuity correction when \code{test = "chisq"}
 #'   (default \code{FALSE} following CBE standard protocol).
-#' @param ... Additional arguments (ignored or passed through).
+#' @param B Integer; number of Monte Carlo replicates when Fisher's exact test with
+#'   simulation is triggered (default \code{2000L}).
+#' @param simulate.p.value Optional logical; if specified, explicitly enables or disables
+#'   Monte Carlo simulation for Fisher's test. If \code{NULL} (default), auto-triggers
+#'   simulation when table total exceeds 500 or any dimension exceeds 2.
+#' @param parallel Logical; whether to use \pkg{furrr} for parallel execution
+#'   (for batch testing across multiple variables or chunking high-\code{B} simulations).
+#'   Requires setting a \code{\link[future]{plan}} beforehand.
+#' @param n_chunks Integer; number of chunks to partition \code{B} into when running
+#'   parallel simulations with \code{B >= 10000} (default 4L).
+#' @param ... Additional arguments passed to \code{\link[exact2x2]{exact2x2}} or
+#'   \code{\link[stats]{fisher.test}}.
 #'
-#' @return A tibble with \code{p.value} and descriptive \code{method} compliant
-#'   with \pkg{gtsummary}'s custom test requirements.
+#' @return When \code{variable} is a single string (such as when called by
+#'   \pkg{gtsummary}), returns a one-row tibble compliant with \pkg{gtsummary}'s
+#'   custom test specification (\code{p.value}, \code{statistic}, \code{parameter},
+#'   \code{method}). When \code{variable} is a vector or \code{NULL}, returns a
+#'   tidy tibble of test results across all evaluated variables.
 #' @export
 #' @examples
-#' \dontrun{
 #' library(gtsummary)
 #' trial |>
 #'   tbl_summary(by = trt, include = c(response, death, grade)) |>
 #'   add_p(test = all_categorical() ~ cbe_test_categorical) |>
 #'   separate_p_footnotes()
-#' }
-cbe_test_categorical <- function(data, variable, by,
+#'
+#' # Standalone batch testing across multiple features:
+#' cbe_test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
+#'
+#' # Formula interface:
+#' cbe_test_categorical(trial, response ~ trt)
+cbe_test_categorical <- function(data,
+                                 variable = NULL,
+                                 by = NULL,
                                  test = c("auto", "exact", "chisq", "fisher"),
-                                 correct = FALSE, ...) {
+                                 correct = FALSE,
+                                 B = 2000L,
+                                 simulate.p.value = NULL,
+                                 parallel = FALSE,
+                                 n_chunks = 4L,
+                                 ...) {
   test <- match.arg(test)
+
+  # Support formula syntax: response ~ by or var1 + var2 ~ by
+  if (inherits(variable, "formula")) {
+    lhs_vars <- all.vars(variable[[2L]])
+    rhs_vars <- all.vars(variable[[3L]])
+    if (length(rhs_vars) != 1L) {
+      stop("Formula interface requires exactly one grouping variable on the right-hand side (e.g. outcome ~ group).",
+           call. = FALSE)
+    }
+    by <- rhs_vars
+    variable <- lhs_vars
+  }
+
+  # Check grouping variable 'by'
+  if (is.null(by) || !is.character(by) || length(by) != 1L || !by %in% names(data)) {
+    stop("cbe_test_categorical() requires a single grouping column 'by' present in 'data'.",
+         call. = FALSE)
+  }
+
+  # Batch mode across multiple variables or auto-discovered categorical features
+  if (is.null(variable) || length(variable) > 1L) {
+    if (is.null(variable)) {
+      candidate_vars <- setdiff(names(data), by)
+      is_cat <- vapply(data[candidate_vars], function(col) {
+        is.factor(col) || is.character(col) || is.logical(col) ||
+          (is.atomic(col) && length(unique(stats::na.omit(col))) <= 10L)
+      }, logical(1L))
+      vars_to_test <- candidate_vars[is_cat]
+      if (length(vars_to_test) == 0L) {
+        stop("No categorical variables found in 'data' to test against 'by'.", call. = FALSE)
+      }
+    } else {
+      vars_to_test <- variable
+    }
+
+    test_single <- function(v) {
+      out <- cbe_test_categorical(
+        data = data,
+        variable = v,
+        by = by,
+        test = test,
+        correct = correct,
+        B = B,
+        simulate.p.value = simulate.p.value,
+        parallel = FALSE,
+        ...
+      )
+      tibble::tibble(
+        variable = v,
+        by = by,
+        p.value = out$p.value,
+        p.formatted = pformat(out$p.value),
+        statistic = if ("statistic" %in% names(out)) out$statistic else NA_real_,
+        parameter = if ("parameter" %in% names(out)) out$parameter else NA_real_,
+        method = out$method
+      )
+    }
+
+    if (isTRUE(parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "to evaluate categorical tests in parallel.")
+      return(furrr::future_map_dfr(vars_to_test, test_single, .options = furrr::furrr_options(seed = TRUE)))
+    } else {
+      return(purrr::map_dfr(vars_to_test, test_single))
+    }
+  }
+
+  # Single-variable mode
+  if (!variable %in% names(data)) {
+    stop(sprintf("Variable '%s' not found in data.", variable), call. = FALSE)
+  }
+
   d <- data[!is.na(data[[variable]]) & !is.na(data[[by]]), , drop = FALSE]
   tab <- table(d[[variable]], d[[by]])
   dims <- dim(tab)
@@ -240,9 +342,41 @@ cbe_test_categorical <- function(data, variable, by,
     ))
   }
 
+  # Helper for simulated Fisher test (with optional parallel chunking for large B)
+  run_sim_fisher <- function(tab_m, rep_b, ...) {
+    rep_b <- as.integer(rep_b)
+    if (is.na(rep_b) || rep_b < 1L) rep_b <- 2000L
+
+    # Base R stats::fisher.test ignores simulation for 2x2 tables
+    if (identical(as.integer(dim(tab_m)), c(2L, 2L))) {
+      ft <- stats::fisher.test(tab_m, ...)
+      return(ft$p.value)
+    }
+
+    if (isTRUE(parallel) && rep_b >= 10000L && requireNamespace("furrr", quietly = TRUE)) {
+      n_c <- min(max(1L, as.integer(n_chunks)), rep_b)
+      if (n_c > 1L) {
+        chunk_size <- rep_b %/% n_c
+        rem <- rep_b %% n_c
+        b_vec <- rep(chunk_size, n_c)
+        if (rem > 0L) b_vec[seq_len(rem)] <- b_vec[seq_len(rem)] + 1L
+
+        k_vec <- furrr::future_map_dbl(b_vec, function(b_sub) {
+          ft_sub <- stats::fisher.test(tab_m, simulate.p.value = TRUE, B = b_sub, ...)
+          max(0L, round(ft_sub$p.value * (b_sub + 1) - 1))
+        }, .options = furrr::furrr_options(seed = TRUE))
+
+        return((1 + sum(k_vec)) / (rep_b + 1))
+      }
+    }
+
+    ft <- stats::fisher.test(tab_m, simulate.p.value = TRUE, B = rep_b, ...)
+    ft$p.value
+  }
+
   # Explicit test = "chisq"
   if (test == "chisq") {
-    cs <- stats::chisq.test(tab, correct = correct)
+    cs <- stats::chisq.test(tab, correct = correct, ...)
     return(tibble::tibble(
       p.value = cs$p.value,
       statistic = unname(cs$statistic),
@@ -253,18 +387,26 @@ cbe_test_categorical <- function(data, variable, by,
 
   # Explicit test = "fisher"
   if (test == "fisher") {
-    sim <- (sum(tab) > 500L || any(dims > 2L))
-    ft <- stats::fisher.test(tab, simulate.p.value = sim, B = 2000L)
-    return(tibble::tibble(
-      p.value = ft$p.value,
-      method = if (sim) "Fisher's exact test (simulated)" else "Fisher's exact test"
-    ))
+    sim <- if (!is.null(simulate.p.value)) isTRUE(simulate.p.value) else (sum(tab) > 500L || any(dims > 2L))
+    if (sim) {
+      pval <- run_sim_fisher(tab, rep_b = B, ...)
+      return(tibble::tibble(
+        p.value = pval,
+        method = "Fisher's exact test (simulated)"
+      ))
+    } else {
+      ft <- stats::fisher.test(tab, ...)
+      return(tibble::tibble(
+        p.value = ft$p.value,
+        method = "Fisher's exact test"
+      ))
+    }
   }
 
   # Explicit test = "exact" for 2x2
   if (test == "exact" && identical(as.integer(dims), c(2L, 2L))) {
     has_zero <- any(tab == 0L)
-    res <- cbe_exact2x2(tab, midp = has_zero)
+    res <- cbe_exact2x2(tab, midp = has_zero, ...)
     return(tibble::tibble(
       p.value = res$p.value,
       statistic = res$estimate,
@@ -276,7 +418,7 @@ cbe_test_categorical <- function(data, variable, by,
   # Rule 1 & 2: 2x2 Tables
   if (identical(as.integer(dims), c(2L, 2L))) {
     has_zero <- any(tab == 0L)
-    res <- cbe_exact2x2(tab, midp = has_zero)
+    res <- cbe_exact2x2(tab, midp = has_zero, ...)
     return(tibble::tibble(
       p.value = res$p.value,
       statistic = res$estimate,
@@ -292,27 +434,37 @@ cbe_test_categorical <- function(data, variable, by,
   })
 
   if (test == "exact" || any(exp_counts < 5, na.rm = TRUE)) {
-    # Rule 3: Sparse cells -> Fisher's exact test (simulated if dimension > 2 or large N)
-    sim <- (sum(tab) > 500L || any(dims > 2L))
-    ft <- stats::fisher.test(tab, simulate.p.value = sim, B = 2000L)
-    method_name <- if (sim) {
-      "Fisher's exact test (simulated, expected counts < 5)"
+    # Rule 3: Sparse cells -> Fisher's exact test
+    sim <- if (!is.null(simulate.p.value)) isTRUE(simulate.p.value) else (sum(tab) > 500L || any(dims > 2L))
+    if (sim) {
+      pval <- run_sim_fisher(tab, rep_b = B, ...)
+      method_name <- if (any(exp_counts < 5, na.rm = TRUE)) {
+        "Fisher's exact test (simulated, expected counts < 5)"
+      } else {
+        "Fisher's exact test (simulated)"
+      }
     } else {
-      "Fisher's exact test (expected counts < 5)"
+      ft <- stats::fisher.test(tab, ...)
+      pval <- ft$p.value
+      method_name <- if (any(exp_counts < 5, na.rm = TRUE)) {
+        "Fisher's exact test (expected counts < 5)"
+      } else {
+        "Fisher's exact test"
+      }
     }
-    tibble::tibble(
-      p.value = ft$p.value,
+    return(tibble::tibble(
+      p.value = pval,
       method = method_name
-    )
+    ))
   } else {
     # Rule 4: Adequate counts -> Pearson Chi-squared test
-    cs <- stats::chisq.test(tab, correct = correct)
-    tibble::tibble(
+    cs <- stats::chisq.test(tab, correct = correct, ...)
+    return(tibble::tibble(
       p.value = cs$p.value,
       statistic = unname(cs$statistic),
       parameter = unname(cs$parameter),
       method = "Pearson's Chi-squared test"
-    )
+    ))
   }
 }
 

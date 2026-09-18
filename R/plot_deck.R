@@ -38,30 +38,11 @@ plot_survival_km <- function(data,
     sprintf("survival::Surv(%s, %s) ~ 1", time_col, status_col)
   }
   surv_fmla <- stats::as.formula(surv_fmla_str)
-  km_fit <- survival::survfit(surv_fmla, data = data)
 
-  if (requireNamespace("ggsurvfit", quietly = TRUE)) {
-    p <- ggsurvfit::survfit2(surv_fmla, data = data) |>
-      ggsurvfit::ggsurvfit(color = color, linewidth = 1) +
-      ggsurvfit::add_confidence_interval(fill = color, alpha = 0.15) +
-      ggsurvfit::add_censor_mark(size = 2) +
-      ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
-      theme_cbe_deck(base_size = base_size) +
-      ggplot2::labs(
-        title = title,
-        x = "Minutes / Time Units",
-        y = "Survival Probability",
-        caption = caption
-      )
-    return(p)
-  }
-
-  # Fallback to standard broom + ggplot2 if ggsurvfit is not present
-  td_km <- broom::tidy(km_fit)
-  p <- ggplot2::ggplot(td_km, ggplot2::aes(x = time, y = estimate)) +
-    ggplot2::geom_step(color = color, linewidth = 1) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = conf.low, ymax = conf.high), fill = color, alpha = 0.15) +
-    ggplot2::geom_point(data = td_km[td_km$n.censor > 0, ], shape = 3, size = 2) +
+  p <- ggsurvfit::survfit2(surv_fmla, data = data) |>
+    ggsurvfit::ggsurvfit(color = color, linewidth = 1) +
+    ggsurvfit::add_confidence_interval(fill = color, alpha = 0.15) +
+    ggsurvfit::add_censor_mark(size = 2) +
     ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
     theme_cbe_deck(base_size = base_size) +
     ggplot2::labs(

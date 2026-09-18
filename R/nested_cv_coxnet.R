@@ -23,13 +23,16 @@
 #'   inner cross-validation.
 #' @param eval_time Evaluation times, shared by all splits. Defaults to deciles
 #'   of the event times in the full data.
+#' @param importance Method for evaluating feature importance on the outer analysis sets.
+#'   Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with MiniPatch ensembles).
 #' @inheritParams cv_coxnet
 #' @return A tibble, of class `nested_cv_coxnet`, with one row per outer split:
 #'   `id`, the chosen `mixture` and `penalty`, `.metrics` (outer assessment-set
 #'   metrics), `.coefs` (coefficients of the refit), and `.inner` (the inner
-#'   cross-validation's summarized metrics). `tune::collect_metrics()`
+#'   cross-validation's summarized metrics). If `importance = "loco_mp"`, includes
+#'   `.importance` with tidy LOCO-MP statistical inference. `tune::collect_metrics()`
 #'   averages `.metrics` over outer splits.
-#' @seealso [cv_coxnet()], [coxnet()]
+#' @seealso [cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()]
 #' @export
 #' @examples
 #' \donttest{
@@ -64,7 +67,7 @@
 nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NULL,
                              rule = c("min", "1se"), mixture = 1, penalty = NULL, metrics = NULL,
                              eval_time = NULL, metric = NULL, covariates = c("path", "baseline"),
-                             trunc = 0.05, parallel = FALSE, ...) {
+                             trunc = 0.05, parallel = FALSE, importance = c("none", "loco_mp"), ...) {
   rlang::check_installed(
     c("glmnet", "survival", "rsample", "yardstick"),
     reason = "for nested cross-validation of `coxnet()` models."
@@ -74,6 +77,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   }
   rule <- match.arg(rule)
   covariates <- match.arg(covariates)
+  importance <- match.arg(importance)
   metrics <- metrics %||% default_surv_metrics()
   info <- surv_metric_info(metrics)
 
@@ -112,7 +116,20 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     )
     outer_metrics$penalty <- NULL
 
-    tibble::tibble(
+    loco_col <- if (importance == "loco_mp") {
+      loco_fit <- tryCatch({
+        cbe_loco_mp_coxnet(
+          formula = preprocessor, data = analysis, subject_id = subject_id,
+          mixture = inner$mixture, penalty = chosen, eval_time = eval_time,
+          B = 30, trunc = trunc, parallel = FALSE
+        )
+      }, error = function(e) NULL)
+      if (!is.null(loco_fit)) list(generics::tidy(loco_fit)) else list(NULL)
+    } else {
+      NULL
+    }
+
+    res_row <- tibble::tibble(
       id = object$id[i],
       mixture = inner$mixture,
       penalty = chosen,
@@ -120,6 +137,10 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
       .coefs = list(tidy.coxnet_model(refit, penalty = chosen)),
       .inner = list(inner$metrics)
     )
+    if (importance == "loco_mp") {
+      res_row$.importance <- loco_col
+    }
+    res_row
   }
 
   outer_ids <- seq_along(object$splits)

@@ -52,10 +52,11 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
   fmla <- stats::as.formula(fmla_str)
   dots <- match.call(expand.dots = FALSE)$...
   cph_call <- as.call(c(
-    list(quote(survival::coxph), formula = fmla, data = quote(data)),
+    list(quote(survival::coxph), formula = fmla, data = quote(data), model = TRUE),
     as.list(dots)
   ))
   fit <- eval(cph_call, environment(), parent.frame())
+  fit$call$data <- match.call()$data
 
   # 2. Test Proportional Hazards Assumption
   check <- cbe_cox_check(fit)

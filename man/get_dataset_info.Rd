@@ -2,26 +2,42 @@
 % Please edit documentation in R/get_dataset_info.R
 \name{get_dataset_info}
 \alias{get_dataset_info}
+\alias{get_dataset_info.data.frame}
+\alias{get_dataset_info.joint_model}
 \alias{proc_contents}
-\title{Summarize a Data Frame's Columns}
+\title{Summarize a Data Frame or Joint Model's Columns and Components}
 \usage{
-get_dataset_info(df)
+get_dataset_info(x, ...)
 
-proc_contents(df)
+\method{get_dataset_info}{data.frame}(x, subject_id = NULL, dataset_name = NULL, ...)
+
+\method{get_dataset_info}{joint_model}(x, ...)
+
+proc_contents(x, ...)
 }
 \arguments{
-\item{df}{A data frame or tibble.}
+\item{x}{A data frame, tibble, or a fitted \code{\link[TempleCBE]{joint_model}} object.}
+
+\item{...}{Additional arguments passed to methods.}
+
+\item{subject_id}{Optional character string specifying the subject identifier column
+for repeated-measures longitudinal datasets to audit time-varying vs. baseline features.}
+
+\item{dataset_name}{Optional character string overriding the displayed dataset name.}
 }
 \value{
-A tibble with one row per column of \code{df}: \code{dataset_name},
+A tibble with one row per column of \code{x}: \code{dataset_name},
   \code{labels}, \code{columns}, \code{class}, \code{mean}, \code{sd},
-  \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}.
+  \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}, and
+  optionally \code{variable_type} when \code{subject_id} is specified.
 }
 \description{
 Per-column metadata: class, variable label (if set via \pkg{labelled}),
 mean/sd for numeric columns, most-frequent value, distinct-value count,
 and missingness. \code{survival::Surv} columns are summarized from their
-underlying time/status matrix rather than unrolled as plain numerics.
+underlying time/status or start/stop counting-process matrix rather than
+unrolled as plain numerics. When provided a \code{\link[TempleCBE]{joint_model}}
+object, summarizes the fitted training data and attaches model metadata.
 }
 \examples{
 get_dataset_info(mtcars)

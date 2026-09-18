@@ -1,14 +1,12 @@
 ---
 format:
   gfm:
-    toc: true
-    toc-depth: 3
-    number-sections: true
+    toc: false
 ---
 
 <!-- README.md is generated from README.qmd. Please edit README.qmd -->
 
-# TempleCBE <img src="man/figures/logo.png" align="right" height="138" alt="TempleCBE logo" />
+# TempleCBE <img src="man/figures/logo.png" align="right" style="height: 138px; max-height: 138px; width: auto; max-width: 138px;" alt="TempleCBE logo" />
 
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
 [![Codecov test coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)

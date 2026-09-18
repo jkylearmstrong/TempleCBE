@@ -20,7 +20,7 @@
 #' @source SAS/STAT User's Guide, Example 85.7: Time-Dependent Repeated Measurements
 #'   of a Covariate.
 #'   \url{https://support.sas.com/documentation/cdl/en/statug/68162/HTML/default/statug_phreg_examples07.htm}
-#' @keywords internal
+#' @export
 tumor_wide <- function() {
   raw_lines <- c(
     " 1 47 1  1.0  0  5  6  8 10 10 10 10",
@@ -114,7 +114,7 @@ tumor_wide <- function() {
 #' @source SAS/STAT User's Guide, Example 85.7: Time-Dependent Repeated Measurements
 #'   of a Covariate.
 #'   \url{https://support.sas.com/documentation/cdl/en/statug/68162/HTML/default/statug_phreg_examples07.htm}
-#' @keywords internal
+#' @export
 tumor_long <- function(data = NULL) {
   if (is.null(data)) {
     data <- tumor_wide()

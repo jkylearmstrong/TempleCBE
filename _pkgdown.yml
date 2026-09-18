@@ -29,6 +29,8 @@ articles:
       - nested_survival_cv
       - compute_graph
       - sas_survival
+      - R_to_SAS
+      - reticulate_export
 
 reference:
   - title: Data Quality & Missingness Analysis
@@ -72,6 +74,32 @@ reference:
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+      - cbe_loco_mp_coxnet
+
+  - title: Joint Survival-Status-Time Models
+    desc: >
+      Coordinated multi-paradigm modeling blending penalized Cox survival, binary event
+      classification, follow-up duration regression, and calibrated stacked ensembles.
+    contents:
+      - joint_model
+      - predict.joint_model
+      - tidy.joint_model
+      - print.joint_model
+      - cv_joint_model
+      - nested_cv_joint_model
+      - autoplot.cv_joint_model
+      - extract_surv_components
+      - step_lencode_joint_model
+
+  - title: Model Explainability & Variable Attributions
+    desc: >
+      Unified explainability across survival and joint models using survex and DALEX,
+      custom IPCW Integrated Brier loss functions, and SurvSHAP(t) attributions.
+    contents:
+      - cbe_explain_survival
+      - cbe_explain
+      - cbe_predict_parts_shap
+      - cbe_survex_loss_ibs
 
   - title: Tidymodels Recipe Steps & Modeling Utilities
     desc: Recipe steps and workflow set helpers.
@@ -144,6 +172,9 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
+      - cbe_sas_macro_dir
+      - cbe_sas_macro_path
+      - rossi_data
       - render
       - render_me
       - zip_reports
@@ -216,6 +247,7 @@ reference:
       - fmt_num
       - fmt_sig
       - fmt_p
+      - pformat
       - fmt_hr
       - words
 
@@ -254,6 +286,24 @@ reference:
       - plot_missingness
       - table_two_by_two
 
+  - title: Categorical Association & Contingency Tables
+    desc: >
+      Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and publication-ready
+      association visualizations (balloon, bar, contingency, mosaic, heatmap, and square plots).
+    contents:
+      - cbe_exact2x2
+      - cbe_exact2x2_ci
+      - cbe_test_categorical
+      - cbe_four_quadrant_report
+      - cbe_contingency_plot
+      - cbe_balloon_plot
+      - cbe_bar_plot
+      - cbe_mosaic_plot
+      - cbe_heatmap_plot
+      - cbe_square_plot
+      - cbe_pairwise_combos
+      - plot_categorical_associations
+
   - title: Data Snapshot Manifest & Schema Engine
     desc: >
       Tools to freeze, snapshot, and verify dataset copies against upstream sources via MD5 hashes,
@@ -274,10 +324,12 @@ reference:
   - title: Deliverable Packaging & Code Auditing
     desc: >
       Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables) into structured
-      distribution archives, and audit source scripts for referenced deliverable tokens.
+      distribution archives, audit source scripts for referenced deliverable tokens, and extract
+      YAML metadata formats.
     contents:
       - package_deliverables
       - audit_report_deliverables
+      - extract_yaml_formats
 
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.

@@ -34,4 +34,3 @@ Replicates the exact SAS DATA step transformation from SAS/STAT User's Guide
 across observation times where the time-dependent covariate \code{NPap} changes,
 with \code{Status} equal to \code{Dead} only on the terminal interval and 0 elsewhere.
 }
-\keyword{internal}
