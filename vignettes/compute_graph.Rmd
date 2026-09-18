@@ -177,19 +177,17 @@ first-class citizen.
 In regulated clinical trials and collaborative research, knowing that a
 target is stale is not enough — auditors, biostatisticians, and clinical
 monitors need to know *what kind* of asset it is and *where* it sits in
-the data lifecycle. `TempleCBE` formally tracks semantic roles: -
-`raw_data`: Immutable source data (e.g. initial registry export). -
-`derived_data`: Standardized baseline dataset created from raw inputs. -
-`enhanced_data`: Statistically augmented data (e.g. multiple
-imputation).
+the data lifecycle. `TempleCBE` formally tracks semantic roles:
 
+- `raw_data`: Immutable source data (e.g. initial registry export).
+- `derived_data`: Standardized baseline dataset created from raw inputs.
+- `enhanced_data`: Statistically augmented data (e.g. multiple
+  imputation).
 - `intermediate_data`: Stage-internal calculations or fitted model
   caches.
-
 - `report_source` & `deliverable_report`: Executable documents and their
   deliverables.
-
--  `helper_script` & `reference`: Child templates, macros, or lookup
+- `helper_script` & `reference`: Child templates, macros, or lookup
   tables.
 
 This taxonomy provides transparent data provenance and auditability out
@@ -204,14 +202,13 @@ communication divide through multi-tiered visualization:
 
 - **For analysts**: Interactive `visNetwork` HTML widgets with rich
   tooltips detailing file paths, modification dates, roles, and
-  staleness warnings. - **For study sections**: Focused ego-subgraphs
+  staleness warnings.
+- **For study sections**: Focused ego-subgraphs
   (`export_subgraph()`) that isolate the neighborhood around a single
   deliverable or analytical stage.
-
 - **For protocol deliverables & manuscripts**: Sized-to-fit static
   figures (`print_pipeline()`) with intelligent Sugiyama layout
-  adjustments to prevent overlapping text labels. -
-
+  adjustments to prevent overlapping text labels.
 - **For executive sponsors**: Stage-level collapsed diagrams
   (`collapse_by_stage()`) that condense a 90-file pipeline into a clear
   4-node study milestone overview.
