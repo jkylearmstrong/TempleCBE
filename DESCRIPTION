@@ -51,7 +51,8 @@ Imports:
     tools,
     utils,
     vctrs (>= 0.6.0),
-    writexl
+    writexl,
+    xml2
 Suggests:
     arsenal,
     baguette (>= 1.1.0),
