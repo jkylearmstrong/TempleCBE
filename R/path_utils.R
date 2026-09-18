@@ -1,3 +1,31 @@
+#' Locate a Path Inside the Installed Package or a Dev Checkout
+#'
+#' Checks, in order: the installed package's [system.file()] location, the
+#' working directory's `inst/<subdir>` (e.g. under [devtools::load_all()]),
+#' and the parent directory's `inst/<subdir>` (a dev checkout run from a
+#' subdirectory).
+#'
+#' @param subdir Subdirectory under `inst/` (e.g. `"sas"`, `"extdata"`).
+#' @param file Optional file name to append under `subdir`; when `NULL`, the
+#'   subdirectory itself is located.
+#' @return Absolute, normalized path, or `NULL` if not found.
+#' @keywords internal
+#' @noRd
+locate_package_path <- function(subdir, file = NULL) {
+  rel <- if (is.null(file)) subdir else file.path(subdir, file)
+  candidates <- c(
+    system.file(rel, package = "TempleCBE"),
+    file.path(getwd(), "inst", rel),
+    file.path(dirname(getwd()), "inst", rel)
+  )
+  for (cand in candidates) {
+    if (nzchar(cand) && (dir.exists(cand) || file.exists(cand))) {
+      return(normalizePath(cand, winslash = "/", mustWork = TRUE))
+    }
+  }
+  NULL
+}
+
 #' Normalize File Paths Without Failing
 #'
 #' A vectorized [normalizePath()] that never errors or warns: blank and `NA`

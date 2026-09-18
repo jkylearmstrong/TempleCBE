@@ -45,3 +45,9 @@ Evaluates the \code{\link[TempleCBE]{joint_model}} trio across cross-validation 
 benchmarking survival, classification, and regression paradigms using the IPCW
 Integrated Brier Score (\code{brier_survival_integrated}), Concordance, and Calibration.
 }
+\note{
+Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+  supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+  scoring needs one row per subject, but predictions are one row per
+  interval. Use \code{Surv(time, status)} outcomes for cross-validation.
+}

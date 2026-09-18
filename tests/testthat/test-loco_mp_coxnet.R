@@ -1,3 +1,68 @@
+test_that("cbe_loco_mp_coxnet errors clearly on a single eval_time instead of silently returning zero", {
+  # Regression test: a single eval_time can't be integrated over (there's no
+  # interval), and used to silently produce all-zero importance scores
+  # instead of an error - both because check_eval_time() was never called,
+  # and because vapply() collapsing to a plain vector (instead of a 1-row
+  # matrix) fed a dimension mismatch further downstream.
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+
+  set.seed(789)
+  n <- 50
+  df <- data.frame(
+    time = stats::rexp(n, 0.1) + 0.1,
+    status = stats::rbinom(n, 1, 0.65),
+    x1 = stats::rnorm(n),
+    x2 = stats::rnorm(n),
+    x3 = stats::rnorm(n)
+  )
+
+  expect_error(
+    cbe_loco_mp_coxnet(
+      survival::Surv(time, status) ~ x1 + x2 + x3,
+      data = df,
+      eval_time = 5,
+      B = 15,
+      n_ratio = 0.7,
+      m_ratio = 0.5,
+      seed = 42
+    ),
+    "at least 2 distinct"
+  )
+})
+
+test_that("cbe_loco_mp_coxnet's OOB survival reshape keeps patches on the right axis for 2 eval_times", {
+  # Regression test: with exactly 2 eval_times, vapply() still returns a
+  # proper n_eval x length(with_sub) matrix on its own, but this locks in
+  # that rowMeans() is averaging across patches (columns), not across time
+  # points (rows), which the n_eval == 1 case had silently gotten backwards.
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+
+  set.seed(101)
+  n <- 50
+  df <- data.frame(
+    time = stats::rexp(n, 0.1) + 0.1,
+    status = stats::rbinom(n, 1, 0.65),
+    x1 = stats::rnorm(n),
+    x2 = stats::rnorm(n),
+    x3 = stats::rnorm(n)
+  )
+
+  fit <- cbe_loco_mp_coxnet(
+    survival::Surv(time, status) ~ x1 + x2 + x3,
+    data = df,
+    eval_time = c(2, 8),
+    B = 15,
+    n_ratio = 0.7,
+    m_ratio = 0.5,
+    seed = 42
+  )
+
+  expect_equal(nrow(fit$results), 3L)
+  expect_true(any(!is.na(fit$results$importance) & fit$results$importance != 0))
+})
+
 test_that("cbe_loco_mp_coxnet works with 2-parameter Surv data via formula", {
   skip_if_not_installed("glmnet")
   skip_if_not_installed("survival")

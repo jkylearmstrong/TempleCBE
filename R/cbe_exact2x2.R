@@ -227,6 +227,11 @@ cbe_pformat <- pformat
 #'   Requires setting a \code{\link[future]{plan}} beforehand.
 #' @param n_chunks Integer; number of chunks to partition \code{B} into when running
 #'   parallel simulations with \code{B >= 10000} (default 4L).
+#' @param group,type,test.args,adj.vars,conf.level,tbl,continuous_variable Unused;
+#'   accepted and ignored so this function satisfies \pkg{gtsummary}'s custom-test
+#'   calling convention (see \code{\link[gtsummary]{tests}}) without those arguments
+#'   leaking into \code{...} and reaching \code{\link[stats]{chisq.test}}/
+#'   \code{\link[stats]{fisher.test}}, neither of which accepts extra named arguments.
 #' @param ... Additional arguments passed to \code{\link[exact2x2]{exact2x2}} or
 #'   \code{\link[stats]{fisher.test}}.
 #'
@@ -387,6 +392,15 @@ cbe_test_categorical <- function(data,
     ft$p.value
   }
 
+  # Decide whether to simulate the Fisher p-value (explicit request, or the
+  # CBE default heuristic: large tables or bigger-than-2x2), shared by the
+  # explicit test = "fisher" path and the auto-hierarchy's Rule 3.
+  resolve_fisher_p <- function(tab_x, ...) {
+    sim <- if (!is.null(simulate.p.value)) isTRUE(simulate.p.value) else (sum(tab_x) > 500L || any(dims > 2L))
+    pval <- if (sim) run_sim_fisher(tab_x, rep_b = B, ...) else stats::fisher.test(tab_x, ...)$p.value
+    list(p.value = pval, simulated = sim)
+  }
+
   # Explicit test = "chisq"
   if (test == "chisq") {
     cs <- stats::chisq.test(tab, correct = correct, ...)
@@ -400,20 +414,11 @@ cbe_test_categorical <- function(data,
 
   # Explicit test = "fisher"
   if (test == "fisher") {
-    sim <- if (!is.null(simulate.p.value)) isTRUE(simulate.p.value) else (sum(tab) > 500L || any(dims > 2L))
-    if (sim) {
-      pval <- run_sim_fisher(tab, rep_b = B, ...)
-      return(tibble::tibble(
-        p.value = pval,
-        method = "Fisher's exact test (simulated)"
-      ))
-    } else {
-      ft <- stats::fisher.test(tab, ...)
-      return(tibble::tibble(
-        p.value = ft$p.value,
-        method = "Fisher's exact test"
-      ))
-    }
+    res <- resolve_fisher_p(tab, ...)
+    return(tibble::tibble(
+      p.value = res$p.value,
+      method = if (res$simulated) "Fisher's exact test (simulated)" else "Fisher's exact test"
+    ))
   }
 
   # Explicit test = "exact" for 2x2
@@ -448,25 +453,18 @@ cbe_test_categorical <- function(data,
 
   if (test == "exact" || any(exp_counts < 5, na.rm = TRUE)) {
     # Rule 3: Sparse cells -> Fisher's exact test
-    sim <- if (!is.null(simulate.p.value)) isTRUE(simulate.p.value) else (sum(tab) > 500L || any(dims > 2L))
-    if (sim) {
-      pval <- run_sim_fisher(tab, rep_b = B, ...)
-      method_name <- if (any(exp_counts < 5, na.rm = TRUE)) {
-        "Fisher's exact test (simulated, expected counts < 5)"
-      } else {
-        "Fisher's exact test (simulated)"
-      }
+    res <- resolve_fisher_p(tab, ...)
+    qualifiers <- c(
+      if (res$simulated) "simulated",
+      if (any(exp_counts < 5, na.rm = TRUE)) "expected counts < 5"
+    )
+    method_name <- if (length(qualifiers)) {
+      sprintf("Fisher's exact test (%s)", paste(qualifiers, collapse = ", "))
     } else {
-      ft <- stats::fisher.test(tab, ...)
-      pval <- ft$p.value
-      method_name <- if (any(exp_counts < 5, na.rm = TRUE)) {
-        "Fisher's exact test (expected counts < 5)"
-      } else {
-        "Fisher's exact test"
-      }
+      "Fisher's exact test"
     }
     return(tibble::tibble(
-      p.value = pval,
+      p.value = res$p.value,
       method = method_name
     ))
   } else {

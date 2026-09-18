@@ -1,3 +1,25 @@
+#' Resolve a Column's Display Label
+#'
+#' Prefers [labelled::var_label()], falling back to `attr(x, "label")` --
+#' necessary because a label set on a raw time/status column is typically
+#' lost once it's wrapped in [survival::Surv()].
+#'
+#' @param x The column vector to label.
+#' @param default Value returned when no usable label is found.
+#' @return A single string: the resolved label, or `default`.
+#' @keywords internal
+#' @noRd
+resolve_var_label <- function(x, default = NA_character_) {
+  lbl <- tryCatch(labelled::var_label(x), error = function(e) NULL)
+  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
+    lbl <- attr(x, "label", exact = TRUE)
+  }
+  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
+    return(default)
+  }
+  as.character(lbl)
+}
+
 #' Summarize a Data Frame or Joint Model's Columns and Components
 #'
 #' Per-column metadata: class, variable label (if set via \pkg{labelled}),
@@ -43,22 +65,10 @@ get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NUL
     trimws(sub("labelled", "", paste0(class(df[[col]]), collapse = "")))
   }, character(1)))
 
-  # labelled::var_label() reads attr(x, "label"), but a label set on a raw
-  # time/status column is typically lost once it's wrapped in Surv() -- fall
-  # back to checking attr(x, "label") directly on the column itself.
-  var_labels <- tryCatch(labelled::var_label(df), error = function(e) list())
-  label_for <- function(col) {
-    lbl <- var_labels[[col]]
-    if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(lbl)) {
-      lbl <- attr(df[[col]], "label", exact = TRUE)
-    }
-    if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
-      col
-    } else {
-      as.character(lbl)
-    }
-  }
-  labels <- tibble::tibble(columns = columns, labels = unname(vapply(columns, label_for, character(1))))
+  labels <- tibble::tibble(
+    columns = columns,
+    labels = unname(vapply(columns, function(col) resolve_var_label(df[[col]], default = col), character(1)))
+  )
 
   na_info <- if (ncol(df) > 0) {
     dplyr::summarise(df, dplyr::across(dplyr::everything(), \(v) SumNa(v))) |>
