@@ -15,7 +15,7 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4672.2026.09.17.10.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.469.2026.09.18.00.45</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,8 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
     <li><a class="dropdown-item" href="../articles/pca_analysis.html">07. Principal Component Analysis in R and SAS</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
+      </ul><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="../manual/TempleCBE_latest.pdf">Manual</a></li>
+<li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
@@ -122,15 +123,15 @@ or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random cryptographic hash tokens</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_80e54fa6ff67d008" "PI_c118a72631a15830" "PI_c487905afefd24a2"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_f2c55645e8ff182f" "PI_90abe9b7112ce868" "PI_7fa046ff5c1903ae"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short hash tokens (4 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_b9bf" "PI_0803" "PI_225b"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_2b4f" "PI_177e" "PI_517d"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_5f69c14e57c65424" "pi_4bdc9cdd771f8df8"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_1341df1f735e3c07" "pi_a533cdcdc26ca391"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Stateless deterministic token with key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span><span class="st">"Franklin"</span>, key <span class="op">=</span> <span class="st">"study_salt"</span><span class="op">)</span></span></span>

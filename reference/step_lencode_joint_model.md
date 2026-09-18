@@ -20,6 +20,9 @@ step_lencode_joint_model(
   skip = FALSE,
   id = recipes::rand_id("lencode_joint_model")
 )
+
+# S3 method for class 'step_lencode_joint_model'
+required_pkgs(x, ...)
 ```
 
 ## Arguments
@@ -66,6 +69,10 @@ step_lencode_joint_model(
 - id:
 
   A unique identifier for the step.
+
+- x:
+
+  A `step_lencode_joint_model` object.
 
 ## Value
 

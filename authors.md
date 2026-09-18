@@ -18,13 +18,12 @@ Source:
 
 Armstrong J (2026). *TempleCBE: Temple CBE Biostatistics, Clinical Data
 Science, and Modeling Utilities*. R package version
-0.3.4672.2026.09.17.10.39,
-<https://github.com/jkylearmstrong/TempleCBE>.
+0.3.469.2026.09.18.00.45, <https://github.com/jkylearmstrong/TempleCBE>.
 
     @Manual{,
       title = {TempleCBE: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities},
       author = {J Kyle Armstrong},
       year = {2026},
-      note = {R package version 0.3.4672.2026.09.17.10.39},
+      note = {R package version 0.3.469.2026.09.18.00.45},
       url = {https://github.com/jkylearmstrong/TempleCBE},
     }

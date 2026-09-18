@@ -24,13 +24,18 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/add_graf_weights.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/add_missing.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/anonymize_pi.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/apply_database_metadata.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/as_igraph.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/as_pipeline_graph.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/as_tbl_graph.list.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/atomic_io.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_compare_df.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_database_relationships.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_key_integrity.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_loco_mp_coxnet.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cv_joint_model.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/build_manual_versioned.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/bundle_deliverables.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_balloon_plot.html</loc></url>
@@ -41,6 +46,8 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_venn.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_docx_review_extract.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.html</loc></url>
@@ -50,6 +57,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_four_quadrant_report.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_heatmap_plot.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_loco_mp_coxnet.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_mosaic_plot.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_pairwise_combos.html</loc></url>
@@ -61,6 +69,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_survex_loss_ibs.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_test_categorical.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/check_docx_toolchain.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/clean_names.html</loc></url>
@@ -83,6 +92,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cv_joint_model.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/data_manifest.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/database_metadata_io.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/demo_cbe_mapping.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/detect_outliers.html</loc></url>
@@ -188,6 +198,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/profvis_summary.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/range_norm.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_data_manifest.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_database_from_excel.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_excel_multiple_headers.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_mapped_section_data.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_raw_table.html</loc></url>
@@ -236,6 +247,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline_interactive.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/words.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/write_search.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/z_norm.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.html</loc></url>

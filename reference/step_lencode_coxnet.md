@@ -22,6 +22,11 @@ step_lencode_coxnet(
   skip = FALSE,
   id = recipes::rand_id("lencode_coxnet")
 )
+
+tunable.step_lencode_coxnet(x, ...)
+
+# S3 method for class 'step_lencode_coxnet'
+required_pkgs(x, ...)
 ```
 
 ## Arguments
@@ -74,6 +79,10 @@ step_lencode_coxnet(
 - id:
 
   A unique identifier for the step.
+
+- x:
+
+  A `step_lencode_coxnet` object.
 
 ## Value
 

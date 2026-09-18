@@ -22,6 +22,54 @@ Functions for missing data auditing, summary tables, and visualizations.
   : Summarize a Data Frame or Joint Model's Columns and Components
 - [`cbe_compare_df()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_compare_df.md)
   : Compare Two Data Frames (SAS PROC COMPARE Parity)
+- [`autoplot(`*`<cbe_compare_df>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_compare_df.md)
+  : Autoplot Method for CBE Data Frame Comparison
+
+## Clinical Databases & Multi-Table Management
+
+Functions for multi-table clinical databases, metadata export/import,
+variable role assignment, and relational linkage analysis.
+
+- [`cbe_dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `cbe_dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`cbe_database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `cbe_database_name<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`cbe_database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `cbe_database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  : Get or Set Dataset and Database Labels
+- [`write_database_to_excel()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  [`write_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  [`cbe_write_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  : Write an R Database or Data Frames to an Excel Workbook
+- [`read_database_from_excel()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_database_from_excel.md)
+  [`cbe_read_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_database_from_excel.md)
+  : Read an R Database from an Excel Workbook
+- [`write_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_metadata_io.md)
+  [`read_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_metadata_io.md)
+  : Export or Import Dataset Metadata
+- [`apply_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/apply_database_metadata.md)
+  : Apply Metadata and Variable Roles to an R Database
+- [`cbe_variable_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_set_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_get_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_get_predictors()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_get_outcomes()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_get_id_cols()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  [`cbe_get_time_cols()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_variable_roles.md)
+  : Define and Manage Clinical Variable Roles
+- [`cbe_database_relationships()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.md)
+  [`as_tbl_graph(`*`<cbe_database_relationships>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.md)
+  [`cbe_find_shared_keys()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.md)
+  [`cbe_check_key_integrity()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.md)
+  : Analyze Relationships and Linkages Across Datasets in an R Database
+- [`autoplot(`*`<cbe_database_relationships>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_database_relationships.md)
+  : Autoplot Method for Database Relationships
+- [`cbe_database_venn()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_venn.md)
+  : Multi-Dataset Key Overlap Venn Diagram
+- [`autoplot(`*`<cbe_key_integrity>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_key_integrity.md)
+  : Autoplot Method for Key Integrity
 
 ## Normalization & Outlier Detection
 
@@ -113,6 +161,8 @@ metrics, and helpers for scoring start/stop models correctly.
 - [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
   : Tune Over \`alpha\` for Every Split of a Resample
 - [`step_lencode_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
+  [`tunable.step_lencode_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
+  [`required_pkgs(`*`<step_lencode_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
   : Supervised Linear Encoding of Factors via Penalized Cox Models
 - [`cbe_loco_mp_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_loco_mp_coxnet.md)
   : Leave-One-Covariate-Out Inference with MiniPatch Ensembles (LOCO-MP)
@@ -145,6 +195,7 @@ calibrated stacked ensembles.
 - [`extract_surv_components()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_surv_components.md)
   : Extract Survival Outcome Components and Predictors
 - [`step_lencode_joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_joint_model.md)
+  [`required_pkgs(`*`<step_lencode_joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_joint_model.md)
   : Supervised Linear Encoding of Factors via Joint Survival-Status-Time
   Model
 
@@ -642,3 +693,11 @@ Clean column naming, string matching, and vector manipulation.
   [`` `%!in%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
   [`` `%notin%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
   : Pattern Matching and Logical-Negation Infix Operators
+
+## Package Development & Release Tooling
+
+Maintainer-facing helpers for package release and documentation
+artifacts.
+
+- [`build_manual_versioned()`](https://jkylearmstrong.github.io/TempleCBE/reference/build_manual_versioned.md)
+  : Build a Versioned PDF Reference Manual

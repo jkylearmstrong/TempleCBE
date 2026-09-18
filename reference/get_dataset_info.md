@@ -9,6 +9,8 @@ counting-process matrix rather than unrolled as plain numerics. When
 provided a
 [`joint_model`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
 object, summarizes the fitted training data and attaches model metadata.
+When provided a list of data frames (an R database), returns a
+consolidated data dictionary across all tables.
 
 ## Usage
 
@@ -16,7 +18,17 @@ object, summarizes the fitted training data and attaches model metadata.
 get_dataset_info(x, ...)
 
 # S3 method for class 'data.frame'
-get_dataset_info(x, subject_id = NULL, dataset_name = NULL, ...)
+get_dataset_info(
+  x,
+  subject_id = NULL,
+  dataset_name = NULL,
+  database_name = NULL,
+  dataset_label = NULL,
+  ...
+)
+
+# S3 method for class 'list'
+get_dataset_info(x, subject_id = NULL, database_name = NULL, ...)
 
 # S3 method for class 'joint_model'
 get_dataset_info(x, ...)
@@ -28,7 +40,7 @@ proc_contents(x, ...)
 
 - x:
 
-  A data frame, tibble, or a fitted
+  A data frame, tibble, named list of data frames, or a fitted
   [`joint_model`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
   object.
 
@@ -46,11 +58,20 @@ proc_contents(x, ...)
 
   Optional character string overriding the displayed dataset name.
 
+- database_name:
+
+  Optional character string specifying the parent database name.
+
+- dataset_label:
+
+  Optional character string overriding the dataset-level description.
+
 ## Value
 
-A tibble with one row per column of `x`: `dataset_name`, `labels`,
-`columns`, `class`, `mean`, `sd`, `most_freq`, `n_distinct`, `SumNa`,
-`PctNa`, and optionally `variable_type` when `subject_id` is specified.
+A tibble with one row per column: `dataset_name`, (optional
+`database_name` and `dataset_label`), `labels`, `columns`, `class`,
+`mean`, `sd`, `most_freq`, `n_distinct`, `SumNa`, `PctNa`, and
+optionally `variable_type` when `subject_id` is specified.
 
 ## Examples
 
