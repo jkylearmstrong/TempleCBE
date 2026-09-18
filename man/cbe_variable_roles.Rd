@@ -52,6 +52,8 @@ cbe_get_time_cols(roles)
 \item{ignore}{Character vector of column names to ignore/exclude from modeling.}
 
 \item{roles}{Role table (e.g. from \code{\link{cbe_variable_roles}}) or data object.}
+
+\item{...}{Additional arguments passed to \code{\link{cbe_variable_roles}}.}
 }
 \value{
 A tibble with columns \code{columns}, \code{role}, \code{X_var}, \code{Y_var},

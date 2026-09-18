@@ -50,6 +50,8 @@ generated during \code{prep()}.}
 recipe is baked.}
 
 \item{id}{A unique identifier for the step.}
+
+\item{x}{A \code{step_lencode_coxnet} object.}
 }
 \value{
 An updated version of \code{recipe} with the new step added.
