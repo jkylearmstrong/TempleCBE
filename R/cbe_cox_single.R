@@ -51,10 +51,9 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
   fmla_str <- sprintf("%s ~ %s", outcome, feature)
   fmla <- stats::as.formula(fmla_str)
   dots <- match.call(expand.dots = FALSE)$...
-  cph_call <- as.call(c(
-    list(quote(survival::coxph), formula = fmla, data = quote(data), model = TRUE),
-    as.list(dots)
-  ))
+  base_args <- list(quote(survival::coxph), formula = fmla, data = quote(data))
+  if (!"model" %in% names(dots)) base_args$model <- TRUE
+  cph_call <- as.call(c(base_args, as.list(dots)))
   fit <- eval(cph_call, environment(), parent.frame())
   fit$call$data <- match.call()$data
 
@@ -79,6 +78,12 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
         p.value     = scales::pvalue(p.value)
       )
 
+    ci_col <- if (!is.null(conf_level) && conf_level != 0.95) {
+      sprintf("%d%% CI", round(conf_level * 100))
+    } else {
+      "95% CI"
+    }
+
     hr_val <- td$estimate[1]
     ci_low <- td$conf.low[1]
     ci_high <- td$conf.high[1]
@@ -92,10 +97,16 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
     }
 
     interp <- glue::glue(
-      "The hazard ratio for {var_lbl} is {round(hr_val, 2)} (95% CI {round(ci_low, 2)} \u2013 {round(ci_high, 2)}). ",
+      "The hazard ratio for {var_lbl} is {round(hr_val, 2)} ({ci_col} {round(ci_low, 2)} \u2013 {round(ci_high, 2)}). ",
       "For each one-unit increase in {var_lbl}, the risk of the event {direction} by {pct_change}%. {sig_text}"
     )
   } else {
+    ci_col <- if (!is.null(conf_level) && conf_level != 0.95) {
+      sprintf("%d%% CI", round(conf_level * 100))
+    } else {
+      "95% CI"
+    }
+
     f_levels <- levels(as.factor(col_vals))
     ref_level <- f_levels[1]
 
@@ -106,17 +117,17 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
         Level       = clean_level,
         Role        = "Comparison",
         HR          = round(estimate, 2),
-        `95% CI`    = sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
+        !!ci_col    := sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
         p.value     = scales::pvalue(p.value)
       ) |>
-      dplyr::select(Variable, Level, Role, HR, `95% CI`, p.value)
+      dplyr::select(Variable, Level, Role, HR, dplyr::all_of(ci_col), p.value)
 
     ref_row <- tibble::tibble(
       Variable = var_lbl,
       Level    = ref_level,
       Role     = "Reference",
       HR       = 1.00,
-      `95% CI` = "Reference",
+      !!ci_col := "Reference",
       p.value  = "\u2014"
     )
 
@@ -129,7 +140,7 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
         dir = dplyr::if_else(estimate > 1, "increases", "decreases"),
         sig = dplyr::if_else(p.value < 0.05, "statistically significant", "not statistically significant"),
         txt = glue::glue(
-          "The hazard ratio for '{var_lbl} = {lvl}' vs. reference '{ref_level}' is {round(estimate, 2)} (95% CI {round(conf.low, 2)} \u2013 {round(conf.high, 2)}), ",
+          "The hazard ratio for '{var_lbl} = {lvl}' vs. reference '{ref_level}' is {round(estimate, 2)} ({ci_col} {round(conf.low, 2)} \u2013 {round(conf.high, 2)}), ",
           "indicating that the risk of the event {dir} by {pct}% ({sig}; p = {scales::pvalue(p.value)})."
         )
       ) |>
@@ -151,11 +162,13 @@ cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95
       zph_violated = zph_violated,
       zph_text     = zph_text,
       table        = coef_table,
-      interpretation = interp,
       glance       = glance_tbl,
+      interpretation = interp,
       feature      = feature,
+      var_name     = feature,
       var_label    = var_lbl,
-      is_numeric   = is_num
+      is_numeric   = is_num,
+      conf_level   = conf_level
     ),
     class = "cbe_cox"
   )

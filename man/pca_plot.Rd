@@ -4,7 +4,11 @@
 \alias{pca_plot}
 \title{Plot a PCA Fit}
 \usage{
-pca_plot(pca_model, type = c("variance", "heatmap", "bi", "biplot"), ...)
+pca_plot(
+  pca_model,
+  type = c("variance", "heatmap", "bi", "biplot", "scree", "circle"),
+  ...
+)
 }
 \arguments{
 \item{pca_model}{A \code{\link[stats]{prcomp}} object. (Not `x`, which
@@ -13,8 +17,8 @@ would capture the `x` component argument of `type = "bi"` and
 
 \item{type}{One of \code{"variance"} (\code{\link{pca_percent_var_explained}}),
 \code{"heatmap"} (\code{\link{pca_feature_loading_heatmap}}),
-\code{"bi"} (\code{\link{plot_pca_bi}}), or \code{"biplot"}
-(\code{\link{pca_biplot}}).}
+\code{"bi"} (\code{\link{plot_pca_bi}}), \code{"biplot"} (\code{\link{pca_biplot}}),
+\code{"scree"} (\code{\link{pca_scree_plot}}), or \code{"circle"} (\code{\link{pca_variables_plot}}).}
 
 \item{...}{Passed on to the underlying plot function (needed for
 \code{type = "bi"}, which requires \code{newdata} and \code{column}; and

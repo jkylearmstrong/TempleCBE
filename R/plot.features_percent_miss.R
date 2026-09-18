@@ -13,7 +13,7 @@
 #' res <- features_percent_miss(mtcars)
 #' plot(res)
 #'
-#' @export
+#' @exportS3Method graphics::plot
 #' @rdname plot_features_percent_miss
 
 plot.features_percent_miss <- function(x, top_n = NULL, ...) {

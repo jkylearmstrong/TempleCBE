@@ -9,9 +9,7 @@ cbe_docx_review_extract(
   output_dir = NULL,
   tracker = "review_tracker.xlsx",
   min_revision_length = 2,
-  fork_reviewers = NULL,
-  signoff_reviewers = NULL,
-  documents_sheet_mode = NULL,
+  fork_reviewers = c("jka", "darina", "zhao"),
   manifest_path = NULL,
   verbose = FALSE
 )
@@ -31,19 +29,7 @@ and CSV files should be saved. If `NULL` (default), uses `<input_dir>/review_ext
 tracked change. Defaults to `2`.}
 
 \item{fork_reviewers}{Character vector of reviewer identifiers who receive
-their own single-reviewer fork workbooks and whose per-comment sign-offs
-roll up into each document's `resolved` status. Defaults to
-`review_config()$fork_reviewers` (generic placeholders unless a project
-has called \code{\link{review_config}} to configure real reviewer ids).}
-
-\item{signoff_reviewers}{Character vector of document-level sign-off
-reviewer identifiers (e.g. a final PI read), tracked only on the
-"Documents" sheet and not counted toward `resolved`. Defaults to
-`review_config()$signoff_reviewers`.}
-
-\item{documents_sheet_mode}{One of `"columns"` or `"per_reviewer"`; see
-\code{\link{review_config}}. Defaults to
-`review_config()$documents_sheet_mode`.}
+their own single-reviewer fork workbooks. Defaults to `c("jka", "darina", "zhao")`.}
 
 \item{manifest_path}{Optional character path to `reports_to_render.xlsx`. If `NULL`,
 the function attempts to locate it automatically in standard repository paths.}
@@ -76,9 +62,6 @@ analytical compute graph ordering.
 }
 \examples{
 \dontrun{
-# Configure real reviewer identities once per project (kept out of source
-# control), then run extraction with no further reviewer arguments needed:
-review_config(fork_reviewers = c("alice", "bob", "carol"), signoff_reviewers = "lead_pi")
 res <- cbe_docx_review_extract("tasks/edits", verbose = TRUE)
 print(res)
 }

@@ -28,7 +28,7 @@
 #' @examples
 #' \dontrun{
 #' if (requireNamespace("survex", quietly = TRUE) && requireNamespace("survival", quietly = TRUE)) {
-#'   data(lung, package = "survival")
+#'   lung <- survival::lung
 #'   df <- na.omit(lung[, c("time", "status", "age", "sex")])
 #'   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
 #'   expl <- cbe_explain_survival(fit)
@@ -99,26 +99,28 @@ cbe_explain_survival <- function(model,
       if (is.null(eval_times)) eval_times <- default_times
       eval_times <- sort(unique(eval_times))
 
-      # Case A: coxnet_model / cv_coxnet
-      if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
-        preds <- stats::predict(m, new_data = new_data, type = "survival", eval_time = eval_times)
-        surv_list <- preds$.pred
+      # Reshape a `.pred` list-column (one tibble per row, each with
+      # .eval_time/.pred_survival) into a row-per-observation data frame
+      # aligned to eval_times.
+      surv_list_to_df <- function(surv_list) {
         mat <- lapply(surv_list, function(df) {
           df <- df[match(eval_times, df$.eval_time), ]
           df$.pred_survival
         })
-        return(as.data.frame(do.call(rbind, mat)))
+        as.data.frame(do.call(rbind, mat))
+      }
+
+      # Case A: coxnet_model / cv_coxnet
+      if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
+        preds <- stats::predict(m, new_data = new_data, type = "survival", eval_time = eval_times)
+        return(surv_list_to_df(preds$.pred))
       }
 
       # Case B: Tidymodels workflow or parsnip model_fit
       if (inherits(m, c("workflow", "model_fit"))) {
         preds <- stats::predict(m, new_data = new_data, type = "survival", eval_time = eval_times)
         if (".pred" %in% names(preds) && is.list(preds$.pred)) {
-          mat <- lapply(preds$.pred, function(df) {
-            df <- df[match(eval_times, df$.eval_time), ]
-            df$.pred_survival
-          })
-          return(as.data.frame(do.call(rbind, mat)))
+          return(surv_list_to_df(preds$.pred))
         }
       }
 
@@ -135,11 +137,7 @@ cbe_explain_survival <- function(model,
       }, error = function(e) NULL)
 
       if (!is.null(preds) && ".pred" %in% names(preds)) {
-        mat <- lapply(preds$.pred, function(df) {
-          df <- df[match(eval_times, df$.eval_time), ]
-          df$.pred_survival
-        })
-        return(as.data.frame(do.call(rbind, mat)))
+        return(surv_list_to_df(preds$.pred))
       }
 
       stop("Could not automatically infer survival prediction for model class: ",
@@ -150,9 +148,17 @@ cbe_explain_survival <- function(model,
   # 3. Build default risk prediction function
   if (is.null(predict_risk_function)) {
     predict_risk_function <- function(m, new_data, times = NULL, ...) {
-      # Try linear predictor first
+      # Try linear predictor first. For coxnet_model/cv_coxnet, `increasing`
+      # controls the sign: TRUE (their predict() default, used elsewhere for
+      # .pred_linear_pred) means higher = longer survival, but a *risk*
+      # function must return higher = higher risk, so request glmnet's native
+      # sign explicitly here.
       lp <- tryCatch({
-        p <- stats::predict(m, new_data = new_data, type = "linear_pred")
+        p <- if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
+          stats::predict(m, new_data = new_data, type = "linear_pred", increasing = FALSE)
+        } else {
+          stats::predict(m, new_data = new_data, type = "linear_pred")
+        }
         if (ncol(p) > 0) as.numeric(p[[1]]) else NULL
       }, error = function(e) NULL)
 
@@ -488,11 +494,13 @@ cbe_predict_parts_shap <- function(explainer,
     if (!requireNamespace("survex", quietly = TRUE)) {
       stop("Package 'survex' is required for SurvSHAP attributions.", call. = FALSE)
     }
-    actual_type <- if (type == "shap") "survshap" else "survshap"
+    # survex only supports "survshap" for survival explainers; "auto" and
+    # "shap" both resolve to it here (plain "shap" is DALEX's classification/
+    # regression attribution, handled in the `explainer` branch below).
     return(survex::predict_parts(
       explainer = explainer,
       new_observation = new_observation,
-      type = actual_type,
+      type = "survshap",
       ...
     ))
   }

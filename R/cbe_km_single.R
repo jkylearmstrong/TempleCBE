@@ -61,20 +61,29 @@ cbe_km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95)
   hr_val <- if (cox$is_numeric) cox$table$HR[1] else cox$table$HR[cox$table$Role == "Comparison"][1]
   direction <- if (hr_val > 1) "increases" else "decreases"
 
-  km_table <- tryCatch(as.matrix(summary(km_fit)$table), error = function(e) NULL)
+  km_raw_tab <- tryCatch(summary(km_fit)$table, error = function(e) NULL)
   km_strata_labels <- if (!is.null(km_fit$strata)) sub("^.*=", "", names(km_fit$strata)) else strata_col
-  km_median <- if (!is.null(km_table) && "median" %in% colnames(km_table)) {
-    unname(km_table[, "median"])
+  km_median <- if (!is.null(km_raw_tab)) {
+    if (is.matrix(km_raw_tab)) {
+      if ("median" %in% colnames(km_raw_tab)) unname(km_raw_tab[, "median"]) else rep(NA_real_, nrow(km_raw_tab))
+    } else if ("median" %in% names(km_raw_tab)) {
+      unname(km_raw_tab["median"])
+    } else {
+      rep(NA_real_, length(km_strata_labels))
+    }
   } else {
     rep(NA_real_, length(km_strata_labels))
   }
 
   km_summary <- tibble::tibble(Level = km_strata_labels, km_median_time = km_median)
 
+  ci_col <- grep("% CI$", names(cox$table), value = TRUE)[1]
+  if (is.na(ci_col)) ci_col <- "95% CI"
+
   summary_tbl <- if (cox$is_numeric) {
     dplyr::bind_cols(
       km_summary,
-      cox$table[rep(1, nrow(km_summary)), c("Variable", "HR", "95% CI", "p.value")]
+      cox$table[rep(1, nrow(km_summary)), c("Variable", "HR", ci_col, "p.value")]
     )
   } else {
     dplyr::left_join(km_summary, cox$table, by = "Level")

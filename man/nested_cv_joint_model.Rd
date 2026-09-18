@@ -34,7 +34,11 @@ An S3 object of class \code{c("nested_cv_joint_model", "tbl_df")}.
 }
 \description{
 Implements two-layer nested cross-validation on an \code{\link[rsample]{nested_cv}}
-object to evaluate the joint model pipeline without tuning leakage. As in
-\code{\link{cv_joint_model}}, counting-process outcomes are scored one row per
-subject via \code{\link{surv_subject_truth}}.
+object to evaluate the joint model pipeline without tuning leakage.
+}
+\note{
+Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+  supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+  scoring needs one row per subject, but predictions are one row per
+  interval. Use \code{Surv(time, status)} outcomes for cross-validation.
 }

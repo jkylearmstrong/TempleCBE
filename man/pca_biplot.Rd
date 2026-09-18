@@ -4,31 +4,43 @@
 \alias{pca_biplot}
 \title{PCA Loadings Biplot}
 \usage{
-pca_biplot(pca_model, x = 1, y = 2)
+pca_biplot(
+  pca_model,
+  x = 1,
+  y = 2,
+  group = NULL,
+  ellipse = FALSE,
+  title = "PCA Biplot"
+)
 }
 \arguments{
 \item{pca_model}{A \code{\link[stats]{prcomp}} object.}
 
 \item{x, y}{Which principal components to plot on the x/y axes (default 1, 2).}
+
+\item{group}{Optional categorical vector (e.g. \code{iris$Species}) to color observations by.}
+
+\item{ellipse}{Logical (default \code{FALSE}); if \code{TRUE} and \code{group} is provided,
+draws 95\% confidence/concentration ellipses around each group.}
+
+\item{title}{Optional plot title (default \code{"PCA Biplot"}).}
 }
 \value{
 A ggplot object.
 }
 \description{
-A classic PCA biplot: the observation scores (\code{pca_model$x}) as a
-muted point cloud, overlaid with the variable loading vectors
-(\code{pca_model$rotation}) drawn as labeled arrows from the origin.
-Unlike \code{\link{plot_pca_bi}}, no separate \code{newdata} is required --
-a fitted \code{\link[stats]{prcomp}} object already carries both the
-scores and the loadings needed to draw the biplot.
+A classic PCA biplot: the observation scores (\code{pca_model$x}) overlaid with
+variable loading vectors (\code{pca_model$rotation}) drawn as labeled arrows from the origin.
+Observations can optionally be colored by a categorical grouping variable with 95\%
+concentration ellipses.
 }
 \details{
 Loading vectors are unit-scale by construction and would be invisible
 next to the score cloud if plotted as-is, so they are rescaled so that
-their maximum extent is 80% of the score cloud's maximum extent (a
+their maximum extent is 80\% of the score cloud's maximum extent (a
 standard biplot convention) before being drawn.
 }
 \examples{
-pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
-pca_biplot(pca_model, x = 1, y = 2)
+pca_model <- prcomp(iris[, 1:4], center = TRUE, scale. = TRUE)
+pca_biplot(pca_model, group = iris$Species, ellipse = TRUE)
 }

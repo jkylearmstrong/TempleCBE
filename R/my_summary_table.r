@@ -17,7 +17,7 @@
 #'   dplyr::group_by(cyl) |> 
 #'   my_summary_table(mpg, table.output = TRUE)
 #'
-#' @import dplyr
+#' @importFrom dplyr %>% ungroup select summarise mutate
 #' @importFrom stats sd
 #' @importFrom rlang .data
 #'

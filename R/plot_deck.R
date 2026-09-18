@@ -186,10 +186,10 @@ plot_group_comparison <- function(data,
 #' @export
 plot_missingness <- function(data,
                              base_size = 13) {
-  p <- ggplot2::ggplot(data, ggplot2::aes(x = parameter, y = pct, fill = method)) +
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data$parameter, y = .data$pct, fill = .data$method)) +
     ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.75), width = 0.7) +
     ggplot2::geom_text(
-      ggplot2::aes(label = fmt_pct(pct)),
+      ggplot2::aes(label = fmt_pct(.data$pct)),
       position = ggplot2::position_dodge(width = 0.75),
       vjust = -0.4,
       size = 4

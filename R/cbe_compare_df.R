@@ -54,17 +54,9 @@ cbe_compare_df <- function(base,
   base_df <- as.data.frame(base)
   comp_df <- as.data.frame(compare)
 
-  # Extract variable labels helper
-  get_var_label <- function(df, col) {
-    lbl <- attr(df[[col]], "label", exact = TRUE)
-    if (is.null(lbl)) {
-      if (requireNamespace("labelled", quietly = TRUE)) {
-        lbl <- labelled::var_label(df[[col]])
-      }
-    }
-    if (is.null(lbl) || is.na(lbl) || lbl == "") return(NA_character_)
-    as.character(lbl)
-  }
+  # Extract variable labels helper (shared with get_dataset_info.R, which
+  # documents why var_label() is tried before the attr() fallback)
+  get_var_label <- function(df, col) resolve_var_label(df[[col]], default = NA_character_)
 
   # 1. Variables Summary
   vars_base <- names(base_df)
@@ -273,7 +265,7 @@ print.cbe_compare_df <- function(x, max_print = 10, ...) {
     }
   } else {
     cat(sprintf("Variables with Differences: %d / %d\n\n", n_diff_vars, nrow(x$summary)))
-    diff_summary <- x$summary %>% dplyr::filter(.data$n_diff > 0)
+    diff_summary <- dplyr::filter(x$summary, .data$n_diff > 0)
     print(as.data.frame(diff_summary), row.names = FALSE)
 
     cat(sprintf("\nDiscrepant Values (showing up to %d rows):\n", max_print))

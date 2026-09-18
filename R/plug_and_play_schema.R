@@ -202,7 +202,7 @@ read_mapped_section_data <- function(mapping,
 
   if (length(missing_old) > 0) {
     for (m_new in missing_new) {
-      out[[m_new]] <- NA
+      out[[m_new]] <- if (nrow(out) > 0) NA else logical(0)
     }
   }
 
