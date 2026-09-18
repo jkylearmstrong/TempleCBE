@@ -5,6 +5,7 @@
 \alias{as_database.default}
 \alias{as_database.igraph}
 \alias{as_database.visNetwork}
+\alias{as_database.list}
 \title{Convert a Graph Object Back Into an R Database}
 \usage{
 as_database(x, ...)
@@ -14,17 +15,23 @@ as_database(x, ...)
 \method{as_database}{igraph}(x, ...)
 
 \method{as_database}{visNetwork}(x, ...)
+
+\method{as_database}{list}(x, ...)
 }
 \arguments{
 \item{x}{A graph object: an \code{igraph} (or \code{tbl_graph}, which
-extends it and is dispatched via the \code{igraph} method), or a
+extends it and is dispatched via the \code{igraph} method), a
 \pkg{visNetwork} htmlwidget (e.g. from \code{visNetwork::visNetwork()}
-or \code{funviewR::plot_dependency_graph()}).}
+or \code{funviewR::plot_dependency_graph()}), or a plain
+\code{list(nodes = ..., edges = ...)} (e.g. read back from
+\code{\link{read_workbook}}) to be validated and stamped as one.}
 
 \item{...}{Additional arguments passed to methods.}
 }
 \value{
-A named list \code{list(nodes = <tibble>, edges = <tibble>)}.
+A named list \code{list(nodes = <tibble>, edges = <tibble>)} of
+  class \code{cbe_database} -- the class \code{\link{database_setops}} and
+  \code{\link{cbe_compare_df}} dispatch on.
 }
 \description{
 Reverses the \code{data.base -> graph_object} direction already covered by

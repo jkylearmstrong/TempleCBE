@@ -16,11 +16,15 @@
 #' you combine two databases -- see \code{\link{database_setops}} for that.
 #'
 #' @param x A graph object: an \code{igraph} (or \code{tbl_graph}, which
-#'   extends it and is dispatched via the \code{igraph} method), or a
+#'   extends it and is dispatched via the \code{igraph} method), a
 #'   \pkg{visNetwork} htmlwidget (e.g. from \code{visNetwork::visNetwork()}
-#'   or \code{funviewR::plot_dependency_graph()}).
+#'   or \code{funviewR::plot_dependency_graph()}), or a plain
+#'   \code{list(nodes = ..., edges = ...)} (e.g. read back from
+#'   \code{\link{read_workbook}}) to be validated and stamped as one.
 #' @param ... Additional arguments passed to methods.
-#' @return A named list \code{list(nodes = <tibble>, edges = <tibble>)}.
+#' @return A named list \code{list(nodes = <tibble>, edges = <tibble>)} of
+#'   class \code{cbe_database} -- the class \code{\link{database_setops}} and
+#'   \code{\link{cbe_compare_df}} dispatch on.
 #' @name as_database
 #' @export
 #' @examples
@@ -35,25 +39,45 @@ as_database <- function(x, ...) {
 as_database.default <- function(x, ...) {
   stop(
     "No `as_database()` method for class(es): ", paste(class(x), collapse = "/"),
-    ". Supported: igraph/tbl_graph objects, and visNetwork htmlwidgets.",
+    ". Supported: igraph/tbl_graph objects, visNetwork htmlwidgets, and",
+    " list(nodes = ..., edges = ...).",
     call. = FALSE
+  )
+}
+
+#' @noRd
+new_cbe_database <- function(nodes, edges) {
+  structure(
+    list(nodes = tibble::as_tibble(nodes), edges = tibble::as_tibble(edges)),
+    class = c("cbe_database", "list")
   )
 }
 
 #' @rdname as_database
 #' @export
 as_database.igraph <- function(x, ...) {
-  list(
-    nodes = tibble::as_tibble(igraph::as_data_frame(x, what = "vertices")),
-    edges = tibble::as_tibble(igraph::as_data_frame(x, what = "edges"))
+  new_cbe_database(
+    igraph::as_data_frame(x, what = "vertices"),
+    igraph::as_data_frame(x, what = "edges")
   )
 }
 
 #' @rdname as_database
 #' @export
 as_database.visNetwork <- function(x, ...) {
-  list(
-    nodes = tibble::as_tibble(x$x$nodes),
-    edges = tibble::as_tibble(x$x$edges)
-  )
+  new_cbe_database(x$x$nodes, x$x$edges)
+}
+
+#' @rdname as_database
+#' @export
+as_database.list <- function(x, ...) {
+  if (!all(c("nodes", "edges") %in% names(x)) ||
+      !is.data.frame(x$nodes) || !is.data.frame(x$edges)) {
+    stop(
+      "`as_database()` on a plain list requires `nodes` and `edges` ",
+      "data frame/tibble elements.",
+      call. = FALSE
+    )
+  }
+  new_cbe_database(x$nodes, x$edges)
 }

@@ -10,7 +10,10 @@
 #' @param compare The comparison data frame or tibble (equivalent to SAS \code{compare=}).
 #' @param by Optional character vector of column names specifying key variables used to align
 #'   observations across datasets (equivalent to SAS \code{id} or \code{by} statement). If \code{NULL}
-#'   (default), observations are compared by row order.
+#'   (default), observations are compared by row order. For the \code{cbe_database} method, this
+#'   is the node key (passed through to the nodes comparison only).
+#' @param edge_by \code{cbe_database} method only: key column(s) used to align edges (default
+#'   \code{c("from", "to")}, which every \code{\link{as_database}} method produces).
 #' @param tolerance Non-negative numeric threshold for numeric differences (default: \code{1e-7}).
 #'   Differences with absolute magnitude less than or equal to \code{tolerance} are considered matches.
 #' @param base_name Optional character string identifying the base dataset. If \code{NULL},
@@ -18,8 +21,12 @@
 #' @param compare_name Optional character string identifying the comparison dataset. If \code{NULL},
 #'   deparsed from the \code{compare} argument.
 #' @param max_diffs Maximum number of discrepant rows to store per variable (default: 100).
+#' @param ... Passed on to methods (and, for the \code{cbe_database} method,
+#'   on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolerance}).
 #'
-#' @return An S3 object of class \code{"cbe_compare_df"} containing:
+#' @return An S3 object of class \code{"cbe_compare_df"} containing (or, for a
+#'   \code{\link{cbe_database}}/graph comparison, a \code{"cbe_compare_database"}
+#'   list of two such objects, named \code{nodes} and \code{edges}):
 #'   \item{meta}{List containing metadata on dataset names, dimensions, tolerance, and keys.}
 #'   \item{variables}{List with elements \code{common}, \code{base_only}, and \code{compare_only}.}
 #'   \item{summary}{Tibble summarizing comparison status for each variable (types, match status, difference counts, max difference, RMSE).}
@@ -35,13 +42,20 @@
 #' cmp <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-3)
 #' print(cmp)
 #' generics::tidy(cmp)
-cbe_compare_df <- function(base,
+cbe_compare_df <- function(base, compare, ...) {
+  UseMethod("cbe_compare_df")
+}
+
+#' @rdname cbe_compare_df
+#' @export
+cbe_compare_df.default <- function(base,
                            compare,
                            by = NULL,
                            tolerance = 1e-7,
                            base_name = NULL,
                            compare_name = NULL,
-                           max_diffs = 100) {
+                           max_diffs = 100,
+                           ...) {
   # Support database list with character vector of table names
   if (is.list(base) && !is.data.frame(base)) {
     if (is.character(compare) && length(compare) == 2) {
@@ -253,6 +267,63 @@ cbe_compare_df <- function(base,
   )
   class(res) <- "cbe_compare_df"
   res
+}
+
+#' @rdname cbe_compare_df
+#' @export
+#' @examples
+#' g1 <- igraph::graph_from_data_frame(
+#'   data.frame(from = c("a", "b"), to = c("b", "c")),
+#'   vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "eda", "report"))
+#' )
+#' g2 <- igraph::graph_from_data_frame(
+#'   data.frame(from = c("a", "b"), to = c("b", "c")),
+#'   vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "analysis", "report"))
+#' )
+#' cbe_compare_df(g1, g2, by = "name")
+cbe_compare_df.cbe_database <- function(base,
+                                        compare,
+                                        by = NULL,
+                                        edge_by = c("from", "to"),
+                                        ...,
+                                        base_name = NULL,
+                                        compare_name = NULL) {
+  base_name <- base_name %||% deparse(substitute(base))[1]
+  compare_name <- compare_name %||% deparse(substitute(compare))[1]
+
+  res <- list(
+    nodes = cbe_compare_df.default(
+      base$nodes, compare$nodes, by = by, ...,
+      base_name = paste0(base_name, "$nodes"), compare_name = paste0(compare_name, "$nodes")
+    ),
+    edges = cbe_compare_df.default(
+      base$edges, compare$edges, by = edge_by, ...,
+      base_name = paste0(base_name, "$edges"), compare_name = paste0(compare_name, "$edges")
+    )
+  )
+  class(res) <- "cbe_compare_database"
+  res
+}
+
+#' @rdname cbe_compare_df
+#' @export
+cbe_compare_df.igraph <- function(base, compare, ...) {
+  cbe_compare_df(as_database(base), as_database(compare), ...)
+}
+
+#' @rdname cbe_compare_df
+#' @export
+cbe_compare_df.visNetwork <- function(base, compare, ...) {
+  cbe_compare_df(as_database(base), as_database(compare), ...)
+}
+
+#' @export
+print.cbe_compare_database <- function(x, ...) {
+  cat("== Nodes ", strrep("=", 63), "\n", sep = "")
+  print(x$nodes, ...)
+  cat("\n== Edges ", strrep("=", 63), "\n", sep = "")
+  print(x$edges, ...)
+  invisible(x)
 }
 
 #' @export

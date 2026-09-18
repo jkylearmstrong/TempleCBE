@@ -110,3 +110,41 @@ test_that("cbe_compare_df errors on invalid by keys", {
   expect_error(cbe_compare_df(df1, df2, by = "id"), "Key variable.*not found in compare dataset")
   expect_error(cbe_compare_df(df1, df2, by = "nonexistent"), "Key variable.*not found in base dataset")
 })
+
+test_that("cbe_compare_df() extends to cbe_database objects (nodes + edges)", {
+  db1 <- as_database(list(
+    nodes = data.frame(name = c("a", "b"), stage = c("eda", "report")),
+    edges = data.frame(from = "a", to = "b", weight = 1)
+  ))
+  db2 <- as_database(list(
+    nodes = data.frame(name = c("a", "b"), stage = c("analysis", "report")),
+    edges = data.frame(from = "a", to = "b", weight = 2)
+  ))
+
+  cmp <- cbe_compare_df(db1, db2, by = "name")
+  expect_s3_class(cmp, "cbe_compare_database")
+  expect_s3_class(cmp$nodes, "cbe_compare_df")
+  expect_s3_class(cmp$edges, "cbe_compare_df")
+  expect_equal(cmp$nodes$summary$n_diff[cmp$nodes$summary$variable == "stage"], 1)
+  expect_output(print(cmp), "Nodes")
+  expect_output(print(cmp), "Edges")
+})
+
+test_that("cbe_compare_df() extends to graph objects directly", {
+  g1 <- igraph::graph_from_data_frame(
+    data.frame(from = "a", to = "b"),
+    vertices = data.frame(name = c("a", "b"), stage = c("eda", "report"))
+  )
+  g2 <- igraph::graph_from_data_frame(
+    data.frame(from = "a", to = "b"),
+    vertices = data.frame(name = c("a", "b"), stage = c("analysis", "report"))
+  )
+
+  cmp <- cbe_compare_df(g1, g2, by = "name")
+  expect_s3_class(cmp, "cbe_compare_database")
+  expect_equal(cmp$nodes$summary$n_diff[cmp$nodes$summary$variable == "stage"], 1)
+
+  # tbl_graph dispatches through the igraph method via class inheritance
+  cmp_tg <- cbe_compare_df(tidygraph::as_tbl_graph(g1), tidygraph::as_tbl_graph(g2), by = "name")
+  expect_s3_class(cmp_tg, "cbe_compare_database")
+})

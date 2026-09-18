@@ -1,3 +1,25 @@
+test_that("graph_union() coalesces overlapping node/edge attributes", {
+  g1 <- igraph::graph_from_data_frame(
+    data.frame(from = "a", to = "b"),
+    vertices = data.frame(name = c("a", "b"), stage = c("eda", NA))
+  )
+  g2 <- igraph::graph_from_data_frame(
+    data.frame(from = "b", to = "c"),
+    vertices = data.frame(name = c("b", "c"), stage = c("analysis", "report"))
+  )
+
+  gu <- graph_union(g1, g2)
+  expect_s3_class(gu, "igraph")
+  expect_equal(igraph::vcount(gu), 3)
+  expect_equal(igraph::ecount(gu), 2)
+
+  db <- as_database(gu)
+  expect_equal(db$nodes$stage[db$nodes$name == "a"], "eda")
+  # node "b": g1's NA stage is filled in by g2's "analysis"
+  expect_equal(db$nodes$stage[db$nodes$name == "b"], "analysis")
+  expect_equal(db$nodes$stage[db$nodes$name == "c"], "report")
+})
+
 test_that("graph_intersect()/graph_subtract() work across graph types", {
   g1 <- igraph::graph_from_data_frame(
     data.frame(from = c("a", "b", "c"), to = c("b", "c", "d")),

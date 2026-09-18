@@ -1,22 +1,35 @@
-#' Intersect or Subtract Two Graph Objects
+#' Intersect, Subtract, or Union Two Graph Objects
 #'
 #' Set operations across two graph objects, regardless of their concrete
 #' representation (\code{igraph}/\code{tbl_graph}, or a \pkg{visNetwork}
 #' htmlwidget such as \code{funviewR::plot_dependency_graph()} returns).
-#' Both graphs are normalized via \code{\link{as_database}}, combined with
-#' \code{\link{database_intersect}}/\code{\link{database_subtract}}, and
-#' rebuilt into an \code{igraph} with \code{\link{database_to_igraph}}.
+#' Both graphs are normalized via \code{\link{as_database}}, combined with the
+#' \code{\link{database_setops}} verbs (\code{dplyr::intersect()}/
+#' \code{dplyr::setdiff()}/\code{dplyr::union()} on the \code{cbe_database}
+#' class), and rebuilt into an \code{igraph} with \code{\link{database_to_igraph}}.
+#'
+#' These stay dedicated functions rather than \code{intersect.igraph()}/
+#' \code{union.igraph()}/\code{setdiff.igraph()} methods because \pkg{igraph}
+#' already registers its own \code{union.igraph()} on the same generic --
+#' S3 method tables are global, so defining one here would silently collide
+#' with igraph's. Going through \code{\link{as_database}} first sidesteps that
+#' entirely: dispatch happens on the \code{cbe_database} class this package
+#' owns, not on \code{igraph}.
 #'
 #' \code{graph_intersect()} keeps nodes/edges present in \emph{both} \code{x}
-#' and \code{y}. \code{graph_subtract()} keeps nodes/edges present in
-#' \code{x} but \emph{not} in \code{y} (edges are additionally constrained to
-#' only reference surviving nodes, so the result is always well-formed).
+#' and \code{y}, taking attribute values from \code{x} only. \code{graph_subtract()}
+#' keeps nodes/edges present in \code{x} but \emph{not} in \code{y} (edges are
+#' additionally constrained to only reference surviving nodes, so the result
+#' is always well-formed). \code{graph_union()} combines both graphs' nodes
+#' and edges, coalescing attribute values so neither side's data is lost on
+#' overlap -- the same union-and-coalesce behavior as \code{\link{join_pipelines}},
+#' generalized to any graph type via \code{\link{as_database}} rather than
+#' \code{tbl_graph} specifically.
 #'
-#' Both are set operations -- which nodes/edges exist where -- not a
+#' All three are set operations -- which nodes/edges exist where -- not a
 #' value-level comparison of attributes on nodes/edges that happen to match.
 #' For that, run \code{\link{cbe_compare_df}} on the two \code{\link{as_database}}
-#' results directly. Node/edge attribute values in the result are taken from
-#' \code{x}.
+#' results directly (or on the two graphs themselves).
 #'
 #' @param x,y Graph objects: \code{igraph}/\code{tbl_graph} objects, or
 #'   \pkg{visNetwork} htmlwidgets.
@@ -36,14 +49,22 @@
 #' )
 #' graph_intersect(g1, g2)
 #' graph_subtract(g1, g2)
+#' graph_union(g1, g2)
 graph_intersect <- function(x, y, directed = TRUE) {
-  db <- database_intersect(as_database(x), as_database(y))
+  db <- dplyr::intersect(as_database(x), as_database(y))
   database_to_igraph(db, directed = directed)
 }
 
 #' @rdname graph_setops
 #' @export
 graph_subtract <- function(x, y, directed = TRUE) {
-  db <- database_subtract(as_database(x), as_database(y))
+  db <- dplyr::setdiff(as_database(x), as_database(y))
+  database_to_igraph(db, directed = directed)
+}
+
+#' @rdname graph_setops
+#' @export
+graph_union <- function(x, y, directed = TRUE) {
+  db <- dplyr::union(as_database(x), as_database(y))
   database_to_igraph(db, directed = directed)
 }
