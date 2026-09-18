@@ -19,7 +19,11 @@ template:
 navbar:
   structure:
     left:  [intro, reference, articles, news]
-    right: [search, lightswitch, github]
+    right: [manual, search, lightswitch, github]
+  components:
+    manual:
+      text: "Manual"
+      href: manual/TempleCBE_latest.pdf
 
 articles:
   - title: Articles & Workflows
