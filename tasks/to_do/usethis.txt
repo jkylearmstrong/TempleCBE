@@ -2,11 +2,6 @@
 # Pharmaverse & Clinical Reporting Evaluation (Backlog / Future Tasks)
 # ==============================================================================
 
-# COMPLETED:
-# [x] Added ggsurvfit to Imports in DESCRIPTION
-# [x] Added gtsummary to Imports in DESCRIPTION
-# [x] Added exact2x2 to Imports in DESCRIPTION with gtsummary add_p integration
-
 # PENDING EVALUATION / FUTURE CONSIDERATION:
 # 1. Parallel Fisher/Exact Tests with cards & furrr:
 #    https://github.com/pharmaverse/cards/pull/575

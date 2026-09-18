@@ -1,0 +1,32 @@
+data_list_vector <- list(
+        'inputs'         = inputs,
+        'ABG'            = ABG,
+        'Cardiovascular' = Cardiovascular,
+        'Injury'         = Injury,
+        'Pulmonary'      = Pulmonary,
+        'Surface'        = Surface,
+        'survival_data'  = survival_data 
+    )
+
+#Maybe an R database is a list of R datasets:
+
+DATA <- data_list_vector |> purrr::imap_dfr(
+    function(df, nm) {
+        res <- df
+        res
+    }
+)
+
+# auto associate 
+
+METADATA <- data_list_vector |> purrr::imap_dfr(
+    function(df, nm) {
+        res <- get_dataset_info(df)
+        res$dataset_name <- nm
+        res
+    }
+
+variable_role <- function(){}
+
+DATA # export as excel work book
+METADATA # should be exportable importable with CSV
