@@ -41,7 +41,17 @@ simulate_section_data <- function(mapping,
   id_col <- section_map$new[section_map$ID_var]
   time_col <- section_map$new[section_map$Time_var]
 
-  set.seed(seed)
+  if (!is.null(seed)) {
+    old_seed <- if (exists(".Random.seed", envir = .GlobalEnv)) get(".Random.seed", envir = .GlobalEnv) else NULL
+    on.exit({
+      if (is.null(old_seed)) {
+        if (exists(".Random.seed", envir = .GlobalEnv)) rm(".Random.seed", envir = .GlobalEnv)
+      } else {
+        assign(".Random.seed", old_seed, envir = .GlobalEnv)
+      }
+    }, add = TRUE)
+    set.seed(seed)
+  }
 
   # Generate subjects scaffold
   subject_ids <- sprintf("SUBJ_%03d", seq_len(n_subjects))

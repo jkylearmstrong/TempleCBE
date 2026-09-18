@@ -31,23 +31,15 @@ rossi_data <- function(format = c("csv", "sas")) {
   format <- match.arg(format)
   if (format == "sas") {
     rlang::check_installed("haven", reason = "to read native .sas7bdat files.")
-    path <- system.file("extdata", "recid.sas7bdat", package = "TempleCBE")
-    if (!nzchar(path) || !file.exists(path)) {
-      dev_path <- file.path(getwd(), "inst", "extdata", "recid.sas7bdat")
-      if (file.exists(dev_path)) path <- dev_path
-    }
-    if (!nzchar(path) || !file.exists(path)) {
+    path <- locate_package_path("extdata", "recid.sas7bdat")
+    if (is.null(path)) {
       stop("Could not locate recid.sas7bdat.", call. = FALSE)
     }
     return(tibble::as_tibble(haven::read_sas(path)))
   }
 
-  path <- system.file("extdata", "rossi.csv", package = "TempleCBE")
-  if (!nzchar(path) || !file.exists(path)) {
-    dev_path <- file.path(getwd(), "inst", "extdata", "rossi.csv")
-    if (file.exists(dev_path)) path <- dev_path
-  }
-  if (!nzchar(path) || !file.exists(path)) {
+  path <- locate_package_path("extdata", "rossi.csv")
+  if (is.null(path)) {
     stop("Could not locate rossi.csv.", call. = FALSE)
   }
   tibble::as_tibble(utils::read.csv(path, stringsAsFactors = FALSE))

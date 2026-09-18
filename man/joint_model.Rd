@@ -42,13 +42,13 @@ Defaults to deciles of uncensored event times.}
 \item{...}{Additional arguments passed to \code{\link[TempleCBE]{cv_coxnet}} or \code{\link[glmnet]{glmnet}}.}
 }
 \value{
-An S3 object of class \code{c("joint_model", "hardhat_model")} with elements:
+An S3 object of class \code{c("joint_model", "list")} with elements:
   \item{coxnet_model}{Fitted penalized Cox proportional hazards model.}
   \item{status_model}{Fitted binary event classification model.}
   \item{time_model}{Fitted continuous follow-up duration model.}
   \item{stack_model}{Fitted \pkg{stacks} ensemble (if \code{engine = "stacks"}).}
   \item{calibration_model}{Probability calibration model from \pkg{probably} (if \code{calibration = TRUE}).}
-  \item{components}{List of extracted outcome variables, formulas, and the hardhat blueprint.}
+  \item{components}{List of extracted outcome variables, formulas, and baseline hazard.}
   \item{engine}{Selected modeling engine.}
   \item{eval_time}{Evaluation horizons used for survival scoring.}
 }
@@ -73,13 +73,6 @@ Fits a coordinated trio of predictive models on clinical survival data:
 This joint framework enables clinical researchers to investigate and contrast true
 survival modeling against naive classification and regression proxies as discussed in
 clinical literature (e.g., Rizopoulos 2015, PMC4503792).
-
-Predictors are processed through the \pkg{hardhat} \code{\link[TempleCBE]{coxnet}}
-formula blueprint (one-hot dummy encoding, no intercept), the same preprocessing
-used by \code{\link[TempleCBE]{coxnet}} and \code{\link[TempleCBE]{cv_coxnet}}, so the
-status and time sub-models see exactly the columns the survival sub-model does, and
-`predict()` re-applies the training encoding via \code{\link[hardhat]{forge}} rather
-than recomputing dummy columns from scratch.
 }
 \examples{
 \donttest{

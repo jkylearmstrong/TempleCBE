@@ -1,15 +1,21 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.3.404
+Version: 0.3.405.2026.09.17.22.44
 Authors@R: 
-    person("J Kyle", "Armstrong", email = "j.kyle.armstrong@temple.edu", role = c("aut", "cre"),
-           comment = c(
-               ORCID = "0000-0002-4269-0121",
-               affiliation = "Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology"
-           ))
+    c(
+        person("J Kyle", "Armstrong", email = "j.kyle.armstrong@temple.edu", role = c("aut", "cre"),
+               comment = c(
+                   ORCID = "0000-0002-4269-0121",
+                   affiliation = "Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology"
+               )),
+        person("Darina", "Chudnovskaya", email = c("darina.c@temple.edu", "tub51812@temple.edu"), role = "ctb",
+               comment = c(
+                   affiliation = "Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology"
+               ))
+    )
 Description: An open-source R package developed for Temple University's Center for Biostatistics and Epidemiology (CBE). Provides domain-agnostic biostatistical testing, data quality and missingness visualizations, normalization functions, custom Tidymodels recipe steps, and clinical survival metrics.
-License: MIT + file LICENSE
+License: GPL-3 | MIT + file LICENSE
 Encoding: UTF-8
 URL: https://github.com/jkylearmstrong/TempleCBE, https://jkylearmstrong.github.io/TempleCBE/
 BugReports: https://github.com/jkylearmstrong/TempleCBE/issues

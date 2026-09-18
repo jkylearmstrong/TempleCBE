@@ -55,8 +55,17 @@ plot_cox_forest <- function(data,
   order_by <- match.arg(order_by)
 
   if (inherits(data, "cbe_cox")) {
-    td <- broom::tidy(data$model, exponentiate = TRUE, conf.int = TRUE)
-    td$index_label <- data$var_label
+    conf_level <- data$conf_level %||% 0.95
+    td <- broom::tidy(data$model, exponentiate = TRUE, conf.int = TRUE, conf.level = conf_level)
+    if (nrow(td) == 1) {
+      td$index_label <- data$var_label
+    } else {
+      lvl <- stringr::str_remove(td$term, stringr::fixed(data$var_name))
+      td$index_label <- paste0(data$var_label, ": ", lvl)
+    }
+    if (conf_level != 0.95) {
+      attr(td, "ci_label") <- sprintf("%d%% CI", round(conf_level * 100))
+    }
     data <- td
   }
 
@@ -183,7 +192,8 @@ forest_plot_engine <- function(df,
     df$.xmin <- df$.low
     df$.xmax <- df$.hi
     x_intercept <- 1
-    x_lab <- "Hazard Ratio (95% CI)"
+    ci_lbl <- attr(df, "ci_label") %||% "95% CI"
+    x_lab <- paste0("Hazard Ratio (", ci_lbl, ")")
   }
 
   if (color_by == "significance") {

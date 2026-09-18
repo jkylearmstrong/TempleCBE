@@ -773,7 +773,7 @@ If you modify or enhance a standard macro (such as adding custom output formats 
 #### Step 3: Automated Validation via `run_sas_script()`
 You can validate your local SAS macro against R calculations directly from an R unit test or validation script:
 
-```{r run_sas_validation, eval = has_sas}
+```{r run_sas_validation, eval = isTRUE(tryCatch(has_sas, error = function(e) FALSE))}
 # Execute validation script in batch mode
 val_script <- TempleCBE::cbe_sas_macro_path("benchmark_brier_lung.sas")
 exit_status <- TempleCBE::run_sas_script(val_script)

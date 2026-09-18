@@ -20,17 +20,7 @@
 #' @param min_revision_length Integer minimum character count required to record a
 #'   tracked change. Defaults to `2`.
 #' @param fork_reviewers Character vector of reviewer identifiers who receive
-#'   their own single-reviewer fork workbooks and whose per-comment sign-offs
-#'   roll up into each document's `resolved` status. Defaults to
-#'   `review_config()$fork_reviewers` (generic placeholders unless a project
-#'   has called \code{\link{review_config}} to configure real reviewer ids).
-#' @param signoff_reviewers Character vector of document-level sign-off
-#'   reviewer identifiers (e.g. a final PI read), tracked only on the
-#'   "Documents" sheet and not counted toward `resolved`. Defaults to
-#'   `review_config()$signoff_reviewers`.
-#' @param documents_sheet_mode One of `"columns"` or `"per_reviewer"`; see
-#'   \code{\link{review_config}}. Defaults to
-#'   `review_config()$documents_sheet_mode`.
+#'   their own single-reviewer fork workbooks. Defaults to `c("jka", "darina", "zhao")`.
 #' @param manifest_path Optional character path to `reports_to_render.xlsx`. If `NULL`,
 #'   the function attempts to locate it automatically in standard repository paths.
 #' @param verbose Logical indicating whether to print detailed progress messages.
@@ -51,9 +41,6 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Configure real reviewer identities once per project (kept out of source
-#' # control), then run extraction with no further reviewer arguments needed:
-#' review_config(fork_reviewers = c("alice", "bob", "carol"), signoff_reviewers = "lead_pi")
 #' res <- cbe_docx_review_extract("tasks/edits", verbose = TRUE)
 #' print(res)
 #' }
@@ -61,20 +48,12 @@ cbe_docx_review_extract <- function(input_dir = NULL,
                                    output_dir = NULL,
                                    tracker = "review_tracker.xlsx",
                                    min_revision_length = 2,
-                                   fork_reviewers = NULL,
-                                   signoff_reviewers = NULL,
-                                   documents_sheet_mode = NULL,
+                                   fork_reviewers = c("jka", "darina", "zhao"),
                                    manifest_path = NULL,
                                    verbose = FALSE) {
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
     stop("Package 'openxlsx' is required for cbe_docx_review_extract(). Please install it.", call. = FALSE)
   }
-
-  cfg <- review_config()
-  if (is.null(fork_reviewers)) fork_reviewers <- cfg$fork_reviewers
-  if (is.null(signoff_reviewers)) signoff_reviewers <- cfg$signoff_reviewers
-  if (is.null(documents_sheet_mode)) documents_sheet_mode <- cfg$documents_sheet_mode
-  documents_sheet_mode <- match.arg(documents_sheet_mode, c("columns", "per_reviewer"))
 
   # 1. Resolve directories
   if (is.null(input_dir)) {
@@ -242,9 +221,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
     existing_rows = existing_comments,
     existing_headers = existing_headers,
     catalog = catalog,
-    scanned_files = scanned_files,
-    fork_reviewers = fork_reviewers,
-    signoff_reviewers = signoff_reviewers
+    scanned_files = scanned_files
   )
   comments_columns <- merged_c$columns
   merged_comments <- merged_c$rows
@@ -261,9 +238,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
     existing_rows = existing_redlines,
     existing_headers = existing_redline_headers,
     catalog = catalog,
-    scanned_files = scanned_files,
-    fork_reviewers = fork_reviewers,
-    signoff_reviewers = signoff_reviewers
+    scanned_files = scanned_files
   )
   redline_columns <- merged_rl$columns
   merged_redlines <- merged_rl$rows
@@ -281,8 +256,6 @@ cbe_docx_review_extract <- function(input_dir = NULL,
     redlines_rows = merged_redlines,
     existing_docs = existing_docs,
     fork_reviewers = fork_reviewers,
-    signoff_reviewers = signoff_reviewers,
-    documents_sheet_mode = documents_sheet_mode,
     reviewer_view = NULL
   )
 
@@ -309,8 +282,6 @@ cbe_docx_review_extract <- function(input_dir = NULL,
       redlines_rows = merged_redlines,
       existing_docs = existing_docs,
       fork_reviewers = fork_reviewers,
-      signoff_reviewers = signoff_reviewers,
-      documents_sheet_mode = documents_sheet_mode,
       reviewer_view = rev
     )
     fork_paths[[rev]] <- fork_path
@@ -323,8 +294,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
     comments_rows = merged_comments,
     revisions_rows = merged_revisions,
     redline_columns = redline_columns,
-    redlines_rows = merged_redlines,
-    fork_reviewers = fork_reviewers
+    redlines_rows = merged_redlines
   )
 
   # 9. Build return tables
@@ -334,9 +304,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
     revisions_rows = merged_revisions,
     redlines_rows = merged_redlines,
     catalog = catalog,
-    existing_docs = existing_docs,
-    fork_reviewers = fork_reviewers,
-    signoff_reviewers = signoff_reviewers
+    existing_docs = existing_docs
   )
 
   docxwalk_df <- build_docxwalk_df(
@@ -414,76 +382,6 @@ print.cbe_review_extract <- function(x, ...) {
 }
 
 # =============================================================================
-# REVIEWER CONFIGURATION
-# =============================================================================
-
-#' Get or set global multi-reviewer review-tracking configuration
-#'
-#' Decouples project-specific reviewer identities from the review-tracking
-#' mechanics in \code{\link{cbe_docx_review_extract}}, mirroring how
-#' \code{\link{pipeline_config}} decouples study name and stage labels from
-#' the core compute-graph classes: the number and names of reviewers are
-#' data supplied by the calling project, not hardcoded here.
-#'
-#' Two reviewer categories are supported:
-#' \itemize{
-#'   \item \code{fork_reviewers}: reviewers who sign off on individual
-#'     comments and suggested changes. Each gets a personal fork workbook
-#'     (\code{review_tracker_<id>.xlsx}) with every other reviewer's columns
-#'     hidden, plus a rolled-up per-document column on the "Documents"
-#'     sheet. A document's \code{resolved} status is TRUE only when every
-#'     fork reviewer has signed off on every comment and suggested change
-#'     in that document.
-#'   \item \code{signoff_reviewers}: reviewers who sign off once per
-#'     document (e.g. a final PI read), tracked only on the "Documents"
-#'     sheet (a status column plus a free-text comment column). They are
-#'     not counted toward \code{resolved} and are never exposed in a fork
-#'     reviewer's personal workbook.
-#' }
-#'
-#' Existing \code{review_tracker_*.xlsx} files continue to work: column
-#' data is preserved by header union regardless of configuration, but for
-#' the app's reviewer-aware behavior
-#' (rollups, resolved status, fork filtering) to line up with a file's
-#' existing columns, keep configuring the same reviewer identifiers used
-#' when that file was created.
-#'
-#' @param fork_reviewers Character vector of fork-reviewer identifiers
-#'   (used as column names and fork-file suffixes; keep them syntactically
-#'   simple, e.g. no spaces).
-#' @param signoff_reviewers Character vector of document-level sign-off
-#'   reviewer identifiers. Defaults to none.
-#' @param documents_sheet_mode One of \code{"columns"} (default; a single
-#'   "Documents" sheet with one column, or column pair, per reviewer) or
-#'   \code{"per_reviewer"} (a shared "Documents" sheet with counts and
-#'   \code{resolved} only, plus one additional "Documents_<id>" sheet per
-#'   reviewer carrying just that reviewer's status/comment columns).
-#' @return A list containing the current configuration options.
-#' @export
-review_config <- function(
-  fork_reviewers = NULL,
-  signoff_reviewers = NULL,
-  documents_sheet_mode = NULL
-) {
-  if (!is.null(fork_reviewers)) {
-    options(review.fork_reviewers = fork_reviewers)
-  }
-  if (!is.null(signoff_reviewers)) {
-    options(review.signoff_reviewers = signoff_reviewers)
-  }
-  if (!is.null(documents_sheet_mode)) {
-    documents_sheet_mode <- match.arg(documents_sheet_mode, c("columns", "per_reviewer"))
-    options(review.documents_sheet_mode = documents_sheet_mode)
-  }
-
-  list(
-    fork_reviewers = getOption("review.fork_reviewers", c("reviewer_1", "reviewer_2", "reviewer_3")),
-    signoff_reviewers = getOption("review.signoff_reviewers", character(0)),
-    documents_sheet_mode = getOption("review.documents_sheet_mode", "columns")
-  )
-}
-
-# =============================================================================
 # CONSTANTS & METADATA
 # =============================================================================
 
@@ -502,28 +400,17 @@ METADATA_COLUMNS <- c(
   "paragraph_context"
 )
 
-#' Build the reviewer sign-off columns (value + comment pairs) for a reviewer set
-#' @param fork_reviewers Character vector of fork-reviewer identifiers.
-#' @param signoff_reviewers Character vector of sign-off reviewer identifiers.
-#' @return Character vector: "resolved" followed by "<id>"/"<id>_comment" pairs.
-#' @noRd
-workflow_columns <- function(fork_reviewers = NULL, signoff_reviewers = NULL) {
-  if (is.null(fork_reviewers)) fork_reviewers <- review_config()$fork_reviewers
-  if (is.null(signoff_reviewers)) signoff_reviewers <- review_config()$signoff_reviewers
-  c(
-    "resolved",
-    unlist(lapply(fork_reviewers, function(r) c(r, paste0(r, "_comment")))),
-    unlist(lapply(signoff_reviewers, function(r) c(r, paste0(r, "_comment"))))
-  )
-}
-
-#' Build the full canonical Comments-sheet column set for a reviewer set
-#' @inheritParams workflow_columns
-#' @return Character vector of column names.
-#' @noRd
-canonical_columns <- function(fork_reviewers = NULL, signoff_reviewers = NULL) {
-  c(METADATA_COLUMNS, workflow_columns(fork_reviewers, signoff_reviewers), SYSTEM_COLUMNS)
-}
+WORKFLOW_COLUMNS <- c(
+  "resolved",
+  "jka",
+  "jka_comment",
+  "darina",
+  "darina_comment",
+  "zhao",
+  "zhao_comment",
+  "wolfson",
+  "wolfson_comment"
+)
 
 SYSTEM_COLUMNS <- c(
   "doc_status",
@@ -532,6 +419,8 @@ SYSTEM_COLUMNS <- c(
   "reply_to_id",
   "duplicate_count"
 )
+
+CANONICAL_COLUMNS <- c(METADATA_COLUMNS, WORKFLOW_COLUMNS, SYSTEM_COLUMNS)
 
 REDLINE_METADATA_COLUMNS <- c(
   "file",
@@ -543,23 +432,22 @@ REDLINE_METADATA_COLUMNS <- c(
   "is_toc_or_lof"
 )
 
-#' Build the redline workflow columns for a reviewer set
-#' @inheritParams workflow_columns
-#' @return Character vector: "is_comment" followed by \code{workflow_columns()}.
-#' @noRd
-redline_workflow_columns <- function(fork_reviewers = NULL, signoff_reviewers = NULL) {
-  c("is_comment", workflow_columns(fork_reviewers, signoff_reviewers))
-}
-
-#' Build the full canonical SuggestedChanges-sheet column set for a reviewer set
-#' @inheritParams workflow_columns
-#' @return Character vector of column names.
-#' @noRd
-redline_canonical_columns <- function(fork_reviewers = NULL, signoff_reviewers = NULL) {
-  c(REDLINE_METADATA_COLUMNS, redline_workflow_columns(fork_reviewers, signoff_reviewers), REDLINE_SYSTEM_COLUMNS)
-}
+REDLINE_WORKFLOW_COLUMNS <- c(
+  "is_comment",
+  "resolved",
+  "jka",
+  "jka_comment",
+  "darina",
+  "darina_comment",
+  "zhao",
+  "zhao_comment",
+  "wolfson",
+  "wolfson_comment"
+)
 
 REDLINE_SYSTEM_COLUMNS <- c("doc_status", "pipeline_stage")
+
+REDLINE_CANONICAL_COLUMNS <- c(REDLINE_METADATA_COLUMNS, REDLINE_WORKFLOW_COLUMNS, REDLINE_SYSTEM_COLUMNS)
 
 COMMENTS_DEFAULT_HIDDEN_COLUMNS <- c(
   "comment_id", "author", "date", "selected_text", "paragraph_number",
@@ -672,22 +560,12 @@ clean_review_text <- function(text) {
 
 #' Extract Clean Stem from DOCX Filename
 #' @param filename DOCX filename or path
-#' @param reviewer_ids Character vector of configured reviewer identifiers to
-#'   also recognize as a trailing filename suffix (e.g. a fork whose id is
-#'   longer than the generic 2-4 upper / 2-3 lower initials pattern already
-#'   covers). Defaults to the currently configured \code{\link{review_config}}
-#'   fork and sign-off reviewers.
 #' @return Clean lowercased stem string
 #' @noRd
-extract_docx_stem <- function(filename, reviewer_ids = NULL) {
-  if (is.null(reviewer_ids)) {
-    cfg <- review_config()
-    reviewer_ids <- c(cfg$fork_reviewers, cfg$signoff_reviewers)
-  }
+extract_docx_stem <- function(filename) {
   stem <- tools::file_path_sans_ext(basename(filename))
   stem <- sub("_?\\d{1,2}_\\d{1,2}_\\d{2,4}$", "", stem)
-  reviewer_alt <- if (length(reviewer_ids) > 0) paste0("|", paste(reviewer_ids, collapse = "|")) else ""
-  stem <- sub(paste0("_([A-Z]{2,4}|[a-z]{2,3}", reviewer_alt, ")$"), "", stem)
+  stem <- sub("_([A-Z]{2,4}|[a-z]{2,3}|zhao)$", "", stem)
   stem <- sub("_+$", "", stem)
   tolower(stem)
 }
@@ -718,6 +596,10 @@ find_pipeline_manifest <- function(start_dir = NULL) {
     candidates,
     file.path(getwd(), "analysis", "2024_09", "reports_to_render.xlsx")
   )
+  env_root <- Sys.getenv("TEMPLECBE_ANALYSIS_ROOT", unset = NA)
+  if (!is.na(env_root) && nzchar(env_root)) {
+    candidates <- c(candidates, file.path(env_root, "analysis", "2024_09", "reports_to_render.xlsx"))
+  }
   for (cand in candidates) {
     if (file.exists(cand)) return(normalizePath(cand, mustWork = TRUE))
   }
@@ -899,9 +781,13 @@ build_docxwalk_df <- function(files, catalog, qmd_index = NULL) {
 find_default_review_input_dir <- function() {
   candidates <- c(
     file.path(getwd(), "tasks", "edits"),
-    file.path(getwd(), "tasks", "to_do", "review_tracker"),
-    getwd()
+    file.path(getwd(), "tasks", "to_do", "review_tracker")
   )
+  env_root <- Sys.getenv("TEMPLECBE_ANALYSIS_ROOT", unset = NA)
+  if (!is.na(env_root) && nzchar(env_root)) {
+    candidates <- c(candidates, file.path(env_root, "tasks", "edits"))
+  }
+  candidates <- c(candidates, getwd())
   for (c in candidates) {
     if (dir.exists(c) && length(list.files(c, pattern = "\\.docx$", ignore.case = TRUE)) > 0) {
       return(c)
@@ -1515,14 +1401,11 @@ has_review_feedback <- function(row, ignored_cols) {
 #' @param existing_headers Existing header names
 #' @param catalog Pipeline catalog
 #' @param scanned_files Vector of scanned files
-#' @param fork_reviewers Character vector of fork-reviewer identifiers; defaults to \code{\link{review_config}}.
-#' @param signoff_reviewers Character vector of sign-off reviewer identifiers; defaults to \code{\link{review_config}}.
 #' @return List with columns and merged rows
 #' @noRd
-merge_comments <- function(incoming_comments, existing_rows, existing_headers, catalog, scanned_files,
-                           fork_reviewers = NULL, signoff_reviewers = NULL) {
+merge_comments <- function(incoming_comments, existing_rows, existing_headers, catalog, scanned_files) {
   # Build full column list
-  all_columns <- canonical_columns(fork_reviewers, signoff_reviewers)
+  all_columns <- CANONICAL_COLUMNS
   for (col in existing_headers) {
     if (!col %in% all_columns) all_columns <- c(all_columns, col)
   }
@@ -1719,13 +1602,10 @@ merge_revisions <- function(incoming_revisions, existing_revisions, catalog, sca
 #' @param existing_headers Existing header names
 #' @param catalog Pipeline catalog
 #' @param scanned_files Vector of scanned files
-#' @param fork_reviewers Character vector of fork-reviewer identifiers; defaults to \code{\link{review_config}}.
-#' @param signoff_reviewers Character vector of sign-off reviewer identifiers; defaults to \code{\link{review_config}}.
 #' @return List with columns and merged rows
 #' @noRd
-merge_redlines <- function(incoming_redlines, existing_rows, existing_headers, catalog, scanned_files,
-                           fork_reviewers = NULL, signoff_reviewers = NULL) {
-  all_columns <- redline_canonical_columns(fork_reviewers, signoff_reviewers)
+merge_redlines <- function(incoming_redlines, existing_rows, existing_headers, catalog, scanned_files) {
+  all_columns <- REDLINE_CANONICAL_COLUMNS
   for (col in existing_headers) {
     if (!col %in% all_columns) all_columns <- c(all_columns, col)
   }
@@ -1846,34 +1726,16 @@ merge_redlines <- function(incoming_redlines, existing_rows, existing_headers, c
 #' Drop Other Reviewers' Columns for Fork View
 #' @param reviewer Current reviewer
 #' @param fork_reviewers Vector of all fork reviewers
-#' @param signoff_reviewers Vector of sign-off reviewers (always hidden from every fork)
 #' @return Vector of column names to omit
 #' @noRd
-reviewer_fork_drop_columns <- function(reviewer, fork_reviewers, signoff_reviewers = character(0)) {
-  drop <- unlist(lapply(signoff_reviewers, function(r) c(r, paste0(r, "_comment"))))
+reviewer_fork_drop_columns <- function(reviewer, fork_reviewers) {
+  drop <- c("wolfson", "wolfson_comment")
   for (other in fork_reviewers) {
     if (other != reviewer) {
       drop <- c(drop, other, paste0(other, "_comment"))
     }
   }
   drop
-}
-
-#' Build a live Excel formula that ANDs together each fork reviewer's TRUE/"TRUE" cell
-#' @param col_letters Named character vector of column letters, one per fork reviewer
-#'   (NA entries, meaning that reviewer has no column in this sheet, are dropped).
-#' @param row_num Row number the formula is being written for.
-#' @return A formula string starting with "=", or NULL if no reviewer columns are present.
-#' @noRd
-build_resolved_formula <- function(col_letters, row_num) {
-  col_letters <- col_letters[!is.na(col_letters)]
-  if (length(col_letters) == 0) return(NULL)
-  clauses <- vapply(
-    col_letters,
-    function(cl) sprintf('OR(%s%d=TRUE,%s%d="TRUE")', cl, row_num, cl, row_num),
-    character(1)
-  )
-  sprintf('=IF(AND(%s), TRUE, FALSE)', paste(clauses, collapse = ","))
 }
 
 #' Write Formatted Review Tracker Excel Workbook
@@ -1888,18 +1750,12 @@ write_review_tracker_excel <- function(columns,
                                        redline_columns,
                                        redlines_rows,
                                        existing_docs,
-                                       fork_reviewers = NULL,
-                                       signoff_reviewers = NULL,
-                                       documents_sheet_mode = NULL,
+                                       fork_reviewers = c("jka", "darina", "zhao"),
                                        reviewer_view = NULL) {
-  if (is.null(fork_reviewers)) fork_reviewers <- review_config()$fork_reviewers
-  if (is.null(signoff_reviewers)) signoff_reviewers <- review_config()$signoff_reviewers
-  if (is.null(documents_sheet_mode)) documents_sheet_mode <- review_config()$documents_sheet_mode
-
   wb <- openxlsx::createWorkbook()
 
   if (!is.null(reviewer_view)) {
-    drop_cols <- reviewer_fork_drop_columns(reviewer_view, fork_reviewers, signoff_reviewers)
+    drop_cols <- reviewer_fork_drop_columns(reviewer_view, fork_reviewers)
     sheet_columns <- columns[!columns %in% drop_cols]
     sheet_redline_columns <- redline_columns[!redline_columns %in% drop_cols]
   } else {
@@ -1943,12 +1799,10 @@ write_review_tracker_excel <- function(columns,
   # ---------------------------------------------------------------------------
   openxlsx::addWorksheet(wb, "Comments")
   col_map <- stats::setNames(seq_along(sheet_columns), sheet_columns)
-  reviewer_col_letters <- stats::setNames(
-    vapply(fork_reviewers, function(r) if (r %in% names(col_map)) openxlsx::int2col(col_map[[r]]) else NA_character_, character(1)),
-    fork_reviewers
-  )
+  col_jka <- if ("jka" %in% names(col_map)) openxlsx::int2col(col_map[["jka"]]) else NULL
+  col_darina <- if ("darina" %in% names(col_map)) openxlsx::int2col(col_map[["darina"]]) else NULL
+  col_zhao <- if ("zhao" %in% names(col_map)) openxlsx::int2col(col_map[["zhao"]]) else NULL
   col_resolved <- if ("resolved" %in% names(col_map)) openxlsx::int2col(col_map[["resolved"]]) else NULL
-  all_reviewer_ids <- c(fork_reviewers, signoff_reviewers)
 
   # Write Header
   for (ci in seq_along(sheet_columns)) {
@@ -1956,7 +1810,7 @@ write_review_tracker_excel <- function(columns,
     openxlsx::writeData(wb, "Comments", cn, startCol = ci, startRow = 1)
     fill_st <- if (cn %in% METADATA_COLUMNS) header_fill_styles$metadata
       else if (cn == "resolved") header_fill_styles$resolved
-      else if (cn %in% workflow_columns(fork_reviewers, signoff_reviewers)) header_fill_styles$workflow
+      else if (cn %in% WORKFLOW_COLUMNS) header_fill_styles$workflow
       else header_fill_styles$system
     openxlsx::addStyle(wb, "Comments", fill_st, rows = 1, cols = ci, stack = TRUE)
     openxlsx::addStyle(wb, "Comments", font_title_style, rows = 1, cols = ci, stack = TRUE)
@@ -1971,19 +1825,22 @@ write_review_tracker_excel <- function(columns,
         val <- comments_rows[[cn]][ri]
 
         if (cn == "resolved") {
-          formula_str <- build_resolved_formula(reviewer_col_letters, row_num)
-          if (!is.null(formula_str)) {
+          if (!is.null(col_jka) && !is.null(col_darina) && !is.null(col_zhao)) {
+            formula_str <- sprintf(
+              '=IF(AND(OR(%s%d=TRUE,%s%d="TRUE"),OR(%s%d=TRUE,%s%d="TRUE"),OR(%s%d=TRUE,%s%d="TRUE")), TRUE, FALSE)',
+              col_jka, row_num, col_jka, row_num,
+              col_darina, row_num, col_darina, row_num,
+              col_zhao, row_num, col_zhao, row_num
+            )
             openxlsx::writeFormula(wb, "Comments", formula_str, startCol = ci, startRow = row_num)
           } else {
-            resolved_val <- if (length(fork_reviewers) == 0) {
-              FALSE
-            } else {
-              all(vapply(fork_reviewers, function(r) is_review_true(comments_rows[[r]][ri]), logical(1)))
-            }
-            openxlsx::writeData(wb, "Comments", resolved_val, startCol = ci, startRow = row_num)
+            j_val <- is_review_true(comments_rows$jka[ri])
+            d_val <- is_review_true(comments_rows$darina[ri])
+            z_val <- is_review_true(comments_rows$zhao[ri])
+            openxlsx::writeData(wb, "Comments", (j_val && d_val && z_val), startCol = ci, startRow = row_num)
           }
           openxlsx::addStyle(wb, "Comments", font_regular_center, rows = row_num, cols = ci, stack = TRUE)
-        } else if (cn %in% all_reviewer_ids) {
+        } else if (cn %in% c("jka", "darina", "zhao", "wolfson")) {
           b_val <- if (is.na(val) || !nzchar(as.character(val))) NA else is_review_true(val)
           openxlsx::writeData(wb, "Comments", b_val, startCol = ci, startRow = row_num)
           openxlsx::addStyle(wb, "Comments", font_regular_center, rows = row_num, cols = ci, stack = TRUE)
@@ -2000,7 +1857,7 @@ write_review_tracker_excel <- function(columns,
     }
 
     # Data Validation
-    for (cn in all_reviewer_ids) {
+    for (cn in c("jka", "darina", "zhao", "wolfson")) {
       if (cn %in% names(col_map)) {
         openxlsx::dataValidation(
           wb, "Comments", cols = col_map[[cn]], rows = 2:(n_c_rows + 1L),
@@ -2072,19 +1929,17 @@ write_review_tracker_excel <- function(columns,
   # ---------------------------------------------------------------------------
   openxlsx::addWorksheet(wb, "SuggestedChanges")
   rl_col_map <- stats::setNames(seq_along(sheet_redline_columns), sheet_redline_columns)
-  rl_reviewer_col_letters <- stats::setNames(
-    vapply(fork_reviewers, function(r) if (r %in% names(rl_col_map)) openxlsx::int2col(rl_col_map[[r]]) else NA_character_, character(1)),
-    fork_reviewers
-  )
+  rl_col_jka <- if ("jka" %in% names(rl_col_map)) openxlsx::int2col(rl_col_map[["jka"]]) else NULL
+  rl_col_darina <- if ("darina" %in% names(rl_col_map)) openxlsx::int2col(rl_col_map[["darina"]]) else NULL
+  rl_col_zhao <- if ("zhao" %in% names(rl_col_map)) openxlsx::int2col(rl_col_map[["zhao"]]) else NULL
   rl_col_resolved <- if ("resolved" %in% names(rl_col_map)) openxlsx::int2col(rl_col_map[["resolved"]]) else NULL
-  rl_reviewer_comment_cols <- paste0(all_reviewer_ids, "_comment")
 
   for (ci in seq_along(sheet_redline_columns)) {
     cn <- sheet_redline_columns[ci]
     openxlsx::writeData(wb, "SuggestedChanges", cn, startCol = ci, startRow = 1)
     fill_st <- if (cn %in% REDLINE_METADATA_COLUMNS) header_fill_styles$redline
       else if (cn == "resolved") header_fill_styles$resolved
-      else if (cn %in% redline_workflow_columns(fork_reviewers, signoff_reviewers)) header_fill_styles$workflow
+      else if (cn %in% REDLINE_WORKFLOW_COLUMNS) header_fill_styles$workflow
       else header_fill_styles$system
     openxlsx::addStyle(wb, "SuggestedChanges", fill_st, rows = 1, cols = ci, stack = TRUE)
     openxlsx::addStyle(wb, "SuggestedChanges", font_title_style, rows = 1, cols = ci, stack = TRUE)
@@ -2099,19 +1954,22 @@ write_review_tracker_excel <- function(columns,
         val <- redlines_rows[[cn]][ri]
 
         if (cn == "resolved") {
-          formula_str <- build_resolved_formula(rl_reviewer_col_letters, row_num)
-          if (!is.null(formula_str)) {
+          if (!is.null(rl_col_jka) && !is.null(rl_col_darina) && !is.null(rl_col_zhao)) {
+            formula_str <- sprintf(
+              '=IF(AND(OR(%s%d=TRUE,%s%d="TRUE"),OR(%s%d=TRUE,%s%d="TRUE"),OR(%s%d=TRUE,%s%d="TRUE")), TRUE, FALSE)',
+              rl_col_jka, row_num, rl_col_jka, row_num,
+              rl_col_darina, row_num, rl_col_darina, row_num,
+              rl_col_zhao, row_num, rl_col_zhao, row_num
+            )
             openxlsx::writeFormula(wb, "SuggestedChanges", formula_str, startCol = ci, startRow = row_num)
           } else {
-            resolved_val <- if (length(fork_reviewers) == 0) {
-              FALSE
-            } else {
-              all(vapply(fork_reviewers, function(r) is_review_true(redlines_rows[[r]][ri]), logical(1)))
-            }
-            openxlsx::writeData(wb, "SuggestedChanges", resolved_val, startCol = ci, startRow = row_num)
+            j_val <- is_review_true(redlines_rows$jka[ri])
+            d_val <- is_review_true(redlines_rows$darina[ri])
+            z_val <- is_review_true(redlines_rows$zhao[ri])
+            openxlsx::writeData(wb, "SuggestedChanges", (j_val && d_val && z_val), startCol = ci, startRow = row_num)
           }
           openxlsx::addStyle(wb, "SuggestedChanges", font_regular_center, rows = row_num, cols = ci, stack = TRUE)
-        } else if (cn %in% c("is_comment", "is_toc_or_lof", all_reviewer_ids)) {
+        } else if (cn %in% c("is_comment", "is_toc_or_lof", "jka", "darina", "zhao", "wolfson")) {
           b_val <- if (is.na(val) || !nzchar(as.character(val))) NA else is_review_true(val)
           openxlsx::writeData(wb, "SuggestedChanges", b_val, startCol = ci, startRow = row_num)
           openxlsx::addStyle(wb, "SuggestedChanges", font_regular_center, rows = row_num, cols = ci, stack = TRUE)
@@ -2122,14 +1980,14 @@ write_review_tracker_excel <- function(columns,
         } else {
           txt_val <- if (is.na(val)) "" else as.character(val)
           openxlsx::writeData(wb, "SuggestedChanges", txt_val, startCol = ci, startRow = row_num)
-          st <- if (cn %in% c("original_text", "accepted_text", rl_reviewer_comment_cols)) font_regular_left else font_regular_center
+          st <- if (cn %in% c("original_text", "accepted_text", "jka_comment", "darina_comment", "zhao_comment", "wolfson_comment")) font_regular_left else font_regular_center
           openxlsx::addStyle(wb, "SuggestedChanges", st, rows = row_num, cols = ci, stack = TRUE)
         }
       }
     }
 
     # Data Validation
-    for (cn in c("is_comment", all_reviewer_ids)) {
+    for (cn in c("is_comment", "jka", "darina", "zhao", "wolfson")) {
       if (cn %in% names(rl_col_map)) {
         openxlsx::dataValidation(
           wb, "SuggestedChanges", cols = rl_col_map[[cn]], rows = 2:(n_rl_rows + 1L),
@@ -2155,44 +2013,20 @@ write_review_tracker_excel <- function(columns,
   for (ci in seq_along(sheet_redline_columns)) {
     cn <- sheet_redline_columns[ci]
     is_hidden <- cn %in% REDLINE_DEFAULT_HIDDEN_COLUMNS
-    w <- if (cn %in% c("original_text", "accepted_text", rl_reviewer_comment_cols)) 50 else if (cn == "file") 32 else 15
+    w <- if (cn %in% c("original_text", "accepted_text", "jka_comment", "darina_comment", "zhao_comment", "wolfson_comment")) 50 else if (cn == "file") 32 else 15
     openxlsx::setColWidths(wb, "SuggestedChanges", cols = ci, widths = w, hidden = is_hidden)
   }
   openxlsx::freezePane(wb, "SuggestedChanges", firstActiveRow = 2, firstActiveCol = 3)
 
   # ---------------------------------------------------------------------------
-  # Sheet 4: Documents (+ one "Documents_<id>" sheet per reviewer when
-  # documents_sheet_mode = "per_reviewer")
+  # Sheet 4: Documents
   # ---------------------------------------------------------------------------
   openxlsx::addWorksheet(wb, "Documents")
-
-  nd <- length(fork_reviewers)
-  ns <- length(signoff_reviewers)
-  per_reviewer_mode <- identical(documents_sheet_mode, "per_reviewer")
-
-  if (per_reviewer_mode) {
-    doc_headers <- c(
-      "file", "pipeline_stage", "comment_count", "resolved_comment_count",
-      "reply_count", "tracked_change_count", "resolved"
-    )
-    detail_cols <- integer(0)
-    resolved_col <- 7L
-    signoff_cols <- integer(0)
-  } else {
-    detail_start <- 7L
-    detail_cols <- if (nd > 0) detail_start:(detail_start + nd - 1L) else integer(0)
-    resolved_col <- detail_start + nd
-    signoff_start <- resolved_col + 1L
-    signoff_cols <- if (ns > 0) signoff_start:(signoff_start + 2L * ns - 1L) else integer(0)
-
-    doc_headers <- c(
-      "file", "pipeline_stage", "comment_count", "resolved_comment_count",
-      "reply_count", "tracked_change_count",
-      fork_reviewers,
-      "resolved",
-      unlist(lapply(signoff_reviewers, function(r) c(r, paste0(r, "_comment"))))
-    )
-  }
+  doc_headers <- c(
+    "file", "pipeline_stage", "comment_count", "resolved_comment_count",
+    "reply_count", "tracked_change_count", "jka", "darina", "zhao",
+    "resolved", "wolfson", "wolfson_comment"
+  )
 
   for (ci in seq_along(doc_headers)) {
     h <- doc_headers[ci]
@@ -2211,34 +2045,6 @@ write_review_tracker_excel <- function(columns,
 
   doc_map <- if (!is.null(existing_docs)) existing_docs else list()
   SUMPRODUCT_BOUND <- 5000L
-
-  # Per-reviewer sheets (only in "per_reviewer" mode): a fork reviewer gets a
-  # read-only rollup column, a sign-off reviewer gets a status + comment pair.
-  reviewer_sheet_names <- list()
-  if (per_reviewer_mode) {
-    for (rid in fork_reviewers) {
-      sheet_name <- paste0("Documents_", rid)
-      openxlsx::addWorksheet(wb, sheet_name)
-      headers <- c("file", "pipeline_stage", rid)
-      for (ci in seq_along(headers)) {
-        openxlsx::writeData(wb, sheet_name, headers[ci], startCol = ci, startRow = 1)
-        openxlsx::addStyle(wb, sheet_name, if (ci <= 2) header_fill_styles$docs else header_fill_styles$workflow, rows = 1, cols = ci, stack = TRUE)
-        openxlsx::addStyle(wb, sheet_name, font_title_style, rows = 1, cols = ci, stack = TRUE)
-      }
-      reviewer_sheet_names[[rid]] <- sheet_name
-    }
-    for (rid in signoff_reviewers) {
-      sheet_name <- paste0("Documents_", rid)
-      openxlsx::addWorksheet(wb, sheet_name)
-      headers <- c("file", "pipeline_stage", rid, paste0(rid, "_comment"))
-      for (ci in seq_along(headers)) {
-        openxlsx::writeData(wb, sheet_name, headers[ci], startCol = ci, startRow = 1)
-        openxlsx::addStyle(wb, sheet_name, if (ci <= 2) header_fill_styles$docs else header_fill_styles$workflow, rows = 1, cols = ci, stack = TRUE)
-        openxlsx::addStyle(wb, sheet_name, font_title_style, rows = 1, cols = ci, stack = TRUE)
-      }
-      reviewer_sheet_names[[rid]] <- sheet_name
-    }
-  }
 
   for (ri in seq_along(sorted_docs)) {
     row_num <- ri + 1L
@@ -2275,12 +2081,9 @@ write_review_tracker_excel <- function(columns,
     openxlsx::writeData(wb, "Documents", nrow(f_revisions), startCol = 6, startRow = row_num)
     openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 6, stack = TRUE)
 
-    # Per-fork-reviewer rollup: a live formula referencing that reviewer's
-    # Comments/SuggestedChanges column when found, else a plain computed
-    # boolean. Written to its own "Documents" column in "columns" mode, or
-    # to that reviewer's own "Documents_<id>" sheet in "per_reviewer" mode.
+    # Reviewer rollups (jka = col 7, darina = col 8, zhao = col 9)
     doc_reviewer_rollup <- function(rev_id, c_col, rl_col) {
-      if (!is.null(c_col) && !is.na(c_col) && !is.null(rl_col) && !is.na(rl_col)) {
+      if (!is.null(c_col) && !is.null(rl_col)) {
         sprintf(
           '=IF(AND(SUMPRODUCT((Comments!$A$2:$A$%d=A%d)*((Comments!$%s$2:$%s$%d=TRUE)+(Comments!$%s$2:$%s$%d="TRUE"))) = COUNTIF(Comments!$A:$A, A%d), SUMPRODUCT((SuggestedChanges!$A$2:$A$%d=A%d)*((SuggestedChanges!$%s$2:$%s$%d=TRUE)+(SuggestedChanges!$%s$2:$%s$%d="TRUE"))) = COUNTIF(SuggestedChanges!$A:$A, A%d)), TRUE, FALSE)',
           SUMPRODUCT_BOUND, row_num, c_col, c_col, SUMPRODUCT_BOUND, c_col, c_col, SUMPRODUCT_BOUND, row_num,
@@ -2294,156 +2097,75 @@ write_review_tracker_excel <- function(columns,
       }
     }
 
-    for (k in seq_along(fork_reviewers)) {
-      rid <- fork_reviewers[k]
-      rollup <- doc_reviewer_rollup(rid, reviewer_col_letters[[rid]], rl_reviewer_col_letters[[rid]])
-      is_formula <- is.character(rollup) && startsWith(rollup, "=")
-
-      target_sheet <- if (per_reviewer_mode) reviewer_sheet_names[[rid]] else "Documents"
-      target_col <- if (per_reviewer_mode) 3L else detail_cols[k]
-
-      if (per_reviewer_mode) {
-        openxlsx::writeData(wb, target_sheet, fname, startCol = 1, startRow = row_num)
-        openxlsx::addStyle(wb, target_sheet, font_regular_left, rows = row_num, cols = 1, stack = TRUE)
-        openxlsx::writeData(wb, target_sheet, doc_stage, startCol = 2, startRow = row_num)
-        openxlsx::addStyle(wb, target_sheet, font_regular_left, rows = row_num, cols = 2, stack = TRUE)
-      }
-      if (is_formula) {
-        openxlsx::writeFormula(wb, target_sheet, rollup, startCol = target_col, startRow = row_num)
-      } else {
-        openxlsx::writeData(wb, target_sheet, isTRUE(rollup), startCol = target_col, startRow = row_num)
-      }
-      openxlsx::addStyle(wb, target_sheet, font_regular_center, rows = row_num, cols = target_col, stack = TRUE)
-    }
-
-    # Resolved: AND of every fork reviewer's rollup condition, computed
-    # directly (independent of Documents-sheet layout so it works the same
-    # in both documents_sheet_mode settings).
-    if (nd == 0) {
-      openxlsx::writeData(wb, "Documents", FALSE, startCol = resolved_col, startRow = row_num)
+    # JKA (col 7)
+    jka_rollup <- doc_reviewer_rollup("jka", col_jka, rl_col_jka)
+    if (is.character(jka_rollup) && startsWith(jka_rollup, "=")) {
+      openxlsx::writeFormula(wb, "Documents", jka_rollup, startCol = 7, startRow = row_num)
     } else {
-      formula_clauses <- character(0)
-      bool_results <- logical(0)
-      for (rid in fork_reviewers) {
-        c_col <- reviewer_col_letters[[rid]]
-        rl_col <- rl_reviewer_col_letters[[rid]]
-        if (!is.null(c_col) && !is.na(c_col) && !is.null(rl_col) && !is.na(rl_col)) {
-          formula_clauses <- c(
-            formula_clauses,
-            sprintf(
-              'SUMPRODUCT((Comments!$A$2:$A$%d=A%d)*((Comments!$%s$2:$%s$%d=TRUE)+(Comments!$%s$2:$%s$%d="TRUE"))) = COUNTIF(Comments!$A:$A, A%d)',
-              SUMPRODUCT_BOUND, row_num, c_col, c_col, SUMPRODUCT_BOUND, c_col, c_col, SUMPRODUCT_BOUND, row_num
-            ),
-            sprintf(
-              'SUMPRODUCT((SuggestedChanges!$A$2:$A$%d=A%d)*((SuggestedChanges!$%s$2:$%s$%d=TRUE)+(SuggestedChanges!$%s$2:$%s$%d="TRUE"))) = COUNTIF(SuggestedChanges!$A:$A, A%d)',
-              SUMPRODUCT_BOUND, row_num, rl_col, rl_col, SUMPRODUCT_BOUND, rl_col, rl_col, SUMPRODUCT_BOUND, row_num
-            )
-          )
-        } else if (nrow(f_comments) == 0 && nrow(f_redlines) == 0) {
-          bool_results <- c(bool_results, FALSE)
-        } else {
-          c_all <- if (rid %in% names(f_comments)) isTRUE(all(vapply(f_comments[[rid]], is_review_true, logical(1)))) else FALSE
-          rl_all <- if (rid %in% names(f_redlines)) isTRUE(all(vapply(f_redlines[[rid]], is_review_true, logical(1)))) else FALSE
-          bool_results <- c(bool_results, c_all && rl_all)
-        }
-      }
-
-      if (length(formula_clauses) == 0) {
-        openxlsx::writeData(wb, "Documents", all(bool_results), startCol = resolved_col, startRow = row_num)
-      } else {
-        bool_terms <- vapply(bool_results, function(b) if (isTRUE(b)) "TRUE()" else "FALSE()", character(1))
-        formula_doc_resolved <- sprintf('=IF(AND(%s), TRUE, FALSE)', paste(c(formula_clauses, bool_terms), collapse = ", "))
-        openxlsx::writeFormula(wb, "Documents", formula_doc_resolved, startCol = resolved_col, startRow = row_num)
-      }
+      openxlsx::writeData(wb, "Documents", isTRUE(jka_rollup), startCol = 7, startRow = row_num)
     }
-    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = resolved_col, stack = TRUE)
+    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 7, stack = TRUE)
 
-    # Sign-off reviewers: a document-level status + free-text comment,
-    # manually entered on the Documents sheet (or its own per-reviewer
-    # sheet), read back from the previous run's existing_docs.
+    # Darina (col 8)
+    darina_rollup <- doc_reviewer_rollup("darina", col_darina, rl_col_darina)
+    if (is.character(darina_rollup) && startsWith(darina_rollup, "=")) {
+      openxlsx::writeFormula(wb, "Documents", darina_rollup, startCol = 8, startRow = row_num)
+    } else {
+      openxlsx::writeData(wb, "Documents", isTRUE(darina_rollup), startCol = 8, startRow = row_num)
+    }
+    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 8, stack = TRUE)
+
+    # Zhao (col 9)
+    zhao_rollup <- doc_reviewer_rollup("zhao", col_zhao, rl_col_zhao)
+    if (is.character(zhao_rollup) && startsWith(zhao_rollup, "=")) {
+      openxlsx::writeFormula(wb, "Documents", zhao_rollup, startCol = 9, startRow = row_num)
+    } else {
+      openxlsx::writeData(wb, "Documents", isTRUE(zhao_rollup), startCol = 9, startRow = row_num)
+    }
+    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 9, stack = TRUE)
+
+    # Resolved (col 10)
+    formula_doc_resolved <- sprintf('=IF(AND(G%d=TRUE, H%d=TRUE, I%d=TRUE), TRUE, FALSE)', row_num, row_num, row_num)
+    openxlsx::writeFormula(wb, "Documents", formula_doc_resolved, startCol = 10, startRow = row_num)
+    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 10, stack = TRUE)
+
+    # Wolfson (col 11) and comment (col 12)
     dfb <- if (fname %in% names(doc_map)) doc_map[[fname]] else list()
-    for (k in seq_along(signoff_reviewers)) {
-      rid <- signoff_reviewers[k]
-      raw_val <- dfb[[rid]]
-      raw_cmt <- dfb[[paste0(rid, "_comment")]]
-      w_val <- if (!is.null(raw_val) && !is.na(raw_val)) is_review_true(raw_val) else NA
-      wc_val <- if (!is.null(raw_cmt) && !is.na(raw_cmt)) as.character(raw_cmt) else ""
+    w_val <- if (!is.null(dfb$wolfson) && !is.na(dfb$wolfson)) is_review_true(dfb$wolfson) else NA
+    wc_val <- if (!is.null(dfb$wolfson_comment) && !is.na(dfb$wolfson_comment)) as.character(dfb$wolfson_comment) else ""
 
-      target_sheet <- if (per_reviewer_mode) reviewer_sheet_names[[rid]] else "Documents"
-      val_col <- if (per_reviewer_mode) 3L else signoff_cols[(k - 1L) * 2L + 1L]
-      cmt_col <- if (per_reviewer_mode) 4L else signoff_cols[(k - 1L) * 2L + 2L]
+    openxlsx::writeData(wb, "Documents", w_val, startCol = 11, startRow = row_num)
+    openxlsx::addStyle(wb, "Documents", font_regular_center, rows = row_num, cols = 11, stack = TRUE)
 
-      if (per_reviewer_mode) {
-        openxlsx::writeData(wb, target_sheet, fname, startCol = 1, startRow = row_num)
-        openxlsx::addStyle(wb, target_sheet, font_regular_left, rows = row_num, cols = 1, stack = TRUE)
-        openxlsx::writeData(wb, target_sheet, doc_stage, startCol = 2, startRow = row_num)
-        openxlsx::addStyle(wb, target_sheet, font_regular_left, rows = row_num, cols = 2, stack = TRUE)
-      }
-      openxlsx::writeData(wb, target_sheet, w_val, startCol = val_col, startRow = row_num)
-      openxlsx::addStyle(wb, target_sheet, font_regular_center, rows = row_num, cols = val_col, stack = TRUE)
-      openxlsx::writeData(wb, target_sheet, wc_val, startCol = cmt_col, startRow = row_num)
-      openxlsx::addStyle(wb, target_sheet, font_regular_left, rows = row_num, cols = cmt_col, stack = TRUE)
-    }
+    openxlsx::writeData(wb, "Documents", wc_val, startCol = 12, startRow = row_num)
+    openxlsx::addStyle(wb, "Documents", font_regular_left, rows = row_num, cols = 12, stack = TRUE)
   }
 
   n_doc_rows <- length(sorted_docs)
   if (n_doc_rows > 0) {
-    if (per_reviewer_mode) {
-      # Data validation + conditional formatting live on each reviewer's own sheet.
-      for (rid in fork_reviewers) {
-        sheet_name <- reviewer_sheet_names[[rid]]
-        openxlsx::conditionalFormatting(wb, sheet_name, cols = 3, rows = 2:(n_doc_rows + 1L), rule = "TRUE", type = "contains", style = green_fill_style)
-        openxlsx::conditionalFormatting(wb, sheet_name, cols = 3, rows = 2:(n_doc_rows + 1L), rule = "FALSE", type = "contains", style = red_fill_style)
-      }
-      for (rid in signoff_reviewers) {
-        sheet_name <- reviewer_sheet_names[[rid]]
-        openxlsx::dataValidation(wb, sheet_name, cols = 3, rows = 2:(n_doc_rows + 1L), type = "list", value = '"TRUE,FALSE"')
-        openxlsx::conditionalFormatting(wb, sheet_name, cols = 3, rows = 2:(n_doc_rows + 1L), rule = "TRUE", type = "contains", style = green_fill_style)
-        openxlsx::conditionalFormatting(wb, sheet_name, cols = 3, rows = 2:(n_doc_rows + 1L), rule = "FALSE", type = "contains", style = red_fill_style)
-      }
-      openxlsx::conditionalFormatting(wb, "Documents", cols = resolved_col, rows = 2:(n_doc_rows + 1L), rule = "TRUE", type = "contains", style = green_fill_style)
-      openxlsx::conditionalFormatting(wb, "Documents", cols = resolved_col, rows = 2:(n_doc_rows + 1L), rule = "FALSE", type = "contains", style = red_fill_style)
-    } else {
-      # Data validation on each sign-off reviewer's status column
-      if (ns > 0) {
-        signoff_val_cols <- signoff_cols[seq(1L, length(signoff_cols), by = 2L)]
-        for (ci in signoff_val_cols) {
-          openxlsx::dataValidation(wb, "Documents", cols = ci, rows = 2:(n_doc_rows + 1L), type = "list", value = '"TRUE,FALSE"')
-        }
-      }
-      # Conditional formatting on the fork-reviewer rollup columns + resolved
-      for (ci in c(detail_cols, resolved_col)) {
-        openxlsx::conditionalFormatting(wb, "Documents", cols = ci, rows = 2:(n_doc_rows + 1L), rule = "TRUE", type = "contains", style = green_fill_style)
-        openxlsx::conditionalFormatting(wb, "Documents", cols = ci, rows = 2:(n_doc_rows + 1L), rule = "FALSE", type = "contains", style = red_fill_style)
-      }
+    # Data validation on Wolfson column (col 11)
+    openxlsx::dataValidation(
+      wb, "Documents", cols = 11, rows = 2:(n_doc_rows + 1L),
+      type = "list", value = '"TRUE,FALSE"'
+    )
+    # Conditional formatting on G:J (cols 7:10)
+    for (ci in 7:10) {
+      openxlsx::conditionalFormatting(
+        wb, "Documents", cols = ci, rows = 2:(n_doc_rows + 1L),
+        rule = "TRUE", type = "contains", style = green_fill_style
+      )
+      openxlsx::conditionalFormatting(
+        wb, "Documents", cols = ci, rows = 2:(n_doc_rows + 1L),
+        rule = "FALSE", type = "contains", style = red_fill_style
+      )
     }
   }
 
   openxlsx::setColWidths(wb, "Documents", cols = 1:2, widths = 40)
   openxlsx::setColWidths(wb, "Documents", cols = 3:6, widths = 22)
-  if (per_reviewer_mode) {
-    openxlsx::setColWidths(wb, "Documents", cols = resolved_col, widths = 14)
-    for (rid in fork_reviewers) {
-      openxlsx::setColWidths(wb, reviewer_sheet_names[[rid]], cols = 1:2, widths = 40)
-      openxlsx::setColWidths(wb, reviewer_sheet_names[[rid]], cols = 3, widths = 14)
-      openxlsx::freezePane(wb, reviewer_sheet_names[[rid]], firstActiveRow = 2, firstActiveCol = 1)
-    }
-    for (rid in signoff_reviewers) {
-      openxlsx::setColWidths(wb, reviewer_sheet_names[[rid]], cols = 1:2, widths = 40)
-      openxlsx::setColWidths(wb, reviewer_sheet_names[[rid]], cols = 3, widths = 14)
-      openxlsx::setColWidths(wb, reviewer_sheet_names[[rid]], cols = 4, widths = 40)
-      openxlsx::freezePane(wb, reviewer_sheet_names[[rid]], firstActiveRow = 2, firstActiveCol = 1)
-    }
-  } else {
-    if (nd > 0) openxlsx::setColWidths(wb, "Documents", cols = detail_cols, widths = 12)
-    openxlsx::setColWidths(wb, "Documents", cols = resolved_col, widths = 14)
-    if (ns > 0) {
-      signoff_val_cols <- signoff_cols[seq(1L, length(signoff_cols), by = 2L)]
-      signoff_cmt_cols <- signoff_cols[seq(2L, length(signoff_cols), by = 2L)]
-      openxlsx::setColWidths(wb, "Documents", cols = signoff_val_cols, widths = 14)
-      openxlsx::setColWidths(wb, "Documents", cols = signoff_cmt_cols, widths = 40)
-    }
-  }
+  openxlsx::setColWidths(wb, "Documents", cols = 7:9, widths = 12)
+  openxlsx::setColWidths(wb, "Documents", cols = 10:11, widths = 14)
+  openxlsx::setColWidths(wb, "Documents", cols = 12, widths = 40)
   openxlsx::freezePane(wb, "Documents", firstActiveRow = 2, firstActiveCol = 1)
 
   # ---------------------------------------------------------------------------
@@ -2545,14 +2267,8 @@ write_review_tracker_excel <- function(columns,
 # =============================================================================
 
 #' Build Documents Summary Tibble
-#' @param fork_reviewers Character vector of fork-reviewer identifiers; defaults to \code{\link{review_config}}.
-#' @param signoff_reviewers Character vector of sign-off reviewer identifiers; defaults to \code{\link{review_config}}.
 #' @noRd
-build_documents_summary_df <- function(processed_docs, comments_rows, revisions_rows, redlines_rows, catalog, existing_docs,
-                                       fork_reviewers = NULL, signoff_reviewers = NULL) {
-  if (is.null(fork_reviewers)) fork_reviewers <- review_config()$fork_reviewers
-  if (is.null(signoff_reviewers)) signoff_reviewers <- review_config()$signoff_reviewers
-
+build_documents_summary_df <- function(processed_docs, comments_rows, revisions_rows, redlines_rows, catalog, existing_docs) {
   all_files <- unique(c(basename(processed_docs), comments_rows$file))
   all_files <- all_files[!is.na(all_files) & nzchar(all_files)]
   ranks <- vapply(all_files, function(f) match_docx_to_pipeline(f, catalog)$rank, integer(1))
@@ -2568,38 +2284,29 @@ build_documents_summary_df <- function(processed_docs, comments_rows, revisions_
     stage <- match_docx_to_pipeline(f, catalog)$stage
 
     dfb <- if (f %in% names(doc_map)) doc_map[[f]] else list()
+    w_val <- if (!is.null(dfb$wolfson) && !is.na(dfb$wolfson)) is_review_true(dfb$wolfson) else NA
+    wc_val <- if (!is.null(dfb$wolfson_comment) && !is.na(dfb$wolfson_comment)) as.character(dfb$wolfson_comment) else ""
 
-    reviewer_vals <- stats::setNames(
-      lapply(fork_reviewers, function(r) {
-        if (r %in% names(fc) && nrow(fc) > 0) all(vapply(fc[[r]], is_review_true, logical(1))) else FALSE
-      }),
-      fork_reviewers
-    )
-    resolved_val <- if (length(fork_reviewers) == 0) FALSE else all(unlist(reviewer_vals))
+    jka_val <- if ("jka" %in% names(fc) && nrow(fc) > 0) all(vapply(fc$jka, is_review_true, logical(1))) else FALSE
+    darina_val <- if ("darina" %in% names(fc) && nrow(fc) > 0) all(vapply(fc$darina, is_review_true, logical(1))) else FALSE
+    zhao_val <- if ("zhao" %in% names(fc) && nrow(fc) > 0) all(vapply(fc$zhao, is_review_true, logical(1))) else FALSE
 
     resolved_count <- if ("resolved" %in% names(fc)) sum(vapply(fc$resolved, is_review_true, logical(1))) else 0L
 
-    signoff_vals <- list()
-    for (r in signoff_reviewers) {
-      raw_val <- dfb[[r]]
-      raw_cmt <- dfb[[paste0(r, "_comment")]]
-      signoff_vals[[r]] <- if (!is.null(raw_val) && !is.na(raw_val)) is_review_true(raw_val) else NA
-      signoff_vals[[paste0(r, "_comment")]] <- if (!is.null(raw_cmt) && !is.na(raw_cmt)) as.character(raw_cmt) else ""
-    }
-
-    tibble::as_tibble(c(
-      list(
-        file = f,
-        pipeline_stage = stage,
-        comment_count = nrow(fc),
-        resolved_comment_count = resolved_count,
-        reply_count = nrow(freplies),
-        tracked_change_count = nrow(fr)
-      ),
-      reviewer_vals,
-      list(resolved = resolved_val),
-      signoff_vals
-    ))
+    tibble::tibble(
+      file = f,
+      pipeline_stage = stage,
+      comment_count = nrow(fc),
+      resolved_comment_count = resolved_count,
+      reply_count = nrow(freplies),
+      tracked_change_count = nrow(fr),
+      jka = jka_val,
+      darina = darina_val,
+      zhao = zhao_val,
+      resolved = (jka_val && darina_val && zhao_val),
+      wolfson = w_val,
+      wolfson_comment = wc_val
+    )
   })
 
   if (length(rows) > 0) dplyr::bind_rows(rows) else tibble::tibble()
@@ -2636,26 +2343,9 @@ build_comment_summary_df <- function(comments_rows) {
   dplyr::bind_rows(rows)
 }
 
-#' Compute a "resolved" vector by ANDing each fork reviewer's column per row
-#' @param df Data frame containing one column per id in \code{fork_reviewers}.
-#' @param fork_reviewers Character vector of fork-reviewer identifiers.
-#' @return Logical vector, one entry per row of \code{df}.
-#' @noRd
-compute_resolved_vector <- function(df, fork_reviewers) {
-  n <- nrow(df)
-  if (n == 0) return(logical(0))
-  if (length(fork_reviewers) == 0) return(rep(FALSE, n))
-  per_reviewer <- lapply(fork_reviewers, function(r) vapply(df[[r]], is_review_true, logical(1)))
-  Reduce(`&`, per_reviewer)
-}
-
 #' Export Tabular Data to CSVs
-#' @param fork_reviewers Character vector of fork-reviewer identifiers; defaults to \code{\link{review_config}}.
 #' @noRd
-export_review_csvs <- function(output_dir, columns, comments_rows, revisions_rows, redline_columns, redlines_rows,
-                               fork_reviewers = NULL) {
-  if (is.null(fork_reviewers)) fork_reviewers <- review_config()$fork_reviewers
-
+export_review_csvs <- function(output_dir, columns, comments_rows, revisions_rows, redline_columns, redlines_rows) {
   c_csv <- file.path(output_dir, "comments.csv")
   r_csv <- file.path(output_dir, "tracked_changes.csv")
   rl_csv <- file.path(output_dir, "suggested_changes.csv")
@@ -2663,7 +2353,12 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
   # Clean comments for CSV
   c_df <- comments_rows
   if (nrow(c_df) > 0) {
-    c_df$resolved <- compute_resolved_vector(c_df, fork_reviewers)
+    for (i in seq_len(nrow(c_df))) {
+      j_ok <- is_review_true(c_df$jka[i])
+      d_ok <- is_review_true(c_df$darina[i])
+      z_ok <- is_review_true(c_df$zhao[i])
+      c_df$resolved[i] <- (j_ok && d_ok && z_ok)
+    }
     cols_present <- intersect(columns, names(c_df))
     utils::write.csv(c_df[, cols_present], file = c_csv, row.names = FALSE, fileEncoding = "UTF-8")
   } else {
@@ -2676,7 +2371,12 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
   # Suggested Changes / Redlines
   rl_df <- redlines_rows
   if (nrow(rl_df) > 0) {
-    rl_df$resolved <- compute_resolved_vector(rl_df, fork_reviewers)
+    for (i in seq_len(nrow(rl_df))) {
+      j_ok <- is_review_true(rl_df$jka[i])
+      d_ok <- is_review_true(rl_df$darina[i])
+      z_ok <- is_review_true(rl_df$zhao[i])
+      rl_df$resolved[i] <- (j_ok && d_ok && z_ok)
+    }
     cols_present <- intersect(redline_columns, names(rl_df))
     utils::write.csv(rl_df[, cols_present], file = rl_csv, row.names = FALSE, fileEncoding = "UTF-8")
   } else {

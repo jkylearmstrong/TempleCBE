@@ -20,13 +20,6 @@
 #' survival modeling against naive classification and regression proxies as discussed in
 #' clinical literature (e.g., Rizopoulos 2015, PMC4503792).
 #'
-#' Predictors are processed through the \pkg{hardhat} \code{\link[TempleCBE]{coxnet}}
-#' formula blueprint (one-hot dummy encoding, no intercept), the same preprocessing
-#' used by \code{\link[TempleCBE]{coxnet}} and \code{\link[TempleCBE]{cv_coxnet}}, so the
-#' status and time sub-models see exactly the columns the survival sub-model does, and
-#' `predict()` re-applies the training encoding via \code{\link[hardhat]{forge}} rather
-#' than recomputing dummy columns from scratch.
-#'
 #' @param data A data frame containing the survival outcome and predictors.
 #' @param outcome A formula containing a \code{\link[survival]{Surv}} outcome, such as
 #'   \code{Surv(time, status) ~ .} or \code{Surv(tstart, tstop, status) ~ .}.
@@ -43,13 +36,13 @@
 #'   Defaults to deciles of uncensored event times.
 #' @param ... Additional arguments passed to \code{\link[TempleCBE]{cv_coxnet}} or \code{\link[glmnet]{glmnet}}.
 #'
-#' @return An S3 object of class \code{c("joint_model", "hardhat_model")} with elements:
+#' @return An S3 object of class \code{c("joint_model", "list")} with elements:
 #'   \item{coxnet_model}{Fitted penalized Cox proportional hazards model.}
 #'   \item{status_model}{Fitted binary event classification model.}
 #'   \item{time_model}{Fitted continuous follow-up duration model.}
 #'   \item{stack_model}{Fitted \pkg{stacks} ensemble (if \code{engine = "stacks"}).}
 #'   \item{calibration_model}{Probability calibration model from \pkg{probably} (if \code{calibration = TRUE}).}
-#'   \item{components}{List of extracted outcome variables, formulas, and the hardhat blueprint.}
+#'   \item{components}{List of extracted outcome variables, formulas, and baseline hazard.}
 #'   \item{engine}{Selected modeling engine.}
 #'   \item{eval_time}{Evaluation horizons used for survival scoring.}
 #'
@@ -96,9 +89,9 @@ joint_model <- function(data,
     rlang::check_installed("probably", reason = "for probability calibration in joint_model.")
   }
 
-  # Extract survival components and predictors through the hardhat blueprint
+  # Extract survival components and predictors
   comp <- extract_surv_components(data, outcome, subject_id)
-  x_mat <- predictors_matrix(comp$predictors)
+  x_mat <- stats::model.matrix(~ . - 1, data = comp$predictors)
 
   # Default evaluation times (deciles of uncensored event times)
   if (is.null(eval_time)) {
@@ -114,8 +107,7 @@ joint_model <- function(data,
 
   # 1. Cox Proportional Hazards Model (coxnet)
   coxnet_fit <- if (is.null(penalty)) {
-    # Auto-tune penalty via cv_coxnet; cv_coxnet() drops `subject_id` from the
-    # predictors itself.
+    # Auto-tune penalty via cv_coxnet
     cv_coxnet(
       comp$formula,
       data = data,
@@ -125,11 +117,12 @@ joint_model <- function(data,
       ...
     )
   } else {
-    # coxnet() has no `subject_id` argument, so drop the column first: it must
-    # not leak into `...`/glmnet's arguments, nor be picked up by `~ .`.
+    # coxnet() fits a single model with no CV fold-splitting, so `subject_id`
+    # (which only affects grouped resampling, as in cv_coxnet()) isn't
+    # accepted here.
     coxnet(
       comp$formula,
-      data = data[setdiff(names(data), subject_id)],
+      data = data,
       mixture = mixture,
       penalty = penalty,
       ...
@@ -199,7 +192,11 @@ joint_model <- function(data,
   # 4. Optional Stacking (stacks)
   stack_fit <- NULL
   if (engine == "stacks" && requireNamespace("stacks", quietly = TRUE)) {
-    cox_lp <- as.numeric(stats::predict(coxnet_fit, new_data = data, type = "linear_pred")$.pred_linear_pred)
+    cox_lp <- if (inherits(coxnet_fit, "cv_coxnet")) {
+      as.numeric(stats::predict(coxnet_fit, new_data = data, type = "linear_pred")$.pred_linear_pred)
+    } else {
+      as.numeric(stats::predict(coxnet_fit, new_data = data, type = "linear_pred")$.pred_linear_pred)
+    }
     time_pred <- if (inherits(time_fit, "cv.glmnet")) {
       as.numeric(stats::predict(time_fit, newx = x_mat, s = "lambda.min"))
     } else {
@@ -241,7 +238,7 @@ joint_model <- function(data,
     stack_fit <- stack_cv
   }
 
-  hardhat::new_model(
+  out <- list(
     coxnet_model = coxnet_fit,
     status_model = status_fit,
     time_model = time_fit,
@@ -250,50 +247,50 @@ joint_model <- function(data,
     components = comp,
     engine = engine,
     calibration = calibration,
-    eval_time = eval_time,
-    blueprint = comp$blueprint,
-    class = "joint_model"
+    eval_time = eval_time
   )
+  class(out) <- c("joint_model", "list")
+  out
 }
 
 #' Extract Survival Outcome Components and Predictors
 #'
-#' Helper utility that molds a survival formula into clean components, through the
-#' same \pkg{hardhat} formula blueprint used by \code{\link[TempleCBE]{coxnet}}
-#' (one-hot dummy encoding, no intercept), supporting both 2-parameter
-#' \code{Surv(time, status)} and 3-parameter start/stop
+#' Helper utility that parses a survival formula into clean components
+#' supporting both 2-parameter \code{Surv(time, status)} and 3-parameter start/stop
 #' \code{Surv(tstart, tstop, status)} counting process structures.
 #'
 #' @param data A data frame.
 #' @param outcome A survival formula or Surv expression.
-#' @param subject_id Optional subject identifier column name; dropped from `data`
-#'   before molding, so it is never treated as a predictor.
+#' @param subject_id Optional subject identifier column name.
 #'
 #' @return A list with elements \code{surv_obj}, \code{time}, \code{start}, \code{status},
-#'   \code{type}, \code{predictors} (a numeric tibble, one-hot encoded), \code{pred_names},
-#'   \code{formula}, \code{data} (the molded, `subject_id`-free data frame), and
-#'   \code{blueprint} (the hardhat blueprint used, for \code{\link[hardhat]{forge}}).
+#'   \code{type}, \code{predictors}, \code{pred_names}, and \code{formula}.
 #' @export
 extract_surv_components <- function(data, outcome, subject_id = NULL) {
   if (!inherits(outcome, "formula")) {
     stop("`outcome` must be a formula containing a Surv() response, e.g. Surv(time, status) ~ .",
          call. = FALSE)
   }
-  if (!is.null(subject_id) &&
-      (!is.character(subject_id) || length(subject_id) != 1 || !subject_id %in% names(data))) {
-    stop("`subject_id` must be the name of a column in `data`.", call. = FALSE)
-  }
 
-  model_data <- data[setdiff(names(data), subject_id)]
-  processed <- hardhat::mold(outcome, model_data, blueprint = coxnet_formula_blueprint())
-  surv_col <- surv_outcome(processed$outcomes)
+  mf <- stats::model.frame(outcome, data = data, na.action = stats::na.pass)
+  surv_col <- stats::model.response(mf)
+
+  if (!inherits(surv_col, "Surv")) {
+    stop("The left-hand side of `outcome` must evaluate to a survival::Surv object.", call. = FALSE)
+  }
 
   surv_type <- attr(surv_col, "type")
   is_counting <- identical(surv_type, "counting")
 
   time_val <- if (is_counting) surv_col[, "stop"] else surv_col[, "time"]
-  start_val <- if (is_counting) surv_col[, "start"] else rep(0, length(time_val))
+  start_val <- if (is_counting) surv_col[, "start"] else rep(0, nrow(data))
   status_val <- as.integer(surv_col[, "status"])
+
+  # Extract predictors excluding response and subject_id
+  all_vars <- all.vars(outcome)
+  resp_vars <- all.vars(outcome[[2L]])
+  pred_names <- setdiff(names(data), c(resp_vars, subject_id))
+  predictors <- data[, pred_names, drop = FALSE]
 
   list(
     surv_obj = surv_col,
@@ -301,11 +298,9 @@ extract_surv_components <- function(data, outcome, subject_id = NULL) {
     start = start_val,
     status = status_val,
     type = surv_type,
-    predictors = processed$predictors,
-    pred_names = names(processed$predictors),
-    formula = outcome,
-    data = model_data,
-    blueprint = processed$blueprint
+    predictors = predictors,
+    pred_names = pred_names,
+    formula = outcome
   )
 }
 
@@ -314,10 +309,6 @@ extract_surv_components <- function(data, outcome, subject_id = NULL) {
 #' Generates multi-paradigm predictions from a fitted \code{\link[TempleCBE]{joint_model}}:
 #' dynamic survival probabilities from the Cox model, binary event probabilities from the
 #' status model (both raw and calibrated), and expected duration from the time model.
-#'
-#' Predictors are re-derived from \code{new_data} with \code{\link[hardhat]{forge}}
-#' against the model's training blueprint, so factor levels and dummy columns match
-#' training exactly, even if \code{new_data} does not exhibit every level.
 #'
 #' @param object A \code{joint_model} object.
 #' @param new_data Optional new data frame to predict upon. If \code{NULL}, predicts on training data.
@@ -334,22 +325,27 @@ extract_surv_components <- function(data, outcome, subject_id = NULL) {
 #' @export
 predict.joint_model <- function(object, new_data = NULL, eval_time = NULL, ...) {
   if (is.null(new_data)) {
-    new_data <- object$components$data
+    new_data <- object$components$predictors
   }
   eval_time <- eval_time %||% object$eval_time
-  forged <- hardhat::forge(new_data, object$components$blueprint)
-  x_mat <- predictors_matrix(forged$predictors)
+  x_mat <- stats::model.matrix(~ . - 1, data = new_data[, object$components$pred_names, drop = FALSE])
 
   # 1. Coxnet predictions
-  lp <- as.numeric(stats::predict(object$coxnet_model, new_data = new_data, type = "linear_pred")$.pred_linear_pred)
-  surv_prob <- stats::predict(object$coxnet_model, new_data = new_data, type = "survival", eval_time = eval_time)
-  cox_res <- list(lp = lp, surv = surv_prob$.pred)
+  cox_res <- if (inherits(object$coxnet_model, "cv_coxnet")) {
+    lp <- as.numeric(stats::predict(object$coxnet_model, new_data = new_data, type = "linear_pred")$.pred_linear_pred)
+    surv_prob <- stats::predict(object$coxnet_model, new_data = new_data, type = "survival", eval_time = eval_time)
+    list(lp = lp, surv = surv_prob$.pred)
+  } else {
+    lp <- as.numeric(stats::predict(object$coxnet_model, new_data = new_data, type = "linear_pred")$.pred_linear_pred)
+    surv_prob <- stats::predict(object$coxnet_model, new_data = new_data, type = "survival", eval_time = eval_time)
+    list(lp = lp, surv = surv_prob$.pred)
+  }
 
   # 2. Status predictions
   status_raw <- if (inherits(object$status_model, "cv.glmnet")) {
     as.numeric(stats::predict(object$status_model, newx = x_mat, s = "lambda.min", type = "response"))
   } else if (inherits(object$status_model, "model_fit")) {
-    as.numeric(stats::predict(object$status_model, new_data = forged$predictors, type = "prob")$.pred_event)
+    as.numeric(stats::predict(object$status_model, new_data = new_data, type = "prob")$.pred_event)
   } else {
     rep(NA_real_, nrow(new_data))
   }
@@ -373,12 +369,12 @@ predict.joint_model <- function(object, new_data = NULL, eval_time = NULL, ...) 
   time_pred <- if (inherits(object$time_model, "cv.glmnet")) {
     as.numeric(stats::predict(object$time_model, newx = x_mat, s = "lambda.min"))
   } else if (inherits(object$time_model, "model_fit")) {
-    as.numeric(stats::predict(object$time_model, new_data = forged$predictors)$.pred)
+    as.numeric(stats::predict(object$time_model, new_data = new_data)$.pred)
   } else {
     rep(NA_real_, nrow(new_data))
   }
 
-  out <- tibble::tibble(
+  tibble::tibble(
     .pred_survival = cox_res$surv,
     .pred_status = status_raw,
     .pred_status_calibrated = status_cal,
@@ -386,8 +382,6 @@ predict.joint_model <- function(object, new_data = NULL, eval_time = NULL, ...) 
     .pred_linear_pred = cox_res$lp,
     .pred_risk_score = exp(-cox_res$lp)
   )
-  hardhat::validate_prediction_size(out, new_data)
-  out
 }
 
 #' Print Method for Joint Models
@@ -422,7 +416,7 @@ print.joint_model <- function(x, ...) {
 #' @param x A \code{joint_model} object.
 #' @param ... Additional arguments.
 #' @return A tibble with comparative coefficients per feature.
-#' @exportS3Method generics::tidy
+#' @export
 tidy.joint_model <- function(x, ...) {
   terms <- x$components$pred_names
 
@@ -467,12 +461,6 @@ tidy.joint_model <- function(x, ...) {
 #' benchmarking survival, classification, and regression paradigms using the IPCW
 #' Integrated Brier Score (\code{brier_survival_integrated}), Concordance, and Calibration.
 #'
-#' For counting-process (start/stop) outcomes, \code{\link{predict.joint_model}} returns
-#' one row per input row (one per interval); scoring needs one row per subject, so each
-#' fold's predictions and truth are collapsed with \code{\link{surv_subject_truth}} (a
-#' subject's last interval and final status) before computing metrics, mirroring
-#' \code{\link[TempleCBE]{cv_coxnet}}'s handling of the same outcome type.
-#'
 #' @param data A data frame.
 #' @param outcome Survival formula with a \code{Surv()} outcome.
 #' @param v Number of cross-validation folds (default 5).
@@ -482,6 +470,11 @@ tidy.joint_model <- function(x, ...) {
 #' @param calibration Logical; whether to calibrate status predictions (default \code{TRUE}).
 #' @param parallel Logical; whether to run folds in parallel via \pkg{furrr}.
 #' @param ... Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.
+#'
+#' @note Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+#'   supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+#'   scoring needs one row per subject, but predictions are one row per
+#'   interval. Use \code{Surv(time, status)} outcomes for cross-validation.
 #'
 #' @return An S3 object of class \code{c("cv_joint_model", "tbl_df")} summarizing
 #'   comparative metrics across folds.
@@ -499,6 +492,16 @@ cv_joint_model <- function(data,
   rlang::check_installed(c("rsample", "yardstick", "survival", "glmnet"),
                          reason = "for cross-validation of joint_model.")
 
+  if (identical(extract_surv_components(data, outcome, subject_id)$type, "counting")) {
+    stop(
+      "cv_joint_model() does not yet support counting-process Surv(start, stop, event) ",
+      "outcomes: scoring needs one prediction row per subject, but joint_model() predicts ",
+      "one row per input row (per interval). Collapse to one row per subject with ",
+      "surv_subject_truth() first, or fit joint_model() directly without cross-validation.",
+      call. = FALSE
+    )
+  }
+
   # Create resamples if not provided
   if (is.null(resamples)) {
     resamples <- if (!is.null(subject_id) && subject_id %in% names(data)) {
@@ -511,11 +514,70 @@ cv_joint_model <- function(data,
   run_fold <- function(split) {
     analysis_df <- rsample::analysis(split)
     assessment_df <- rsample::assessment(split)
-    scored <- joint_model_fold_scores(
-      analysis_df, assessment_df, outcome, subject_id, engine, calibration, ...
+
+    # Fit joint model on analysis set
+    fit <- joint_model(
+      data = analysis_df,
+      outcome = outcome,
+      subject_id = subject_id,
+      engine = engine,
+      calibration = calibration,
+      ...
     )
-    scored$ibs$concordance <- scored$concordance
-    scored$ibs
+
+    # Predict on assessment set
+    preds <- stats::predict(fit, new_data = assessment_df)
+    comp_assess <- extract_surv_components(assessment_df, outcome, subject_id)
+    comp_train <- extract_surv_components(analysis_df, outcome, subject_id)
+
+    # Evaluate dynamic survival scoring via Integrated Brier Score
+    cens_km <- censoring_km(comp_train$surv_obj)
+    eval_time <- fit$eval_time
+
+    # Score Coxnet via yardstick::brier_survival_integrated
+    cox_surv_mat <- do.call(rbind, lapply(preds$.pred_survival, function(df) df$.pred_survival))
+    cox_ibs <- score_surv_matrix_ibs(cox_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    # Score status model (converting 1 - p_event to survival proxy at eval_time)
+    status_surv_mat <- matrix(1 - preds$.pred_status_calibrated,
+                              nrow = nrow(assessment_df), ncol = length(eval_time))
+    status_ibs <- score_surv_matrix_ibs(status_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    # Score time model (converting predicted duration to survival proxy)
+    time_surv_mat <- matrix(as.numeric(preds$.pred_time > rep(eval_time, each = nrow(assessment_df))),
+                            nrow = nrow(assessment_df), ncol = length(eval_time))
+    time_ibs <- score_surv_matrix_ibs(time_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    # Concordance (Harrell's C-index)
+    c_cox <- tryCatch({
+      surv_truth_df <- data.frame(
+        .truth = comp_assess$surv_obj,
+        .pred = preds$.pred_linear_pred
+      )
+      yardstick::concordance_survival(surv_truth_df, truth = .truth, estimate = .pred)$.estimate
+    }, error = function(e) NA_real_)
+
+    c_status <- tryCatch({
+      surv_truth_df <- data.frame(
+        .truth = comp_assess$surv_obj,
+        .pred = -preds$.pred_status_calibrated
+      )
+      yardstick::concordance_survival(surv_truth_df, truth = .truth, estimate = .pred)$.estimate
+    }, error = function(e) NA_real_)
+
+    c_time <- tryCatch({
+      surv_truth_df <- data.frame(
+        .truth = comp_assess$surv_obj,
+        .pred = preds$.pred_time
+      )
+      yardstick::concordance_survival(surv_truth_df, truth = .truth, estimate = .pred)$.estimate
+    }, error = function(e) NA_real_)
+
+    tibble::tibble(
+      model = c("coxnet", "status_calibrated", "time_regression"),
+      ibs = c(cox_ibs, status_ibs, time_ibs),
+      concordance = c(c_cox, c_status, c_time)
+    )
   }
 
   fold_ids <- seq_along(resamples$splits)
@@ -542,9 +604,7 @@ cv_joint_model <- function(data,
 #' Nested Cross-Validation for Joint Models
 #'
 #' Implements two-layer nested cross-validation on an \code{\link[rsample]{nested_cv}}
-#' object to evaluate the joint model pipeline without tuning leakage. As in
-#' \code{\link{cv_joint_model}}, counting-process outcomes are scored one row per
-#' subject via \code{\link{surv_subject_truth}}.
+#' object to evaluate the joint model pipeline without tuning leakage.
 #'
 #' @param object An \code{rsample::nested_cv} object.
 #' @param outcome Survival formula with a \code{Surv()} outcome.
@@ -553,6 +613,11 @@ cv_joint_model <- function(data,
 #' @param calibration Logical; whether to calibrate status predictions (default \code{TRUE}).
 #' @param parallel Logical; whether to run outer splits in parallel.
 #' @param ... Additional arguments.
+#'
+#' @note Counting-process \code{Surv(start, stop, event)} outcomes are not yet
+#'   supported here (only in \code{\link[TempleCBE]{joint_model}} itself):
+#'   scoring needs one row per subject, but predictions are one row per
+#'   interval. Use \code{Surv(time, status)} outcomes for cross-validation.
 #'
 #' @return An S3 object of class \code{c("nested_cv_joint_model", "tbl_df")}.
 #' @export
@@ -568,14 +633,53 @@ nested_cv_joint_model <- function(object,
   }
   engine <- match.arg(engine)
 
+  if (identical(extract_surv_components(object$splits[[1]]$data, outcome, subject_id)$type, "counting")) {
+    stop(
+      "nested_cv_joint_model() does not yet support counting-process Surv(start, stop, event) ",
+      "outcomes: scoring needs one prediction row per subject, but joint_model() predicts ",
+      "one row per input row (per interval). Collapse to one row per subject with ",
+      "surv_subject_truth() first, or fit joint_model() directly without cross-validation.",
+      call. = FALSE
+    )
+  }
+
   run_outer <- function(i) {
     outer_split <- object$splits[[i]]
     analysis_df <- rsample::analysis(outer_split)
     assessment_df <- rsample::assessment(outer_split)
-    scored <- joint_model_fold_scores(
-      analysis_df, assessment_df, outcome, subject_id, engine, calibration, ...
+
+    fit <- joint_model(
+      data = analysis_df,
+      outcome = outcome,
+      subject_id = subject_id,
+      engine = engine,
+      calibration = calibration,
+      ...
     )
-    tibble::tibble(outer_id = object$id[i], model = scored$ibs$model, ibs = scored$ibs$ibs)
+
+    preds <- stats::predict(fit, new_data = assessment_df)
+    comp_assess <- extract_surv_components(assessment_df, outcome, subject_id)
+    comp_train <- extract_surv_components(analysis_df, outcome, subject_id)
+    cens_km <- censoring_km(comp_train$surv_obj)
+    eval_time <- fit$eval_time
+
+    # Integrated Brier Score
+    cox_surv_mat <- do.call(rbind, lapply(preds$.pred_survival, function(df) df$.pred_survival))
+    cox_ibs <- score_surv_matrix_ibs(cox_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    status_surv_mat <- matrix(1 - preds$.pred_status_calibrated,
+                              nrow = nrow(assessment_df), ncol = length(eval_time))
+    status_ibs <- score_surv_matrix_ibs(status_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    time_surv_mat <- matrix(as.numeric(preds$.pred_time > rep(eval_time, each = nrow(assessment_df))),
+                            nrow = nrow(assessment_df), ncol = length(eval_time))
+    time_ibs <- score_surv_matrix_ibs(time_surv_mat, eval_time, comp_assess$surv_obj, cens_km)
+
+    tibble::tibble(
+      outer_id = object$id[i],
+      model = c("coxnet", "status_calibrated", "time_regression"),
+      ibs = c(cox_ibs, status_ibs, time_ibs)
+    )
   }
 
   outer_ids <- seq_along(object$splits)
@@ -591,116 +695,12 @@ nested_cv_joint_model <- function(object,
   out
 }
 
-#' Fit a Joint Model on an Analysis Set and Score It on an Assessment Set
-#'
-#' Shared by \code{\link{cv_joint_model}} and \code{\link{nested_cv_joint_model}}.
-#' Predictions and truth are both collapsed to one row per subject with
-#' \code{\link{surv_subject_truth}} before scoring, so counting-process (start/stop)
-#' outcomes are handled the same way \code{\link[TempleCBE]{cv_coxnet}} handles them:
-#' \code{\link{predict.joint_model}} predicts one row per input row, but a subject's
-#' last interval and final status is what determines their outcome.
-#'
-#' @return A list with `ibs` (a tibble of `model`, `ibs`) and `concordance` (a numeric
-#'   vector aligned with `ibs$model`).
-#' @keywords internal
-#' @noRd
-joint_model_fold_scores <- function(analysis_df, assessment_df, outcome, subject_id, engine, calibration, ...) {
-  fit <- joint_model(
-    data = analysis_df,
-    outcome = outcome,
-    subject_id = subject_id,
-    engine = engine,
-    calibration = calibration,
-    ...
-  )
-  eval_time <- fit$eval_time
-  preds <- stats::predict(fit, new_data = assessment_df, eval_time = eval_time)
-
-  comp_train <- fit$components
-  comp_assess <- extract_surv_components(assessment_df, outcome, subject_id)
-
-  subject_train_raw <- if (!is.null(subject_id)) analysis_df[[subject_id]] else seq_len(nrow(analysis_df))
-  subject_assess_raw <- if (!is.null(subject_id)) assessment_df[[subject_id]] else seq_len(nrow(assessment_df))
-  subject_train <- subject_keys(comp_train$surv_obj, subject_train_raw)
-  subject_assess <- subject_keys(comp_assess$surv_obj, subject_assess_raw)
-
-  truth_train <- surv_subject_truth(comp_train$surv_obj, subject_train)
-  truth_test <- surv_subject_truth(comp_assess$surv_obj, subject_assess)
-  cens_km <- censoring_km(truth_train$.truth)
-
-  preds_subject <- collapse_predictions_last_interval(
-    preds, subject_assess, comp_assess$start, comp_assess$time
-  )
-  rows <- match(truth_test$.subject_id, preds_subject$.subject_id)
-  preds_subject <- preds_subject[rows, , drop = FALSE]
-  n_subj <- nrow(preds_subject)
-
-  # Score Coxnet via yardstick::brier_survival_integrated
-  cox_surv_mat <- do.call(rbind, lapply(preds_subject$.pred_survival, function(df) df$.pred_survival))
-  cox_ibs <- score_surv_matrix_ibs(cox_surv_mat, eval_time, truth_test$.truth, cens_km)
-
-  # Score status model (converting 1 - p_event to survival proxy at eval_time)
-  status_surv_mat <- matrix(1 - preds_subject$.pred_status_calibrated, nrow = n_subj, ncol = length(eval_time))
-  status_ibs <- score_surv_matrix_ibs(status_surv_mat, eval_time, truth_test$.truth, cens_km)
-
-  # Score time model (converting predicted duration to survival proxy)
-  time_surv_mat <- matrix(
-    as.numeric(preds_subject$.pred_time > rep(eval_time, each = n_subj)),
-    nrow = n_subj, ncol = length(eval_time)
-  )
-  time_ibs <- score_surv_matrix_ibs(time_surv_mat, eval_time, truth_test$.truth, cens_km)
-
-  concordance_of <- function(estimate) {
-    tryCatch({
-      surv_truth_df <- data.frame(.truth = truth_test$.truth, .pred = estimate)
-      yardstick::concordance_survival(surv_truth_df, truth = .truth, estimate = .pred)$.estimate
-    }, error = function(e) NA_real_)
-  }
-
-  list(
-    ibs = tibble::tibble(
-      model = c("coxnet", "status_calibrated", "time_regression"),
-      ibs = c(cox_ibs, status_ibs, time_ibs)
-    ),
-    concordance = c(
-      concordance_of(preds_subject$.pred_linear_pred),
-      concordance_of(-preds_subject$.pred_status_calibrated),
-      concordance_of(preds_subject$.pred_time)
-    )
-  )
-}
-
-#' Collapse Row-Level Predictions to One Row per Subject (Last Interval)
-#'
-#' \code{\link{predict.joint_model}} returns one row per input row; for
-#' counting-process data that is one row per interval. This keeps each subject's
-#' last interval, ordered the same way \code{\link{surv_subject_truth}} does
-#' (by subject, then start, then stop), so the two can be matched by
-#' `.subject_id`.
-#'
-#' @param preds A predictions tibble, one row per row of the scored data.
-#' @param subject,start,stop Row-level subject identifiers and interval bounds,
-#'   the same length and order as `preds`.
-#' @return `preds` subset to one row per subject, with `.subject_id` added.
-#' @keywords internal
-#' @noRd
-collapse_predictions_last_interval <- function(preds, subject, start, stop) {
-  ord <- order(subject, start, stop)
-  subject_ord <- subject[ord]
-  last <- !duplicated(subject_ord, fromLast = TRUE)
-  idx <- ord[last]
-  out <- preds[idx, , drop = FALSE]
-  out$.subject_id <- subject_ord[last]
-  out
-}
-
 #' Helper to Score Survival Probability Matrix with Integrated Brier Score
 #' @param surv_matrix Numeric matrix of predicted survival probabilities (rows = subjects, cols = eval_time).
 #' @param eval_time Numeric vector of evaluation times.
-#' @param surv_truth Right-censored Surv object of true assessment outcomes, one per subject.
+#' @param surv_truth Surv object of true assessment outcomes.
 #' @param cens_km Fitted Kaplan-Meier censoring object.
 #' @param trunc Truncation bound for IPCW weights.
-#' @keywords internal
 #' @noRd
 score_surv_matrix_ibs <- function(surv_matrix, eval_time, surv_truth, cens_km, trunc = 0.05) {
   weights <- graf_weights(surv_truth, eval_time, cens_km, trunc)

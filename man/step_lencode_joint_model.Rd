@@ -7,7 +7,7 @@
 step_lencode_joint_model(
   recipe,
   ...,
-  outcome = recipes::vars(time, status),
+  outcome = c("time", "status"),
   role = "predictor",
   trained = FALSE,
   engine = "glmnet",

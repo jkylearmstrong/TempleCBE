@@ -78,7 +78,7 @@ strata_var <- "group"
 
 ## Data Structure & Quality Metrics
 
-```{r tbl-data-intro}
+```{r}
 #| label: tbl-data-intro
 #| tbl-cap: "Data Attribute Summary & Completeness"
 
@@ -101,7 +101,7 @@ knitr::kable(intro_summary, booktabs = TRUE)
 
 Evaluating patterns of missingness identifies features requiring imputation or sensitivity adjustments.
 
-```{r fig-missing-data}
+```{r}
 #| label: fig-missing-data
 #| fig-cap: "Missing Data Proportion Across Cohort Features"
 #| fig-width: 8
@@ -119,7 +119,7 @@ Baseline characteristics stratified by **`r strata_var`** are summarized below. 
 
 Categorical differences between groups are evaluated using **Central Fisher's Exact Test** with automatic mid-p adjustment when zero-cell margins occur, and Pearson's $\chi^2$ test when cell counts are adequate.
 
-```{r tbl-baseline-summary}
+```{r}
 #| label: tbl-baseline-summary
 #| tbl-cap: "Baseline Demographic and Clinical Characteristics by Group"
 
@@ -185,7 +185,7 @@ tbl_combined
 
 The correlation between categorical predictors is evaluated using Cramér's V association coefficients and pairwise balloon contingency plots.
 
-```{r fig-cat-association}
+```{r}
 #| label: fig-cat-association
 #| fig-cap: "Pairwise Categorical Association Matrix (Cram\u00e9r's V)"
 #| fig-width: 7.5

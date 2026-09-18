@@ -109,15 +109,24 @@ run_sas_script <- function(path,
   }
   stem <- sub("\\.sas$", "", basename(path), ignore.case = TRUE)
   log_file <- file.path(log_dir, paste0(stem, ".log"))
+  # SAS's own diagnostics normally land in `log_file`, but a failure before
+  # SAS even starts writing it (license failure, bad -log path, disk full)
+  # leaves nothing to review there; fall back to whatever was captured on
+  # stdout/stderr so the failure isn't completely silent.
+  fallback_output <- if (exit_code != 0L && !file.exists(log_file) && is.character(res) && length(res) > 0L) {
+    paste0("\nNo log file was written. Captured output:\n", paste(res, collapse = "\n"))
+  } else {
+    ""
+  }
   if (exit_code >= 2L) {
     stop(
-      sprintf("SAS process failed with exit code %d (errors encountered). Review log at: %s", exit_code, log_file),
+      sprintf("SAS process failed with exit code %d (errors encountered). Review log at: %s%s", exit_code, log_file, fallback_output),
       call. = FALSE
     )
   }
   if (exit_code == 1L) {
     warning(
-      sprintf("SAS process completed with warnings (exit code 1). Review log at: %s", log_file),
+      sprintf("SAS process completed with warnings (exit code 1). Review log at: %s%s", log_file, fallback_output),
       call. = FALSE
     )
   }
@@ -149,22 +158,11 @@ sas_args <- function(path, log_dir, list_dir) {
 #' @examples
 #' try(cbe_sas_macro_dir())
 cbe_sas_macro_dir <- function() {
-  # Check installed package location first
-  dir <- system.file("sas", package = "TempleCBE")
-  if (nzchar(dir) && dir.exists(dir)) {
-    return(normalizePath(dir, winslash = "/", mustWork = TRUE))
+  dir <- locate_package_path("sas")
+  if (is.null(dir)) {
+    stop("Could not locate TempleCBE SAS macro directory.", call. = FALSE)
   }
-  # Fallback for development mode (e.g. devtools::load_all or working directory)
-  dev_dir <- file.path(getwd(), "inst", "sas")
-  if (dir.exists(dev_dir)) {
-    return(normalizePath(dev_dir, winslash = "/", mustWork = TRUE))
-  }
-  # Fallback searching parent directory
-  parent_dev_dir <- file.path(dirname(getwd()), "inst", "sas")
-  if (dir.exists(parent_dev_dir)) {
-    return(normalizePath(parent_dev_dir, winslash = "/", mustWork = TRUE))
-  }
-  stop("Could not locate TempleCBE SAS macro directory.", call. = FALSE)
+  dir
 }
 
 #' Path to a TempleCBE SAS Macro File

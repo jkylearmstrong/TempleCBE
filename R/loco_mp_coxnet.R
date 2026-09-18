@@ -115,6 +115,7 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
     eval_time <- default_eval_time(truth_all$.truth)
   }
   eval_time <- sort(unique(eval_time))
+  check_eval_time(eval_time)
   n_eval <- length(eval_time)
 
   # Sample sizes for patches
@@ -200,8 +201,8 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
     )
   }
 
-  patches <- if (isTRUE(parallel) && requireNamespace("future.apply", quietly = TRUE)) {
-    future.apply::future_lapply(seq_len(B), fit_one_patch, future.seed = TRUE)
+  patches <- if (isTRUE(parallel) && requireNamespace("furrr", quietly = TRUE)) {
+    furrr::future_map(seq_len(B), fit_one_patch, .options = furrr::furrr_options(seed = TRUE))
   } else {
     lapply(seq_len(B), fit_one_patch)
   }
@@ -255,14 +256,17 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
         row_pos <- match(sid, patches[[k]]$oob_subjs)
         patches[[k]]$surv_matrix[row_pos, ]
       }, numeric(n_eval))
-      if (is.vector(surv_with)) surv_with <- matrix(surv_with, ncol = 1)
+      # vapply drops to a plain vector (one value per patch) instead of an
+      # n_eval x length(with_sub) matrix only when n_eval == 1; reshape with
+      # nrow (not ncol) so rowMeans() still averages across patches per time.
+      if (is.vector(surv_with)) surv_with <- matrix(surv_with, nrow = n_eval)
       s_plus <- rowMeans(surv_with)
 
       surv_without <- vapply(without_sub, function(k) {
         row_pos <- match(sid, patches[[k]]$oob_subjs)
         patches[[k]]$surv_matrix[row_pos, ]
       }, numeric(n_eval))
-      if (is.vector(surv_without)) surv_without <- matrix(surv_without, ncol = 1)
+      if (is.vector(surv_without)) surv_without <- matrix(surv_without, nrow = n_eval)
       s_minus <- rowMeans(surv_without)
 
       # IPCW Graf Brier loss curve at eval_time

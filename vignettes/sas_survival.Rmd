@@ -712,7 +712,7 @@ The library provides three core macros matching `TempleCBE`'s R functions:
 
 `TempleCBE` provides `run_sas_script()` to execute SAS batch programs directly from R scripts or test pipelines:
 
-```{r run_sas_demo, eval = has_sas}
+```{r run_sas_demo, eval = isTRUE(tryCatch(has_sas, error = function(e) FALSE))}
 # This code chunk executes automatically when SAS 9.4 is detected on host
 sas_benchmark_file <- TempleCBE::cbe_sas_macro_path("benchmark_brier_lung.sas")
 
@@ -736,7 +736,7 @@ The complete round-trip pattern consists of four steps:
 3. **Execute via `run_sas_script()`**: Run SAS in batch mode, generating audit logs and listing tables.
 4. **Import Results into R**: Read the generated SAS dataset (`haven::read_sas()`) back into an R tibble for visualization and verification.
 
-```{r call_macro_demo, eval = has_sas}
+```{r call_macro_demo, eval = isTRUE(tryCatch(has_sas, error = function(e) FALSE))}
 # 1. Prepare R analysis cohort and export to FDA Transport format
 lung_xpt_data <- lung_data %>%
   filter(!is.na(ph.karno)) %>%

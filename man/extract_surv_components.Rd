@@ -11,19 +11,14 @@ extract_surv_components(data, outcome, subject_id = NULL)
 
 \item{outcome}{A survival formula or Surv expression.}
 
-\item{subject_id}{Optional subject identifier column name; dropped from `data`
-before molding, so it is never treated as a predictor.}
+\item{subject_id}{Optional subject identifier column name.}
 }
 \value{
 A list with elements \code{surv_obj}, \code{time}, \code{start}, \code{status},
-  \code{type}, \code{predictors} (a numeric tibble, one-hot encoded), \code{pred_names},
-  \code{formula}, \code{data} (the molded, `subject_id`-free data frame), and
-  \code{blueprint} (the hardhat blueprint used, for \code{\link[hardhat]{forge}}).
+  \code{type}, \code{predictors}, \code{pred_names}, and \code{formula}.
 }
 \description{
-Helper utility that molds a survival formula into clean components, through the
-same \pkg{hardhat} formula blueprint used by \code{\link[TempleCBE]{coxnet}}
-(one-hot dummy encoding, no intercept), supporting both 2-parameter
-\code{Surv(time, status)} and 3-parameter start/stop
+Helper utility that parses a survival formula into clean components
+supporting both 2-parameter \code{Surv(time, status)} and 3-parameter start/stop
 \code{Surv(tstart, tstop, status)} counting process structures.
 }

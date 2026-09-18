@@ -29,13 +29,12 @@ tidy_tmerge_cox <- function(
   baseline_df = NULL,
   post_event = c("exclude", "include")
 ) {
-
   post_event <- match.arg(post_event)
 
-  id_sym           <- rlang::sym(id)
+  id_sym <- rlang::sym(id)
   measure_time_sym <- rlang::sym(measure_time)
-  event_time_sym   <- rlang::sym(event_time)
-  event_type_sym   <- rlang::sym(event_type)
+  event_time_sym <- rlang::sym(event_time)
+  event_type_sym <- rlang::sym(event_type)
 
   # Merge measurement + event data
   df <- dplyr::left_join(measure_df, event_df, by = id)
@@ -47,38 +46,53 @@ tidy_tmerge_cox <- function(
 
   # If post_event = "include", push event_time forward
   if (post_event == "include") {
-    df <- df %>%
-      dplyr::group_by(!!id_sym) %>%
+    df <- df |>
+      dplyr::group_by(!!id_sym) |>
       dplyr::mutate(
         max_time = max(!!measure_time_sym, na.rm = TRUE),
-        !!event_time_sym := dplyr::if_else(!is.na(!!event_time_sym) & !!event_time_sym < .data$max_time,
-                                           .data$max_time,
-                                           !!event_time_sym)
-      ) %>%
-      dplyr::ungroup() %>%
+        !!event_time_sym := dplyr::if_else(
+          !is.na(!!event_time_sym) & !!event_time_sym < .data$max_time,
+          .data$max_time,
+          !!event_time_sym
+        )
+      ) |>
+      dplyr::ungroup() |>
       dplyr::select(-dplyr::all_of("max_time"))
   }
 
   # Remove post-event measurements if exclude mode (must be done before lead intervals)
   if (post_event == "exclude") {
-    df <- df %>%
-      dplyr::filter(is.na(!!event_time_sym) | !!measure_time_sym < !!event_time_sym)
+    df <- df |>
+      dplyr::filter(
+        is.na(!!event_time_sym) | !!measure_time_sym < !!event_time_sym
+      )
   }
 
   # Build start-stop intervals
-  df <- df %>%
-    dplyr::arrange(!!id_sym, !!measure_time_sym) %>%
-    dplyr::group_by(!!id_sym) %>%
+  df <- df |>
+    dplyr::arrange(!!id_sym, !!measure_time_sym) |>
+    dplyr::group_by(!!id_sym) |>
     dplyr::mutate(
       tstart = !!measure_time_sym,
-      tstop  = dplyr::lead(!!measure_time_sym, default = dplyr::first(!!event_time_sym)),
-      event  = dplyr::if_else(!is.na(!!event_time_sym) & .data$tstop == !!event_time_sym, 1, 0),
-      event_label = dplyr::if_else(.data$event == 1, as.character(!!event_type_sym), NA_character_)
-    ) %>%
+      tstop = dplyr::lead(
+        !!measure_time_sym,
+        default = dplyr::first(!!event_time_sym)
+      ),
+      event = dplyr::if_else(
+        !is.na(!!event_time_sym) & .data$tstop == !!event_time_sym,
+        1,
+        0
+      ),
+      event_label = dplyr::if_else(
+        .data$event == 1,
+        as.character(!!event_type_sym),
+        NA_character_
+      )
+    ) |>
     dplyr::ungroup()
 
   # Remove intervals with missing tstop
-  df <- df %>% dplyr::filter(!is.na(.data$tstop))
+  df <- df |> dplyr::filter(!is.na(.data$tstop))
 
   tibble::as_tibble(df)
 }

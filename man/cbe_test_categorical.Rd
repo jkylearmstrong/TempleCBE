@@ -14,6 +14,13 @@ cbe_test_categorical(
   simulate.p.value = NULL,
   parallel = FALSE,
   n_chunks = 4L,
+  group = NULL,
+  type = NULL,
+  test.args = NULL,
+  adj.vars = NULL,
+  conf.level = NULL,
+  tbl = NULL,
+  continuous_variable = NULL,
   ...
 )
 }
@@ -50,6 +57,12 @@ Requires setting a \code{\link[future]{plan}} beforehand.}
 
 \item{n_chunks}{Integer; number of chunks to partition \code{B} into when running
 parallel simulations with \code{B >= 10000} (default 4L).}
+
+\item{group, type, test.args, adj.vars, conf.level, tbl, continuous_variable}{Unused;
+accepted and ignored so this function satisfies \pkg{gtsummary}'s custom-test
+calling convention (see \code{\link[gtsummary]{tests}}) without those arguments
+leaking into \code{...} and reaching \code{\link[stats]{chisq.test}}/
+\code{\link[stats]{fisher.test}}, neither of which accepts extra named arguments.}
 
 \item{...}{Additional arguments passed to \code{\link[exact2x2]{exact2x2}} or
 \code{\link[stats]{fisher.test}}.}

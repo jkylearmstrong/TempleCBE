@@ -29,8 +29,3 @@ Generates multi-paradigm predictions from a fitted \code{\link[TempleCBE]{joint_
 dynamic survival probabilities from the Cox model, binary event probabilities from the
 status model (both raw and calibrated), and expected duration from the time model.
 }
-\details{
-Predictors are re-derived from \code{new_data} with \code{\link[hardhat]{forge}}
-against the model's training blueprint, so factor levels and dummy columns match
-training exactly, even if \code{new_data} does not exhibit every level.
-}

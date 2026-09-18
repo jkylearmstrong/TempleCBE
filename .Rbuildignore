@@ -16,3 +16,12 @@
 ^completed_tasks$
 ^tasks$
 ^scripts$
+^vignettes/.*_files$
+^vignettes/.*\.html$
+^\.quarto$
+^vignettes/\.quarto$
+^.*\.docx$
+^.*\.rtf$
+^scripts/.*\.ps1$
+^.*scratchpad.*$
+^claude.*$
