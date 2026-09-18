@@ -85,6 +85,24 @@ test_that("cbe_compare_df S3 methods work as expected", {
   expect_equal(td$diff, -5)
 })
 
+test_that("cbe_compare_df handles tables with no non-key columns without warning", {
+  # A bare edge list: `by` covers every column, so there are zero non-key
+  # variables to compare -- summary_list stays empty, which used to make
+  # bind_rows() return a columnless tibble and warn on every $n_diff access.
+  edges_x <- data.frame(from = c("a", "b"), to = c("b", "c"))
+  edges_y <- data.frame(from = "a", to = "b")
+
+  cmp <- expect_no_warning(
+    cbe_compare_df(edges_x, edges_y, by = c("from", "to"))
+  )
+  expect_equal(nrow(cmp$summary), 0)
+  expect_true(all(c("variable", "n_diff", "types_match") %in% names(cmp$summary)))
+  expect_equal(cmp$observations$n_matched, 1)
+  expect_equal(cmp$observations$unmatched_base, 1)
+  expect_false(cmp$is_concordant) # unmatched_base > 0
+  expect_output(print(cmp), "All values match within tolerance")
+})
+
 test_that("cbe_compare_df errors on invalid by keys", {
   df1 <- data.frame(id = 1:2, x = 1:2)
   df2 <- data.frame(idx = 1:2, x = 1:2)
