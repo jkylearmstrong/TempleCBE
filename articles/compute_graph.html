@@ -338,18 +338,26 @@ across languages and software suites as a first-class citizen.</p>
 a target is stale is not enough — auditors, biostatisticians, and
 clinical monitors need to know <em>what kind</em> of asset it is and
 <em>where</em> it sits in the data lifecycle. <code>TempleCBE</code>
-formally tracks semantic roles: - <code>raw_data</code>: Immutable
-source data (e.g. initial registry export). - <code>derived_data</code>:
-Standardized baseline dataset created from raw inputs. -
-<code>enhanced_data</code>: Statistically augmented data (e.g. multiple
-imputation).</p>
+formally tracks semantic roles:</p>
 <ul>
-<li><p><code>intermediate_data</code>: Stage-internal calculations or
-fitted model caches.</p></li>
-<li><p><code>report_source</code> &amp; <code>deliverable_report</code>:
-Executable documents and their deliverables.</p></li>
-<li><p><code>helper_script</code> &amp; <code>reference</code>: Child
-templates, macros, or lookup tables.</p></li>
+<li>
+<code>raw_data</code>: Immutable source data (e.g. initial registry
+export).</li>
+<li>
+<code>derived_data</code>: Standardized baseline dataset created
+from raw inputs.</li>
+<li>
+<code>enhanced_data</code>: Statistically augmented data
+(e.g. multiple imputation).</li>
+<li>
+<code>intermediate_data</code>: Stage-internal calculations or
+fitted model caches.</li>
+<li>
+<code>report_source</code> &amp; <code>deliverable_report</code>:
+Executable documents and their deliverables.</li>
+<li>
+<code>helper_script</code> &amp; <code>reference</code>: Child
+templates, macros, or lookup tables.</li>
 </ul>
 <p>This taxonomy provides transparent data provenance and auditability
 out of the box.</p>
@@ -363,19 +371,23 @@ clinical investigator, surgeon, or regulatory auditor.
 <code>TempleCBE</code> bridges this communication divide through
 multi-tiered visualization:</p>
 <ul>
-<li><p><strong>For analysts</strong>: Interactive
-<code>visNetwork</code> HTML widgets with rich tooltips detailing file
-paths, modification dates, roles, and staleness warnings. - <strong>For
-study sections</strong>: Focused ego-subgraphs
+<li>
+<strong>For analysts</strong>: Interactive <code>visNetwork</code>
+HTML widgets with rich tooltips detailing file paths, modification
+dates, roles, and staleness warnings.</li>
+<li>
+<strong>For study sections</strong>: Focused ego-subgraphs
 (<code><a href="../reference/export_subgraph.html">export_subgraph()</a></code>) that isolate the neighborhood around a
-single deliverable or analytical stage.</p></li>
-<li><p><strong>For protocol deliverables &amp; manuscripts</strong>:
+single deliverable or analytical stage.</li>
+<li>
+<strong>For protocol deliverables &amp; manuscripts</strong>:
 Sized-to-fit static figures (<code><a href="../reference/print_pipeline.html">print_pipeline()</a></code>) with
 intelligent Sugiyama layout adjustments to prevent overlapping text
-labels. -</p></li>
-<li><p><strong>For executive sponsors</strong>: Stage-level collapsed
+labels.</li>
+<li>
+<strong>For executive sponsors</strong>: Stage-level collapsed
 diagrams (<code><a href="../reference/collapse_by_stage.html">collapse_by_stage()</a></code>) that condense a 90-file
-pipeline into a clear 4-node study milestone overview.</p></li>
+pipeline into a clear 4-node study milestone overview.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -482,7 +494,7 @@ case of “this <code>.qmd</code> renders to a PDF of the same name.”</p>
 <span><span class="co">#&gt;   Stage:       report </span></span>
 <span><span class="co">#&gt;   Role:        report_source </span></span>
 <span><span class="co">#&gt;   Renders:     TRUE </span></span>
-<span><span class="co">#&gt;   Modified:    2026-09-18 05:24:13 </span></span>
+<span><span class="co">#&gt;   Modified:    2026-09-18 05:29:26 </span></span>
 <span><span class="co">#&gt;   Description: Worked example of a one/two-sample t-test report </span></span>
 <span><span class="co">#&gt;   Dependencies:</span></span>
 <span><span class="co">#&gt;     - t_test_child</span></span>

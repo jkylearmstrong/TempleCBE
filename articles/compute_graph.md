@@ -159,18 +159,16 @@ first-class citizen.
 In regulated clinical trials and collaborative research, knowing that a
 target is stale is not enough — auditors, biostatisticians, and clinical
 monitors need to know *what kind* of asset it is and *where* it sits in
-the data lifecycle. `TempleCBE` formally tracks semantic roles: -
-`raw_data`: Immutable source data (e.g. initial registry export). -
-`derived_data`: Standardized baseline dataset created from raw inputs. -
-`enhanced_data`: Statistically augmented data (e.g. multiple
-imputation).
+the data lifecycle. `TempleCBE` formally tracks semantic roles:
 
+- `raw_data`: Immutable source data (e.g. initial registry export).
+- `derived_data`: Standardized baseline dataset created from raw inputs.
+- `enhanced_data`: Statistically augmented data (e.g. multiple
+  imputation).
 - `intermediate_data`: Stage-internal calculations or fitted model
   caches.
-
 - `report_source` & `deliverable_report`: Executable documents and their
   deliverables.
-
 - `helper_script` & `reference`: Child templates, macros, or lookup
   tables.
 
@@ -186,17 +184,16 @@ communication divide through multi-tiered visualization:
 
 - **For analysts**: Interactive `visNetwork` HTML widgets with rich
   tooltips detailing file paths, modification dates, roles, and
-  staleness warnings. - **For study sections**: Focused ego-subgraphs
+  staleness warnings.
+- **For study sections**: Focused ego-subgraphs
   ([`export_subgraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_subgraph.md))
   that isolate the neighborhood around a single deliverable or
   analytical stage.
-
 - **For protocol deliverables & manuscripts**: Sized-to-fit static
   figures
   ([`print_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.md))
   with intelligent Sugiyama layout adjustments to prevent overlapping
-  text labels. -
-
+  text labels.
 - **For executive sponsors**: Stage-level collapsed diagrams
   ([`collapse_by_stage()`](https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.md))
   that condense a 90-file pipeline into a clear 4-node study milestone
@@ -287,7 +284,7 @@ report
 #>   Stage:       report 
 #>   Role:        report_source 
 #>   Renders:     TRUE 
-#>   Modified:    2026-09-18 05:24:13 
+#>   Modified:    2026-09-18 05:29:26 
 #>   Description: Worked example of a one/two-sample t-test report 
 #>   Dependencies:
 #>     - t_test_child
