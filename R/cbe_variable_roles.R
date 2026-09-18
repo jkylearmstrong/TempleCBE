@@ -39,9 +39,15 @@ cbe_variable_roles <- function(data,
       df <- data[[i]]
       if (!is.data.frame(df)) return(NULL)
 
-      # Extract per-table role specs if lists were passed
+      # Extract per-table role specs if lists were passed. A named list is a
+      # per-table map: use this table's entry, or NULL if it has none. A
+      # plain (non-list) spec applies uniformly to every table.
       pick_role <- function(spec) {
-        if (is.list(spec) && nm %in% names(spec)) spec[[nm]] else spec
+        if (is.list(spec)) {
+          if (nm %in% names(spec)) spec[[nm]] else NULL
+        } else {
+          spec
+        }
       }
 
       cur_res <- cbe_variable_roles(

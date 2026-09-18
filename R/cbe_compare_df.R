@@ -315,7 +315,6 @@ tidy.cbe_compare_df <- function(x, ...) {
 #' @param ... Additional arguments passed to methods or \pkg{ggVennDiagram}.
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @exportS3Method ggplot2::autoplot
-#' @export
 autoplot.cbe_compare_df <- function(object, type = c("observations", "variables", "discrepancies"), ...) {
   type <- match.arg(type)
 

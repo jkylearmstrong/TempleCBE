@@ -788,11 +788,20 @@ print_pipeline <- function(
 
 #' Convert to an enriched igraph graph with rich metadata
 #'
-#' @param all_objects list of FilePath, FileUses, and FileOutputs objects.
-#' @param stage_colors Optional named list of stage colors. If NULL, uses pipeline_config() options.
+#' @param x list of FilePath, FileUses, and FileOutputs objects, or another
+#'   object with an \code{as_igraph} method (e.g. \code{\link{cbe_database_relationships}}).
+#' @param ... Additional arguments passed to methods.
 #' @return an igraph object containing complete node and edge attributes
 #' @export
-as_igraph <- function(all_objects, stage_colors = NULL) {
+as_igraph <- function(x, ...) {
+  UseMethod("as_igraph")
+}
+
+#' @rdname as_igraph
+#' @param stage_colors Optional named list of stage colors. If NULL, uses pipeline_config() options.
+#' @export
+as_igraph.default <- function(x, stage_colors = NULL, ...) {
+  all_objects <- x
   # Collect all unique nodes
   all_nodes <- list()
   for (file in all_objects) {

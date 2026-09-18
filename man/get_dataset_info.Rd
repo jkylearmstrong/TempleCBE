@@ -3,20 +3,30 @@
 \name{get_dataset_info}
 \alias{get_dataset_info}
 \alias{get_dataset_info.data.frame}
+\alias{get_dataset_info.list}
 \alias{get_dataset_info.joint_model}
 \alias{proc_contents}
 \title{Summarize a Data Frame or Joint Model's Columns and Components}
 \usage{
 get_dataset_info(x, ...)
 
-\method{get_dataset_info}{data.frame}(x, subject_id = NULL, dataset_name = NULL, ...)
+\method{get_dataset_info}{data.frame}(
+  x,
+  subject_id = NULL,
+  dataset_name = NULL,
+  database_name = NULL,
+  dataset_label = NULL,
+  ...
+)
+
+\method{get_dataset_info}{list}(x, subject_id = NULL, database_name = NULL, ...)
 
 \method{get_dataset_info}{joint_model}(x, ...)
 
 proc_contents(x, ...)
 }
 \arguments{
-\item{x}{A data frame, tibble, or a fitted \code{\link[TempleCBE]{joint_model}} object.}
+\item{x}{A data frame, tibble, named list of data frames, or a fitted \code{\link[TempleCBE]{joint_model}} object.}
 
 \item{...}{Additional arguments passed to methods.}
 
@@ -24,9 +34,13 @@ proc_contents(x, ...)
 for repeated-measures longitudinal datasets to audit time-varying vs. baseline features.}
 
 \item{dataset_name}{Optional character string overriding the displayed dataset name.}
+
+\item{database_name}{Optional character string specifying the parent database name.}
+
+\item{dataset_label}{Optional character string overriding the dataset-level description.}
 }
 \value{
-A tibble with one row per column of \code{x}: \code{dataset_name},
+A tibble with one row per column: \code{dataset_name}, (optional \code{database_name} and \code{dataset_label}),
   \code{labels}, \code{columns}, \code{class}, \code{mean}, \code{sd},
   \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}, and
   optionally \code{variable_type} when \code{subject_id} is specified.
@@ -38,6 +52,8 @@ and missingness. \code{survival::Surv} columns are summarized from their
 underlying time/status or start/stop counting-process matrix rather than
 unrolled as plain numerics. When provided a \code{\link[TempleCBE]{joint_model}}
 object, summarizes the fitted training data and attaches model metadata.
+When provided a list of data frames (an R database), returns a consolidated
+data dictionary across all tables.
 }
 \examples{
 get_dataset_info(mtcars)

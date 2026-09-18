@@ -50,7 +50,7 @@ test_that("cbe_find_shared_keys and cbe_database_relationships detect links and 
   expect_equal(cmp_direct$meta$compare_name, "audit")
 
   # Check graph conversions
-  tg <- as_tbl_graph(rel)
+  tg <- tidygraph::as_tbl_graph(rel)
   expect_s3_class(tg, "tbl_graph")
   expect_equal(igraph::vcount(tg), 2)
   expect_equal(igraph::ecount(tg), 1)
