@@ -1,7 +1,9 @@
 ---
 title: "07. Principal Component Analysis in R and SAS"
 author: "Darina Chudnovskaya"
-reviewer: "@tub51812@temple.edu"
+reviewer:
+  - "@tub51812@temple.edu"
+  - "@tus75918@temple.edu"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{07. Principal Component Analysis in R and SAS}
@@ -25,7 +27,7 @@ library(dplyr)
 ```
 
 > **Author**: Darina Chudnovskaya (`darina.c@temple.edu`, `tub51812@temple.edu`)  
-> **Reviewer**: `@tub51812@temple.edu`  
+> **Reviewers**: `@tub51812@temple.edu`, J. Kyle Armstrong (`tus75918@temple.edu`, `@jkylearmstrong-temple`)  
 > **Affiliation**: Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology  
 
 ## Introduction: Dimension Reduction in Clinical and Exploratory Data Analysis

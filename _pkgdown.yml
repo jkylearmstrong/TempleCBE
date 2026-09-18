@@ -31,6 +31,7 @@ articles:
       - sas_survival
       - R_to_SAS
       - reticulate_export
+      - pca_analysis
 
 reference:
   - title: Data Quality & Missingness Analysis
@@ -54,6 +55,25 @@ reference:
       - detect_outliers
       - calculate_fences
       - flag_outliers
+
+  - title: Principal Component Analysis & Dimension Reduction
+    desc: >
+      Unsupervised dimensionality reduction matching SAS PROC PRINCOMP output:
+      variance decomposition, eigenvalue tables, Kaiser-Guttman scree plots,
+      biplots with concentration ellipses, and variable correlation circles.
+    contents:
+      - proc_pca
+      - pca_plot
+      - pca_scree_plot
+      - pca_variables_plot
+      - pca_biplot
+      - plot_pca_bi
+      - pca_percent_var_explained
+      - pca_feature_loading_heatmap
+      - rotation_matrix
+      - pca_eqns
+      - pca_loading_diff
+      - pca_loading_diff_heatmap
 
   - title: Penalized Cox Models for Survival Data
     desc: >
@@ -348,6 +368,8 @@ reference:
       - extract_win_posix_paths
       - extract_all_xlsx_tokens
       - install.packages.no_lock
+      - reexports
+      - "%>%"
       - infix_helpers
       - "%like%"
       - "%ilike%"
