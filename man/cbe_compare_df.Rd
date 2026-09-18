@@ -2,22 +2,38 @@
 % Please edit documentation in R/cbe_compare_df.R
 \name{cbe_compare_df}
 \alias{cbe_compare_df}
+\alias{cbe_compare_df.default}
+\alias{cbe_compare_df.cbe_database}
+\alias{cbe_compare_df.igraph}
+\alias{cbe_compare_df.visNetwork}
 \title{Compare Two Data Frames (SAS PROC COMPARE Parity)}
 \usage{
-cbe_compare_df(
+cbe_compare_df(base, compare, ...)
+
+\method{cbe_compare_df}{default}(
   base,
   compare,
   by = NULL,
   tolerance = 1e-07,
   base_name = NULL,
   compare_name = NULL,
-  max_diffs = 100
+  max_diffs = 100,
+  ...
 )
+
+\method{cbe_compare_df}{cbe_database}(base, compare, ..., base_name = NULL, compare_name = NULL)
+
+\method{cbe_compare_df}{igraph}(base, compare, ...)
+
+\method{cbe_compare_df}{visNetwork}(base, compare, ...)
 }
 \arguments{
 \item{base}{The base data frame or tibble (equivalent to SAS \code{base=}).}
 
 \item{compare}{The comparison data frame or tibble (equivalent to SAS \code{compare=}).}
+
+\item{...}{Passed on to methods (and, for the \code{cbe_database} method,
+on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolerance}).}
 
 \item{by}{Optional character vector of column names specifying key variables used to align
 observations across datasets (equivalent to SAS \code{id} or \code{by} statement). If \code{NULL}
@@ -35,7 +51,9 @@ deparsed from the \code{compare} argument.}
 \item{max_diffs}{Maximum number of discrepant rows to store per variable (default: 100).}
 }
 \value{
-An S3 object of class \code{"cbe_compare_df"} containing:
+An S3 object of class \code{"cbe_compare_df"} containing (or, for a
+  \code{\link{cbe_database}}/graph comparison, a \code{"cbe_compare_database"}
+  list of two such objects, named \code{nodes} and \code{edges}):
   \item{meta}{List containing metadata on dataset names, dimensions, tolerance, and keys.}
   \item{variables}{List with elements \code{common}, \code{base_only}, and \code{compare_only}.}
   \item{summary}{Tibble summarizing comparison status for each variable (types, match status, difference counts, max difference, RMSE).}
@@ -56,4 +74,13 @@ df2 <- data.frame(id = 1:5, x = c(1, 2, 3.0001, 4, 5), y = c("a", "b", "c", "d",
 cmp <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-3)
 print(cmp)
 generics::tidy(cmp)
+g1 <- igraph::graph_from_data_frame(
+  data.frame(from = c("a", "b"), to = c("b", "c")),
+  vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "eda", "report"))
+)
+g2 <- igraph::graph_from_data_frame(
+  data.frame(from = c("a", "b"), to = c("b", "c")),
+  vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "analysis", "report"))
+)
+cbe_compare_df(g1, g2)
 }

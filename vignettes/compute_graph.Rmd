@@ -338,9 +338,10 @@ as_pipeline_graph(pipeline) |>
 like." A different, equally common question is "what changed" — between
 a `MakeComputeGraph.R` run today and one from last week, or between two
 analysts' working copies of the same study. `as_database()`,
-`graph_intersect()`, and `graph_subtract()` (see `?database_setops`)
-answer that directly, working on any graph object — an `igraph`, a
-`tbl_graph`, or the `igraph` this package's own `as_igraph()` produces.
+`graph_intersect()`, `graph_subtract()`, and `graph_union()` (see
+`?database_setops`) answer that directly, working on any graph object —
+an `igraph`, a `tbl_graph`, or the `igraph` this package's own
+`as_igraph()` produces.
 
 Suppose `report`'s description gets finalized after an earlier draft:
 
@@ -369,22 +370,13 @@ as_database(graph_intersect(g_today, g_yesterday))$nodes |>
 ```
 
 Today's description survives; yesterday's is silently discarded. That's
-not a bug to work around — it's the documented contract of
-`database_intersect()`/`database_subtract()`: attribute values always
-come from the first graph argument, never merged with the second. For a
-pipeline graph, whose nodes carry exactly this kind of node-specific
-metadata (`stage`, `mtime`, `description`), that choice determines what
-you see when you compare snapshots, so pass the more recent one first.
-
-This is a genuinely different operation from `join_pipelines()`
-(Pattern 5, above): `join_pipelines()` *unions* two graphs and
-**coalesces** their attribute columns so neither side's data is lost —
-built for combining complementary sub-pipelines maintained by different
-analysts. `graph_intersect()`/`graph_subtract()` never merge; they narrow
-down to which nodes/edges exist where, taking attribute values from one
-side only. Reach for `join_pipelines()` to build one combined graph out
-of non-overlapping pieces, and for `graph_intersect()`/`graph_subtract()`
-to compare two versions of the *same* pipeline over time.
+not a bug to work around — it's the documented contract of `dplyr::intersect()`/
+`dplyr::setdiff()` on a `cbe_database` (see `?database_setops`): attribute
+values always come from the first graph argument, never merged with the
+second. For a pipeline graph, whose nodes carry exactly this kind of
+node-specific metadata (`stage`, `mtime`, `description`), that choice
+determines what you see when you compare snapshots, so pass the more
+recent one first.
 
 `graph_subtract()` answers "what's new since yesterday":
 
@@ -395,6 +387,25 @@ as_database(graph_subtract(g_today, g_yesterday))$nodes
 Nothing here, since today and yesterday have identical node sets in this
 toy example — a real `MakeComputeGraph.R` diff would surface any newly
 added `FilePath`/`FileOutputs` nodes instead.
+
+`graph_union()` is the odd one out: rather than taking attribute values
+from one side only, it **coalesces** them, so neither snapshot's data is
+silently dropped on overlap:
+
+```{r snapshot_union}
+as_database(graph_union(g_today, g_yesterday))$nodes |>
+  select(name, description)
+```
+
+This is the same union-and-coalesce behavior as `join_pipelines()`
+(Pattern 5, above) — `join_pipelines()` is `tbl_graph`-specific and keys
+on `name`, while `graph_union()` works on any graph type via
+`as_database()` and lets you choose the join key with `node_by`. Reach
+for `join_pipelines()`/`graph_union()` to build one combined graph out of
+complementary, non-conflicting pieces, and for `graph_intersect()`/
+`graph_subtract()` to compare two versions of the *same* pipeline over
+time, where you specifically want one side's values to win rather than
+merge.
 
 ## Sharing an interactive version
 

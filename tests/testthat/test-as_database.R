@@ -10,6 +10,7 @@ test_that("as_database() converts igraph/tbl_graph and visNetwork objects", {
 
   db <- as_database(g)
   expect_type(db, "list")
+  expect_s3_class(db, "cbe_database")
   expect_named(db, c("nodes", "edges"))
   expect_s3_class(db$nodes, "tbl_df")
   expect_s3_class(db$edges, "tbl_df")
@@ -34,5 +35,20 @@ test_that("as_database() converts igraph/tbl_graph and visNetwork objects", {
   expect_equal(db_vn$edges, tibble::as_tibble(edges_df))
 
   # Unsupported class errors informatively rather than silently misbehaving
-  expect_error(as_database(list(1, 2)), "No `as_database\\(\\)` method")
+  expect_error(as_database(list(1, 2)), "requires `nodes` and `edges`")
+  expect_error(as_database(42), "No `as_database\\(\\)` method")
+})
+
+test_that("as_database() validates and stamps a plain nodes/edges list", {
+  raw <- list(
+    nodes = data.frame(name = c("a", "b")),
+    edges = data.frame(from = "a", to = "b")
+  )
+  db <- as_database(raw)
+  expect_s3_class(db, "cbe_database")
+  expect_s3_class(db$nodes, "tbl_df")
+  expect_s3_class(db$edges, "tbl_df")
+
+  expect_error(as_database(list(nodes = raw$nodes)), "requires `nodes` and `edges`")
+  expect_error(as_database(list(nodes = 1, edges = raw$edges)), "requires `nodes` and `edges`")
 })

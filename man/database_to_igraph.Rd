@@ -7,9 +7,9 @@
 database_to_igraph(db, directed = TRUE)
 }
 \arguments{
-\item{db}{An R database: a named list with \code{nodes} and \code{edges}
-data frames/tibbles, where \code{nodes}'s first column is the node
-identifier used by \code{edges}'s \code{from}/\code{to} columns.}
+\item{db}{A \code{cbe_database} (or plain named list with \code{nodes} and
+\code{edges} data frames/tibbles), where \code{nodes}'s first column is
+the node identifier used by \code{edges}'s \code{from}/\code{to} columns.}
 
 \item{directed}{Logical, whether the graph is directed (default \code{TRUE}).}
 }
@@ -18,9 +18,9 @@ An \code{igraph} object.
 }
 \description{
 The other direction from \code{\link{as_database}}: takes a
-\code{list(nodes = ..., edges = ...)} database -- such as one produced by
-\code{\link{as_database}}, \code{\link{database_intersect}}, or
-\code{\link{database_subtract}} -- and builds an \code{igraph} from it.
+\code{\link{cbe_database}} (or plain \code{list(nodes = ..., edges = ...)})
+-- such as one produced by \code{\link{as_database}} or the
+\code{\link{database_setops}} verbs -- and builds an \code{igraph} from it.
 }
 \details{
 Deliberately not a new \code{as_igraph()} method: \code{as_igraph.default()}
@@ -31,9 +31,9 @@ objects for its own, unrelated purpose (a list of \code{FilePath}/
 calls instead of falling through to \code{.default}.
 }
 \examples{
-db <- list(
+db <- as_database(list(
   nodes = data.frame(name = c("a", "b", "c")),
   edges = data.frame(from = c("a", "b"), to = c("b", "c"))
-)
+))
 database_to_igraph(db)
 }
