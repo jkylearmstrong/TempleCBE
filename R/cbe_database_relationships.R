@@ -125,17 +125,18 @@ cbe_database_relationships <- function(db, id_cols = NULL) {
 #' @rdname cbe_database_relationships
 #' @param x A \code{cbe_database_relationships} object.
 #' @param ... Additional arguments passed to methods.
-#' @export
+#' @exportS3Method tidygraph::as_tbl_graph
 as_tbl_graph.cbe_database_relationships <- function(x, ...) {
   all_tables <- attr(x, "database_tables", exact = TRUE) %||% unique(c(x$from_table, x$to_table))
   nodes <- tibble::tibble(name = all_tables)
   if (nrow(x) == 0) {
     return(tidygraph::tbl_graph(nodes = nodes, edges = tibble::tibble(from = integer(), to = integer())))
   }
-  edges <- dplyr::rename(x, from = .data$from_table, to = .data$to_table)
+  edges <- dplyr::rename(x, from = "from_table", to = "to_table")
   tidygraph::tbl_graph(nodes = nodes, edges = edges)
 }
 
+#' @rdname as_igraph
 #' @export
 as_igraph.cbe_database_relationships <- function(x, ...) {
   tg <- as_tbl_graph.cbe_database_relationships(x, ...)
@@ -242,7 +243,6 @@ cbe_database_venn <- function(db, id_col = "id", title = NULL, ...) {
 #' @param ... Additional arguments passed to plotting backends.
 #' @return A ggplot2 or plot object.
 #' @exportS3Method ggplot2::autoplot
-#' @export
 autoplot.cbe_database_relationships <- function(object, type = c("graph", "venn"), db = NULL, id_col = NULL, ...) {
   type <- match.arg(type)
   if (type == "venn") {
@@ -276,7 +276,6 @@ autoplot.cbe_database_relationships <- function(object, type = c("graph", "venn"
 #' @param ... Additional arguments passed to methods.
 #' @return A ggplot2 object.
 #' @exportS3Method ggplot2::autoplot
-#' @export
 autoplot.cbe_key_integrity <- function(object, ...) {
   df_summary <- tibble::as_tibble(object)
   p <- ggplot2::ggplot(df_summary, ggplot2::aes(x = .data$dataset_name, y = .data$unique_ids)) +

@@ -18,6 +18,10 @@ step_lencode_coxnet(
   skip = FALSE,
   id = recipes::rand_id("lencode_coxnet")
 )
+
+tunable.step_lencode_coxnet(x, ...)
+
+\method{required_pkgs}{step_lencode_coxnet}(x, ...)
 }
 \arguments{
 \item{recipe}{A recipe object.}

@@ -2,6 +2,7 @@
 % Please edit documentation in R/step_lencode_survival.R
 \name{step_lencode_joint_model}
 \alias{step_lencode_joint_model}
+\alias{required_pkgs.step_lencode_joint_model}
 \title{Supervised Linear Encoding of Factors via Joint Survival-Status-Time Model}
 \usage{
 step_lencode_joint_model(
@@ -16,6 +17,8 @@ step_lencode_joint_model(
   skip = FALSE,
   id = recipes::rand_id("lencode_joint_model")
 )
+
+\method{required_pkgs}{step_lencode_joint_model}(x, ...)
 }
 \arguments{
 \item{recipe}{A recipe object.}

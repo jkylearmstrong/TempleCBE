@@ -1,3 +1,25 @@
+#' Resolve a Column's Display Label
+#'
+#' Prefers [labelled::var_label()], falling back to `attr(x, "label")` --
+#' necessary because a label set on a raw time/status column is typically
+#' lost once it's wrapped in [survival::Surv()].
+#'
+#' @param x The column vector to label.
+#' @param default Value returned when no usable label is found.
+#' @return A single string: the resolved label, or `default`.
+#' @keywords internal
+#' @noRd
+resolve_var_label <- function(x, default = NA_character_) {
+  lbl <- tryCatch(labelled::var_label(x), error = function(e) NULL)
+  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
+    lbl <- attr(x, "label", exact = TRUE)
+  }
+  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
+    return(default)
+  }
+  as.character(lbl)
+}
+
 #' Get or Set Dataset and Database Labels
 #'
 #' Extends \pkg{labelled} variable-level conventions to dataset-level and
