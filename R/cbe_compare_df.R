@@ -198,7 +198,26 @@ cbe_compare_df <- function(base,
     }
   }
 
-  summary_tbl <- dplyr::bind_rows(summary_list)
+  # bind_rows() on an empty list (no non-key variables left to compare --
+  # e.g. two tables consisting only of `by` columns, like a bare edge list)
+  # returns a tibble with NO columns at all, not even `n_diff`/`types_match`,
+  # which then warns ("unknown or uninitialised column") every time those are
+  # referenced below. Keep the schema so an empty comparison stays silent and
+  # vacuously concordant on the (zero) shared non-key variables.
+  summary_tbl <- if (length(summary_list) > 0) {
+    dplyr::bind_rows(summary_list)
+  } else {
+    tibble::tibble(
+      variable = character(0),
+      label = character(0),
+      type_base = character(0),
+      type_compare = character(0),
+      types_match = logical(0),
+      n_diff = integer(0),
+      max_diff = numeric(0),
+      rmse = numeric(0)
+    )
+  }
   all_diffs <- tibble::as_tibble(if (length(diffs_list) > 0) dplyr::bind_rows(diffs_list) else tibble::tibble())
 
   is_concordant <- (length(base_only) == 0 &&

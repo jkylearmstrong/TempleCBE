@@ -332,6 +332,70 @@ as_pipeline_graph(pipeline) |>
   select(name, stage, artifact_role, renders)
 ```
 
+## Comparing two pipeline snapshots
+
+`as_pipeline_graph()`/`as_igraph()` answer "what does the pipeline look
+like." A different, equally common question is "what changed" — between
+a `MakeComputeGraph.R` run today and one from last week, or between two
+analysts' working copies of the same study. `as_database()`,
+`graph_intersect()`, and `graph_subtract()` (see `?database_setops`)
+answer that directly, working on any graph object — an `igraph`, a
+`tbl_graph`, or the `igraph` this package's own `as_igraph()` produces.
+
+Suppose `report`'s description gets finalized after an earlier draft:
+
+```{r snapshot_setup}
+report_yesterday <- create_qmd_renderer(
+  name = "t_test_example",
+  path = system.file("templates", "t_test_example.qmd", package = "TempleCBE"),
+  deps = list(helper),
+  file_stage = "report",
+  description = "Draft t-test report (not yet finalized)"
+)
+
+pipeline_yesterday <- list(helper, report_yesterday)
+
+g_today <- as_igraph(pipeline)
+g_yesterday <- as_igraph(pipeline_yesterday)
+```
+
+Both snapshots share every node (same file paths, same names), so
+`graph_intersect()` keeps all of them — but whose `description` comes
+through?
+
+```{r snapshot_intersect}
+as_database(graph_intersect(g_today, g_yesterday))$nodes |>
+  select(name, description)
+```
+
+Today's description survives; yesterday's is silently discarded. That's
+not a bug to work around — it's the documented contract of
+`database_intersect()`/`database_subtract()`: attribute values always
+come from the first graph argument, never merged with the second. For a
+pipeline graph, whose nodes carry exactly this kind of node-specific
+metadata (`stage`, `mtime`, `description`), that choice determines what
+you see when you compare snapshots, so pass the more recent one first.
+
+This is a genuinely different operation from `join_pipelines()`
+(Pattern 5, above): `join_pipelines()` *unions* two graphs and
+**coalesces** their attribute columns so neither side's data is lost —
+built for combining complementary sub-pipelines maintained by different
+analysts. `graph_intersect()`/`graph_subtract()` never merge; they narrow
+down to which nodes/edges exist where, taking attribute values from one
+side only. Reach for `join_pipelines()` to build one combined graph out
+of non-overlapping pieces, and for `graph_intersect()`/`graph_subtract()`
+to compare two versions of the *same* pipeline over time.
+
+`graph_subtract()` answers "what's new since yesterday":
+
+```{r snapshot_subtract}
+as_database(graph_subtract(g_today, g_yesterday))$nodes
+```
+
+Nothing here, since today and yesterday have identical node sets in this
+toy example — a real `MakeComputeGraph.R` diff would surface any newly
+added `FilePath`/`FileOutputs` nodes instead.
+
 ## Sharing an interactive version
 
 For a collaborator who wants to pan, zoom, and hover over individual
