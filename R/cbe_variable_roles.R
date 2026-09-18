@@ -131,6 +131,7 @@ cbe_variable_roles <- function(data,
 }
 
 #' @rdname cbe_variable_roles
+#' @param ... Additional arguments passed to \code{\link{cbe_variable_roles}}.
 #' @export
 cbe_set_roles <- function(data, ...) {
   role_tbl <- cbe_variable_roles(data, ...)

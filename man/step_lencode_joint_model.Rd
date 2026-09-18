@@ -40,6 +40,8 @@ step_lencode_joint_model(
 \item{skip}{Logical; skip step when baking? Default is \code{FALSE}.}
 
 \item{id}{A unique identifier for the step.}
+
+\item{x}{A \code{step_lencode_joint_model} object.}
 }
 \value{
 An updated version of \code{recipe}.

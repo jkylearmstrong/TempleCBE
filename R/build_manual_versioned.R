@@ -67,6 +67,6 @@ build_manual_versioned <- function(pkg = ".", path = NULL, latest = TRUE) {
     )
   }
 
-  message("✅ Manual built: ", out_file)
+  message("Manual built: ", out_file)
   invisible(out_file)
 }

@@ -216,6 +216,7 @@ tidy.step_lencode_coxnet <- function(x, ...) {
 }
 
 #' @rdname step_lencode_coxnet
+#' @param x A \code{step_lencode_coxnet} object.
 #' @export
 tunable.step_lencode_coxnet <- function(x, ...) {
   tibble::tibble(
@@ -444,6 +445,7 @@ tidy.step_lencode_joint_model <- function(x, ...) {
 }
 
 #' @rdname step_lencode_joint_model
+#' @param x A \code{step_lencode_joint_model} object.
 #' @export
 required_pkgs.step_lencode_joint_model <- function(x, ...) {
   c("TempleCBE", "glmnet", "survival")

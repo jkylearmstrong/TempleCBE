@@ -50,6 +50,7 @@ reference:
       - get_dataset_info
       - proc_contents
       - cbe_compare_df
+      - autoplot.cbe_compare_df
 
   - title: Clinical Databases & Multi-Table Management
     desc: Functions for multi-table clinical databases, metadata export/import, variable role assignment, and relational linkage analysis.
@@ -76,8 +77,11 @@ reference:
       - cbe_get_id_cols
       - cbe_get_time_cols
       - cbe_database_relationships
+      - autoplot.cbe_database_relationships
+      - cbe_database_venn
       - cbe_find_shared_keys
       - cbe_check_key_integrity
+      - autoplot.cbe_key_integrity
 
   - title: Normalization & Outlier Detection
     desc: Functions for scaling numeric features and flagging statistical outliers.
@@ -420,3 +424,8 @@ reference:
       - "%plike%"
       - "%notin%"
       - "%!in%"
+
+  - title: Package Development & Release Tooling
+    desc: Maintainer-facing helpers for package release and documentation artifacts.
+    contents:
+      - build_manual_versioned
