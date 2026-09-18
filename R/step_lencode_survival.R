@@ -30,20 +30,20 @@
 #' @examples
 #' \dontrun{
 #' if (requireNamespace("recipes", quietly = TRUE) && requireNamespace("survival", quietly = TRUE)) {
-#'   data(lung, package = "survival")
+#'   lung <- survival::lung
 #'   lung_df <- na.omit(lung[, c("time", "status", "sex", "ph.ecog")])
 #'   lung_df$ph.ecog <- factor(lung_df$ph.ecog)
 #'   lung_df$sex <- factor(lung_df$sex)
 #'
 #'   rec <- recipes::recipe(time + status ~ ., data = lung_df) |>
-#'     step_lencode_coxnet(ph.ecog, sex, outcome = recipes::vars(time, status))
+#'     step_lencode_coxnet(ph.ecog, sex, outcome = c("time", "status"))
 #'   prepped <- recipes::prep(rec)
 #'   baked <- recipes::bake(prepped, new_data = NULL)
 #' }
 #' }
 step_lencode_coxnet <- function(recipe,
                                 ...,
-                                outcome = recipes::vars(time, status),
+                                outcome = c("time", "status"),
                                 role = "predictor",
                                 trained = FALSE,
                                 penalty = 0.05,
@@ -87,7 +87,7 @@ step_lencode_coxnet_new <- function(terms, outcome, role, trained, penalty, mixt
   )
 }
 
-#' @export
+#' @exportS3Method recipes::prep
 prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   # 1. Resolve predictor terms
   col_names <- recipes::recipes_eval_select(x$terms, training, info)
@@ -106,7 +106,11 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   }
 
   # 2. Resolve outcome columns
-  outcome_names <- recipes::recipes_eval_select(x$outcome, training, info)
+  outcome_names <- if (is.character(x$outcome)) {
+    intersect(x$outcome, names(training))
+  } else {
+    recipes::recipes_eval_select(x$outcome, training, info)
+  }
   if (length(outcome_names) < 2) {
     stop("`outcome` in step_lencode_coxnet must specify at least two columns (e.g. time, status).", call. = FALSE)
   }
@@ -164,7 +168,7 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   )
 }
 
-#' @export
+#' @exportS3Method recipes::bake
 bake.step_lencode_coxnet <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
   for (col in col_names) {
@@ -251,15 +255,15 @@ required_pkgs.step_lencode_coxnet <- function(x, ...) {
 #' @return An updated version of \code{recipe}.
 #' @export
 step_lencode_joint_model <- function(recipe,
-                                    ...,
-                                    outcome = recipes::vars(time, status),
-                                    role = "predictor",
-                                    trained = FALSE,
-                                    engine = "glmnet",
-                                    penalty = 0.05,
-                                    mapping = NULL,
-                                    skip = FALSE,
-                                    id = recipes::rand_id("lencode_joint_model")) {
+                                     ...,
+                                     outcome = c("time", "status"),
+                                     role = "predictor",
+                                     trained = FALSE,
+                                     engine = "glmnet",
+                                     penalty = 0.05,
+                                     mapping = NULL,
+                                     skip = FALSE,
+                                     id = recipes::rand_id("lencode_joint_model")) {
   if (!requireNamespace("recipes", quietly = TRUE)) {
     stop("Package 'recipes' is required for step_lencode_joint_model().", call. = FALSE)
   }
@@ -296,7 +300,7 @@ step_lencode_joint_model_new <- function(terms, outcome, role, trained, engine,
   )
 }
 
-#' @export
+#' @exportS3Method recipes::prep
 prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
   col_names <- recipes::recipes_eval_select(x$terms, training, info)
   if (length(col_names) == 0) {
@@ -313,7 +317,11 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
     ))
   }
 
-  outcome_names <- recipes::recipes_eval_select(x$outcome, training, info)
+  outcome_names <- if (is.character(x$outcome)) {
+    intersect(x$outcome, names(training))
+  } else {
+    recipes::recipes_eval_select(x$outcome, training, info)
+  }
   if (length(outcome_names) < 2) {
     stop("`outcome` in step_lencode_joint_model must specify outcome columns.", call. = FALSE)
   }
@@ -370,8 +378,9 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
     preds <- stats::predict(jm_fit, new_data = level_df)
     risk_scores <- as.numeric(preds$.pred_risk_score)
 
-    # Normalize relative to baseline level
-    map_vec <- stats::setNames(risk_scores - risk_scores[1], levs)
+    # Normalize relative to baseline level on log hazard ratio scale
+    log_risk <- log(pmax(risk_scores, 1e-8))
+    map_vec <- stats::setNames(log_risk - log_risk[1], levs)
     mapping[[col]] <- map_vec
   }
 
@@ -388,7 +397,7 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
   )
 }
 
-#' @export
+#' @exportS3Method recipes::bake
 bake.step_lencode_joint_model <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
   for (col in col_names) {

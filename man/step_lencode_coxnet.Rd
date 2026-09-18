@@ -7,7 +7,7 @@
 step_lencode_coxnet(
   recipe,
   ...,
-  outcome = recipes::vars(time, status),
+  outcome = c("time", "status"),
   role = "predictor",
   trained = FALSE,
   penalty = 0.05,
@@ -58,13 +58,13 @@ Inspired by \code{embed::step_lencode_glm}.
 \examples{
 \dontrun{
 if (requireNamespace("recipes", quietly = TRUE) && requireNamespace("survival", quietly = TRUE)) {
-  data(lung, package = "survival")
+  lung <- survival::lung
   lung_df <- na.omit(lung[, c("time", "status", "sex", "ph.ecog")])
   lung_df$ph.ecog <- factor(lung_df$ph.ecog)
   lung_df$sex <- factor(lung_df$sex)
 
   rec <- recipes::recipe(time + status ~ ., data = lung_df) |>
-    step_lencode_coxnet(ph.ecog, sex, outcome = recipes::vars(time, status))
+    step_lencode_coxnet(ph.ecog, sex, outcome = c("time", "status"))
   prepped <- recipes::prep(rec)
   baked <- recipes::bake(prepped, new_data = NULL)
 }

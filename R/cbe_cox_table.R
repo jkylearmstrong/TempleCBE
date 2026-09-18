@@ -26,10 +26,12 @@ cbe_cox_table <- function(x, sort = c("none", "magnitude", "pvalue"), significan
   }
 
   tab <- x$table
+  ci_col <- grep("% CI$", names(tab), value = TRUE)[1]
+  if (is.na(ci_col)) ci_col <- "95% CI"
 
   if (!"log(HR)" %in% names(tab)) {
     tab[["log(HR)"]] <- round(log(tab$HR), 3)
-    tab <- tab[, c("Variable", "Level", "Role", "HR", "log(HR)", "95% CI", "p.value")]
+    tab <- tab[, c("Variable", "Level", "Role", "HR", "log(HR)", ci_col, "p.value")]
   }
 
   p_numeric <- suppressWarnings(as.numeric(gsub("^<", "", tab$p.value)))

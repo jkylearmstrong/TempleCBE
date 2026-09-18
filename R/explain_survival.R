@@ -28,7 +28,7 @@
 #' @examples
 #' \dontrun{
 #' if (requireNamespace("survex", quietly = TRUE) && requireNamespace("survival", quietly = TRUE)) {
-#'   data(lung, package = "survival")
+#'   lung <- survival::lung
 #'   df <- na.omit(lung[, c("time", "status", "age", "sex")])
 #'   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
 #'   expl <- cbe_explain_survival(fit)

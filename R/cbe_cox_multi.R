@@ -76,12 +76,18 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
 
   td <- broom::tidy(fit, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE)
 
+  ci_col <- if (!is.null(conf_level) && conf_level != 0.95) {
+    sprintf("%d%% CI", round(conf_level * 100))
+  } else {
+    "95% CI"
+  }
+
   coef_table <- purrr::map_dfr(features, function(feat) {
     col_vals <- data[[feat]]
     var_lbl <- var_labels[[feat]]
-    term_rows <- td[startsWith(td$term, feat), , drop = FALSE]
 
     if (is.numeric(col_vals)) {
+      term_rows <- td[td$term == feat, , drop = FALSE]
       term_rows |>
         dplyr::transmute(
           Variable  = var_lbl,
@@ -89,12 +95,14 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
           Role      = "Covariate",
           HR        = round(estimate, 2),
           `log(HR)` = round(log(estimate), 3),
-          `95% CI`  = sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
+          !!ci_col  := sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
           p.value   = scales::pvalue(p.value)
         )
     } else {
       f_levels <- levels(as.factor(col_vals))
       ref_level <- f_levels[1]
+      expected_terms <- paste0(feat, f_levels[-1])
+      term_rows <- td[td$term %in% expected_terms, , drop = FALSE]
 
       comp_rows <- term_rows |>
         dplyr::mutate(
@@ -104,10 +112,10 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
           Role        = "Comparison",
           HR          = round(estimate, 2),
           `log(HR)`   = round(log(estimate), 3),
-          `95% CI`    = sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
+          !!ci_col    := sprintf("%.2f \u2013 %.2f", conf.low, conf.high),
           p.value     = scales::pvalue(p.value)
         ) |>
-        dplyr::select(Variable, Level, Role, HR, `log(HR)`, `95% CI`, p.value)
+        dplyr::select(Variable, Level, Role, HR, `log(HR)`, dplyr::all_of(ci_col), p.value)
 
       ref_row <- tibble::tibble(
         Variable  = var_lbl,
@@ -115,7 +123,7 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
         Role      = "Reference",
         HR        = 1.00,
         `log(HR)` = 0,
-        `95% CI`  = "Reference",
+        !!ci_col  := "Reference",
         p.value   = "\u2014"
       )
 
@@ -139,7 +147,8 @@ cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = 
       converged    = converged,
       n_iterations = n_iter,
       features     = features,
-      var_labels   = var_labels
+      var_labels   = var_labels,
+      conf_level   = conf_level
     ),
     class = "cbe_cox_multi"
   )
