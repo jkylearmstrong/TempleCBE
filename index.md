@@ -8,22 +8,19 @@ MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](https:
 [![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&query=%24.Version&label=version&color=blue)](https://github.com/jkylearmstrong/TempleCBE)
 
 **TempleCBE** is an open-source R package developed for Temple
-University’s **Center for Biostatistics and Epidemiology (CBE)**. It
-provides a clean, domain-agnostic suite of biostatistical testing
-functions, data quality and missingness visualizations, normalization
-utilities, correlation and PCA helpers, custom Tidymodels recipe steps
-(`step_famd`), and a tidymodels-native survival modeling toolkit
-([`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md),
-[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md),
-[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md))
-for start/stop clinical data.
+University’s **Center for Biostatistics and Epidemiology (CBE)** at the
+Lewis Katz School of Medicine and College of Public Health. It provides
+a robust, domain-agnostic suite of biostatistical inference tools,
+clinical data quality auditing, unsupervised dimension reduction with
+SAS `PROC PRINCOMP` parity, multi-paradigm joint survival-status-time
+modeling, explainable machine learning for time-to-event outcomes, and
+reproducible pipeline dependency tracking.
 
 ------------------------------------------------------------------------
 
 ## 📦 Installation
 
-You can install the development version of `TempleCBE` directly from
-GitHub:
+Install the development version directly from GitHub:
 
 ``` r
 
@@ -34,7 +31,7 @@ if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("jkylearmstrong/TempleCBE")
 ```
 
-Or using `remotes`:
+Or via `remotes`:
 
 ``` r
 
@@ -43,204 +40,217 @@ remotes::install_github("jkylearmstrong/TempleCBE")
 
 ------------------------------------------------------------------------
 
-## 🚀 Quick Start
+## 🚀 Key Feature Showcases
 
 ``` r
 
 library(TempleCBE)
 library(dplyr)
+library(ggplot2)
 ```
 
-### 1. Data Quality & Missingness Analysis
+### 1. Data Quality, Missingness Auditing & Metadata
 
-Quickly compute total missing counts and detailed feature-level
-missingness tables:
+Quickly audit missing data across individual features or compile
+multi-table database metadata:
 
 ``` r
 
-# Sample dataset with missing values
+# Sample clinical dataframe
 df <- tibble(
   patient_id = 1:5,
   age = c(45, 52, NA, 61, 38),
   bmi = c(NA, 24.5, 29.1, NA, 31.0),
-  blood_pressure = c(120, NA, 135, 140, 118)
+  sbp = c(120, NA, 135, 140, 118)
 )
 
-# Total missing values across dataset
+# Total missingness count across the entire dataset
 SumNa(df)
 
-# Feature-level missingness summary
+# Feature-level percent missing summary
 features_percent_miss(df)
-```
 
-Generate a missingness summary plot:
+# Extract column-level metadata and data dictionaries
+get_dataset_info(df)
+```
 
 ``` r
 
+# Generate institutional missingness audit visualizations
 plot_features_percent_miss(df)
 ```
 
-See the [Exploratory Data Analysis, Missingness Auditing, and
-Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html)
-vignette for a full walkthrough, including non-standard missing codes
-and outlier-aware EDA.
+------------------------------------------------------------------------
 
-### 2. Normalization & Outlier Detection
+### 2. Principal Component Analysis (SAS `PROC PRINCOMP` Parity)
 
-Standardize features or detect numerical outliers using Interquartile
-Range (IQR) thresholding:
-
-``` r
-
-# Min-Max Normalization to [0, 1]
-min_max_norm(df$age)
-
-# Z-Score Standardization (mean = 0, sd = 1)
-z_norm(df$age)
-
-# Detect numerical outliers via IQR fences (MILD vs EXTREME, by inner/outer fence)
-detect_outliers(data.frame(measurement = c(1, 2, 3, 4, 5, 100)))
-```
-
-### 3. Correlation & Principal Component Analysis
-
-Pairwise correlation tests across every numeric column, and PCA variance
-summaries straight from raw data (no need to fit
-[`prcomp()`](https://rdrr.io/r/stats/prcomp.html) yourself first):
+[`proc_pca()`](https://jkylearmstrong.github.io/TempleCBE/reference/proc_pca.md)
+executes standardized PCA and outputs the exact eigenvalue variance
+table produced by SAS `PROC PRINCOMP`, accompanied by publication-ready
+diagnostic plots:
 
 ``` r
 
-# Every pairwise correlation, strongest positive correlation first
-corr_test_all(mtcars[, c("mpg", "hp", "wt", "qsec")], columns = "tidy", sort = "estimate")
+# Standardized PCA on continuous variables
+iris_pca <- proc_pca(iris[, 1:4], scale = TRUE)
+iris_pca
 
-# proc_pca() fits the PCA and summarizes it in one step
-proc_pca(mtcars[, 1:4], scale = TRUE)
+# 1. Scree plot with Kaiser-Guttman threshold (Eigenvalue >= 1)
+pca_scree_plot(iris_pca, metric = "eigenvalue", kaiser = TRUE)
+
+# 2. Variable correlation circle on unit circle
+pca_variables_plot(iris_pca, x = 1, y = 2)
+
+# 3. Loadings biplot with 95% concentration ellipses
+pca_biplot(iris_pca, group = iris$Species, ellipse = TRUE, percent = TRUE)
 ```
 
-### 4. Penalized Cox Models for Survival Data
+------------------------------------------------------------------------
 
-[`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
-and
-[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
-fit elastic-net Cox models through the tidymodels `hardhat` interface,
-supporting both right-censored and start/stop (counting-process)
-outcomes:
+### 3. Joint Survival-Status-Time Modeling
+
+[`joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
+blends penalized Cox proportional hazards, binary event classification,
+follow-up duration regression, and calibrated stacked ensembles into a
+unified risk score:
 
 ``` r
 
 library(survival)
 
-lung_data <- na.omit(lung[, c("time", "status", "age", "sex", "ph.ecog", "wt.loss")])
-fit <- coxnet(Surv(time, status) ~ ., data = lung_data, penalty = 0.05, mixture = 0.5)
+lung_clean <- na.omit(lung[, c("time", "status", "age", "sex", "ph.ecog")])
 
-generics::tidy(fit)
-predict(fit, lung_data[1:3, ], type = "survival", eval_time = c(180, 365))$.pred[[1]]
-```
+# Fit multi-paradigm joint model
+jm_fit <- joint_model(
+  Surv(time, status) ~ age + sex + ph.ecog,
+  data = lung_clean,
+  engine = "stacked"
+)
 
-For repeated-measures/start-stop data,
-[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
-tunes and scores a penalized Cox model with a proper, subject-grouped
-integrated Brier score. See the [Penalized Cox Models and Nested
-Cross-Validation for Start/Stop Survival
-Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)
-vignette for the full nested cross-validation workflow.
-
-### 5. Custom Tidymodels Recipe Step: `step_famd`
-
-Extract Factor Analysis of Mixed Data (FAMD) principal components
-seamlessly within the `tidymodels` framework:
-
-``` r
-
-library(recipes)
-
-# Define recipe with mixed numeric and categorical variables
-rec <- recipe(Species ~ ., data = iris) %>%
-  step_famd(all_predictors(), num_comp = 2)
-
-# Prep and bake
-prepped_rec <- prep(rec)
-baked_data <- bake(prepped_rec, new_data = NULL)
-
-head(baked_data)
-```
-
-### 6. Infix Helper Operators
-
-Convenient syntax for string matching and negation:
-
-``` r
-
-# Pattern matching operators
-"patient_cohort_A" %like% "cohort"   # TRUE
-"PATIENT_COHORT_A" %ilike% "cohort"  # TRUE (case-insensitive)
-
-# Negated %in% operator
-5 %notin% c(1, 2, 3, 4)             # TRUE
+# Predict unified multi-horizon survival probabilities and composite risk scores
+predict(jm_fit, lung_clean[1:5, ], type = "survival", eval_time = c(180, 365))
 ```
 
 ------------------------------------------------------------------------
 
-## 📚 Vignettes
+### 4. Penalized Cox Models for Start/Stop & Right-Censored Data
 
-Beyond the quick-start snippets above, `TempleCBE` ships full
-worked-example vignettes:
+[`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
+and
+[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+provide a `tidymodels`-native `hardhat` interface for regularized Cox
+regression, with subject-grouped cross-validation to prevent information
+leakage in counting-process data:
 
-- **[01. Exploratory Data Analysis, Missingness Auditing, and
-  Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html)**
-  — non-standard missing codes, missingness visualization, and
-  outlier-aware normalization for messy clinical/EHR data.
-- **[02. Penalized Cox Models and Nested Cross-Validation for Start/Stop
-  Survival
-  Data](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html)**
-  — why row-level resampling leaks for counting-process data, and how
-  [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)/[`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)/[`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
-  avoid it.
-- **[03. Visualizing Computational Pipeline
-  Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html)**
-  — treating a multi-report analysis pipeline as a dependency graph with
-  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
-  and project-level `MakeComputeGraph.R`.
-- **[04. Validation and Workflow Guide for SAS Users: Cox Models in
-  TempleCBE](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html)**
-  — cross-validating time-fixed and time-dependent Cox models against
-  SAS PROC PHREG, with
-  [`survival::tmerge`](https://rdrr.io/pkg/survival/man/tmerge.html) and
-  [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md).
+``` r
 
-Once installed, each is also available locally via
-[`vignette("eda_and_missingness", package = "TempleCBE")`](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.md)
-(substituting the vignette name).
+# Fit elastic-net penalized Cox model
+fit_cox <- coxnet(Surv(time, status) ~ ., data = lung_clean, penalty = 0.05, mixture = 0.5)
+
+# Subject-grouped Cross-Validation with Integrated Brier Score
+cv_fit <- cv_coxnet(Surv(time, status) ~ ., data = lung_clean, v = 5)
+generics::tidy(cv_fit)
+```
+
+------------------------------------------------------------------------
+
+### 5. Categorical Association & Contingency Analysis
+
+Comprehensive exact tests, 4-quadrant summaries, and multi-format
+association plots:
+
+``` r
+
+# Exact 2x2 inference with robust confidence intervals
+cbe_exact2x2(matrix(c(10, 5, 2, 15), nrow = 2))
+
+# Multi-panel categorical association visualizer (mosaic, balloon, heatmap)
+plot_categorical_associations(
+  data = mtcars,
+  var_x = "cyl",
+  var_y = "am",
+  type = "mosaic"
+)
+```
+
+------------------------------------------------------------------------
+
+### 6. Pipeline Dependency & Computational Graph Tracking
+
+Model analysis scripts and data deliverables as an interactive DAG:
+
+``` r
+
+# Define pipeline stages and track downstream artifacts
+graph <- compute_graph(
+  stages = list(
+    data_clean = list(inputs = "raw.csv", outputs = "clean.rds"),
+    model_fit  = list(inputs = "clean.rds", outputs = "model.rds")
+  )
+)
+
+# Generate execution plan
+get_render_plan(graph)
+```
+
+------------------------------------------------------------------------
+
+## 📚 Comprehensive Vignettes
+
+`TempleCBE` includes extensive, peer-reviewed vignettes covering theory,
+simulation, and clinical workflows:
+
+| \# | Vignette Title | Key Topics & Methodology |
+|:---|:---|:---|
+| **01** | [Exploratory Data Analysis, Missingness Auditing, and Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html) | Non-standard missing codes, missingness visualizations, IQR outlier detection, and normalization. |
+| **02** | [Penalized Cox Models and Nested Cross-Validation](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html) | Start/stop counting process data, subject-level partitioning, and yardstick survival scoring. |
+| **03** | [Visualizing Computational Pipeline Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html) | Directed acyclic graphs (DAGs), multi-report orchestration, and reproducible analysis plans. |
+| **04** | [Validation Guide for SAS Users: Cox Models](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html) | Cross-validating [`cbe_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_single.md), [`cbe_cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_multi.md), and [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md) against SAS `PROC PHREG`. |
+| **05** | [Cross-Validating Advanced Survival Models: R to SAS](https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html) | Automated macro exports, macro validation suites, and numerical concordance benchmarks. |
+| **06** | [Multi-Language Interoperability and Python Pipelines](https://jkylearmstrong.github.io/TempleCBE/articles/reticulate_export.html) | Reticulate bridges, cross-language artifact transfer, and unified modeling pipelines. |
+| **07** | [Principal Component Analysis in R and SAS](https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html) | SAS `PROC PRINCOMP` eigenvalue parity, Kaiser-Guttman scree plots, biplots, and clinical TAS dimension reduction. |
+
+Access any vignette locally after installation via:
+
+``` r
+
+vignette("pca_analysis", package = "TempleCBE")
+```
 
 ------------------------------------------------------------------------
 
 ## 🏛️ Ecosystem Architecture
 
-`TempleCBE` is the public layer of Temple CBE’s biostatistics framework
-— general-purpose code that private, protected-data repos import and
-re-export, so they can be validated against something publicly auditable
-instead of each maintaining their own private, unreviewed copy.
-
-**Public**:
+`TempleCBE` serves as the public, auditable methodological layer of
+Temple University CBE’s clinical data science framework. Protected
+institutional studies and EHR analyses import `TempleCBE` to ensure
+statistical rigor while keeping confidential patient data secure:
 
 - **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
-  longitudinal propensity score simulation, and the designated source of
-  synthetic example/test data across the ecosystem.
+  Longitudinal propensity score simulation engine generating synthetic
+  benchmark cohorts.
 - **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
-  OMOP CDM database creation/querying (DuckDB).
+  High-performance OMOP Common Data Model querying with DuckDB.
 - **[`quarto_temple_brand`](https://github.com/jkylearmstrong-temple/quarto_temple_brand)**:
-  Quarto branding/report templates.
+  Official Temple University institutional Quarto document and slide
+  deck templates.
 
-Several other Temple Center for Biostatistics and Epidemiology (CBE) PI
-studies and analyses import `TempleCBE` for their own private,
-protected-data work — keeping study-specific code and data private while
-validating the general-purpose statistics they depend on against this
-public, auditable layer.
+------------------------------------------------------------------------
+
+## 👥 Authors & Contributors
+
+- **J. Kyle Armstrong** (`j.kyle.armstrong@temple.edu` /
+  `@jkylearmstrong-temple`) — Author, Creator, and Maintainer  
+- **Darina Chudnovskaya** (`darina.c@temple.edu` /
+  `tub51812@temple.edu`) — Contributor (PCA Analysis & Vignette Suite)
+
+*Lewis Katz School of Medicine at Temple University, Center for
+Biostatistics & Epidemiology*
 
 ------------------------------------------------------------------------
 
 ## 📄 License
 
-Dual-licensed at your option under GPL-3 or MIT — see
-[LICENSE.md](https://jkylearmstrong.github.io/TempleCBE/LICENSE.md) and
-[LICENSE](https://jkylearmstrong.github.io/TempleCBE/LICENSE).
+Dual-licensed at your option under
+[GPL-3](https://jkylearmstrong.github.io/TempleCBE/LICENSE.md) or
+[MIT](https://jkylearmstrong.github.io/TempleCBE/LICENSE).

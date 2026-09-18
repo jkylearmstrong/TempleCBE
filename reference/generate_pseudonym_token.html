@@ -15,7 +15,7 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.467.2026.09.17.10.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4672.2026.09.17.10.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,15 +122,15 @@ or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random cryptographic hash tokens</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_62f9ab9a5a3cc9cb" "PI_b6fc4705aa61f04f" "PI_5a7d742e588ed302"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_80e54fa6ff67d008" "PI_c118a72631a15830" "PI_c487905afefd24a2"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short hash tokens (4 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_df99" "PI_15ac" "PI_e6e8"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_b9bf" "PI_0803" "PI_225b"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_f5fc024946107843" "pi_82595f55c6e59b17"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_5f69c14e57c65424" "pi_4bdc9cdd771f8df8"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Stateless deterministic token with key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span><span class="st">"Franklin"</span>, key <span class="op">=</span> <span class="st">"study_salt"</span><span class="op">)</span></span></span>

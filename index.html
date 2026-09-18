@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.467.2026.09.17.10.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4672.2026.09.17.10.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,160 +81,232 @@
 </h1>
 </div>
 <p><a href="https://github.com/jkylearmstrong/TempleCBE/actions" class="external-link"><img src="https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/jkylearmstrong/TempleCBE" class="external-link"><img src="https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="LICENSE.html"><img src="https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg" alt="License: GPL-3 | MIT"></a> <a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link"><img src="https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&amp;query=%24.Version&amp;label=version&amp;color=blue" alt="Version"></a></p>
-<p><strong>TempleCBE</strong> is an open-source R package developed for Temple University’s <strong>Center for Biostatistics and Epidemiology (CBE)</strong>. It provides a clean, domain-agnostic suite of biostatistical testing functions, data quality and missingness visualizations, normalization utilities, correlation and PCA helpers, custom Tidymodels recipe steps (<code>step_famd</code>), and a tidymodels-native survival modeling toolkit (<code><a href="reference/coxnet.html">coxnet()</a></code>, <code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code>, <code><a href="reference/glmnet_IBS.html">glmnet_IBS()</a></code>) for start/stop clinical data.</p>
+<p><strong>TempleCBE</strong> is an open-source R package developed for Temple University’s <strong>Center for Biostatistics and Epidemiology (CBE)</strong> at the Lewis Katz School of Medicine and College of Public Health. It provides a robust, domain-agnostic suite of biostatistical inference tools, clinical data quality auditing, unsupervised dimension reduction with SAS <code>PROC PRINCOMP</code> parity, multi-paradigm joint survival-status-time modeling, explainable machine learning for time-to-event outcomes, and reproducible pipeline dependency tracking.</p>
 <hr>
 <div class="section level2">
 <h2 id="package-installation">📦 Installation<a class="anchor" aria-label="anchor" href="#package-installation"></a>
 </h2>
-<p>You can install the development version of <code>TempleCBE</code> directly from GitHub:</p>
+<p>Install the development version directly from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install pak if not already installed</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"pak"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pak"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Install TempleCBE</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jkylearmstrong/TempleCBE"</span><span class="op">)</span></span></code></pre></div>
-<p>Or using <code>remotes</code>:</p>
+<p>Or via <code>remotes</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"jkylearmstrong/TempleCBE"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="rocket-quick-start">🚀 Quick Start<a class="anchor" aria-label="anchor" href="#rocket-quick-start"></a>
+<h2 id="rocket-key-feature-showcases">🚀 Key Feature Showcases<a class="anchor" aria-label="anchor" href="#rocket-key-feature-showcases"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jkylearmstrong/TempleCBE" class="external-link">TempleCBE</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="id_1-data-quality--missingness-analysis">1. Data Quality &amp; Missingness Analysis<a class="anchor" aria-label="anchor" href="#id_1-data-quality--missingness-analysis"></a>
+<h3 id="id_1-data-quality-missingness-auditing--metadata">1. Data Quality, Missingness Auditing &amp; Metadata<a class="anchor" aria-label="anchor" href="#id_1-data-quality-missingness-auditing--metadata"></a>
 </h3>
-<p>Quickly compute total missing counts and detailed feature-level missingness tables:</p>
+<p>Quickly audit missing data across individual features or compile multi-table database metadata:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Sample dataset with missing values</span></span>
+<code class="sourceCode R"><span><span class="co"># Sample clinical dataframe</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  patient_id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,</span>
 <span>  age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">45</span>, <span class="fl">52</span>, <span class="cn">NA</span>, <span class="fl">61</span>, <span class="fl">38</span><span class="op">)</span>,</span>
 <span>  bmi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">24.5</span>, <span class="fl">29.1</span>, <span class="cn">NA</span>, <span class="fl">31.0</span><span class="op">)</span>,</span>
-<span>  blood_pressure <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">120</span>, <span class="cn">NA</span>, <span class="fl">135</span>, <span class="fl">140</span>, <span class="fl">118</span><span class="op">)</span></span>
+<span>  sbp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">120</span>, <span class="cn">NA</span>, <span class="fl">135</span>, <span class="fl">140</span>, <span class="fl">118</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Total missing values across dataset</span></span>
+<span><span class="co"># Total missingness count across the entire dataset</span></span>
 <span><span class="fu"><a href="reference/SumNa.html">SumNa</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Feature-level missingness summary</span></span>
-<span><span class="fu"><a href="reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
-<p>Generate a missingness summary plot:</p>
+<span><span class="co"># Feature-level percent missing summary</span></span>
+<span><span class="fu"><a href="reference/features_percent_miss.html">features_percent_miss</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Extract column-level metadata and data dictionaries</span></span>
+<span><span class="fu"><a href="reference/get_dataset_info.html">get_dataset_info</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
-<p>See the <a href="https://jkylearmstrong.github.io/TempleCBE/articles/01_eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a> vignette for a full walkthrough, including non-standard missing codes and outlier-aware EDA.</p>
+<code class="sourceCode R"><span><span class="co"># Generate institutional missingness audit visualizations</span></span>
+<span><span class="fu"><a href="reference/plot_features_percent_miss.html">plot_features_percent_miss</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 <div class="section level3">
-<h3 id="id_2-normalization--outlier-detection">2. Normalization &amp; Outlier Detection<a class="anchor" aria-label="anchor" href="#id_2-normalization--outlier-detection"></a>
+<h3 id="id_2-principal-component-analysis-sas-proc-princomp-parity">2. Principal Component Analysis (SAS <code>PROC PRINCOMP</code> Parity)<a class="anchor" aria-label="anchor" href="#id_2-principal-component-analysis-sas-proc-princomp-parity"></a>
 </h3>
-<p>Standardize features or detect numerical outliers using Interquartile Range (IQR) thresholding:</p>
+<p><code><a href="reference/proc_pca.html">proc_pca()</a></code> executes standardized PCA and outputs the exact eigenvalue variance table produced by SAS <code>PROC PRINCOMP</code>, accompanied by publication-ready diagnostic plots:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Min-Max Normalization to [0, 1]</span></span>
-<span><span class="fu"><a href="reference/min_max_norm.html">min_max_norm</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">age</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Standardized PCA on continuous variables</span></span>
+<span><span class="va">iris_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/proc_pca.html">proc_pca</a></span><span class="op">(</span><span class="va">iris</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, scale <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">iris_pca</span></span>
 <span></span>
-<span><span class="co"># Z-Score Standardization (mean = 0, sd = 1)</span></span>
-<span><span class="fu"><a href="reference/z_norm.html">z_norm</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">age</span><span class="op">)</span></span>
+<span><span class="co"># 1. Scree plot with Kaiser-Guttman threshold (Eigenvalue &gt;= 1)</span></span>
+<span><span class="fu"><a href="reference/pca_scree_plot.html">pca_scree_plot</a></span><span class="op">(</span><span class="va">iris_pca</span>, metric <span class="op">=</span> <span class="st">"eigenvalue"</span>, kaiser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Detect numerical outliers via IQR fences (MILD vs EXTREME, by inner/outer fence)</span></span>
-<span><span class="fu"><a href="reference/detect_outliers.html">detect_outliers</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>measurement <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># 2. Variable correlation circle on unit circle</span></span>
+<span><span class="fu"><a href="reference/pca_variables_plot.html">pca_variables_plot</a></span><span class="op">(</span><span class="va">iris_pca</span>, x <span class="op">=</span> <span class="fl">1</span>, y <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Loadings biplot with 95% concentration ellipses</span></span>
+<span><span class="fu"><a href="reference/pca_biplot.html">pca_biplot</a></span><span class="op">(</span><span class="va">iris_pca</span>, group <span class="op">=</span> <span class="va">iris</span><span class="op">$</span><span class="va">Species</span>, ellipse <span class="op">=</span> <span class="cn">TRUE</span>, percent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 <div class="section level3">
-<h3 id="id_3-correlation--principal-component-analysis">3. Correlation &amp; Principal Component Analysis<a class="anchor" aria-label="anchor" href="#id_3-correlation--principal-component-analysis"></a>
+<h3 id="id_3-joint-survival-status-time-modeling">3. Joint Survival-Status-Time Modeling<a class="anchor" aria-label="anchor" href="#id_3-joint-survival-status-time-modeling"></a>
 </h3>
-<p>Pairwise correlation tests across every numeric column, and PCA variance summaries straight from raw data (no need to fit <code><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">prcomp()</a></code> yourself first):</p>
+<p><code><a href="reference/joint_model.html">joint_model()</a></code> blends penalized Cox proportional hazards, binary event classification, follow-up duration regression, and calibrated stacked ensembles into a unified risk score:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Every pairwise correlation, strongest positive correlation first</span></span>
-<span><span class="fu"><a href="reference/corr_test_all.html">corr_test_all</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"wt"</span>, <span class="st">"qsec"</span><span class="op">)</span><span class="op">]</span>, columns <span class="op">=</span> <span class="st">"tidy"</span>, sort <span class="op">=</span> <span class="st">"estimate"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># proc_pca() fits the PCA and summarizes it in one step</span></span>
-<span><span class="fu"><a href="reference/proc_pca.html">proc_pca</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, scale <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="id_4-penalized-cox-models-for-survival-data">4. Penalized Cox Models for Survival Data<a class="anchor" aria-label="anchor" href="#id_4-penalized-cox-models-for-survival-data"></a>
-</h3>
-<p><code><a href="reference/coxnet.html">coxnet()</a></code> and <code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code> fit elastic-net Cox models through the tidymodels <code>hardhat</code> interface, supporting both right-censored and start/stop (counting-process) outcomes:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">lung_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/na.fail.html" class="external-link">na.omit</a></span><span class="op">(</span><span class="va">lung</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"status"</span>, <span class="st">"age"</span>, <span class="st">"sex"</span>, <span class="st">"ph.ecog"</span>, <span class="st">"wt.loss"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/coxnet.html">coxnet</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">lung_data</span>, penalty <span class="op">=</span> <span class="fl">0.05</span>, mixture <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="va">lung_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/na.fail.html" class="external-link">na.omit</a></span><span class="op">(</span><span class="va">lung</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"status"</span>, <span class="st">"age"</span>, <span class="st">"sex"</span>, <span class="st">"ph.ecog"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">lung_data</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">180</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">.pred</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
-<p>For repeated-measures/start-stop data, <code><a href="reference/glmnet_IBS.html">glmnet_IBS()</a></code> tunes and scores a penalized Cox model with a proper, subject-grouped integrated Brier score. See the <a href="https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a> vignette for the full nested cross-validation workflow.</p>
+<span><span class="co"># Fit multi-paradigm joint model</span></span>
+<span><span class="va">jm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/joint_model.html">joint_model</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">ph.ecog</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">lung_clean</span>,</span>
+<span>  engine <span class="op">=</span> <span class="st">"stacked"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Predict unified multi-horizon survival probabilities and composite risk scores</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">jm_fit</span>, <span class="va">lung_clean</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">180</span>, <span class="fl">365</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 <div class="section level3">
-<h3 id="id_5-custom-tidymodels-recipe-step-step_famd">5. Custom Tidymodels Recipe Step: <code>step_famd</code>
-<a class="anchor" aria-label="anchor" href="#id_5-custom-tidymodels-recipe-step-step_famd"></a>
+<h3 id="id_4-penalized-cox-models-for-startstop--right-censored-data">4. Penalized Cox Models for Start/Stop &amp; Right-Censored Data<a class="anchor" aria-label="anchor" href="#id_4-penalized-cox-models-for-startstop--right-censored-data"></a>
 </h3>
-<p>Extract Factor Analysis of Mixed Data (FAMD) principal components seamlessly within the <code>tidymodels</code> framework:</p>
+<p><code><a href="reference/coxnet.html">coxnet()</a></code> and <code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code> provide a <code>tidymodels</code>-native <code>hardhat</code> interface for regularized Cox regression, with subject-grouped cross-validation to prevent information leakage in counting-process data:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fit elastic-net penalized Cox model</span></span>
+<span><span class="va">fit_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/coxnet.html">coxnet</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">lung_clean</span>, penalty <span class="op">=</span> <span class="fl">0.05</span>, mixture <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Subject-grouped Cross-Validation with Integrated Brier Score</span></span>
+<span><span class="va">cv_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv_coxnet.html">cv_coxnet</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">lung_clean</span>, v <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="fu">generics</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">cv_fit</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="id_5-categorical-association--contingency-analysis">5. Categorical Association &amp; Contingency Analysis<a class="anchor" aria-label="anchor" href="#id_5-categorical-association--contingency-analysis"></a>
+</h3>
+<p>Comprehensive exact tests, 4-quadrant summaries, and multi-format association plots:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/recipes" class="external-link">recipes</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Exact 2x2 inference with robust confidence intervals</span></span>
+<span><span class="fu"><a href="reference/cbe_exact2x2.html">cbe_exact2x2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">15</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Define recipe with mixed numeric and categorical variables</span></span>
-<span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/recipe.html" class="external-link">recipe</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="reference/step_famd.html">step_famd</a></span><span class="op">(</span><span class="fu"><a href="https://recipes.tidymodels.org/reference/has_role.html" class="external-link">all_predictors</a></span><span class="op">(</span><span class="op">)</span>, num_comp <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Prep and bake</span></span>
-<span><span class="va">prepped_rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/prep.html" class="external-link">prep</a></span><span class="op">(</span><span class="va">rec</span><span class="op">)</span></span>
-<span><span class="va">baked_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://recipes.tidymodels.org/reference/bake.html" class="external-link">bake</a></span><span class="op">(</span><span class="va">prepped_rec</span>, new_data <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">baked_data</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Multi-panel categorical association visualizer (mosaic, balloon, heatmap)</span></span>
+<span><span class="fu"><a href="reference/plot_categorical_associations.html">plot_categorical_associations</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">mtcars</span>,</span>
+<span>  var_x <span class="op">=</span> <span class="st">"cyl"</span>,</span>
+<span>  var_y <span class="op">=</span> <span class="st">"am"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"mosaic"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 <div class="section level3">
-<h3 id="id_6-infix-helper-operators">6. Infix Helper Operators<a class="anchor" aria-label="anchor" href="#id_6-infix-helper-operators"></a>
+<h3 id="id_6-pipeline-dependency--computational-graph-tracking">6. Pipeline Dependency &amp; Computational Graph Tracking<a class="anchor" aria-label="anchor" href="#id_6-pipeline-dependency--computational-graph-tracking"></a>
 </h3>
-<p>Convenient syntax for string matching and negation:</p>
+<p>Model analysis scripts and data deliverables as an interactive DAG:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Pattern matching operators</span></span>
-<span><span class="st">"patient_cohort_A"</span> <span class="op"><a href="reference/infix_helpers.html">%like%</a></span> <span class="st">"cohort"</span>   <span class="co"># TRUE</span></span>
-<span><span class="st">"PATIENT_COHORT_A"</span> <span class="op"><a href="reference/infix_helpers.html">%ilike%</a></span> <span class="st">"cohort"</span>  <span class="co"># TRUE (case-insensitive)</span></span>
+<code class="sourceCode R"><span><span class="co"># Define pipeline stages and track downstream artifacts</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_graph.html">compute_graph</a></span><span class="op">(</span></span>
+<span>  stages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    data_clean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>inputs <span class="op">=</span> <span class="st">"raw.csv"</span>, outputs <span class="op">=</span> <span class="st">"clean.rds"</span><span class="op">)</span>,</span>
+<span>    model_fit  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>inputs <span class="op">=</span> <span class="st">"clean.rds"</span>, outputs <span class="op">=</span> <span class="st">"model.rds"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Negated %in% operator</span></span>
-<span><span class="fl">5</span> <span class="op"><a href="reference/infix_helpers.html">%notin%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>             <span class="co"># TRUE</span></span></code></pre></div>
+<span><span class="co"># Generate execution plan</span></span>
+<span><span class="fu"><a href="reference/get_render_plan.html">get_render_plan</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="books-vignettes">📚 Vignettes<a class="anchor" aria-label="anchor" href="#books-vignettes"></a>
+<h2 id="books-comprehensive-vignettes">📚 Comprehensive Vignettes<a class="anchor" aria-label="anchor" href="#books-comprehensive-vignettes"></a>
 </h2>
-<p>Beyond the quick-start snippets above, <code>TempleCBE</code> ships full worked-example vignettes:</p>
-<ul>
-<li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></strong> — non-standard missing codes, missingness visualization, and outlier-aware normalization for messy clinical/EHR data.</li>
-<li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html">02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></strong> — why row-level resampling leaks for counting-process data, and how <code><a href="reference/coxnet.html">coxnet()</a></code>/<code><a href="reference/cv_coxnet.html">cv_coxnet()</a></code>/<code><a href="reference/nested_cv_coxnet.html">nested_cv_coxnet()</a></code> avoid it.</li>
-<li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html">03. Visualizing Computational Pipeline Dependencies</a></strong> — treating a multi-report analysis pipeline as a dependency graph with <code><a href="reference/get_render_plan.html">get_render_plan()</a></code> and project-level <code>MakeComputeGraph.R</code>.</li>
-<li>
-<strong><a href="https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></strong> — cross-validating time-fixed and time-dependent Cox models against SAS PROC PHREG, with <code><a href="https://rdrr.io/pkg/survival/man/tmerge.html" class="external-link">survival::tmerge</a></code> and <code><a href="reference/tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code>.</li>
-</ul>
-<p>Once installed, each is also available locally via <code><a href="articles/eda_and_missingness.html">vignette("eda_and_missingness", package = "TempleCBE")</a></code> (substituting the vignette name).</p>
+<p><code>TempleCBE</code> includes extensive, peer-reviewed vignettes covering theory, simulation, and clinical workflows:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr>
+<th align="left">#</th>
+<th align="left">Vignette Title</th>
+<th align="left">Key Topics &amp; Methodology</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left"><strong>01</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html">Exploratory Data Analysis, Missingness Auditing, and Normalization</a></td>
+<td align="left">Non-standard missing codes, missingness visualizations, IQR outlier detection, and normalization.</td>
+</tr>
+<tr>
+<td align="left"><strong>02</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation</a></td>
+<td align="left">Start/stop counting process data, subject-level partitioning, and yardstick survival scoring.</td>
+</tr>
+<tr>
+<td align="left"><strong>03</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></td>
+<td align="left">Directed acyclic graphs (DAGs), multi-report orchestration, and reproducible analysis plans.</td>
+</tr>
+<tr>
+<td align="left"><strong>04</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html">Validation Guide for SAS Users: Cox Models</a></td>
+<td align="left">Cross-validating <code><a href="reference/cbe_cox_single.html">cbe_cox_single()</a></code>, <code><a href="reference/cbe_cox_multi.html">cbe_cox_multi()</a></code>, and <code><a href="reference/tidy_tmerge_cox.html">tidy_tmerge_cox()</a></code> against SAS <code>PROC PHREG</code>.</td>
+</tr>
+<tr>
+<td align="left"><strong>05</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html">Cross-Validating Advanced Survival Models: R to SAS</a></td>
+<td align="left">Automated macro exports, macro validation suites, and numerical concordance benchmarks.</td>
+</tr>
+<tr>
+<td align="left"><strong>06</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/reticulate_export.html">Multi-Language Interoperability and Python Pipelines</a></td>
+<td align="left">Reticulate bridges, cross-language artifact transfer, and unified modeling pipelines.</td>
+</tr>
+<tr>
+<td align="left"><strong>07</strong></td>
+<td align="left"><a href="https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html">Principal Component Analysis in R and SAS</a></td>
+<td align="left">SAS <code>PROC PRINCOMP</code> eigenvalue parity, Kaiser-Guttman scree plots, biplots, and clinical TAS dimension reduction.</td>
+</tr>
+</tbody>
+</table>
+<p>Access any vignette locally after installation via:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"pca_analysis"</span>, package <span class="op">=</span> <span class="st">"TempleCBE"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
 <h2 id="classical_building-ecosystem-architecture">🏛️ Ecosystem Architecture<a class="anchor" aria-label="anchor" href="#classical_building-ecosystem-architecture"></a>
 </h2>
-<p><code>TempleCBE</code> is the public layer of Temple CBE’s biostatistics framework — general-purpose code that private, protected-data repos import and re-export, so they can be validated against something publicly auditable instead of each maintaining their own private, unreviewed copy.</p>
-<p><strong>Public</strong>:</p>
+<p><code>TempleCBE</code> serves as the public, auditable methodological layer of Temple University CBE’s clinical data science framework. Protected institutional studies and EHR analyses import <code>TempleCBE</code> to ensure statistical rigor while keeping confidential patient data secure:</p>
 <ul>
 <li>
-<strong><a href="https://github.com/jkylearmstrong/pslongSim" class="external-link"><code>pslongSim</code></a></strong>: longitudinal propensity score simulation, and the designated source of synthetic example/test data across the ecosystem.</li>
+<strong><a href="https://github.com/jkylearmstrong/pslongSim" class="external-link"><code>pslongSim</code></a></strong>: Longitudinal propensity score simulation engine generating synthetic benchmark cohorts.</li>
 <li>
-<strong><a href="https://github.com/jkylearmstrong/omop-duck-db" class="external-link"><code>omop-duck-db</code></a></strong>: OMOP CDM database creation/querying (DuckDB).</li>
+<strong><a href="https://github.com/jkylearmstrong/omop-duck-db" class="external-link"><code>omop-duck-db</code></a></strong>: High-performance OMOP Common Data Model querying with DuckDB.</li>
 <li>
-<strong><a href="https://github.com/jkylearmstrong-temple/quarto_temple_brand" class="external-link"><code>quarto_temple_brand</code></a></strong>: Quarto branding/report templates.</li>
+<strong><a href="https://github.com/jkylearmstrong-temple/quarto_temple_brand" class="external-link"><code>quarto_temple_brand</code></a></strong>: Official Temple University institutional Quarto document and slide deck templates.</li>
 </ul>
-<p>Several other Temple Center for Biostatistics and Epidemiology (CBE) PI studies and analyses import <code>TempleCBE</code> for their own private, protected-data work — keeping study-specific code and data private while validating the general-purpose statistics they depend on against this public, auditable layer.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="busts_in_silhouette-authors--contributors">👥 Authors &amp; Contributors<a class="anchor" aria-label="anchor" href="#busts_in_silhouette-authors--contributors"></a>
+</h2>
+<ul>
+<li>
+<strong>J. Kyle Armstrong</strong> (<code>j.kyle.armstrong@temple.edu</code> / <code>@jkylearmstrong-temple</code>) — Author, Creator, and Maintainer<br>
+</li>
+<li>
+<strong>Darina Chudnovskaya</strong> (<code>darina.c@temple.edu</code> / <code>tub51812@temple.edu</code>) — Contributor (PCA Analysis &amp; Vignette Suite)</li>
+</ul>
+<p><em>Lewis Katz School of Medicine at Temple University, Center for Biostatistics &amp; Epidemiology</em></p>
 <hr>
 </div>
 <div class="section level2">
 <h2 id="page_facing_up-license">📄 License<a class="anchor" aria-label="anchor" href="#page_facing_up-license"></a>
 </h2>
-<p>Dual-licensed at your option under GPL-3 or MIT — see <a href="LICENSE.html">LICENSE.md</a> and <a href="LICENSE">LICENSE</a>.</p>
+<p>Dual-licensed at your option under <a href="LICENSE.html">GPL-3</a> or <a href="LICENSE">MIT</a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

@@ -186,7 +186,7 @@ if (has_python) {
   cat("Python is not currently available in this environment. Showing reproducible workflow syntax.\n")
 }
 #> Active Python: 3.12 
-#> Python Path:   /home/runner/.cache/R/reticulate/uv/cache/archive-v0/8FuJoL4pG0seoQA5/bin/python
+#> Python Path:   /home/runner/.cache/R/reticulate/uv/cache/archive-v0/PEJZVLar3f-SBAjT/bin/python
 ```
 
 ### Calling Python LOCO-MP from R
