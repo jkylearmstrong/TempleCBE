@@ -45,6 +45,7 @@ reference:
       - my_summary_table
       - get_dataset_info
       - proc_contents
+      - cbe_compare_df
 
   - title: Normalization & Outlier Detection
     desc: Functions for scaling numeric features and flagging statistical outliers.
@@ -94,7 +95,10 @@ reference:
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+      - step_lencode_coxnet
       - cbe_loco_mp_coxnet
+      - autoplot.cbe_loco_mp_coxnet
+      - tidy.cbe_loco_mp_coxnet
 
   - title: Joint Survival-Status-Time Models
     desc: >
@@ -350,6 +354,13 @@ reference:
       - package_deliverables
       - audit_report_deliverables
       - extract_yaml_formats
+      - cbe_docx_review_extract
+
+  - title: Example Datasets
+    desc: Clinical oncology and time-to-event datasets for testing and vignette demonstrations.
+    contents:
+      - tumor_long
+      - tumor_wide
 
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
