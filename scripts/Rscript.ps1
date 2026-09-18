@@ -29,6 +29,12 @@ gets bumped in a future renv snapshot, this script picks it up automatically
 with no separate value to keep in sync.
 
 .EXAMPLE
+scripts/Rscript.ps1 -e "pak::pak('/GitHub/TempleCBE/')"
+
+.EXAMPLE
+scripts/Rscript.ps1 -pak
+
+.EXAMPLE
 scripts/Rscript.ps1 -e "renv::restore()"
 
 .EXAMPLE
@@ -63,5 +69,26 @@ if (-not (Test-Path $rscriptExePath)) {
     exit 1
 }
 
+# Ensure /GitHub/ root junction exists if needed for /GitHub/TempleCBE/
+if (-not (Test-Path "/GitHub/TempleCBE/") -and (Test-Path (Join-Path $repoRoot "DESCRIPTION"))) {
+    try {
+        $parentGitHub = Split-Path -Parent $repoRoot
+        if (-not (Test-Path "C:\GitHub")) {
+            New-Item -ItemType Junction -Path "C:\GitHub" -Target $parentGitHub -ErrorAction SilentlyContinue | Out-Null
+        }
+    } catch {
+        # ignore if junction creation is not permitted
+    }
+}
+
+# If called with no arguments or -pak / -install, install local TempleCBE via pak
+if ($args.Count -eq 0 -or ($args.Count -eq 1 -and $args[0] -in @("-pak", "--pak", "-install", "--install"))) {
+    $targetPath = if (Test-Path "/GitHub/TempleCBE/") { "/GitHub/TempleCBE/" } else { ($repoRoot -replace '\\', '/') }
+    Write-Host "Installing TempleCBE via pak::pak('$targetPath')..."
+    & $rscriptExePath -e "pak::pak('$targetPath')"
+    exit $LASTEXITCODE
+}
+
 & $rscriptExePath @args
 exit $LASTEXITCODE
+

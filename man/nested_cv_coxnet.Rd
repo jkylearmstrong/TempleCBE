@@ -19,6 +19,7 @@ nested_cv_coxnet(
   covariates = c("path", "baseline"),
   trunc = 0.05,
   parallel = FALSE,
+  importance = c("none", "loco_mp"),
   ...
 )
 
@@ -57,6 +58,9 @@ in `metrics` by default.}
 \item{parallel}{If `TRUE`, fit folds with [furrr::future_map()]; set a
 [future::plan()] first.}
 
+\item{importance}{Method for evaluating feature importance on the outer analysis sets.
+Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with MiniPatch ensembles).}
+
 \item{...}{Further arguments passed to [glmnet::glmnet()], such as
 `cox.ties` or `nlambda`.}
 
@@ -69,7 +73,8 @@ error over outer splits, `FALSE` for each split's metrics.}
 A tibble, of class `nested_cv_coxnet`, with one row per outer split:
   `id`, the chosen `mixture` and `penalty`, `.metrics` (outer assessment-set
   metrics), `.coefs` (coefficients of the refit), and `.inner` (the inner
-  cross-validation's summarized metrics). `tune::collect_metrics()`
+  cross-validation's summarized metrics). If `importance = "loco_mp"`, includes
+  `.importance` with tidy LOCO-MP statistical inference. `tune::collect_metrics()`
   averages `.metrics` over outer splits.
 }
 \description{
@@ -121,5 +126,5 @@ if (requireNamespace("glmnet", quietly = TRUE) &&
 }
 }
 \seealso{
-[cv_coxnet()], [coxnet()]
+[cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()]
 }

@@ -1,0 +1,140 @@
+name: R Package Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Release Version Tag (default: "auto" generates <base_ver>.YYYY.MM.DD.HH.MM)'
+        required: false
+        default: 'auto'
+        type: string
+      base_version:
+        description: 'Base Semver Override (e.g., 0.3.5) when version_tag is "auto"'
+        required: false
+        default: ''
+        type: string
+      run_tests:
+        description: 'Step 3 - Run devtools::test()'
+        required: true
+        default: true
+        type: boolean
+      render_readme:
+        description: 'Step 4 - Render README.qmd via Quarto'
+        required: true
+        default: true
+        type: boolean
+      update_description:
+        description: 'Step 5 - Update Version in DESCRIPTION'
+        required: true
+        default: true
+        type: boolean
+      run_document:
+        description: 'Step 6a - Run devtools::document()'
+        required: true
+        default: true
+        type: boolean
+      build_site:
+        description: 'Step 6b - Build pkgdown site (can take several minutes)'
+        required: true
+        default: false
+        type: boolean
+      run_check:
+        description: 'Step 7 - Run R CMD Check (can take several minutes)'
+        required: true
+        default: false
+        type: boolean
+      commit_and_push:
+        description: 'Steps 8-10 - Commit, Tag, and Push to main'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      LANGUAGE: en_US:en
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve Release Version Tag
+        id: resolve-version
+        run: |
+          if [ "${{ inputs.version_tag }}" = "auto" ] || [ -z "${{ inputs.version_tag }}" ]; then
+            CURRENT_VER=$(grep "^Version:" DESCRIPTION | awk '{print $2}')
+            if [ -n "${{ inputs.base_version }}" ]; then
+              BASE_VER="${{ inputs.base_version }}"
+            else
+              BASE_VER=$(echo "$CURRENT_VER" | cut -d'.' -f1-3)
+            fi
+            DATE_STAMP=$(date -u +'%Y.%m.%d.%H.%M')
+            RELEASE_TAG="${BASE_VER}.${DATE_STAMP}"
+          else
+            RELEASE_TAG="${{ inputs.version_tag }}"
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "Computed Release Tag: $RELEASE_TAG"
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Install dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::pkgdown, any::quarto, any::devtools, local::.
+
+      - name: Step 3 - Run tests
+        if: ${{ inputs.run_tests }}
+        run: Rscript -e "devtools::test()"
+
+      - name: Step 4 - Render README
+        if: ${{ inputs.render_readme }}
+        run: Rscript -e "quarto::quarto_render('README.qmd')"
+
+      - name: Step 5 - Update Version in DESCRIPTION
+        if: ${{ inputs.update_description }}
+        run: |
+          sed -i "s/^Version: .*/Version: $RELEASE_TAG/" DESCRIPTION
+          echo "Updated DESCRIPTION Version to: $RELEASE_TAG"
+
+      - name: Step 6a - Document package
+        if: ${{ inputs.run_document }}
+        run: Rscript -e "devtools::document()"
+
+      - name: Step 6b - Build pkgdown site
+        if: ${{ inputs.build_site }}
+        run: Rscript -e "pkgdown::build_site(new_process = FALSE)"
+
+      - name: Step 7 - R CMD Check
+        if: ${{ inputs.run_check }}
+        uses: r-lib/actions/check-r-package@v2
+
+      - name: Steps 8, 9, 10 - Commit, Tag, and Push
+        if: ${{ inputs.commit_and_push }}
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Automated release and build for $RELEASE_TAG" || echo "No changes to commit"
+          git tag "$RELEASE_TAG"
+          git push origin main
+          git push origin main --tags

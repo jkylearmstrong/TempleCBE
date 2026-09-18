@@ -2,23 +2,32 @@
 % Please edit documentation in R/cbe_exact2x2.R
 \name{cbe_test_categorical}
 \alias{cbe_test_categorical}
-\title{Institutional Categorical Hypothesis Test for gtsummary}
+\title{Institutional Categorical Hypothesis Test for gtsummary and Batch Testing}
 \usage{
 cbe_test_categorical(
   data,
-  variable,
-  by,
+  variable = NULL,
+  by = NULL,
   test = c("auto", "exact", "chisq", "fisher"),
   correct = FALSE,
+  B = 2000L,
+  simulate.p.value = NULL,
+  parallel = FALSE,
+  n_chunks = 4L,
   ...
 )
 }
 \arguments{
-\item{data}{Data frame supplied by \pkg{gtsummary}.}
+\item{data}{Data frame supplied directly or by \pkg{gtsummary}.}
 
-\item{variable}{Character string column name for the feature being tested.}
+\item{variable}{Character string column name for the feature being tested,
+a character vector of variable names for batch testing, or a two-sided
+\code{\link[stats]{formula}} of the form \code{response ~ grouping_var} or
+\code{var1 + var2 ~ grouping_var}. If \code{NULL}, all categorical/factor
+columns in \code{data} (excluding \code{by}) are tested.}
 
-\item{by}{Character string column name for the stratifying/grouping variable.}
+\item{by}{Character string column name for the stratifying/grouping variable.
+Can be omitted when \code{variable} is a formula.}
 
 \item{test}{Hypothesis test engine: \code{"auto"} (default CBE hierarchy),
 \code{"exact"} (force Central Fisher exact test for 2x2 or simulated Fisher for RxC),
@@ -28,15 +37,34 @@ or \code{"fisher"} (force \code{\link[stats]{fisher.test}}).}
 \item{correct}{Logical; whether to apply continuity correction when \code{test = "chisq"}
 (default \code{FALSE} following CBE standard protocol).}
 
-\item{...}{Additional arguments (ignored or passed through).}
+\item{B}{Integer; number of Monte Carlo replicates when Fisher's exact test with
+simulation is triggered (default \code{2000L}).}
+
+\item{simulate.p.value}{Optional logical; if specified, explicitly enables or disables
+Monte Carlo simulation for Fisher's test. If \code{NULL} (default), auto-triggers
+simulation when table total exceeds 500 or any dimension exceeds 2.}
+
+\item{parallel}{Logical; whether to use \pkg{furrr} for parallel execution
+(for batch testing across multiple variables or chunking high-\code{B} simulations).
+Requires setting a \code{\link[future]{plan}} beforehand.}
+
+\item{n_chunks}{Integer; number of chunks to partition \code{B} into when running
+parallel simulations with \code{B >= 10000} (default 4L).}
+
+\item{...}{Additional arguments passed to \code{\link[exact2x2]{exact2x2}} or
+\code{\link[stats]{fisher.test}}.}
 }
 \value{
-A tibble with \code{p.value} and descriptive \code{method} compliant
-  with \pkg{gtsummary}'s custom test requirements.
+When \code{variable} is a single string (such as when called by
+  \pkg{gtsummary}), returns a one-row tibble compliant with \pkg{gtsummary}'s
+  custom test specification (\code{p.value}, \code{statistic}, \code{parameter},
+  \code{method}). When \code{variable} is a vector or \code{NULL}, returns a
+  tidy tibble of test results across all evaluated variables.
 }
 \description{
 Standard categorical hypothesis testing engine conforming to the CBE statistical
-protocol and designed as a drop-in custom test for \code{\link[gtsummary]{add_p}}.
+protocol. Operates as a drop-in custom test for \code{\link[gtsummary]{add_p}}
+or as a standalone batch testing engine with optional \pkg{furrr} parallelization.
 }
 \details{
 The function follows a rigorous 4-rule hierarchy:
@@ -55,11 +83,15 @@ The function follows a rigorous 4-rule hierarchy:
 }
 }
 \examples{
-\dontrun{
 library(gtsummary)
 trial |>
   tbl_summary(by = trt, include = c(response, death, grade)) |>
   add_p(test = all_categorical() ~ cbe_test_categorical) |>
   separate_p_footnotes()
-}
+
+# Standalone batch testing across multiple features:
+cbe_test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
+
+# Formula interface:
+cbe_test_categorical(trial, response ~ trt)
 }

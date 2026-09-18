@@ -122,7 +122,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
     cs <- stats::chisq.test(tab, correct = correct)
     p_val <- cs$p.value
     p_fmt <- p_fmt_fn(p_val)
-    stat_str <- sprintf(" (\u03c7\u00b2 = %.2f, df = %d)", cs$statistic, cs$parameter)
+    stat_str <- sprintf(" (Chi-sq = %.2f, df = %d)", cs$statistic, cs$parameter)
     caption_txt <- if (!is.null(caption)) caption else paste0(p_fmt, " (Pearson's Chi-Square Test", stat_str, ")")
   } else if (test == "fisher") {
     sim <- (sum(tab) > 500L || any(dims > 2L))
@@ -328,7 +328,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
       ) +
       ggplot2::labs(
         title = plot_title,
-        subtitle = "Width \u221d Marginal Sample Size | Height \u221d Conditional Proportion",
+        subtitle = "Width proportional to Marginal Sample Size | Height proportional to Conditional Proportion",
         caption = caption_txt,
         x = lbl2,
         y = paste0("Within-", lbl2, " Proportion")
@@ -773,7 +773,7 @@ cbe_four_quadrant_report <- function(data, var1 = NULL, var2 = NULL,
   if (test == "chisq") {
     cs <- stats::chisq.test(tab, correct = correct)
     p_val <- cs$p.value
-    tst_method <- sprintf("Pearson's Chi-squared test (\u03c7\u00b2 = %.2f, df = %d)", cs$statistic, cs$parameter)
+    tst_method <- sprintf("Pearson's Chi-squared test (Chi-sq = %.2f, df = %d)", cs$statistic, cs$parameter)
   } else if (test == "fisher") {
     ft <- stats::fisher.test(tab)
     p_val <- ft$p.value

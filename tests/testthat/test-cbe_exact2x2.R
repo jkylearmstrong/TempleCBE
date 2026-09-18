@@ -228,4 +228,98 @@ test_that("cbe_contingency_plot and cbe_four_quadrant_report support test = 'chi
   expect_true(is.numeric(res_chi$p.value))
 })
 
+test_that("cbe_test_categorical integrates with gtsummary tbl_summary add_p", {
+  skip_if_not_installed("gtsummary")
+  suppressPackageStartupMessages(library(gtsummary))
+
+  # Test drop-in custom test with gtsummary
+  tbl <- trial |>
+    tbl_summary(by = trt, include = c(response, death, grade)) |>
+    add_p(test = all_categorical() ~ cbe_test_categorical)
+
+  expect_s3_class(tbl, "gtsummary")
+  df_tbl <- as.data.frame(tbl)
+  expect_true("p.value" %in% names(df_tbl) || any(grepl("p-value", names(df_tbl), ignore.case = TRUE)))
+})
+
+test_that("cbe_test_categorical supports custom B and simulate.p.value", {
+  df <- data.frame(
+    feature = factor(c(rep("A", 10), rep("B", 10), rep("C", 10))),
+    outcome = factor(c(rep("Yes", 5), rep("No", 5), rep("Yes", 2), rep("No", 8), rep("Yes", 8), rep("No", 2)))
+  )
+
+  # Custom B passed directly
+  res_b <- cbe_test_categorical(df, "feature", "outcome", test = "fisher", B = 5000L, simulate.p.value = TRUE)
+  expect_equal(res_b$method, "Fisher's exact test (simulated)")
+  expect_true(is.numeric(res_b$p.value))
+  expect_gte(res_b$p.value, 0)
+  expect_lte(res_b$p.value, 1)
+})
+
+test_that("cbe_test_categorical performs batch testing across multiple variables", {
+  df <- data.frame(
+    var1 = factor(rep(c("Low", "High"), 20)),
+    var2 = factor(rep(c("Stage I", "Stage II"), each = 20)),
+    group = factor(rep(c("Arm A", "Arm B"), 20))
+  )
+
+  # Explicit vector of variables
+  res_batch <- cbe_test_categorical(df, variable = c("var1", "var2"), by = "group")
+  expect_s3_class(res_batch, "tbl_df")
+  expect_equal(nrow(res_batch), 2L)
+  expect_equal(res_batch$variable, c("var1", "var2"))
+  expect_true(all(c("p.value", "p.formatted", "method") %in% names(res_batch)))
+
+  # Auto-discovery with variable = NULL
+  res_auto <- cbe_test_categorical(df, variable = NULL, by = "group")
+  expect_s3_class(res_auto, "tbl_df")
+  expect_equal(nrow(res_auto), 2L)
+})
+
+test_that("cbe_test_categorical supports parallel execution via furrr", {
+  skip_if_not_installed("furrr")
+  skip_if_not_installed("future")
+
+  df <- data.frame(
+    var1 = factor(rep(c("A", "B"), 25)),
+    var2 = factor(rep(c("X", "Y"), each = 25)),
+    group = factor(rep(c("Ctrl", "Treat"), 25))
+  )
+
+  future::plan(future::sequential) # safe testing plan
+  res_par <- cbe_test_categorical(df, variable = c("var1", "var2"), by = "group", parallel = TRUE)
+  expect_s3_class(res_par, "tbl_df")
+  expect_equal(nrow(res_par), 2L)
+
+  # Parallel simulated Fisher chunking test on RxC table
+  df_rxc <- data.frame(
+    stage = factor(rep(c("I", "II", "III"), c(10, 15, 25))),
+    group = factor(rep(c("Ctrl", "Treat"), 25))
+  )
+  res_chunk <- cbe_test_categorical(df_rxc, variable = "stage", by = "group", test = "fisher",
+                                    simulate.p.value = TRUE, B = 10000L, parallel = TRUE, n_chunks = 2L)
+  expect_true(is.numeric(res_chunk$p.value))
+  expect_gte(res_chunk$p.value, 0)
+  expect_lte(res_chunk$p.value, 1)
+})
+
+test_that("cbe_test_categorical supports formula interface", {
+  df <- data.frame(
+    response = factor(rep(c("Yes", "No"), 20)),
+    grade = factor(rep(c("I", "II"), each = 20)),
+    trt = factor(rep(c("A", "B"), 20))
+  )
+
+  # Single variable formula
+  res_fmla <- cbe_test_categorical(df, response ~ trt)
+  expect_true(is.numeric(res_fmla$p.value))
+  expect_match(res_fmla$method, "Central Fisher", ignore.case = TRUE)
+
+  # Multi-variable formula
+  res_fmla_multi <- cbe_test_categorical(df, response + grade ~ trt)
+  expect_s3_class(res_fmla_multi, "tbl_df")
+  expect_equal(nrow(res_fmla_multi), 2L)
+  expect_equal(res_fmla_multi$variable, c("response", "grade"))
+})
+
 

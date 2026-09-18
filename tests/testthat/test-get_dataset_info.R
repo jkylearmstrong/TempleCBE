@@ -159,3 +159,70 @@ test_that("proc_contents handles incompatible numeric S3 classes (e.g. chron::ti
   expect_true("mean" %in% colnames(res))
   expect_equal(res |> dplyr::filter(columns == "time") |> dplyr::pull(mean), 3)
 })
+
+test_that("get_dataset_info handles counting-process Surv(start, stop, status) correctly", {
+  skip_if_not_installed("survival")
+
+  tstart <- c(0, 5, 0, 10, 0)
+  tstop  <- c(5, 12, 10, 25, 8)
+  status <- c(0, 1, 0, 1, 0)
+  duration <- tstop - tstart
+
+  df <- data.frame(
+    id = c(1, 1, 2, 2, 3),
+    surv = survival::Surv(tstart, tstop, status)
+  )
+
+  res <- get_dataset_info(df)
+  surv_row <- res |> dplyr::filter(columns == "surv")
+
+  expect_equal(surv_row$class, "Surv")
+  # Duration mean should be mean(tstop - tstart), not mean(tstart)
+  expect_equal(surv_row$mean, mean(duration))
+  expect_equal(surv_row$sd, stats::sd(duration))
+  expect_true(grepl("Counting", surv_row$most_freq))
+  expect_true(grepl("Events: 2", surv_row$most_freq))
+})
+
+test_that("get_dataset_info audits longitudinal repeated-measures when subject_id is provided", {
+  df <- data.frame(
+    patient = c(1, 1, 1, 2, 2),
+    visit = c(1, 2, 3, 1, 2),
+    cd4 = c(450, 420, 390, 510, 530),
+    drug = factor(c("ddI", "ddI", "ddI", "ddC", "ddC"))
+  )
+
+  res <- get_dataset_info(df, subject_id = "patient")
+
+  expect_true("variable_type" %in% names(res))
+  expect_equal(res |> dplyr::filter(columns == "patient") |> dplyr::pull(variable_type), "Subject ID")
+  expect_equal(res |> dplyr::filter(columns == "cd4") |> dplyr::pull(variable_type), "Longitudinal (Time-Varying)")
+  expect_equal(res |> dplyr::filter(columns == "visit") |> dplyr::pull(variable_type), "Longitudinal (Time-Varying)")
+  expect_equal(res |> dplyr::filter(columns == "drug") |> dplyr::pull(variable_type), "Baseline (Time-Invariant)")
+})
+
+test_that("get_dataset_info works on fitted joint_model objects", {
+  skip_if_not_installed("survival")
+  skip_if_not_installed("glmnet")
+
+  set.seed(42)
+  df <- data.frame(
+    time = stats::rexp(40, rate = 0.05),
+    status = stats::rbinom(40, 1, 0.5),
+    x1 = stats::rnorm(40),
+    x2 = stats::rnorm(40)
+  )
+
+  fit <- joint_model(df, survival::Surv(time, status) ~ x1 + x2, mixture = 1, penalty = 0.05)
+  res <- get_dataset_info(fit)
+
+  expect_s3_class(res, "data.frame")
+  expect_true(all(c("x1", "x2") %in% res$columns))
+  expect_true(any(grepl("Surv", res$columns) | grepl("survival", res$columns)))
+
+  meta <- attr(res, "joint_model_summary")
+  expect_false(is.null(meta))
+  expect_equal(meta$engine, "glmnet")
+  expect_equal(meta$n_obs, 40)
+})
+

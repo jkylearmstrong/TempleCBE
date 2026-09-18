@@ -37,5 +37,5 @@ vapply(programs, run_sas_script, integer(1))
 }
 }
 \seealso{
-[find_sas()]
+[find_sas()], [cbe_sas_macro_path()]
 }

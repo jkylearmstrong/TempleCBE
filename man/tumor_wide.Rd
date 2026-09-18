@@ -31,4 +31,3 @@ levels of a tumor-promoting agent (1.0, 2.5, 10.0). The number of papillomas was
 observed repeatedly across 15 observation times (weeks 27, 34, 37, 41, 43, 45,
 46, 47, 49, 50, 51, 53, 65, 67, 71).
 }
-\keyword{internal}
