@@ -5,7 +5,11 @@ One entry point to this package's PCA plots.
 ## Usage
 
 ``` r
-pca_plot(pca_model, type = c("variance", "heatmap", "bi", "biplot"), ...)
+pca_plot(
+  pca_model,
+  type = c("variance", "heatmap", "bi", "biplot", "scree", "circle"),
+  ...
+)
 ```
 
 ## Arguments
@@ -24,8 +28,12 @@ pca_plot(pca_model, type = c("variance", "heatmap", "bi", "biplot"), ...)
   ([`pca_feature_loading_heatmap`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)),
   `"bi"`
   ([`plot_pca_bi`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)),
-  or `"biplot"`
-  ([`pca_biplot`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)).
+  `"biplot"`
+  ([`pca_biplot`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)),
+  `"scree"`
+  ([`pca_scree_plot`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_scree_plot.md)),
+  or `"circle"`
+  ([`pca_variables_plot`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_variables_plot.md)).
 
 - ...:
 

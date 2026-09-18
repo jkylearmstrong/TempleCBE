@@ -11,7 +11,7 @@ prcomp is run first."><meta property="og:image" content="https://jkylearmstrong.
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.405.2026.09.17.22.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,10 @@ prcomp is run first."><meta property="og:image" content="https://jkylearmstrong.
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/R_to_SAS.html">05. R to SAS I/O and Advanced Survival Workflows: Counting Process, Clustering, and Stratification</a></li>
+    <li><a class="dropdown-item" href="../articles/reticulate_export.html">06. Python Interoperability: Validating LOCO-MP Survival Ensembles with reticulate, rpy2, and DataSlingers/LOCOMP</a></li>
+    <li><a class="dropdown-item" href="../articles/pca_analysis.html">07. Principal Component Analysis in R and SAS</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -45,7 +48,7 @@ prcomp is run first."><meta property="og:image" content="https://jkylearmstrong.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Process and Plot Principal Component Analysis (PCA)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/R/proc_pca.R" class="external-link"><code>R/proc_pca.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/proc_pca.R" class="external-link"><code>R/proc_pca.R</code></a></small>
       <div class="d-none name"><code>proc_pca.Rd</code></div>
     </div>
 
@@ -88,23 +91,23 @@ existing <code><a href="https://rdrr.io/r/stats/prcomp.html" class="external-lin
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">proc_pca</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">prcomp</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   component eigenvalue variance_pct cum_variance_pct</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> PC1           3.50          87.6              87.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> PC2           0.239          5.99             93.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> PC3           0.165          4.13             97.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> PC4           0.093<span style="text-decoration: underline;">1</span>         2.33            100  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   component eigenvalue difference proportion variance_pct cum_variance_pct</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> PC1           3.50       3.26       0.876         87.6              87.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> PC2           0.239      0.074<span style="text-decoration: underline;">2</span>     0.059<span style="text-decoration: underline;">9</span>         5.99             93.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> PC3           0.165      0.072<span style="text-decoration: underline;">1</span>     0.041<span style="text-decoration: underline;">3</span>         4.13             97.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> PC4           0.093<span style="text-decoration: underline;">1</span>    <span style="color: #BB0000;">NA</span>          0.023<span style="text-decoration: underline;">3</span>         2.33            100  </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Or fit the PCA in one step</span></span></span>
 <span class="r-in"><span><span class="fu">proc_pca</span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, scale <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   component eigenvalue variance_pct cum_variance_pct</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> PC1           3.50          87.6              87.6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> PC2           0.239          5.99             93.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> PC3           0.165          4.13             97.7</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> PC4           0.093<span style="text-decoration: underline;">1</span>         2.33            100  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   component eigenvalue difference proportion variance_pct cum_variance_pct</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> PC1           3.50       3.26       0.876         87.6              87.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> PC2           0.239      0.074<span style="text-decoration: underline;">2</span>     0.059<span style="text-decoration: underline;">9</span>         5.99             93.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> PC3           0.165      0.072<span style="text-decoration: underline;">1</span>     0.041<span style="text-decoration: underline;">3</span>         4.13             97.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> PC4           0.093<span style="text-decoration: underline;">1</span>    <span style="color: #BB0000;">NA</span>          0.023<span style="text-decoration: underline;">3</span>         2.33            100  </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

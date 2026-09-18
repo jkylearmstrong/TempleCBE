@@ -40,7 +40,7 @@ errors).
 
 ## See also
 
-\[find_sas()\]
+\[find_sas()\], \[cbe_sas_macro_path()\]
 
 ## Examples
 

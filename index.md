@@ -1,25 +1,5 @@
 # TempleCBE
 
-- [1 TempleCBE ![TempleCBE
-  logo](reference/figures/logo.png)](#templecbe-)
-  - [1.1 📦 Installation](#package-installation)
-  - [1.2 🚀 Quick Start](#rocket-quick-start)
-    - [1.2.1 1. Data Quality & Missingness
-      Analysis](#id_1-data-quality--missingness-analysis)
-    - [1.2.2 2. Normalization & Outlier
-      Detection](#id_2-normalization--outlier-detection)
-    - [1.2.3 3. Correlation & Principal Component
-      Analysis](#id_3-correlation--principal-component-analysis)
-    - [1.2.4 4. Penalized Cox Models for Survival
-      Data](#id_4-penalized-cox-models-for-survival-data)
-    - [1.2.5 5. Custom Tidymodels Recipe Step:
-      `step_famd`](#id_5-custom-tidymodels-recipe-step-step_famd)
-    - [1.2.6 6. Infix Helper Operators](#id_6-infix-helper-operators)
-  - [1.3 📚 Vignettes](#books-vignettes)
-  - [1.4 🏛️ Ecosystem
-    Architecture](#classical_building-ecosystem-architecture)
-  - [1.5 📄 License](#page_facing_up-license)
-
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
 [![Codecov test
 coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)

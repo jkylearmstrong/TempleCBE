@@ -15,7 +15,7 @@ is scored on the outer assessment set, which played no part in tuning."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.405.2026.09.17.22.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,10 @@ is scored on the outer assessment set, which played no part in tuning."><meta pr
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/R_to_SAS.html">05. R to SAS I/O and Advanced Survival Workflows: Counting Process, Clustering, and Stratification</a></li>
+    <li><a class="dropdown-item" href="../articles/reticulate_export.html">06. Python Interoperability: Validating LOCO-MP Survival Ensembles with reticulate, rpy2, and DataSlingers/LOCOMP</a></li>
+    <li><a class="dropdown-item" href="../articles/pca_analysis.html">07. Principal Component Analysis in R and SAS</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -49,7 +52,7 @@ is scored on the outer assessment set, which played no part in tuning."><meta pr
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Nested Cross-Validation of a Penalized Cox Model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/R/nested_cv_coxnet.R" class="external-link"><code>R/nested_cv_coxnet.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/nested_cv_coxnet.R" class="external-link"><code>R/nested_cv_coxnet.R</code></a></small>
       <div class="d-none name"><code>nested_cv_coxnet.Rd</code></div>
     </div>
 
@@ -77,6 +80,7 @@ is scored on the outer assessment set, which played no part in tuning.</p>
 <span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"baseline"</span><span class="op">)</span>,</span>
 <span>  trunc <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  importance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"loco_mp"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -144,6 +148,11 @@ in `metrics` by default.</p></dd>
 [future::plan()] first.</p></dd>
 
 
+<dt id="arg-importance">importance<a class="anchor" aria-label="anchor" href="#arg-importance"></a></dt>
+<dd><p>Method for evaluating feature importance on the outer analysis sets.
+Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with MiniPatch ensembles).</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Further arguments passed to [glmnet::glmnet()], such as
 `cox.ties` or `nlambda`.</p></dd>
@@ -163,7 +172,8 @@ error over outer splits, `FALSE` for each split's metrics.</p></dd>
     <p>A tibble, of class `nested_cv_coxnet`, with one row per outer split:
   `id`, the chosen `mixture` and `penalty`, `.metrics` (outer assessment-set
   metrics), `.coefs` (coefficients of the refit), and `.inner` (the inner
-  cross-validation's summarized metrics). `tune::collect_metrics()`
+  cross-validation's summarized metrics). If `importance = "loco_mp"`, includes
+  `.importance` with tidy LOCO-MP statistical inference. `tune::collect_metrics()`
   averages `.metrics` over outer splits.</p>
     </div>
     <div class="section level2">
@@ -178,7 +188,7 @@ settings can differ between outer splits. To fit a final model, run
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p>[cv_coxnet()], [coxnet()]</p></div>
+    <div class="dont-index"><p>[cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()]</p></div>
     </div>
 
     <div class="section level2">

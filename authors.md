@@ -7,19 +7,23 @@
   Lewis Katz School of Medicine at Temple University, Center for
   Biostatistics & Epidemiology
 
+- **Darina Chudnovskaya**. Contributor.  
+  Lewis Katz School of Medicine at Temple University, Center for
+  Biostatistics & Epidemiology
+
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/jkylearmstrong/TempleCBE/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/jkylearmstrong/TempleCBE/blob/master/DESCRIPTION)
 
 Armstrong J (2026). *TempleCBE: Temple CBE Biostatistics, Clinical Data
 Science, and Modeling Utilities*. R package version
-0.3.403.2026.09.17.11.39, <https://github.com/jkylearmstrong/TempleCBE>.
+0.3.405.2026.09.17.22.44, <https://github.com/jkylearmstrong/TempleCBE>.
 
     @Manual{,
       title = {TempleCBE: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities},
       author = {J Kyle Armstrong},
       year = {2026},
-      note = {R package version 0.3.403.2026.09.17.11.39},
+      note = {R package version 0.3.405.2026.09.17.22.44},
       url = {https://github.com/jkylearmstrong/TempleCBE},
     }

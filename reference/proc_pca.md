@@ -38,21 +38,21 @@ A tibble with one row per component: \`component\`, \`eigenvalue\`,
 
 ``` r
 proc_pca(prcomp(mtcars[, 1:4], scale. = TRUE))
-#> # A tibble: 4 × 4
-#>   component eigenvalue variance_pct cum_variance_pct
-#>   <chr>          <dbl>        <dbl>            <dbl>
-#> 1 PC1           3.50          87.6              87.6
-#> 2 PC2           0.239          5.99             93.5
-#> 3 PC3           0.165          4.13             97.7
-#> 4 PC4           0.0931         2.33            100  
+#> # A tibble: 4 × 6
+#>   component eigenvalue difference proportion variance_pct cum_variance_pct
+#>   <chr>          <dbl>      <dbl>      <dbl>        <dbl>            <dbl>
+#> 1 PC1           3.50       3.26       0.876         87.6              87.6
+#> 2 PC2           0.239      0.0742     0.0599         5.99             93.5
+#> 3 PC3           0.165      0.0721     0.0413         4.13             97.7
+#> 4 PC4           0.0931    NA          0.0233         2.33            100  
 
 # Or fit the PCA in one step
 proc_pca(mtcars[, 1:4], scale = TRUE)
-#> # A tibble: 4 × 4
-#>   component eigenvalue variance_pct cum_variance_pct
-#>   <chr>          <dbl>        <dbl>            <dbl>
-#> 1 PC1           3.50          87.6              87.6
-#> 2 PC2           0.239          5.99             93.5
-#> 3 PC3           0.165          4.13             97.7
-#> 4 PC4           0.0931         2.33            100  
+#> # A tibble: 4 × 6
+#>   component eigenvalue difference proportion variance_pct cum_variance_pct
+#>   <chr>          <dbl>      <dbl>      <dbl>        <dbl>            <dbl>
+#> 1 PC1           3.50       3.26       0.876         87.6              87.6
+#> 2 PC2           0.239      0.0742     0.0599         5.99             93.5
+#> 3 PC3           0.165      0.0721     0.0413         4.13             97.7
+#> 4 PC4           0.0931    NA          0.0233         2.33            100  
 ```

@@ -15,7 +15,7 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.405.2026.09.17.22.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,10 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/R_to_SAS.html">05. R to SAS I/O and Advanced Survival Workflows: Counting Process, Clustering, and Stratification</a></li>
+    <li><a class="dropdown-item" href="../articles/reticulate_export.html">06. Python Interoperability: Validating LOCO-MP Survival Ensembles with reticulate, rpy2, and DataSlingers/LOCOMP</a></li>
+    <li><a class="dropdown-item" href="../articles/pca_analysis.html">07. Principal Component Analysis in R and SAS</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -49,7 +52,7 @@ custom renaming/formatting functions."><meta property="og:image" content="https:
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Generate Pseudonym Tokens (Cryptographic Hash)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/main/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
       <div class="d-none name"><code>generate_pseudonym_token.Rd</code></div>
     </div>
 
@@ -119,15 +122,15 @@ or a custom function such as `function(tok) paste0("INV-", substr(tok, 4, 8))`).
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random cryptographic hash tokens</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_738acc0d3264d6ff" "PI_f21cb1bb857ed968" "PI_0668fb518b98c225"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_e4b202b3dc335856" "PI_801daff5a1346652" "PI_0fdfe3fa5856baf5"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short hash tokens (4 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_185f" "PI_c0de" "PI_6c5d"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_f610" "PI_786b" "PI_a345"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_4c772cd1855ed092" "pi_bff078d31a933903"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_1eefa310b376ee64" "pi_9290c95b2dd7a2ad"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Stateless deterministic token with key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span><span class="st">"Franklin"</span>, key <span class="op">=</span> <span class="st">"study_salt"</span><span class="op">)</span></span></span>

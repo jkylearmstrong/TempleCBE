@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.403.2026.09.17.11.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.405.2026.09.17.22.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,10 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eda_and_missingness.html">01. Exploratory Data Analysis, Missingness Auditing, and Normalization</a></li>
     <li><a class="dropdown-item" href="../articles/nested_survival_cv.html">Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</a></li>
     <li><a class="dropdown-item" href="../articles/compute_graph.html">Visualizing Computational Pipeline Dependencies</a></li>
-    <li><a class="dropdown-item" href="../articles/sas_survival.html">Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/sas_survival.html">04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE</a></li>
+    <li><a class="dropdown-item" href="../articles/R_to_SAS.html">05. R to SAS I/O and Advanced Survival Workflows: Counting Process, Clustering, and Stratification</a></li>
+    <li><a class="dropdown-item" href="../articles/reticulate_export.html">06. Python Interoperability: Validating LOCO-MP Survival Ensembles with reticulate, rpy2, and DataSlingers/LOCOMP</a></li>
+    <li><a class="dropdown-item" href="../articles/pca_analysis.html">07. Principal Component Analysis in R and SAS</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -100,7 +103,14 @@
           <code><a href="get_dataset_info.html">get_dataset_info()</a></code> <code><a href="get_dataset_info.html">proc_contents()</a></code>
 
         </dt>
-        <dd>Summarize a Data Frame's Columns</dd>
+        <dd>Summarize a Data Frame or Joint Model's Columns and Components</dd>
+
+        <dt>
+
+          <code><a href="cbe_compare_df.html">cbe_compare_df()</a></code>
+
+        </dt>
+        <dd>Compare Two Data Frames (SAS PROC COMPARE Parity)</dd>
       </dl></div><div class="section level2">
       <h2 id="normalization-outlier-detection">Normalization &amp; Outlier Detection<a class="anchor" aria-label="anchor" href="#normalization-outlier-detection"></a></h2>
 
@@ -152,6 +162,99 @@
 
         </dt>
         <dd>Flag and Classify Outliers</dd>
+      </dl></div><div class="section level2">
+      <h2 id="principal-component-analysis-dimension-reduction">Principal Component Analysis &amp; Dimension Reduction<a class="anchor" aria-label="anchor" href="#principal-component-analysis-dimension-reduction"></a></h2>
+
+      <div class="section-desc"><p>Unsupervised dimensionality reduction matching SAS PROC PRINCOMP output: variance decomposition, eigenvalue tables, Kaiser-Guttman scree plots, biplots with concentration ellipses, and variable correlation circles.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="proc_pca.html">proc_pca()</a></code>
+
+        </dt>
+        <dd>Process and Plot Principal Component Analysis (PCA)</dd>
+
+        <dt>
+
+          <code><a href="pca_plot.html">pca_plot()</a></code>
+
+        </dt>
+        <dd>Plot a PCA Fit</dd>
+
+        <dt>
+
+          <code><a href="pca_scree_plot.html">pca_scree_plot()</a></code>
+
+        </dt>
+        <dd>PCA Scree Plot</dd>
+
+        <dt>
+
+          <code><a href="pca_variables_plot.html">pca_variables_plot()</a></code>
+
+        </dt>
+        <dd>PCA Variable Correlation Circle</dd>
+
+        <dt>
+
+          <code><a href="pca_biplot.html">pca_biplot()</a></code>
+
+        </dt>
+        <dd>PCA Loadings Biplot</dd>
+
+        <dt>
+
+          <code><a href="plot_pca_bi.html">plot_pca_bi()</a></code>
+
+        </dt>
+        <dd>PCA Biplot</dd>
+
+        <dt>
+
+          <code><a href="pca_percent_var_explained.html">pca_percent_var_explained()</a></code>
+
+        </dt>
+        <dd>Percent Variance Explained by Each Principal Component</dd>
+
+        <dt>
+
+          <code><a href="pca_feature_loading_heatmap.html">pca_feature_loading_heatmap()</a></code>
+
+        </dt>
+        <dd>PCA Feature-Loading Heatmap</dd>
+
+        <dt>
+
+          <code><a href="rotation_matrix.html">rotation_matrix()</a></code> <code><a href="rotation_matrix.html">pca_loadings()</a></code>
+
+        </dt>
+        <dd>PCA Rotation Matrix (Loadings)</dd>
+
+        <dt>
+
+          <code><a href="pca_eqns.html">pca_eqns()</a></code>
+
+        </dt>
+        <dd>PCA Equations</dd>
+
+        <dt>
+
+          <code><a href="pca_loading_diff.html">pca_loading_diff()</a></code>
+
+        </dt>
+        <dd>Difference in PCA Loadings Between Two Fits</dd>
+
+        <dt>
+
+          <code><a href="pca_loading_diff_heatmap.html">pca_loading_diff_heatmap()</a></code>
+
+        </dt>
+        <dd>Heatmap of PCA Loading Differences Between Two Fits</dd>
       </dl></div><div class="section level2">
       <h2 id="penalized-cox-models-for-survival-data">Penalized Cox Models for Survival Data<a class="anchor" aria-label="anchor" href="#penalized-cox-models-for-survival-data"></a></h2>
 
@@ -252,6 +355,143 @@
 
         </dt>
         <dd>Tune Over `alpha` for Every Split of a Resample</dd>
+
+        <dt>
+
+          <code><a href="step_lencode_coxnet.html">step_lencode_coxnet()</a></code>
+
+        </dt>
+        <dd>Supervised Linear Encoding of Factors via Penalized Cox Models</dd>
+
+        <dt>
+
+          <code><a href="cbe_loco_mp_coxnet.html">cbe_loco_mp_coxnet()</a></code>
+
+        </dt>
+        <dd>Leave-One-Covariate-Out Inference with MiniPatch Ensembles (LOCO-MP) for Cox Models</dd>
+
+        <dt>
+
+          <code><a href="autoplot.cbe_loco_mp_coxnet.html">autoplot(<i>&lt;cbe_loco_mp_coxnet&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Autoplot Method for LOCO-MP Feature Importance</dd>
+
+        <dt>
+
+          <code><a href="tidy.cbe_loco_mp_coxnet.html">tidy(<i>&lt;cbe_loco_mp_coxnet&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tidy a LOCO-MP Cox Model Object</dd>
+      </dl></div><div class="section level2">
+      <h2 id="joint-survival-status-time-models">Joint Survival-Status-Time Models<a class="anchor" aria-label="anchor" href="#joint-survival-status-time-models"></a></h2>
+
+      <div class="section-desc"><p>Coordinated multi-paradigm modeling blending penalized Cox survival, binary event classification, follow-up duration regression, and calibrated stacked ensembles.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="joint_model.html">joint_model()</a></code>
+
+        </dt>
+        <dd>Joint Survival-Status-Time Model</dd>
+
+        <dt>
+
+          <code><a href="predict.joint_model.html">predict(<i>&lt;joint_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Predict Method for Joint Models</dd>
+
+        <dt>
+
+          <code><a href="tidy.joint_model.html">tidy(<i>&lt;joint_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tidy Method for Joint Models</dd>
+
+        <dt>
+
+          <code><a href="print.joint_model.html">print(<i>&lt;joint_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print Method for Joint Models</dd>
+
+        <dt>
+
+          <code><a href="cv_joint_model.html">cv_joint_model()</a></code>
+
+        </dt>
+        <dd>Cross-Validation for Joint Models</dd>
+
+        <dt>
+
+          <code><a href="nested_cv_joint_model.html">nested_cv_joint_model()</a></code>
+
+        </dt>
+        <dd>Nested Cross-Validation for Joint Models</dd>
+
+        <dt>
+
+          <code><a href="autoplot.cv_joint_model.html">autoplot(<i>&lt;cv_joint_model&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Autoplot Method for Cross-Validated Joint Models</dd>
+
+        <dt>
+
+          <code><a href="extract_surv_components.html">extract_surv_components()</a></code>
+
+        </dt>
+        <dd>Extract Survival Outcome Components and Predictors</dd>
+
+        <dt>
+
+          <code><a href="step_lencode_joint_model.html">step_lencode_joint_model()</a></code>
+
+        </dt>
+        <dd>Supervised Linear Encoding of Factors via Joint Survival-Status-Time Model</dd>
+      </dl></div><div class="section level2">
+      <h2 id="model-explainability-variable-attributions">Model Explainability &amp; Variable Attributions<a class="anchor" aria-label="anchor" href="#model-explainability-variable-attributions"></a></h2>
+
+      <div class="section-desc"><p>Unified explainability across survival and joint models using survex and DALEX, custom IPCW Integrated Brier loss functions, and SurvSHAP(t) attributions.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="cbe_explain_survival.html">cbe_explain_survival()</a></code>
+
+        </dt>
+        <dd>Explain Survival Models via survex and DALEX</dd>
+
+        <dt>
+
+          <code><a href="cbe_explain.html">cbe_explain()</a></code> <code><a href="cbe_explain.html">cbe_explain_status()</a></code> <code><a href="cbe_explain.html">cbe_explain_time()</a></code>
+
+        </dt>
+        <dd>Explain Joint Model Components via DALEX and survex</dd>
+
+        <dt>
+
+          <code><a href="cbe_predict_parts_shap.html">cbe_predict_parts_shap()</a></code>
+
+        </dt>
+        <dd>SHAP Variable Attributions across Survival and Joint Models</dd>
+
+        <dt>
+
+          <code><a href="cbe_survex_loss_ibs.html">cbe_survex_loss_ibs()</a></code> <code><a href="cbe_survex_loss_ibs.html">cbe_survex_loss_brier()</a></code>
+
+        </dt>
+        <dd>TempleCBE Custom Loss Functions for survex</dd>
       </dl></div><div class="section level2">
       <h2 id="tidymodels-recipe-steps-modeling-utilities">Tidymodels Recipe Steps &amp; Modeling Utilities<a class="anchor" aria-label="anchor" href="#tidymodels-recipe-steps-modeling-utilities"></a></h2>
 
@@ -594,7 +834,7 @@
 
         <dt>
 
-          <code><a href="reexports.html">reexports</a></code> <code><a href="reexports.html">write_xlsx</a></code>
+          <code><a href="reexports.html">reexports</a></code> <code><a href="reexports.html">write_xlsx</a></code> <code><a href="reexports.html">%&gt;%</a></code>
 
         </dt>
         <dd>Objects exported from other packages</dd>
@@ -654,6 +894,27 @@
 
         </dt>
         <dd>Locate a SAS Executable</dd>
+
+        <dt>
+
+          <code><a href="cbe_sas_macro_dir.html">cbe_sas_macro_dir()</a></code>
+
+        </dt>
+        <dd>Directory of TempleCBE SAS Macros</dd>
+
+        <dt>
+
+          <code><a href="cbe_sas_macro_path.html">cbe_sas_macro_path()</a></code>
+
+        </dt>
+        <dd>Path to a TempleCBE SAS Macro File</dd>
+
+        <dt>
+
+          <code><a href="rossi_data.html">rossi_data()</a></code>
+
+        </dt>
+        <dd>Rossi Recidivism Dataset</dd>
 
         <dt>
 
@@ -1248,7 +1509,7 @@
           <code><a href="cbe_test_categorical.html">cbe_test_categorical()</a></code>
 
         </dt>
-        <dd>Institutional Categorical Hypothesis Test for gtsummary</dd>
+        <dd>Institutional Categorical Hypothesis Test for gtsummary and Batch Testing</dd>
 
         <dt>
 
@@ -1428,6 +1689,36 @@
 
         </dt>
         <dd>Extract Output Formats From Document YAML Front Matter</dd>
+
+        <dt>
+
+          <code><a href="cbe_docx_review_extract.html">cbe_docx_review_extract()</a></code>
+
+        </dt>
+        <dd>DOCX Review Extractor &amp; Multi-Reviewer Collaborative Tracker</dd>
+      </dl></div><div class="section level2">
+      <h2 id="example-datasets">Example Datasets<a class="anchor" aria-label="anchor" href="#example-datasets"></a></h2>
+
+      <div class="section-desc"><p>Clinical oncology and time-to-event datasets for testing and vignette demonstrations.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tumor_long.html">tumor_long()</a></code>
+
+        </dt>
+        <dd>Convert Wide Tumor Data to Counting Process (Start/Stop) Format</dd>
+
+        <dt>
+
+          <code><a href="tumor_wide.html">tumor_wide()</a></code>
+
+        </dt>
+        <dd>Internal SAS Benchmark Tumor Dataset (Wide Format)</dd>
       </dl></div><div class="section level2">
       <h2 id="helper-infix-operators">Helper &amp; Infix Operators<a class="anchor" aria-label="anchor" href="#helper-infix-operators"></a></h2>
 
@@ -1535,6 +1826,13 @@
 
         </dt>
         <dd>Install a Package, Bypassing an Existing Lock</dd>
+
+        <dt>
+
+          <code><a href="reexports.html">reexports</a></code> <code><a href="reexports.html">write_xlsx</a></code> <code><a href="reexports.html">%&gt;%</a></code>
+
+        </dt>
+        <dd>Objects exported from other packages</dd>
 
         <dt>
 

@@ -1,31 +1,56 @@
-# Summarize a Data Frame's Columns
+# Summarize a Data Frame or Joint Model's Columns and Components
 
 Per-column metadata: class, variable label (if set via labelled),
 mean/sd for numeric columns, most-frequent value, distinct-value count,
 and missingness.
 [`survival::Surv`](https://rdrr.io/pkg/survival/man/Surv.html) columns
-are summarized from their underlying time/status matrix rather than
-unrolled as plain numerics.
+are summarized from their underlying time/status or start/stop
+counting-process matrix rather than unrolled as plain numerics. When
+provided a
+[`joint_model`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
+object, summarizes the fitted training data and attaches model metadata.
 
 ## Usage
 
 ``` r
-get_dataset_info(df)
+get_dataset_info(x, ...)
 
-proc_contents(df)
+# S3 method for class 'data.frame'
+get_dataset_info(x, subject_id = NULL, dataset_name = NULL, ...)
+
+# S3 method for class 'joint_model'
+get_dataset_info(x, ...)
+
+proc_contents(x, ...)
 ```
 
 ## Arguments
 
-- df:
+- x:
 
-  A data frame or tibble.
+  A data frame, tibble, or a fitted
+  [`joint_model`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
+  object.
+
+- ...:
+
+  Additional arguments passed to methods.
+
+- subject_id:
+
+  Optional character string specifying the subject identifier column for
+  repeated-measures longitudinal datasets to audit time-varying vs.
+  baseline features.
+
+- dataset_name:
+
+  Optional character string overriding the displayed dataset name.
 
 ## Value
 
-A tibble with one row per column of `df`: `dataset_name`, `labels`,
+A tibble with one row per column of `x`: `dataset_name`, `labels`,
 `columns`, `class`, `mean`, `sd`, `most_freq`, `n_distinct`, `SumNa`,
-`PctNa`.
+`PctNa`, and optionally `variable_type` when `subject_id` is specified.
 
 ## Examples
 
