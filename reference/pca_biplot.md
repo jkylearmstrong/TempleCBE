@@ -14,7 +14,8 @@ pca_biplot(
   y = 2,
   group = NULL,
   ellipse = FALSE,
-  title = "PCA Biplot"
+  title = "PCA Biplot",
+  percent = FALSE
 )
 ```
 
@@ -41,6 +42,11 @@ pca_biplot(
 - title:
 
   Optional plot title (default `"PCA Biplot"`).
+
+- percent:
+
+  Logical (default `FALSE`); if `TRUE`, appends percent variance
+  explained to axis labels.
 
 ## Value
 
