@@ -47,6 +47,34 @@ reference:
       - proc_contents
       - cbe_compare_df
 
+  - title: Clinical Databases & Multi-Table Management
+    desc: Functions for multi-table clinical databases, metadata export/import, variable role assignment, and relational linkage analysis.
+    contents:
+      - cbe_labels
+      - cbe_dataset_label
+      - cbe_database_name
+      - cbe_database_label
+      - cbe_set_dataset_labels
+      - cbe_get_dataset_labels
+      - write_database_to_excel
+      - read_database_from_excel
+      - write_workbook
+      - cbe_write_database
+      - cbe_read_database
+      - write_database_metadata
+      - read_database_metadata
+      - apply_database_metadata
+      - cbe_variable_roles
+      - cbe_set_roles
+      - cbe_get_roles
+      - cbe_get_predictors
+      - cbe_get_outcomes
+      - cbe_get_id_cols
+      - cbe_get_time_cols
+      - cbe_database_relationships
+      - cbe_find_shared_keys
+      - cbe_check_key_integrity
+
   - title: Normalization & Outlier Detection
     desc: Functions for scaling numeric features and flagging statistical outliers.
     contents:

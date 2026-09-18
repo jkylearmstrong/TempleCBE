@@ -1,23 +1,92 @@
-#' Resolve a Column's Display Label
+#' Get or Set Dataset and Database Labels
 #'
-#' Prefers [labelled::var_label()], falling back to `attr(x, "label")` --
-#' necessary because a label set on a raw time/status column is typically
-#' lost once it's wrapped in [survival::Surv()].
+#' Extends \pkg{labelled} variable-level conventions to dataset-level and
+#' database-level metadata attributes.
 #'
-#' @param x The column vector to label.
-#' @param default Value returned when no usable label is found.
-#' @return A single string: the resolved label, or `default`.
-#' @keywords internal
-#' @noRd
-resolve_var_label <- function(x, default = NA_character_) {
-  lbl <- tryCatch(labelled::var_label(x), error = function(e) NULL)
-  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
+#' @param x A data frame (for dataset functions) or a named list of data frames (for database functions).
+#' @param value A character string specifying the label or name.
+#' @return For getters, the label or name string (or \code{NULL} if unset).
+#'   For setters, the modified object \code{x} with the attribute attached.
+#' @name cbe_labels
+#' @export
+#' @examples
+#' df <- mtcars
+#' cbe_dataset_label(df) <- "1974 Motor Trend Car Road Tests"
+#' cbe_dataset_label(df)
+cbe_dataset_label <- function(x) {
+  lbl <- attr(x, "dataset_label", exact = TRUE)
+  if (is.null(lbl) || !nzchar(as.character(lbl))) {
     lbl <- attr(x, "label", exact = TRUE)
   }
-  if (is.null(lbl) || length(lbl) != 1 || is.na(lbl) || !nzchar(as.character(lbl))) {
-    return(default)
+  if (is.null(lbl) || !nzchar(as.character(lbl))) {
+    return(NULL)
   }
   as.character(lbl)
+}
+
+#' @rdname cbe_labels
+#' @export
+`cbe_dataset_label<-` <- function(x, value) {
+  attr(x, "dataset_label") <- if (!is.null(value)) as.character(value) else NULL
+  x
+}
+
+#' @rdname cbe_labels
+#' @export
+cbe_database_name <- function(x) {
+  nm <- attr(x, "database_name", exact = TRUE)
+  if (is.null(nm) || !nzchar(as.character(nm))) {
+    return(NULL)
+  }
+  as.character(nm)
+}
+
+#' @rdname cbe_labels
+#' @export
+`cbe_database_name<-` <- function(x, value) {
+  attr(x, "database_name") <- if (!is.null(value)) as.character(value) else NULL
+  x
+}
+
+#' @rdname cbe_labels
+#' @export
+cbe_database_label <- function(x) {
+  lbl <- attr(x, "database_label", exact = TRUE)
+  if (is.null(lbl) || !nzchar(as.character(lbl))) {
+    return(NULL)
+  }
+  as.character(lbl)
+}
+
+#' @rdname cbe_labels
+#' @export
+`cbe_database_label<-` <- function(x, value) {
+  attr(x, "database_label") <- if (!is.null(value)) as.character(value) else NULL
+  x
+}
+
+#' @rdname cbe_labels
+#' @param labels A named character vector or list mapping dataset names to dataset labels.
+#' @export
+cbe_set_dataset_labels <- function(x, labels) {
+  if (!is.list(x) || is.data.frame(x)) {
+    stop("`x` must be a named list of data frames (an R database).", call. = FALSE)
+  }
+  for (nm in names(labels)) {
+    if (nm %in% names(x)) {
+      cbe_dataset_label(x[[nm]]) <- labels[[nm]]
+    }
+  }
+  x
+}
+
+#' @rdname cbe_labels
+#' @export
+cbe_get_dataset_labels <- function(x) {
+  if (!is.list(x) || is.data.frame(x)) {
+    return(cbe_dataset_label(x))
+  }
+  vapply(x, function(df) cbe_dataset_label(df) %||% NA_character_, character(1))
 }
 
 #' Summarize a Data Frame or Joint Model's Columns and Components
@@ -28,10 +97,12 @@ resolve_var_label <- function(x, default = NA_character_) {
 #' underlying time/status or start/stop counting-process matrix rather than
 #' unrolled as plain numerics. When provided a \code{\link[TempleCBE]{joint_model}}
 #' object, summarizes the fitted training data and attaches model metadata.
+#' When provided a list of data frames (an R database), returns a consolidated
+#' data dictionary across all tables.
 #'
-#' @param x A data frame, tibble, or a fitted \code{\link[TempleCBE]{joint_model}} object.
+#' @param x A data frame, tibble, named list of data frames, or a fitted \code{\link[TempleCBE]{joint_model}} object.
 #' @param ... Additional arguments passed to methods.
-#' @return A tibble with one row per column of \code{x}: \code{dataset_name},
+#' @return A tibble with one row per column: \code{dataset_name}, (optional \code{database_name} and \code{dataset_label}),
 #'   \code{labels}, \code{columns}, \code{class}, \code{mean}, \code{sd},
 #'   \code{most_freq}, \code{n_distinct}, \code{SumNa}, \code{PctNa}, and
 #'   optionally \code{variable_type} when \code{subject_id} is specified.
@@ -46,12 +117,22 @@ get_dataset_info <- function(x, ...) {
 #' @param subject_id Optional character string specifying the subject identifier column
 #'   for repeated-measures longitudinal datasets to audit time-varying vs. baseline features.
 #' @param dataset_name Optional character string overriding the displayed dataset name.
+#' @param database_name Optional character string specifying the parent database name.
+#' @param dataset_label Optional character string overriding the dataset-level description.
 #' @export
-get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NULL, ...) {
+get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NULL,
+                                        database_name = NULL, dataset_label = NULL, ...) {
   df <- x
   if (is.null(dataset_name)) {
     dataset_name <- deparse(substitute(x))
   }
+  if (is.null(database_name)) {
+    database_name <- cbe_database_name(df)
+  }
+  if (is.null(dataset_label)) {
+    dataset_label <- cbe_dataset_label(df)
+  }
+
   columns <- colnames(df)
 
   is_surv <- vapply(df, function(col) inherits(col, "Surv"), logical(1))
@@ -184,6 +265,16 @@ get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NUL
     dplyr::left_join(n_distinct, by = "columns") |>
     dplyr::left_join(na_info, by = "columns")
 
+  if (!is.null(dataset_label)) {
+    out <- dplyr::mutate(out, dataset_label = dataset_label) |>
+      dplyr::relocate("dataset_label", .after = "dataset_name")
+  }
+
+  if (!is.null(database_name)) {
+    out <- dplyr::mutate(out, database_name = database_name) |>
+      dplyr::relocate("database_name", .before = "dataset_name")
+  }
+
   # Longitudinal repeated-measures covariate classification if subject_id is supplied
   if (!is.null(subject_id) && subject_id %in% columns) {
     var_types <- unname(vapply(columns, function(col) {
@@ -197,6 +288,62 @@ get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NUL
   }
 
   out
+}
+
+#' @rdname get_dataset_info
+#' @export
+get_dataset_info.list <- function(x, subject_id = NULL, database_name = NULL, ...) {
+  if (length(x) == 0) {
+    return(tibble::tibble(
+      dataset_name = character(),
+      labels = character(),
+      columns = character(),
+      class = character(),
+      mean = numeric(),
+      sd = numeric(),
+      most_freq = character(),
+      n_distinct = numeric(),
+      SumNa = numeric(),
+      PctNa = numeric()
+    ))
+  }
+
+  tbl_names <- names(x)
+  if (is.null(tbl_names)) {
+    tbl_names <- paste0("Table", seq_along(x))
+  } else {
+    empty_idx <- which(!nzchar(tbl_names))
+    if (length(empty_idx) > 0) {
+      tbl_names[empty_idx] <- paste0("Table", empty_idx)
+    }
+  }
+
+  db_name <- database_name %||% cbe_database_name(x)
+
+  info_list <- lapply(seq_along(x), function(i) {
+    nm <- tbl_names[[i]]
+    df <- x[[i]]
+    if (!is.data.frame(df)) {
+      warning("Element '", nm, "' is not a data frame and was skipped.", call. = FALSE)
+      return(NULL)
+    }
+
+    sub_id <- if (is.list(subject_id) || (is.character(subject_id) && length(subject_id) > 1 && !is.null(names(subject_id)))) {
+      subject_id[[nm]]
+    } else {
+      subject_id
+    }
+
+    get_dataset_info.data.frame(
+      df,
+      subject_id = sub_id,
+      dataset_name = nm,
+      database_name = db_name,
+      ...
+    )
+  })
+
+  dplyr::bind_rows(info_list)
 }
 
 #' @rdname get_dataset_info

@@ -226,3 +226,39 @@ test_that("get_dataset_info works on fitted joint_model objects", {
   expect_equal(meta$n_obs, 40)
 })
 
+test_that("get_dataset_info.list handles multi-table clinical databases", {
+  inputs <- data.frame(id = 1:5, age = c(45, 52, 61, 39, 48), sex = c("M", "F", "M", "F", "M"))
+  abg <- data.frame(id = c(1, 1, 2, 2, 3), ph = c(7.35, 7.40, 7.28, 7.32, 7.45), pco2 = c(40, 38, 48, 44, 35))
+  survival_data <- data.frame(id = 1:5, surv = survival::Surv(c(10, 20, 30, 40, 50), c(1, 0, 1, 0, 1)))
+
+  db <- list(
+    inputs = inputs,
+    ABG = abg,
+    survival_data = survival_data
+  )
+
+  cbe_database_name(db) <- "ClinicalTrialDB"
+  cbe_dataset_label(db$inputs) <- "Demographics and Baseline Characteristics"
+  cbe_dataset_label(db$ABG) <- "Arterial Blood Gas Longitudinal Measurements"
+
+  res <- get_dataset_info(db, subject_id = list(inputs = "id", ABG = "id"))
+
+  expect_s3_class(res, "data.frame")
+  expect_equal(nrow(res), ncol(inputs) + ncol(abg) + ncol(survival_data))
+  expect_true(all(c("database_name", "dataset_name", "columns", "labels", "class") %in% names(res)))
+  expect_equal(unique(res$database_name), "ClinicalTrialDB")
+  expect_equal(unique(res$dataset_name), c("inputs", "ABG", "survival_data"))
+
+  abg_ph_row <- res |> dplyr::filter(dataset_name == "ABG", columns == "ph")
+  expect_equal(abg_ph_row$variable_type, "Longitudinal (Time-Varying)")
+
+  # Test helper getters and setters
+  labels_map <- cbe_get_dataset_labels(db)
+  expect_equal(unname(labels_map["inputs"]), "Demographics and Baseline Characteristics")
+  expect_true(is.na(labels_map["survival_data"]))
+
+  # Test cbe_set_dataset_labels
+  db <- cbe_set_dataset_labels(db, list(survival_data = "Time-to-Event Clinical Followup"))
+  expect_equal(cbe_dataset_label(db$survival_data), "Time-to-Event Clinical Followup")
+})
+

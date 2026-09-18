@@ -76,6 +76,7 @@ Suggests:
     future,
     ggpubr,
     ggraph,
+    ggVennDiagram,
     glmnet (>= 4.1.0),
     gt,
     haven,

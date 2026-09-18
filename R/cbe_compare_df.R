@@ -42,17 +42,32 @@ cbe_compare_df <- function(base,
                            base_name = NULL,
                            compare_name = NULL,
                            max_diffs = 100) {
-  if (is.null(base_name)) {
-    base_name <- deparse(substitute(base))
-    if (length(base_name) > 1) base_name <- base_name[1]
+  # Support database list with character vector of table names
+  if (is.list(base) && !is.data.frame(base)) {
+    if (is.character(compare) && length(compare) == 2) {
+      base_name <- compare[1]
+      compare_name <- compare[2]
+      comp_df <- as.data.frame(base[[compare_name]])
+      base_df <- as.data.frame(base[[base_name]])
+    } else if (is.character(base_name) && is.character(compare_name) &&
+               base_name %in% names(base) && compare_name %in% names(base)) {
+      comp_df <- as.data.frame(base[[compare_name]])
+      base_df <- as.data.frame(base[[base_name]])
+    } else {
+      stop("When `base` is an R database list, `compare` must be a length-2 character vector of table names, or `base_name` and `compare_name` must specify valid table names.", call. = FALSE)
+    }
+  } else {
+    if (is.null(base_name)) {
+      base_name <- deparse(substitute(base))
+      if (length(base_name) > 1) base_name <- base_name[1]
+    }
+    if (is.null(compare_name)) {
+      compare_name <- deparse(substitute(compare))
+      if (length(compare_name) > 1) compare_name <- compare_name[1]
+    }
+    base_df <- as.data.frame(base)
+    comp_df <- as.data.frame(compare)
   }
-  if (is.null(compare_name)) {
-    compare_name <- deparse(substitute(compare))
-    if (length(compare_name) > 1) compare_name <- compare_name[1]
-  }
-
-  base_df <- as.data.frame(base)
-  comp_df <- as.data.frame(compare)
 
   # Extract variable labels helper (shared with get_dataset_info.R, which
   # documents why var_label() is tried before the attr() fallback)
@@ -286,4 +301,138 @@ summary.cbe_compare_df <- function(object, ...) {
 #' @exportS3Method generics::tidy
 tidy.cbe_compare_df <- function(x, ...) {
   x$diffs
+}
+
+#' Autoplot Method for CBE Data Frame Comparison
+#'
+#' Generates ggplot2 visualizations of data frame comparisons:
+#' 2-set Venn diagrams of observation/key overlap or variable concordance (leveraging
+#' \pkg{ggVennDiagram} when installed), or discrepancy bar charts across variables.
+#'
+#' @param object A \code{\link{cbe_compare_df}} object.
+#' @param type Character string specifying the plot type: \code{"observations"} (default; Venn of rows/keys),
+#'   \code{"variables"} (Venn of common/unique columns), or \code{"discrepancies"} (bar chart of value differences).
+#' @param ... Additional arguments passed to methods or \pkg{ggVennDiagram}.
+#' @return A \code{\link[ggplot2]{ggplot}} object.
+#' @exportS3Method ggplot2::autoplot
+#' @export
+autoplot.cbe_compare_df <- function(object, type = c("observations", "variables", "discrepancies"), ...) {
+  type <- match.arg(type)
+
+  if (type == "observations") {
+    b_name <- object$meta$base_name %||% "Base"
+    c_name <- object$meta$compare_name %||% "Compare"
+
+    set_list <- list()
+    set_list[[b_name]] <- c(paste0("matched_", seq_len(object$observations$n_matched)),
+                            paste0("base_only_", seq_len(object$observations$unmatched_base)))
+    set_list[[c_name]] <- c(paste0("matched_", seq_len(object$observations$n_matched)),
+                            paste0("compare_only_", seq_len(object$observations$unmatched_compare)))
+
+    if (requireNamespace("ggVennDiagram", quietly = TRUE)) {
+      p <- ggVennDiagram::ggVennDiagram(set_list, label_alpha = 0, ...) +
+        ggplot2::scale_fill_gradient(low = "#e8f8f5", high = "#a41e35") +
+        ggplot2::labs(
+          title = paste0("Observation / Key Concordance: ", b_name, " vs ", c_name),
+          subtitle = paste0("Total Matched: ", object$observations$n_matched,
+                            " | Unmatched in Base: ", object$observations$unmatched_base,
+                            " | Unmatched in Compare: ", object$observations$unmatched_compare)
+        ) +
+        theme_cbe()
+      return(p)
+    }
+
+    df_labels <- tibble::tribble(
+      ~x, ~y, ~label,
+      -0.6, 0, paste0(b_name, "\nOnly\n(N = ", object$observations$unmatched_base, ")"),
+      0.6, 0, paste0(c_name, "\nOnly\n(N = ", object$observations$unmatched_compare, ")"),
+      0, 0, paste0("Matched\n(N = ", object$observations$n_matched, ")")
+    )
+    t <- seq(0, 2 * pi, length.out = 100)
+    circle1 <- data.frame(x = cos(t) - 0.4, y = sin(t), set = b_name)
+    circle2 <- data.frame(x = cos(t) + 0.4, y = sin(t), set = c_name)
+    circles <- rbind(circle1, circle2)
+
+    p <- ggplot2::ggplot() +
+      ggplot2::geom_polygon(data = circles, ggplot2::aes(x = .data$x, y = .data$y, fill = .data$set, group = .data$set),
+                            alpha = 0.35, color = "#a41e35", linewidth = 1) +
+      ggplot2::geom_text(data = df_labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label),
+                         fontface = "bold", size = 4.5, color = "#2b2b2b") +
+      ggplot2::scale_fill_manual(values = c("#005a70", "#a41e35")) +
+      ggplot2::coord_fixed() +
+      ggplot2::theme_void() +
+      ggplot2::labs(
+        title = paste0("Observation Concordance: ", b_name, " vs ", c_name),
+        fill = "Dataset"
+      )
+    return(p)
+  }
+
+  if (type == "variables") {
+    b_name <- object$meta$base_name %||% "Base"
+    c_name <- object$meta$compare_name %||% "Compare"
+    set_list <- list()
+    set_list[[b_name]] <- c(object$variables$common, object$variables$base_only)
+    set_list[[c_name]] <- c(object$variables$common, object$variables$compare_only)
+
+    if (requireNamespace("ggVennDiagram", quietly = TRUE)) {
+      p <- ggVennDiagram::ggVennDiagram(set_list, label_alpha = 0, ...) +
+        ggplot2::scale_fill_gradient(low = "#e8f8f5", high = "#005a70") +
+        ggplot2::labs(
+          title = paste0("Variable Concordance: ", b_name, " vs ", c_name),
+          subtitle = paste0("Common: ", length(object$variables$common),
+                            " | Base Only: ", length(object$variables$base_only),
+                            " | Compare Only: ", length(object$variables$compare_only))
+        ) +
+        theme_cbe()
+      return(p)
+    }
+
+    df_labels <- tibble::tribble(
+      ~x, ~y, ~label,
+      -0.6, 0, paste0(b_name, "\nOnly\n(", length(object$variables$base_only), ")"),
+      0.6, 0, paste0(c_name, "\nOnly\n(", length(object$variables$compare_only), ")"),
+      0, 0, paste0("Common\n(", length(object$variables$common), ")")
+    )
+    t <- seq(0, 2 * pi, length.out = 100)
+    circles <- rbind(
+      data.frame(x = cos(t) - 0.4, y = sin(t), set = b_name),
+      data.frame(x = cos(t) + 0.4, y = sin(t), set = c_name)
+    )
+
+    p <- ggplot2::ggplot() +
+      ggplot2::geom_polygon(data = circles, ggplot2::aes(x = .data$x, y = .data$y, fill = .data$set, group = .data$set),
+                            alpha = 0.35, color = "#005a70", linewidth = 1) +
+      ggplot2::geom_text(data = df_labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label),
+                         fontface = "bold", size = 4.5, color = "#2b2b2b") +
+      ggplot2::scale_fill_manual(values = c("#1fceb6", "#005a70")) +
+      ggplot2::coord_fixed() +
+      ggplot2::theme_void() +
+      ggplot2::labs(title = paste0("Variable Concordance: ", b_name, " vs ", c_name), fill = "Dataset")
+    return(p)
+  }
+
+  diff_tbl <- dplyr::filter(object$summary, .data$n_diff > 0)
+  if (nrow(diff_tbl) == 0) {
+    p <- ggplot2::ggplot() +
+      ggplot2::annotate("text", x = 1, y = 1, label = "All common variables match within tolerance!",
+                        size = 5, color = "#005a70", fontface = "bold") +
+      ggplot2::theme_void() +
+      ggplot2::labs(title = "Discrepancies Summary: Zero Differences")
+    return(p)
+  }
+
+  diff_tbl <- dplyr::arrange(diff_tbl, .data$n_diff)
+  diff_tbl$variable <- factor(diff_tbl$variable, levels = diff_tbl$variable)
+
+  p <- ggplot2::ggplot(diff_tbl, ggplot2::aes(x = .data$n_diff, y = .data$variable)) +
+    ggplot2::geom_col(fill = "#a41e35", width = 0.6) +
+    ggplot2::geom_text(ggplot2::aes(label = .data$n_diff), hjust = -0.2, size = 3.5) +
+    ggplot2::labs(
+      title = "Value-Level Discrepancies by Variable",
+      x = "Number of Discrepant Observations",
+      y = "Variable"
+    ) +
+    theme_cbe()
+  p
 }

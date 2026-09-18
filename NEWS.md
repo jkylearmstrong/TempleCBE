@@ -1,3 +1,23 @@
+# TempleCBE (Development)
+
+## Clinical Database & Multi-Table Management Methods
+
+* **Multi-Table Metadata & Database Attributes (`get_dataset_info`, `cbe_labels`)**:
+  * Added S3 method `get_dataset_info.list()` to summarize multi-table clinical databases (e.g. `list(inputs, ABG, Cardiovascular, Injury, Pulmonary, Surface, survival_data)`), returning consolidated data dictionaries with `database_name`, `dataset_name`, and `dataset_label`.
+  * Extended `labelled` variable-level conventions to dataset-level and database-level metadata via `cbe_dataset_label()`, `cbe_database_name()`, `cbe_database_label()`, and batch helpers `cbe_set_dataset_labels()` / `cbe_get_dataset_labels()`.
+* **Excel & Database Multi-Sheet I/O (`write_database_to_excel`, `read_database_from_excel`, `write_workbook`)**:
+  * New `write_database_to_excel()` (and alias `write_workbook()`, `cbe_write_database()`) writes multi-table databases into named worksheets with automated metadata sheets (`"METADATA"`).
+  * New `read_database_from_excel()` (and alias `cbe_read_database()`) reads multi-sheet workbooks and attaches the metadata sheet as an attribute.
+  * New `write_database_metadata()` and `read_database_metadata()` support in-place metadata review and modification across both `.csv` and `.xlsx` formats.
+  * New `apply_database_metadata()` synchronizes modified variable labels, dataset descriptions, and variable roles back into database data frames in-place.
+* **Clinical Variable Role Assignment (`cbe_variable_roles`, `cbe_set_roles`)**:
+  * New `cbe_variable_roles()` allows defining functional roles (predictors `X_var`, outcomes `Y_var`, identifiers `ID_var`, visit times `Time_var`, `strata`, `weight`, `ignore`) across individual tables or entire multi-table databases.
+  * Role extractors `cbe_get_predictors()`, `cbe_get_outcomes()`, `cbe_get_id_cols()`, and `cbe_get_time_cols()` streamline downstream recipe and modeling pipelines.
+* **Database Relational Linkage Analysis (`cbe_database_relationships`, `cbe_find_shared_keys`, `cbe_check_key_integrity`)**:
+  * New `cbe_find_shared_keys()` detects candidate linkage identifiers across tables.
+  * New `cbe_database_relationships()` analyzes cross-table record overlap, coverage percentages, and cardinality (`1:1`, `1:Many`, `Many:1`, `Many:Many`).
+  * New `cbe_check_key_integrity()` audits cohort attrition and identifies orphan records relative to a master cohort dataset.
+
 # TempleCBE 0.3.403
 
 ## Exact Contingency Methods, Chi-Square Testing & Visualizations
