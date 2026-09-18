@@ -2,6 +2,8 @@
 % Please edit documentation in R/step_lencode_survival.R
 \name{step_lencode_coxnet}
 \alias{step_lencode_coxnet}
+\alias{tunable.step_lencode_coxnet}
+\alias{required_pkgs.step_lencode_coxnet}
 \title{Supervised Linear Encoding of Factors via Penalized Cox Models}
 \usage{
 step_lencode_coxnet(

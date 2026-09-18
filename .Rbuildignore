@@ -25,3 +25,5 @@
 ^scripts/.*\.ps1$
 ^.*scratchpad.*$
 ^claude.*$
+^Dockerfile$
+^Dockerfile.*$

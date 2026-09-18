@@ -10,7 +10,8 @@ pca_biplot(
   y = 2,
   group = NULL,
   ellipse = FALSE,
-  title = "PCA Biplot"
+  title = "PCA Biplot",
+  percent = FALSE
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ pca_biplot(
 draws 95\% confidence/concentration ellipses around each group.}
 
 \item{title}{Optional plot title (default \code{"PCA Biplot"}).}
+
+\item{percent}{Logical (default \code{FALSE}); if \code{TRUE}, appends percent variance explained to axis labels.}
 }
 \value{
 A ggplot object.

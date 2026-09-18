@@ -329,4 +329,5 @@ importFrom(tibble,
   tibble
 )
 importFrom(tidyr,pivot_longer)
+importFrom(utils,head)
 importFrom(writexl,write_xlsx)

@@ -217,7 +217,7 @@ pca_scree_plot <- function(pca_model, metric = c("eigenvalue", "variance"), kais
   if (metric == "eigenvalue" && isTRUE(kaiser)) {
     p <- p +
       ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
-      ggplot2::annotate("text", x = max(df$PC), y = 1.05, label = "Kaiser Criterion (\u03bb = 1)",
+      ggplot2::annotate("text", x = max(df$PC), y = 1.05, label = "Kaiser Criterion (Eigenvalue = 1)",
                         hjust = 1, vjust = 0, color = "grey40", size = 3.5)
   }
   p

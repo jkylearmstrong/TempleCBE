@@ -1,5 +1,5 @@
-# Global variable definitions for NSE (Tidyverse & ggplot2)
-# Avoids 'no visible binding for global variable' notes during R CMD check
+#' @importFrom utils head
+NULL
 
 if (getRversion() >= "2.15.1") {
   utils::globalVariables(c(
@@ -35,6 +35,7 @@ if (getRversion() >= "2.15.1") {
     "sd.error",
     "se",
     "Statistic",
+    "status",
     "strata",
     "term",
     "tile",
