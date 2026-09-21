@@ -1,5 +1,12 @@
 # TempleCBE (Development)
 
+## tidymodels integration
+
+* **`coxnet` engine for `parsnip::proportional_hazards()`**: `coxnet()` is now registered as an engine of `proportional_hazards()` in `"censored regression"` mode, so it works in `parsnip::fit()`, workflows, `tune::tune_grid()`, and workflowsets (`set_engine("coxnet")`, with `penalty` and `mixture` tunable). Unlike censored's `"glmnet"` engine it accepts counting-process `Surv(start, stop, event)` outcomes. Predictions: `"linear_pred"` (identical to censored's `"glmnet"` engine), `"survival"` (Breslow baseline; within about 1e-3 of censored's), and `"time"`. It is registered when parsnip loads, in either load order. Each tuning candidate is fit separately; case weights and `strata()` are not supported. New exports `coxnet_train()` and `predict_coxnet_*()` are the functions parsnip calls; use `coxnet()` directly outside parsnip.
+* **`predict.coxnet_model(type = "time")`**: restricted mean survival time, the area under the predicted survival curve up to the last training time. It is what static yardstick metrics such as `concordance_survival()` use.
+* `censored` is now listed in `Suggests`. The `joint_model_brief` chunk of the SAS survival vignette is skipped when `glmnet`, `rsample`, `yardstick`, or `probably` isn't installed instead of failing the build.
+* The five figures in the SAS survival vignette now have captions.
+
 ## Clinical Database & Multi-Table Management Methods
 
 * **Multi-Table Metadata & Database Attributes (`get_dataset_info`, `cbe_labels`)**:

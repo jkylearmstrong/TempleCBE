@@ -7,7 +7,7 @@
 \method{predict}{coxnet_model}(
   object,
   new_data,
-  type = c("linear_pred", "survival"),
+  type = c("linear_pred", "survival", "time"),
   penalty = NULL,
   eval_time = NULL,
   increasing = TRUE,
@@ -19,8 +19,10 @@
 
 \item{new_data}{A data frame (or matrix) of new predictors.}
 
-\item{type}{`"linear_pred"` for the linear predictor, or `"survival"` for
-survival probabilities at `eval_time`.}
+\item{type}{`"linear_pred"` for the linear predictor, `"survival"` for
+survival probabilities at `eval_time`, or `"time"` for the restricted mean
+survival time: the area under the predicted survival curve from 0 to the
+last time in the training data.}
 
 \item{penalty}{The penalty to predict at; defaults to the model's `penalty`.}
 
@@ -34,8 +36,9 @@ mean higher risk.}
 \item{...}{Not used.}
 }
 \value{
-A tibble with one row per row of `new_data`: `.pred_linear_pred`, or
-  `.pred`, a list-column of tibbles with `.eval_time` and `.pred_survival`.
+A tibble with one row per row of `new_data`: `.pred_linear_pred`,
+  `.pred_time`, or `.pred`, a list-column of tibbles with `.eval_time` and
+  `.pred_survival`.
 
 Survival is \eqn{S(t \mid x) = \exp(-H_0(t) e^{x^\top \beta})}, with
 \eqn{H_0} the Breslow estimate of the cumulative baseline hazard from the

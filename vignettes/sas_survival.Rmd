@@ -124,7 +124,7 @@ In SAS, plotting survival curves or marginal effects requires chaining `PROC PHR
 
 #### Forest Plot
 
-```{r plot_forest_single}
+```{r plot_forest_single, fig.cap = "Forest plot of the univariable Cox model for age (hazard ratio with 95% confidence interval)."}
 plot_cox_forest(res_age)
 ```
 
@@ -144,7 +144,7 @@ run;
 
 In `TempleCBE`, `plot_cox_survival()` plots model-predicted survival curves and can overlay non-parametric Kaplan-Meier curves (`overlay_km = TRUE`) to visually verify fit adequacy:
 
-```{r plot_surv_single}
+```{r plot_surv_single, fig.cap = "Model-predicted survival curve for the univariable age model, overlaid with the non-parametric Kaplan-Meier estimate."}
 plot_cox_survival(res_age, data = lung_data, overlay_km = TRUE)
 ```
 
@@ -152,7 +152,7 @@ plot_cox_survival(res_age, data = lung_data, overlay_km = TRUE)
 
 To inspect how the relative hazard or mortality probability varies smoothly across the range of the predictor, use `plot_cox_marginal()`:
 
-```{r plot_marginal_single}
+```{r plot_marginal_single, fig.cap = "Marginal hazard ratio for age across its observed range, relative to the reference value."}
 plot_cox_marginal(res_age, data = lung_data, scale = "hr")
 ```
 
@@ -195,7 +195,7 @@ res_multi$zph$zph_table
 
 Faceted or multi-predictor forest visualization:
 
-```{r plot_multi_forest}
+```{r plot_multi_forest, fig.cap = "Forest plot of the multivariable Cox model (adjusted hazard ratios with 95% confidence intervals)."}
 plot_cox_forest_multi(res_multi)
 ```
 
@@ -587,7 +587,7 @@ Both SAS and `TempleCBE` utilize reverse Kaplan-Meier censoring estimation with 
 
 To verify clinical calibration at milestone $t = 300$ days (near median survival), we divide patients into predicted survival quintiles and compare mean predicted survival against observed Kaplan-Meier survival:
 
-```{r plot_calibration, fig.height = 4.2}
+```{r plot_calibration, fig.height = 4.2, fig.cap = "Calibration at 300 days: mean predicted survival versus observed Kaplan-Meier survival within predicted-survival quintiles; the dashed line marks perfect calibration."}
 # Extract 300-day predicted survival
 p300 <- surv_mat[3, ]
 lung_complete$pred_surv_300 <- p300
@@ -844,7 +844,7 @@ To address this:
 - **In SAS**: Biostatisticians employ the `%JM` macro, fitting a joint generalized linear mixed model (`PROC NLMIXED` with adaptive Gauss-Hermite quadrature) and proportional hazards model.
 - **In TempleCBE**: Analysts deploy `joint_model()` and `proc_contents()`, which fit coordinated survival (`coxnet`), binary classification (`status`), and duration regression (`time`) models with integrated probability calibration:
 
-```{r joint_model_brief, eval = TRUE}
+```{r joint_model_brief, eval = all(vapply(c("glmnet", "rsample", "yardstick", "probably"), requireNamespace, logical(1), quietly = TRUE))}
 # Audit dataset with repeated-measures detection
 toy_long <- data.frame(
   patid = rep(1:20, each = 3),
