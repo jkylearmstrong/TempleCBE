@@ -66,6 +66,7 @@ Suggests:
     baguette (>= 1.1.0),
     callr,
     caret,
+    censored (>= 0.3.0),
     DALEX (>= 2.5.0),
     DALEXtra (>= 2.3.0),
     devtools,

@@ -95,8 +95,10 @@ coxnet.recipe <- function(x, data, penalty = NULL, mixture = 1, path = NULL, ...
 #'
 #' @param object A [coxnet()] model.
 #' @param new_data A data frame (or matrix) of new predictors.
-#' @param type `"linear_pred"` for the linear predictor, or `"survival"` for
-#'   survival probabilities at `eval_time`.
+#' @param type `"linear_pred"` for the linear predictor, `"survival"` for
+#'   survival probabilities at `eval_time`, or `"time"` for the restricted mean
+#'   survival time: the area under the predicted survival curve from 0 to the
+#'   last time in the training data.
 #' @param penalty The penalty to predict at; defaults to the model's `penalty`.
 #' @param eval_time For `type = "survival"`, the times to predict survival at.
 #' @param increasing For `type = "linear_pred"`: if `TRUE` (the default, as in
@@ -104,8 +106,9 @@ coxnet.recipe <- function(x, data, penalty = NULL, mixture = 1, path = NULL, ...
 #'   mean longer survival. Use `FALSE` for glmnet's own sign, where larger values
 #'   mean higher risk.
 #' @param ... Not used.
-#' @return A tibble with one row per row of `new_data`: `.pred_linear_pred`, or
-#'   `.pred`, a list-column of tibbles with `.eval_time` and `.pred_survival`.
+#' @return A tibble with one row per row of `new_data`: `.pred_linear_pred`,
+#'   `.pred_time`, or `.pred`, a list-column of tibbles with `.eval_time` and
+#'   `.pred_survival`.
 #'
 #' Survival is \eqn{S(t \mid x) = \exp(-H_0(t) e^{x^\top \beta})}, with
 #' \eqn{H_0} the Breslow estimate of the cumulative baseline hazard from the
@@ -113,7 +116,7 @@ coxnet.recipe <- function(x, data, penalty = NULL, mixture = 1, path = NULL, ...
 #' time 0; to predict along a subject's start/stop covariate path, and score it,
 #' use [cv_coxnet()].
 #' @export
-predict.coxnet_model <- function(object, new_data, type = c("linear_pred", "survival"),
+predict.coxnet_model <- function(object, new_data, type = c("linear_pred", "survival", "time"),
                            penalty = NULL, eval_time = NULL, increasing = TRUE, ...) {
   type <- match.arg(type)
   penalty <- resolve_penalty(object, penalty)
@@ -122,6 +125,8 @@ predict.coxnet_model <- function(object, new_data, type = c("linear_pred", "surv
 
   out <- if (type == "linear_pred") {
     tibble::tibble(.pred_linear_pred = if (isTRUE(increasing)) -lp else lp)
+  } else if (type == "time") {
+    tibble::tibble(.pred_time = restricted_mean_survival(object, lp, penalty))
   } else {
     if (is.null(eval_time)) {
       stop("`eval_time` is required for `type = \"survival\"`.", call. = FALSE)
@@ -314,6 +319,17 @@ resolve_penalty <- function(object, penalty) {
 coxnet_link <- function(fit, x, penalty) {
   lp <- stats::predict(fit, newx = x, s = penalty, type = "link")
   matrix(as.numeric(lp), nrow = nrow(x))
+}
+
+# Area under each subject's predicted survival curve from 0 to the last time
+# seen in training, the restricted mean survival time.
+restricted_mean_survival <- function(object, lp, penalty) {
+  train <- surv_components(object$y)
+  bh <- breslow_cumhaz(coxnet_link(object$fit, object$x, penalty), train$start, train$stop, train$status)
+  tmax <- max(train$stop)
+  knots <- c(0, bh$time[bh$time < tmax], tmax)
+  cumhaz <- cumhaz_at(bh, utils::head(knots, -1))[, 1]
+  colSums(exp(-outer(cumhaz, exp(lp))) * diff(knots))
 }
 
 cumhaz_at <- function(bh, times) {

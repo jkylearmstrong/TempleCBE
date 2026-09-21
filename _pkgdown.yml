@@ -119,6 +119,7 @@ reference:
       metrics, and helpers for scoring start/stop models correctly.
     contents:
       - coxnet
+      - coxnet_train
       - predict.coxnet_model
       - tidy.coxnet_model
       - cv_coxnet
