@@ -25,10 +25,15 @@
 #'   the recipe.
 #' @param penalty Default penalty (glmnet's `lambda`) used by `predict()` and
 #'   `tidy()`. A single non-negative number, or `NULL` to require it there.
+#'   glmnet's default path can end above a small `penalty` (it stops early once
+#'   the deviance ratio saturates), so when `penalty` is below the path it is
+#'   continued down to `penalty`; `0` gives the unpenalized fit. Penalties
+#'   between path values are interpolated, as by [glmnet::predict.glmnet()].
 #' @param mixture Elastic-net mixing parameter (glmnet's `alpha`): 1 is the
 #'   lasso, 0 is ridge regression.
 #' @param path Optional decreasing sequence of penalties to fit, instead of
-#'   glmnet's default path.
+#'   glmnet's default path. It is used as given: `predict()` and `tidy()` at a
+#'   penalty below its smallest value warn and use the smallest.
 #' @param ... Further arguments passed to [glmnet::glmnet()], such as
 #'   `nlambda` or `cox.ties`. Not `x`, `y`, `family`, `alpha`, or `lambda`.
 #'   `cox.ties` defaults to `"breslow"`, matching the Breslow baseline hazard
@@ -182,7 +187,42 @@ coxnet_bridge <- function(processed, y, penalty, mixture, path, ...) {
   glmnet_args <- check_glmnet_args(list(...))
 
   fit <- fit_glmnet_cox(x, y, mixture, path, glmnet_args)
+  if (!is.null(penalty)) {
+    fit <- cover_penalty(fit, penalty, x, y, mixture, path, glmnet_args)
+  }
   new_coxnet(fit, penalty, mixture, x, y, processed$blueprint)
+}
+
+# glmnet's default path stops at its own smallest penalty, often early once
+# the deviance ratio saturates, and `predict()`/`coef()` return the smallest-
+# penalty solution for anything below it without a word. A requested `penalty`
+# below the path is therefore covered by continuing the path down to it (a
+# `penalty` of 0 is the unpenalized fit), so the model reports what was asked
+# for. A user-supplied `path` is left alone, with a warning.
+cover_penalty <- function(fit, penalty, x, y, mixture, path, glmnet_args) {
+  smallest <- min(fit$lambda)
+  if (penalty >= smallest) {
+    return(fit)
+  }
+  if (!is.null(path)) {
+    warning(
+      "`penalty` (", format(penalty, digits = 4), ") is below the smallest penalty on `path` (",
+      format(smallest, digits = 4), "); predictions at it will use the smallest penalty on `path`.",
+      call. = FALSE
+    )
+    return(fit)
+  }
+  fit_glmnet_cox(x, y, mixture, extend_path(fit$lambda, penalty), glmnet_args)
+}
+
+# Continue a decreasing penalty path down to `penalty`: geometric steps to a
+# floor 1e-4 of the path's end, then `penalty` itself if it is lower still.
+extend_path <- function(lambda, penalty, steps = 10) {
+  smallest <- min(lambda)
+  floor_ <- max(penalty, smallest * 1e-4)
+  extra <- exp(seq(log(smallest), log(floor_), length.out = steps + 1))[-1]
+  if (penalty < floor_) extra <- c(extra, penalty)
+  c(lambda, extra)
 }
 
 new_coxnet <- function(fit, penalty, mixture, x, y, blueprint) {
@@ -313,7 +353,17 @@ resolve_penalty <- function(object, penalty) {
   if (is.null(penalty)) {
     stop("Pass `penalty`: this model was fit without a default penalty.", call. = FALSE)
   }
-  check_single_penalty(penalty)
+  penalty <- check_single_penalty(penalty)
+  smallest <- min(object$fit$lambda)
+  if (penalty < smallest * (1 - 1e-8)) {
+    warning(
+      "`penalty` (", format(penalty, digits = 4), ") is below the smallest penalty on the fitted path (",
+      format(smallest, digits = 4), "), so the coefficients at that smallest penalty are used. ",
+      "Refit with this `penalty`, or with a `path` that reaches it.",
+      call. = FALSE
+    )
+  }
+  penalty
 }
 
 coxnet_link <- function(fit, x, penalty) {

@@ -19,7 +19,7 @@ step_lencode_coxnet(
   id = recipes::rand_id("lencode_coxnet")
 )
 
-tunable.step_lencode_coxnet(x, ...)
+\method{tunable}{step_lencode_coxnet}(x, ...)
 
 \method{required_pkgs}{step_lencode_coxnet}(x, ...)
 }
@@ -29,8 +29,9 @@ tunable.step_lencode_coxnet(x, ...)
 \item{...}{One or more selector functions to choose variables to be encoded.
 Must select factor or character columns.}
 
-\item{outcome}{A call to \code{recipes::vars()} selecting the survival outcome columns,
-e.g. \code{recipes::vars(time, status)} or \code{recipes::vars(tstart, tstop, status)}.}
+\item{outcome}{Character vector naming the survival outcome columns in the
+training data: \code{c("time", "status")} or
+\code{c("tstart", "tstop", "status")}.}
 
 \item{role}{For model terms created by this step, what analysis role should they
 be assigned? By default, the function assumes that the new variables will be
@@ -61,7 +62,12 @@ An updated version of \code{recipe} with the new step added.
 encodes categorical predictors into a single numeric variable representing the
 estimated log hazard ratio from a penalized Cox proportional hazards model
 on a survival outcome (\code{Surv(time, status)} or \code{Surv(tstart, tstop, status)}).
-Inspired by \code{embed::step_lencode_glm}.
+Inspired by \code{embed::step_lencode_glm}. Each factor is encoded on its own:
+a penalized Cox model with one indicator per non-reference level is fit to the
+training data at the single \code{penalty}, the reference level is encoded as 0,
+and levels that \code{bake()} has not seen, or missing values, are encoded as 0.
+If a model can't be fit, a warning is raised and the factor's levels are all
+encoded as 0.
 }
 \examples{
 \dontrun{

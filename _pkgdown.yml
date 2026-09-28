@@ -82,6 +82,9 @@ reference:
       - cbe_find_shared_keys
       - cbe_check_key_integrity
       - autoplot.cbe_key_integrity
+      - as_database
+      - database_setops
+      - database_to_igraph
 
   - title: Normalization & Outlier Detection
     desc: Functions for scaling numeric features and flagging statistical outliers.
@@ -266,6 +269,7 @@ reference:
       - create_qmd_renderer
       - get_render_plan
       - join_pipelines
+      - graph_setops
       - FilePath
       - FilePath-class
       - FileUses
@@ -430,3 +434,4 @@ reference:
     desc: Maintainer-facing helpers for package release and documentation artifacts.
     contents:
       - build_manual_versioned
+      - clean_publish

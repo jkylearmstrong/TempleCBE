@@ -121,9 +121,15 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
         cbe_loco_mp_coxnet(
           formula = preprocessor, data = analysis, subject_id = subject_id,
           mixture = inner$mixture, penalty = chosen, eval_time = eval_time,
-          B = 30, trunc = trunc, parallel = FALSE
+          B = 30, trunc = trunc, covariates = covariates, parallel = FALSE
         )
-      }, error = function(e) NULL)
+      }, error = function(e) {
+        warning(
+          "LOCO-MP importance failed for outer split ", object$id[i], ": ", conditionMessage(e),
+          call. = FALSE
+        )
+        NULL
+      })
       if (!is.null(loco_fit)) list(generics::tidy(loco_fit)) else list(NULL)
     } else {
       NULL

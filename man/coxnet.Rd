@@ -34,13 +34,18 @@ default (Breslow in glmnet 5.0, Efron from 5.1).}
 \item{y}{A [survival::Surv()] object with one element per row of `x`.}
 
 \item{penalty}{Default penalty (glmnet's `lambda`) used by `predict()` and
-`tidy()`. A single non-negative number, or `NULL` to require it there.}
+`tidy()`. A single non-negative number, or `NULL` to require it there.
+glmnet's default path can end above a small `penalty` (it stops early once
+the deviance ratio saturates), so when `penalty` is below the path it is
+continued down to `penalty`; `0` gives the unpenalized fit. Penalties
+between path values are interpolated, as by [glmnet::predict.glmnet()].}
 
 \item{mixture}{Elastic-net mixing parameter (glmnet's `alpha`): 1 is the
 lasso, 0 is ridge regression.}
 
 \item{path}{Optional decreasing sequence of penalties to fit, instead of
-glmnet's default path.}
+glmnet's default path. It is used as given: `predict()` and `tidy()` at a
+penalty below its smallest value warn and use the smallest.}
 
 \item{formula}{A formula with a `Surv()` outcome, such as
 `survival::Surv(tstart, tstop, status) ~ age + sex`.}

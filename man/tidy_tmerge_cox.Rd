@@ -12,7 +12,8 @@ tidy_tmerge_cox(
   event_time = "event_time",
   event_type = "event_type",
   baseline_df = NULL,
-  post_event = c("exclude", "include")
+  post_event = c("exclude", "include"),
+  censor_types = NULL
 )
 }
 \arguments{
@@ -32,6 +33,13 @@ tidy_tmerge_cox(
 
 \item{post_event}{Character string: \code{"exclude"} (default) drops measurements occurring after
 the subject's event time; \code{"include"} extends \code{event_time} to the maximum observed measurement time.}
+
+\item{censor_types}{Optional character vector of \code{event_type} values that mark a
+censoring time rather than an event, such as \code{"Censored"}. Those subjects' last
+interval gets \code{event = 0} (and no \code{event_label}). By default (\code{NULL}) every
+subject with an \code{event_time} has \code{event = 1} at it, whatever its
+\code{event_type}, so censoring times in \code{event_df} must be declared here (or the
+resulting \code{event} recoded) before the data is used to fit a survival model.}
 }
 \value{
 A tibble with columns \code{tstart}, \code{tstop}, \code{event} (1 if event occurred at \code{tstop},

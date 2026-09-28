@@ -25,7 +25,7 @@
 #'   on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolerance}).
 #'
 #' @return An S3 object of class \code{"cbe_compare_df"} containing (or, for a
-#'   \code{\link{cbe_database}}/graph comparison, a \code{"cbe_compare_database"}
+#'   \code{cbe_database}/graph comparison, a \code{"cbe_compare_database"}
 #'   list of two such objects, named \code{nodes} and \code{edges}):
 #'   \item{meta}{List containing metadata on dataset names, dimensions, tolerance, and keys.}
 #'   \item{variables}{List with elements \code{common}, \code{base_only}, and \code{compare_only}.}
