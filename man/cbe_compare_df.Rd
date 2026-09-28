@@ -21,7 +21,15 @@ cbe_compare_df(base, compare, ...)
   ...
 )
 
-\method{cbe_compare_df}{cbe_database}(base, compare, ..., base_name = NULL, compare_name = NULL)
+\method{cbe_compare_df}{cbe_database}(
+  base,
+  compare,
+  by = NULL,
+  edge_by = c("from", "to"),
+  ...,
+  base_name = NULL,
+  compare_name = NULL
+)
 
 \method{cbe_compare_df}{igraph}(base, compare, ...)
 
@@ -37,7 +45,8 @@ on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolera
 
 \item{by}{Optional character vector of column names specifying key variables used to align
 observations across datasets (equivalent to SAS \code{id} or \code{by} statement). If \code{NULL}
-(default), observations are compared by row order.}
+(default), observations are compared by row order. For the \code{cbe_database} method, this
+is the node key (passed through to the nodes comparison only).}
 
 \item{tolerance}{Non-negative numeric threshold for numeric differences (default: \code{1e-7}).
 Differences with absolute magnitude less than or equal to \code{tolerance} are considered matches.}
@@ -49,10 +58,13 @@ deparsed from the \code{base} argument.}
 deparsed from the \code{compare} argument.}
 
 \item{max_diffs}{Maximum number of discrepant rows to store per variable (default: 100).}
+
+\item{edge_by}{\code{cbe_database} method only: key column(s) used to align edges (default
+\code{c("from", "to")}, which every \code{\link{as_database}} method produces).}
 }
 \value{
 An S3 object of class \code{"cbe_compare_df"} containing (or, for a
-  \code{\link{cbe_database}}/graph comparison, a \code{"cbe_compare_database"}
+  \code{cbe_database}/graph comparison, a \code{"cbe_compare_database"}
   list of two such objects, named \code{nodes} and \code{edges}):
   \item{meta}{List containing metadata on dataset names, dimensions, tolerance, and keys.}
   \item{variables}{List with elements \code{common}, \code{base_only}, and \code{compare_only}.}
@@ -82,5 +94,5 @@ g2 <- igraph::graph_from_data_frame(
   data.frame(from = c("a", "b"), to = c("b", "c")),
   vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "analysis", "report"))
 )
-cbe_compare_df(g1, g2)
+cbe_compare_df(g1, g2, by = "name")
 }

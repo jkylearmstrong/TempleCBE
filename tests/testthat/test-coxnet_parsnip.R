@@ -1,5 +1,5 @@
 skip_if_no_parsnip_engine <- function() {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   for (pkg in c("parsnip", "workflows", "dials")) testthat::skip_if_not_installed(pkg)
 }
 
@@ -44,7 +44,7 @@ test_that("the engine accepts counting-process outcomes", {
 })
 
 test_that("restricted mean survival time is the area under the predicted curve and orders by risk", {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   d <- sim_counting()
   d <- d[!duplicated(d$subject_id), ]
   fit <- coxnet(survival::Surv(tstop, status) ~ x1 + x2 + x3, data = d, penalty = 0.05)

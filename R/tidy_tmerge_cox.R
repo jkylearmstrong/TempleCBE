@@ -15,6 +15,12 @@
 #' @param baseline_df Optional data frame containing time-fixed baseline covariates keyed by \code{id}.
 #' @param post_event Character string: \code{"exclude"} (default) drops measurements occurring after
 #'   the subject's event time; \code{"include"} extends \code{event_time} to the maximum observed measurement time.
+#' @param censor_types Optional character vector of \code{event_type} values that mark a
+#'   censoring time rather than an event, such as \code{"Censored"}. Those subjects' last
+#'   interval gets \code{event = 0} (and no \code{event_label}). By default (\code{NULL}) every
+#'   subject with an \code{event_time} has \code{event = 1} at it, whatever its
+#'   \code{event_type}, so censoring times in \code{event_df} must be declared here (or the
+#'   resulting \code{event} recoded) before the data is used to fit a survival model.
 #' @return A tibble with columns \code{tstart}, \code{tstop}, \code{event} (1 if event occurred at \code{tstop},
 #'   0 otherwise), \code{event_label}, and all merged measurement and baseline covariates.
 #' @seealso [cbe_cox_multi()]
@@ -27,7 +33,8 @@ tidy_tmerge_cox <- function(
   event_time = "event_time",
   event_type = "event_type",
   baseline_df = NULL,
-  post_event = c("exclude", "include")
+  post_event = c("exclude", "include"),
+  censor_types = NULL
 ) {
   post_event <- match.arg(post_event)
 
@@ -79,7 +86,8 @@ tidy_tmerge_cox <- function(
         default = dplyr::first(!!event_time_sym)
       ),
       event = dplyr::if_else(
-        !is.na(!!event_time_sym) & .data$tstop == !!event_time_sym,
+        !is.na(!!event_time_sym) & .data$tstop == !!event_time_sym &
+          !(as.character(!!event_type_sym) %in% censor_types),
         1,
         0
       ),
@@ -93,6 +101,16 @@ tidy_tmerge_cox <- function(
 
   # Remove intervals with missing tstop
   df <- df |> dplyr::filter(!is.na(.data$tstop))
+
+  empty <- df$tstop <= df$tstart
+  if (any(empty)) {
+    warning(
+      sum(empty), " interval(s) have `tstop <= tstart` (repeated measurement times, or an event ",
+      "time at or before a measurement), which survival models can't use; see subject(s): ",
+      format_ids(df[[id]][empty]), ".",
+      call. = FALSE
+    )
+  }
 
   tibble::as_tibble(df)
 }

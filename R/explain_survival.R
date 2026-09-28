@@ -74,6 +74,16 @@ cbe_explain_survival <- function(model,
     stop("`y` must be supplied (e.g. Surv(time, status)) if not provided in `model`.", call. = FALSE)
   }
 
+  if (inherits(target_y, "Surv") && identical(attr(target_y, "type"), "counting")) {
+    stop(
+      "survex explains one row per subject with a right-censored outcome, but `y` is a ",
+      "start/stop Surv(start, stop, event) with one row per interval. Explain each subject at ",
+      "baseline instead: pass `data` with one row per subject (their first interval) and ",
+      "`y = surv_subject_truth(y, subject_id)$.truth`.",
+      call. = FALSE
+    )
+  }
+
   if (is.null(times)) {
     if (inherits(target_y, "Surv")) {
       surv_mat <- as.matrix(target_y)
@@ -148,18 +158,16 @@ cbe_explain_survival <- function(model,
   # 3. Build default risk prediction function
   if (is.null(predict_risk_function)) {
     predict_risk_function <- function(m, new_data, times = NULL, ...) {
-      # Try linear predictor first. For coxnet_model/cv_coxnet, `increasing`
-      # controls the sign: TRUE (their predict() default, used elsewhere for
-      # .pred_linear_pred) means higher = longer survival, but a *risk*
-      # function must return higher = higher risk, so request glmnet's native
-      # sign explicitly here.
+      # Try linear predictor first: `explain_predict_risk()` for the model
+      # classes whose sign it knows, then the generic tidymodels linear_pred.
       lp <- tryCatch({
-        p <- if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
-          stats::predict(m, new_data = new_data, type = "linear_pred", increasing = FALSE)
+        p <- explain_predict_risk(m, new_data)
+        if (!is.null(p)) {
+          p
         } else {
-          stats::predict(m, new_data = new_data, type = "linear_pred")
+          p <- stats::predict(m, new_data = new_data, type = "linear_pred")
+          if (ncol(p) > 0) as.numeric(p[[1]]) else NULL
         }
-        if (ncol(p) > 0) as.numeric(p[[1]]) else NULL
       }, error = function(e) NULL)
 
       if (!is.null(lp)) return(lp)
@@ -193,6 +201,22 @@ cbe_explain_survival <- function(model,
     verbose = verbose,
     ...
   )
+}
+
+# Risk scores in survex's convention (higher means higher risk) for the model
+# classes whose linear predictor's sign is known; NULL for any other class.
+# `predict.coxnet_model()` flips the sign by default (larger = longer survival,
+# as in censored), so glmnet's own sign is requested explicitly. `predict.coxph()`
+# has no `new_data` argument, and would silently score the training data.
+explain_predict_risk <- function(m, new_data) {
+  if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
+    p <- stats::predict(m, new_data = new_data, type = "linear_pred", increasing = FALSE)
+    return(as.numeric(p[[1]]))
+  }
+  if (inherits(m, "coxph")) {
+    return(as.numeric(stats::predict(m, newdata = new_data, type = "lp")))
+  }
+  NULL
 }
 
 #' TempleCBE Custom Loss Functions for survex
@@ -289,37 +313,14 @@ cbe_survex_loss_brier <- function(trunc = 0.05) {
       survival::Surv(y_true[, 1], y_true[, 2])
     }
 
-    cens_surv <- survival::Surv(surv_obj[, 1], 1 - surv_obj[, 2])
-    cens_km <- survival::survfit(cens_surv ~ 1)
+    # Graf IPCW weights, from the reverse Kaplan-Meier estimate of censoring.
+    # (Looking G up with summary.survfit(times = ) doesn't work here: it sorts
+    # `times`, so the weights came back in time order, not subject order.)
+    parts <- surv_components(surv_obj)
+    weights <- graf_weights(surv_obj, times, censoring_km(surv_obj), trunc)
+    alive <- outer(parts$stop, times, ">") * 1
 
-    t_obs <- surv_obj[, 1]
-    status_obs <- surv_obj[, 2]
-    n <- length(t_obs)
-
-    brier_vec <- numeric(length(times))
-    for (j in seq_along(times)) {
-      tj <- times[j]
-      p_surv <- surv[, j]
-
-      # IPCW weights
-      g_tj <- summary(cens_km, times = tj, extend = TRUE)$surv
-      if (is.na(g_tj) || g_tj < trunc) g_tj <- trunc
-
-      g_ti <- summary(cens_km, times = pmin(t_obs, tj), extend = TRUE)$surv
-      g_ti[is.na(g_ti) | g_ti < trunc] <- trunc
-
-      # Event occurred prior to tj
-      w_event <- ifelse(t_obs <= tj & status_obs == 1, 1 / g_ti, 0)
-      # Event-free beyond tj
-      w_cens <- ifelse(t_obs > tj, 1 / g_tj, 0)
-
-      term1 <- w_event * (p_surv^2)
-      term2 <- w_cens * ((1 - p_surv)^2)
-
-      brier_vec[j] <- mean(term1 + term2, na.rm = TRUE)
-    }
-
-    brier_vec
+    unname(colSums(weights * (alive - surv)^2)) / length(parts$stop)
   }
 
   attr(loss_fn, "loss_type") <- "time-dependent"

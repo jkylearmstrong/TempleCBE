@@ -18,7 +18,7 @@ An \code{igraph} object.
 }
 \description{
 The other direction from \code{\link{as_database}}: takes a
-\code{\link{cbe_database}} (or plain \code{list(nodes = ..., edges = ...)})
+\code{cbe_database} (or plain \code{list(nodes = ..., edges = ...)})
 -- such as one produced by \code{\link{as_database}} or the
 \code{\link{database_setops}} verbs -- and builds an \code{igraph} from it.
 }

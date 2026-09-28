@@ -20,8 +20,11 @@ sim_counting <- function(n = 80, seed = 1, n_sites = 4) {
   }))
 }
 
-skip_if_no_coxnet_deps <- function() {
-  for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes", "hardhat")) {
+# `cv = FALSE` skips only on what fitting and predicting a coxnet() model need;
+# the default also needs rsample and yardstick, for cross-validation.
+skip_if_no_coxnet_deps <- function(cv = TRUE) {
+  pkgs <- c("glmnet", "survival", "recipes", "hardhat", if (cv) c("rsample", "yardstick"))
+  for (pkg in pkgs) {
     testthat::skip_if_not_installed(pkg)
   }
 }

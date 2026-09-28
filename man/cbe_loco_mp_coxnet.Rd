@@ -21,6 +21,7 @@ cbe_loco_mp_coxnet(
   trunc = 0.05,
   parallel = FALSE,
   seed = NULL,
+  covariates = c("path", "baseline"),
   ...
 )
 }
@@ -40,7 +41,9 @@ Default is 0.7.}
 
 \item{m_ratio}{Subsampling fraction for predictors without replacement. Default is 0.5.}
 
-\item{penalty}{Penalty parameter for \code{coxnet}. If \code{NULL}, defaults to 0 (unpenalized).}
+\item{penalty}{Penalty parameter for \code{coxnet}. If \code{NULL}, each minipatch
+is predicted at the smallest penalty on its own glmnet path, an almost
+unpenalized fit.}
 
 \item{mixture}{Elastic-net mixing parameter (\eqn{\alpha \in [0, 1]}). Default is 1 (lasso).}
 
@@ -62,6 +65,13 @@ Default is \code{"bonferroni"}.}
 
 \item{seed}{Optional random seed for reproducible subsampling.}
 
+\item{covariates}{\code{"path"} (default) or \code{"baseline"}: how the out-of-bag
+survival curve of a subject with start/stop rows uses the covariates, as in
+\code{\link{cv_coxnet}}. With \code{"path"} the cumulative hazard is integrated
+along the subject's covariate path, so no value from after an evaluation time
+predicts survival at it; \code{"baseline"} uses the first interval's covariates.
+The two agree for right-censored data.}
+
 \item{...}{Additional arguments passed to \code{coxnet()}.}
 }
 \value{
@@ -73,6 +83,7 @@ An S3 object of class \code{"cbe_loco_mp_coxnet"} containing:
   \item{n_ratio, m_ratio}{Subsampling ratios used.}
   \item{alpha}{Significance level.}
   \item{p_adjust}{Multiple testing adjustment method.}
+  \item{covariates}{How start/stop covariates were used; see \code{covariates}.}
 }
 \description{
 Implements the LOCO-MP statistical inference framework (Gan, Zheng, & Allen 2022)

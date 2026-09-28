@@ -15,7 +15,9 @@
 #' @param n_ratio Subsampling fraction for subjects/observations without replacement.
 #'   Default is 0.7.
 #' @param m_ratio Subsampling fraction for predictors without replacement. Default is 0.5.
-#' @param penalty Penalty parameter for \code{coxnet}. If \code{NULL}, defaults to 0 (unpenalized).
+#' @param penalty Penalty parameter for \code{coxnet}. If \code{NULL}, each minipatch
+#'   is predicted at the smallest penalty on its own glmnet path, an almost
+#'   unpenalized fit.
 #' @param mixture Elastic-net mixing parameter (\eqn{\alpha \in [0, 1]}). Default is 1 (lasso).
 #' @param eval_time Numeric vector of evaluation time points for IPCW Brier loss integration.
 #'   If \code{NULL}, defaults to deciles of event times.
@@ -28,6 +30,12 @@
 #' @param trunc Lower truncation threshold for Kaplan-Meier censoring weights. Default is 0.05.
 #' @param parallel Logical; if \code{TRUE} and \code{future} is available, runs patches in parallel.
 #' @param seed Optional random seed for reproducible subsampling.
+#' @param covariates \code{"path"} (default) or \code{"baseline"}: how the out-of-bag
+#'   survival curve of a subject with start/stop rows uses the covariates, as in
+#'   \code{\link{cv_coxnet}}. With \code{"path"} the cumulative hazard is integrated
+#'   along the subject's covariate path, so no value from after an evaluation time
+#'   predicts survival at it; \code{"baseline"} uses the first interval's covariates.
+#'   The two agree for right-censored data.
 #' @param ... Additional arguments passed to \code{coxnet()}.
 #'
 #' @return An S3 object of class \code{"cbe_loco_mp_coxnet"} containing:
@@ -38,6 +46,7 @@
 #'   \item{n_ratio, m_ratio}{Subsampling ratios used.}
 #'   \item{alpha}{Significance level.}
 #'   \item{p_adjust}{Multiple testing adjustment method.}
+#'   \item{covariates}{How start/stop covariates were used; see \code{covariates}.}
 #' @seealso [nested_cv_coxnet()], [cv_coxnet()], [coxnet()]
 #' @export
 #'
@@ -74,9 +83,11 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
                                trunc = 0.05,
                                parallel = FALSE,
                                seed = NULL,
+                               covariates = c("path", "baseline"),
                                ...) {
   rlang::check_installed(c("glmnet", "survival"), reason = "for cbe_loco_mp_coxnet().")
   p_adjust <- match.arg(p_adjust)
+  covariates <- match.arg(covariates)
 
   if (!is.null(seed)) set.seed(seed)
 
@@ -105,12 +116,18 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
     stop("At least 2 predictors are required for LOCO-MP feature importance.", call. = FALSE)
   }
 
-  # Unique subject identifiers
-  unique_subjs <- if (!is.null(subjs)) unique(subjs) else seq_len(n_total)
-  n_subjs <- length(unique_subjs)
-
-  # Default evaluation times and subject-level truth
+  # Subject-level truth: one row per subject, sorted by subject. Everything
+  # subject-indexed below (sampling, weights, outcomes) follows this order, so
+  # the result doesn't depend on how the rows of `data` happen to be ordered.
+  row_key <- if (!is.null(subjs)) subjs else seq_len(n_total)
   truth_all <- surv_subject_truth(y_surv, subjs)
+  subj_ids <- truth_all$.subject_id
+  n_subjs <- length(subj_ids)
+  if (n_subjs < 4L) {
+    stop("LOCO-MP needs at least 4 subjects; got ", n_subjs, ".", call. = FALSE)
+  }
+
+  # Default evaluation times
   if (is.null(eval_time)) {
     eval_time <- default_eval_time(truth_all$.truth)
   }
@@ -118,86 +135,57 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
   check_eval_time(eval_time)
   n_eval <- length(eval_time)
 
-  # Sample sizes for patches
-  n_patch <- max(5L, as.integer(round(n_ratio * n_subjs)))
-  m_patch <- max(1L, min(p_total - 1L, as.integer(round(m_ratio * p_total))))
+  # Sample sizes for patches. Every patch keeps at least two predictors
+  # (`coxnet()` needs two) and leaves at least one out.
+  n_patch <- min(max(5L, as.integer(round(n_ratio * n_subjs))), n_subjs - 1L)
+  m_patch <- max(min(2L, p_total - 1L), min(p_total - 1L, as.integer(round(m_ratio * p_total))))
 
-  # Precompute censoring KM and Graf weights for collapsed truth
+  # Censoring weights and event-free status of each subject at eval_time
   cens_km <- censoring_km(truth_all$.truth)
   weights_mat <- graf_weights(truth_all$.truth, eval_time, censoring = cens_km, trunc = trunc)
-
-  # Status at eval_times (1 = still event-free / alive at t, 0 = event occurred prior)
   surv_parts <- surv_components(truth_all$.truth)
   status_at_t <- outer(surv_parts$stop, eval_time, ">") * 1
 
-  # Subject mapping: which rows belong to each unique subject
-  subj_row_map <- if (!is.null(subjs)) {
-    split(seq_len(n_total), subjs)
-  } else {
-    as.list(seq_len(n_total))
-  }
-
   # 2. Generate and fit minipatches
   fit_one_patch <- function(b) {
-    # Subsample subjects
-    sampled_subjs <- sample(unique_subjs, size = n_patch, replace = FALSE)
-    in_bag <- if (!is.null(subjs)) subjs %in% sampled_subjs else seq_len(n_total) %in% sampled_subjs
+    sampled_subjs <- sample(subj_ids, size = n_patch, replace = FALSE)
+    in_bag <- row_key %in% sampled_subjs
     idx_in <- which(in_bag)
     idx_oob <- which(!in_bag)
 
     if (length(idx_oob) == 0L) return(NULL)
 
-    # Subsample features
     feat_idx <- sort(sample.int(p_total, size = m_patch, replace = FALSE))
-
     x_train <- x_mat[idx_in, feat_idx, drop = FALSE]
     y_train <- y_surv[idx_in]
 
-    # Fit penalized Cox model
     fit <- tryCatch({
       coxnet(x = x_train, y = y_train, mixture = mixture, penalty = penalty, ...)
     }, error = function(e) NULL)
-
     if (is.null(fit)) return(NULL)
 
-    # Resolve penalty for prediction if not explicitly provided
-    pen <- penalty
-    if (is.null(pen)) {
-      pen <- if (!is.null(fit$penalty)) fit$penalty else utils::tail(fit$fit$lambda, 1)
-    }
+    # Without a `penalty`, use the smallest penalty on the patch's own path:
+    # an almost unpenalized fit.
+    pen <- penalty %||% fit$penalty %||% utils::tail(fit$fit$lambda, 1)
 
-    # Predict OOB survival curves
-    x_test <- x_mat[idx_oob, feat_idx, drop = FALSE]
-    preds <- tryCatch({
-      stats::predict(fit, new_data = x_test, type = "survival", eval_time = eval_time, penalty = pen)
+    # Out-of-bag survival, one row per subject: the patch's Breslow baseline
+    # hazard along the subject's covariate path (as in `cv_coxnet()`), so no
+    # covariate value from after an evaluation time is used to predict it.
+    oob_surv <- tryCatch({
+      train <- surv_components(y_train)
+      bh <- breslow_cumhaz(coxnet_link(fit$fit, x_train, pen), train$start, train$stop, train$status)
+      oob <- surv_components(y_surv[idx_oob])
+      predict_subject_survival(
+        coxnet_link(fit$fit, x_mat[idx_oob, feat_idx, drop = FALSE], pen),
+        oob$start, oob$stop, row_key[idx_oob], eval_time, bh, covariates
+      )
     }, error = function(e) NULL)
-
-    if (is.null(preds) || !(".pred" %in% names(preds))) return(NULL)
-
-    # Matrix: rows = idx_oob, cols = eval_time
-    s_mat <- do.call(rbind, lapply(preds$.pred, function(df) {
-      df <- df[match(eval_time, df$.eval_time), ]
-      df$.pred_survival
-    }))
-
-    # Identify which unique subjects are OOB in this patch
-    oob_subjs <- if (!is.null(subjs)) setdiff(unique_subjs, sampled_subjs) else idx_oob
-
-    # Condense prediction to one row per OOB subject (using last interval for counting process)
-    s_subj_mat <- if (!is.null(subjs)) {
-      do.call(rbind, lapply(oob_subjs, function(sid) {
-        rows_for_s <- which(subjs[idx_oob] == sid)
-        # Take the last row of the subject's intervals
-        s_mat[utils::tail(rows_for_s, 1), , drop = FALSE]
-      }))
-    } else {
-      s_mat
-    }
+    if (is.null(oob_surv)) return(NULL)
 
     list(
-      oob_subjs = oob_subjs,
+      oob_subjs = oob_surv$id,
       feat_idx = feat_idx,
-      surv_matrix = s_subj_mat
+      surv_matrix = matrix(oob_surv$surv, nrow = length(oob_surv$id), ncol = n_eval)
     )
   }
 
@@ -214,90 +202,48 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
     stop("Fewer than 3 minipatches succeeded. Check data variance and event counts.", call. = FALSE)
   }
 
-  # 3. Out-of-bag LOCO Contrast for each feature
+  # 3. Out-of-bag LOCO contrast for each feature. Stack the patches into a
+  # subject x time x patch array (zero where a subject was in the patch's bag,
+  # tracked by `oob`), and a feature x patch membership matrix, so each
+  # feature's with/without ensembles are matrix products.
+  surv_arr <- array(0, c(n_subjs, n_eval, b_effective))
+  oob <- matrix(0, n_subjs, b_effective)
+  for (k in seq_len(b_effective)) {
+    rows <- match(patches[[k]]$oob_subjs, subj_ids)
+    surv_arr[rows, , k] <- patches[[k]]$surv_matrix
+    oob[rows, k] <- 1
+  }
+  surv_flat <- matrix(surv_arr, n_subjs * n_eval, b_effective)
+  has_feat <- vapply(patches, function(p) seq_len(p_total) %in% p$feat_idx, logical(p_total))
+
   var_names <- colnames(x_mat)
   delta_t <- diff(eval_time)
   time_range <- max(eval_time) - min(eval_time)
   if (time_range <= 0) time_range <- 1
 
+  na_result <- function(term) {
+    tibble::tibble(
+      term = term, importance = NA_real_, std_error = NA_real_, statistic = NA_real_,
+      p_value = NA_real_, conf_low = NA_real_, conf_high = NA_real_
+    )
+  }
+
   results_list <- vector("list", p_total)
-
   for (j in seq_len(p_total)) {
-    patches_with_j <- which(vapply(patches, function(p) j %in% p$feat_idx, logical(1)))
-    patches_without_j <- which(vapply(patches, function(p) !j %in% p$feat_idx, logical(1)))
-
-    if (length(patches_with_j) == 0L || length(patches_without_j) == 0L) {
-      results_list[[j]] <- tibble::tibble(
-        term = var_names[j],
-        importance = NA_real_,
-        std_error = NA_real_,
-        statistic = NA_real_,
-        p_value = NA_real_,
-        conf_low = NA_real_,
-        conf_high = NA_real_
-      )
+    with_j <- as.numeric(has_feat[j, ])
+    without_j <- 1 - with_j
+    if (sum(with_j) == 0 || sum(without_j) == 0) {
+      results_list[[j]] <- na_result(var_names[j])
       next
     }
 
-    # For each unique subject, calculate ensemble prediction with and without j
-    d_vals <- numeric(0)
-
-    for (s_idx in seq_along(unique_subjs)) {
-      sid <- unique_subjs[s_idx]
-
-      # Find patches containing subject sid in OOB
-      with_sub <- patches_with_j[vapply(patches_with_j, function(k) sid %in% patches[[k]]$oob_subjs, logical(1))]
-      without_sub <- patches_without_j[vapply(patches_without_j, function(k) sid %in% patches[[k]]$oob_subjs, logical(1))]
-
-      if (length(with_sub) == 0L || length(without_sub) == 0L) next
-
-      # Extract predicted survival vectors for subject sid
-      surv_with <- vapply(with_sub, function(k) {
-        row_pos <- match(sid, patches[[k]]$oob_subjs)
-        patches[[k]]$surv_matrix[row_pos, ]
-      }, numeric(n_eval))
-      # vapply drops to a plain vector (one value per patch) instead of an
-      # n_eval x length(with_sub) matrix only when n_eval == 1; reshape with
-      # nrow (not ncol) so rowMeans() still averages across patches per time.
-      if (is.vector(surv_with)) surv_with <- matrix(surv_with, nrow = n_eval)
-      s_plus <- rowMeans(surv_with)
-
-      surv_without <- vapply(without_sub, function(k) {
-        row_pos <- match(sid, patches[[k]]$oob_subjs)
-        patches[[k]]$surv_matrix[row_pos, ]
-      }, numeric(n_eval))
-      if (is.vector(surv_without)) surv_without <- matrix(surv_without, nrow = n_eval)
-      s_minus <- rowMeans(surv_without)
-
-      # IPCW Graf Brier loss curve at eval_time
-      w_i <- weights_mat[s_idx, ]
-      y_i <- status_at_t[s_idx, ]
-
-      loss_plus_t <- w_i * ((y_i - s_plus)^2)
-      loss_minus_t <- w_i * ((y_i - s_minus)^2)
-
-      # Integrated loss via trapezoidal rule
-      mid_plus <- (loss_plus_t[-1] + loss_plus_t[-n_eval]) / 2
-      mid_minus <- (loss_minus_t[-1] + loss_minus_t[-n_eval]) / 2
-
-      l_plus <- sum(delta_t * mid_plus) / time_range
-      l_minus <- sum(delta_t * mid_minus) / time_range
-
-      d_i <- l_minus - l_plus
-      d_vals <- c(d_vals, d_i)
-    }
+    d_vals <- loco_subject_deltas(
+      with_j, without_j, surv_flat, oob, weights_mat, status_at_t, delta_t, time_range
+    )
 
     n_d <- length(d_vals)
     if (n_d < 3L) {
-      results_list[[j]] <- tibble::tibble(
-        term = var_names[j],
-        importance = NA_real_,
-        std_error = NA_real_,
-        statistic = NA_real_,
-        p_value = NA_real_,
-        conf_low = NA_real_,
-        conf_high = NA_real_
-      )
+      results_list[[j]] <- na_result(var_names[j])
     } else {
       mean_d <- mean(d_vals, na.rm = TRUE)
       sd_d <- stats::sd(d_vals, na.rm = TRUE)
@@ -332,10 +278,48 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
       n_ratio = n_ratio,
       m_ratio = m_ratio,
       alpha = alpha,
-      p_adjust = p_adjust
+      p_adjust = p_adjust,
+      covariates = covariates
     ),
     class = "cbe_loco_mp_coxnet"
   )
+}
+
+#' Per-Subject LOCO Contrasts From Stacked Minipatch Predictions
+#'
+#' For each subject, the ensemble survival curve over the minipatches that
+#' include a feature (`with`) and over those that omit it (`without`), each
+#' averaged over the patches for which the subject was out of bag, gives the
+#' subject's IPCW Brier loss integrated over the evaluation times (trapezoidal
+#' rule, divided by the time range); the contrast is `without` minus `with`.
+#' Subjects out of bag in no patch of either kind are dropped.
+#'
+#' @param with,without Numeric 0/1 vectors over patches: patches that include
+#'   and that omit the feature.
+#' @param surv_flat Matrix of `n_subjs * n_eval` rows and one column per patch:
+#'   each patch's predicted survival, subject-major then time (0 where the
+#'   subject was in the patch's bag).
+#' @param oob Matrix (subjects by patches), 1 where the subject was out of bag.
+#' @param weights,alive Matrices (subjects by times) of Graf weights and of
+#'   event-free status at each evaluation time.
+#' @param delta_t,time_range Gaps between and range of the evaluation times.
+#' @return A numeric vector, one contrast per usable subject.
+#' @keywords internal
+#' @noRd
+loco_subject_deltas <- function(with, without, surv_flat, oob, weights, alive, delta_t, time_range) {
+  n_subjs <- nrow(oob)
+  n_eval <- ncol(weights)
+  integrated_loss <- function(member) {
+    count <- as.vector(oob %*% member)
+    surv <- matrix(surv_flat %*% member, n_subjs, n_eval) / count
+    loss <- weights * (alive - surv)^2
+    mid <- (loss[, -1, drop = FALSE] + loss[, -n_eval, drop = FALSE]) / 2
+    list(loss = as.vector(mid %*% delta_t) / time_range, count = count)
+  }
+  plus <- integrated_loss(with)
+  minus <- integrated_loss(without)
+  usable <- plus$count > 0 & minus$count > 0
+  (minus$loss - plus$loss)[usable]
 }
 
 #' @export

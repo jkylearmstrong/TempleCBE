@@ -35,7 +35,7 @@ A \code{cbe_database} \code{list(nodes = <tibble>, edges = <tibble>)}.
   unrepresentable in a well-formed result for either operation.
 }
 \description{
-\code{\link{cbe_database}} methods for the generic \code{dplyr::intersect()}/
+\code{cbe_database} methods for the generic \code{dplyr::intersect()}/
 \code{dplyr::union()}/\code{dplyr::setdiff()} verbs (the same generics
 \pkg{dbplyr}/\pkg{dtplyr} extend for their own backends) -- the table-level
 building blocks behind \code{\link{graph_intersect}}/\code{\link{graph_subtract}}/

@@ -25,7 +25,8 @@ step_lencode_joint_model(
 
 \item{...}{One or more selector functions to choose variables to be encoded.}
 
-\item{outcome}{A call to \code{recipes::vars()} selecting the survival outcome columns.}
+\item{outcome}{Character vector naming the survival outcome columns in the
+training data, as for \code{\link{step_lencode_coxnet}}.}
 
 \item{role}{Role for the encoded variables. Default is \code{"predictor"}.}
 

@@ -1,5 +1,5 @@
 test_that("coxnet's formula, recipe, and x/y interfaces all reproduce glmnet", {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   d <- sim_counting()
   y <- survival::Surv(d$tstart, d$tstop, d$status)
   xs <- c("x1", "x2", "x3")
@@ -24,7 +24,7 @@ test_that("coxnet's formula, recipe, and x/y interfaces all reproduce glmnet", {
 })
 
 test_that("predict.coxnet returns tidymodels-shaped linear predictors and Breslow survival", {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   d <- sim_counting()
   y <- survival::Surv(d$tstart, d$tstop, d$status)
   fit <- coxnet(survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3, data = d, cox.ties = "breslow")
@@ -55,7 +55,7 @@ test_that("predict.coxnet returns tidymodels-shaped linear predictors and Breslo
 })
 
 test_that("coxnet fits right-censored data and validates its inputs", {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   d <- sim_counting()
   last <- d[!duplicated(d$subject_id, fromLast = TRUE), ]
   right <- coxnet(last[c("x1", "x2", "x3")], survival::Surv(last$tstop, last$status), penalty = 0.01)
@@ -75,7 +75,7 @@ test_that("coxnet fits right-censored data and validates its inputs", {
 })
 
 test_that("coxnet models don't take over glmnet's own coxnet methods", {
-  skip_if_no_coxnet_deps()
+  skip_if_no_coxnet_deps(cv = FALSE)
   # glmnet classes its Cox fits "coxnet"; TempleCBE's class must not collide.
   d <- sim_counting()
   y <- survival::Surv(d$tstart, d$tstop, d$status)
@@ -88,4 +88,80 @@ test_that("coxnet models don't take over glmnet's own coxnet methods", {
   fit <- coxnet(d[c("x1", "x2", "x3")], y)
   expect_s3_class(fit, "coxnet_model")
   expect_false(inherits(fit, "coxnet"))
+})
+
+test_that("a penalty below glmnet's default path is honored, not silently clamped to the path's end", {
+  skip_if_no_coxnet_deps(cv = FALSE)
+  d <- sim_counting()
+  f <- survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3
+  base <- coxnet(f, data = d)
+  smallest <- min(base$fit$lambda)
+
+  # Without an extended path, everything below `smallest` gave the coefficients at `smallest`.
+  fit0 <- coxnet(f, data = d, penalty = 0)
+  expect_equal(min(fit0$fit$lambda), 0)
+  ref <- survival::coxph(f, data = d, ties = "breslow")
+  expect_equal(generics::tidy(fit0)$estimate, unname(stats::coef(ref)), tolerance = 1e-3)
+  expect_false(isTRUE(all.equal(generics::tidy(fit0)$estimate, generics::tidy(base, penalty = smallest)$estimate)))
+
+  small <- smallest / 1000
+  fit_small <- coxnet(f, data = d, penalty = small)
+  expect_equal(min(fit_small$fit$lambda), small)
+  expect_equal(fit_small$fit$lambda[seq_along(base$fit$lambda)], base$fit$lambda)
+  expect_false(anyNA(generics::tidy(fit_small)$estimate))
+  expect_gt(
+    max(abs(generics::tidy(fit_small)$estimate - generics::tidy(base, penalty = smallest)$estimate)), 1e-4
+  )
+
+  # A penalty already on the path leaves the fit untouched.
+  inside <- coxnet(f, data = d, penalty = base$fit$lambda[10])
+  expect_equal(inside$fit$lambda, base$fit$lambda)
+})
+
+test_that("extend_path continues a decreasing path down to the penalty", {
+  path <- c(0.4, 0.2, 0.1)
+  ext <- extend_path(path, 0.01)
+  expect_equal(ext[1:3], path)
+  expect_false(is.unsorted(rev(ext), strictly = TRUE))
+  expect_equal(min(ext), 0.01)
+  # Zero and penalties far below the path end in the penalty itself, after a geometric floor.
+  zero <- extend_path(path, 0)
+  expect_equal(c(zero[length(zero) - 1], zero[length(zero)]), c(0.1 * 1e-4, 0))
+  expect_equal(min(extend_path(path, 1e-12)), 1e-12)
+})
+
+test_that("predict and tidy warn when asked for a penalty below the fitted path", {
+  skip_if_no_coxnet_deps(cv = FALSE)
+  d <- sim_counting()
+  f <- survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3
+  fit <- coxnet(f, data = d)
+  smallest <- min(fit$fit$lambda)
+  expect_warning(generics::tidy(fit, penalty = smallest / 10), "smallest penalty on the fitted path")
+  expect_warning(predict(fit, d[1:2, ], penalty = smallest / 10), "smallest penalty")
+  expect_no_warning(generics::tidy(fit, penalty = smallest))
+  expect_no_warning(generics::tidy(fit, penalty = 10 * max(fit$fit$lambda)))
+
+  # A user-supplied path is used as given: a lower default penalty warns at fit time.
+  expect_warning(coxnet(f, data = d, penalty = 1e-6, path = c(0.1, 0.05, 0.01)), "below the smallest penalty on `path`")
+})
+
+test_that("coxnet on start/stop data matches survival::coxph at a vanishing penalty, with time-varying covariates", {
+  skip_if_no_coxnet_deps(cv = FALSE)
+  d <- sim_counting(n = 150, seed = 7)
+  f <- survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3
+  fit <- coxnet(f, data = d, penalty = 1e-7)
+  ref <- survival::coxph(f, data = d, ties = "breslow")
+  expect_equal(generics::tidy(fit)$estimate, unname(stats::coef(ref)), tolerance = 1e-3)
+  # Splitting a subject's follow-up into more intervals changes nothing when covariates are constant.
+  long <- do.call(rbind, lapply(seq_len(nrow(d)), function(i) {
+    r <- d[i, ]
+    mid <- (r$tstart + r$tstop) / 2
+    rbind(transform(r, tstop = mid, status = 0L), transform(r, tstart = mid))
+  }))
+  fit_split <- coxnet(f, data = long, penalty = 1e-7)
+  const <- coxnet(f, data = d, penalty = 1e-7)
+  const_ref <- survival::coxph(f, data = d, ties = "breslow")
+  split_ref <- survival::coxph(f, data = long, ties = "breslow")
+  expect_equal(unname(stats::coef(split_ref)), unname(stats::coef(const_ref)), tolerance = 1e-6)
+  expect_equal(generics::tidy(fit_split)$estimate, generics::tidy(const)$estimate, tolerance = 1e-3)
 })

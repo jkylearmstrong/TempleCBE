@@ -4,13 +4,19 @@
 #' encodes categorical predictors into a single numeric variable representing the
 #' estimated log hazard ratio from a penalized Cox proportional hazards model
 #' on a survival outcome (\code{Surv(time, status)} or \code{Surv(tstart, tstop, status)}).
-#' Inspired by \code{embed::step_lencode_glm}.
+#' Inspired by \code{embed::step_lencode_glm}. Each factor is encoded on its own:
+#' a penalized Cox model with one indicator per non-reference level is fit to the
+#' training data at the single \code{penalty}, the reference level is encoded as 0,
+#' and levels that \code{bake()} has not seen, or missing values, are encoded as 0.
+#' If a model can't be fit, a warning is raised and the factor's levels are all
+#' encoded as 0.
 #'
 #' @param recipe A recipe object.
 #' @param ... One or more selector functions to choose variables to be encoded.
 #'   Must select factor or character columns.
-#' @param outcome A call to \code{recipes::vars()} selecting the survival outcome columns,
-#'   e.g. \code{recipes::vars(time, status)} or \code{recipes::vars(tstart, tstop, status)}.
+#' @param outcome Character vector naming the survival outcome columns in the
+#'   training data: \code{c("time", "status")} or
+#'   \code{c("tstart", "tstop", "status")}.
 #' @param role For model terms created by this step, what analysis role should they
 #'   be assigned? By default, the function assumes that the new variables will be
 #'   used as predictors in a model.
@@ -135,18 +141,33 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
       next
     }
 
-    # Model matrix with contrast coding
-    mm <- stats::model.matrix(~ vals)[, -1, drop = FALSE]
+    # One indicator column per non-reference level. A missing value is the
+    # reference level, as `bake()` treats it, so every row stays in the fit.
+    mm <- vapply(
+      levs[-1],
+      function(lev) as.numeric(!is.na(vals) & vals == lev),
+      numeric(length(vals))
+    )
+    mm <- matrix(mm, nrow = length(vals), dimnames = list(NULL, levs[-1]))
+
+    # glmnet needs two or more columns, so a two-level factor (one indicator)
+    # gets an all-zero padding column, which glmnet drops.
+    x_fit <- if (ncol(mm) < 2) cbind(mm, .pad = 0) else mm
     coefs <- tryCatch({
       fit <- glmnet::glmnet(
-        x = mm,
+        x = x_fit,
         y = surv_obj,
         family = "cox",
         alpha = x$mixture,
         lambda = x$penalty
       )
-      as.numeric(fit$beta[, 1])
+      as.numeric(fit$beta[seq_len(ncol(mm)), 1])
     }, error = function(e) {
+      warning(
+        "step_lencode_coxnet(): failed to fit a penalized Cox model for column '", col,
+        "'; encoding all levels to 0. Original error: ", conditionMessage(e),
+        call. = FALSE
+      )
       rep(0, ncol(mm))
     })
 
@@ -171,6 +192,7 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
 #' @exportS3Method recipes::bake
 bake.step_lencode_coxnet <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
+  recipes::check_new_data(col_names, object, new_data)
   for (col in col_names) {
     map_vec <- object$mapping[[col]]
     raw_vals <- as.character(new_data[[col]])
@@ -217,7 +239,7 @@ tidy.step_lencode_coxnet <- function(x, ...) {
 
 #' @rdname step_lencode_coxnet
 #' @param x A \code{step_lencode_coxnet} object.
-#' @export
+#' @exportS3Method generics::tunable
 tunable.step_lencode_coxnet <- function(x, ...) {
   tibble::tibble(
     name = c("penalty", "mixture"),
@@ -246,7 +268,8 @@ required_pkgs.step_lencode_coxnet <- function(x, ...) {
 #'
 #' @param recipe A recipe object.
 #' @param ... One or more selector functions to choose variables to be encoded.
-#' @param outcome A call to \code{recipes::vars()} selecting the survival outcome columns.
+#' @param outcome Character vector naming the survival outcome columns in the
+#'   training data, as for \code{\link{step_lencode_coxnet}}.
 #' @param role Role for the encoded variables. Default is \code{"predictor"}.
 #' @param trained A logical indicating whether the step has been trained.
 #' @param engine Engine passed to \code{joint_model()}: \code{"glmnet"}, \code{"baguette"}, or \code{"stacks"}.
@@ -403,6 +426,7 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
 #' @exportS3Method recipes::bake
 bake.step_lencode_joint_model <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
+  recipes::check_new_data(col_names, object, new_data)
   for (col in col_names) {
     map_vec <- object$mapping[[col]]
     raw_vals <- as.character(new_data[[col]])
