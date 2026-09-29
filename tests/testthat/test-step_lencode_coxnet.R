@@ -124,3 +124,28 @@ test_that("step_lencode_coxnet fits with Breslow ties, as coxnet() does, whateve
   suppressWarnings(recipes::prep(rec, training = lung))
   expect_identical(ties, "breslow")
 })
+
+test_that("step_lencode_joint_model preps and bakes with joint_model engine", {
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  lung <- lencode_lung()
+
+  rec <- recipes::recipe(~ age + sex + time + status, data = lung) |>
+    step_lencode_joint_model(sex, outcome = c("time", "status"), penalty = 0.01)
+  prepped <- recipes::prep(rec, training = lung)
+  expect_s3_class(prepped, "recipe")
+
+  baked <- recipes::bake(prepped, new_data = lung)
+  expect_true("sex" %in% names(baked))
+  expect_type(baked$sex, "double")
+
+  # Test tidy method
+  td <- recipes::tidy(prepped, number = 1)
+  expect_s3_class(td, "tbl_df")
+  expect_equal(td$terms, rep("sex", 2))
+  expect_setequal(td$level, c("male", "female"))
+
+  # Test required_pkgs
+  expect_equal(generics::required_pkgs(rec$steps[[1]]), c("TempleCBE", "glmnet", "survival"))
+})

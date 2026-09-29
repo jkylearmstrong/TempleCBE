@@ -12,8 +12,8 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{dplyr}{\code{\link[dplyr:\%>\%]{\%>\%}}}
+  \item{dplyr}{\code{\link[dplyr:reexports]{\%>\%}}}
 
-  \item{writexl}{\code{\link[writexl:write_xlsx]{write_xlsx()}}}
+  \item{writexl}{\code{\link[writexl]{write_xlsx}}}
 }}
 

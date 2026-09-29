@@ -16,3 +16,12 @@ test_that("min_max_norm correctly scales numeric data", {
   norm_df2 <- range_norm(df)
   expect_equal(norm_df2$b, c("x", "y", "z"))
 })
+
+test_that("min_max_norm preserves NA values while scaling valid observations", {
+  x <- c(10, 20, NA, 40, 50)
+  norm_x <- min_max_norm(x)
+  expect_equal(min(norm_x, na.rm = TRUE), 0)
+  expect_equal(max(norm_x, na.rm = TRUE), 1)
+  expect_true(is.na(norm_x[3]))
+  expect_equal(norm_x[2], 0.25)
+})

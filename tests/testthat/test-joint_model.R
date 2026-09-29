@@ -131,3 +131,36 @@ test_that("cv_joint_model computes cross-validated IBS and concordance", {
   p <- ggplot2::autoplot(cv_res)
   expect_s3_class(p, "ggplot")
 })
+
+test_that("nested_cv_joint_model scores outer splits across models", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("yardstick")
+
+  set.seed(42)
+  n <- 50
+  df <- data.frame(
+    time = stats::rexp(n, rate = 0.1) + 0.1,
+    status = stats::rbinom(n, 1, 0.6),
+    x1 = stats::rnorm(n),
+    x2 = stats::rnorm(n)
+  )
+
+  folds <- rsample::nested_cv(
+    df,
+    outside = rsample::vfold_cv(v = 2),
+    inside = rsample::vfold_cv(v = 2)
+  )
+
+  res <- nested_cv_joint_model(
+    folds,
+    outcome = survival::Surv(time, status) ~ x1 + x2,
+    penalty = 0.05
+  )
+
+  expect_s3_class(res, "nested_cv_joint_model")
+  expect_true(all(c("outer_id", "model", "ibs") %in% names(res)))
+  expect_setequal(unique(res$model), c("coxnet", "status_calibrated", "time_regression"))
+  expect_equal(nrow(res), 6L)
+})

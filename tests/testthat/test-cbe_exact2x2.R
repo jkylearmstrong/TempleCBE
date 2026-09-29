@@ -149,6 +149,10 @@ test_that("cbe_contingency_plot renders balloon, bar, mosaic, heatmap, and squar
   p_square <- cbe_square_plot(df, "Arm", "Result")
   expect_s3_class(p_square, "ggplot")
 
+  # Balloon plot
+  p_balloon <- cbe_balloon_plot(df, "Arm", "Result")
+  expect_s3_class(p_balloon, "ggplot")
+
   # corrplot returns table invisibly
   res_corr <- cbe_contingency_plot(df, "Arm", "Result", type = "corrplot")
   expect_true(is.table(res_corr) || is.matrix(res_corr))

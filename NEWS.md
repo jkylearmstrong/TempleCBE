@@ -1,5 +1,16 @@
 # TempleCBE (Development)
 
+# TempleCBE 0.4.0001.2026.09.29.21.51
+
+## Test Suite Hardening & Interface Verification
+
+* **Cross-Validation Test Coverage**: Added comprehensive unit test coverage for `nested_cv_joint_model()` verifying outer split evaluation across `coxnet`, `status_calibrated`, and `time_regression` models.
+* **Recipe Step Coverage**: Added unit tests for `step_lencode_joint_model()` verifying prep, bake, tidy, and required package methods.
+* **Categorical Visualizations**: Added dedicated test for `cbe_balloon_plot()` verifying ggplot return class alongside sibling contingency plots.
+* **Infix Helpers**: Added test coverage for `%plike%` (Perl-compatible regex match) and `%!in%` alias.
+* **Normalization Robustness**: Added tests for `min_max_norm()` NA preservation.
+* **Pruned Redundant Tests**: Removed duplicate `sd.error` test in `test-summary.R` (delegated to dedicated `test-sd_error.R`) and duplicate S3 autoplot test in `test-plot_features_percent_miss.R`.
+
 # TempleCBE 0.3.800009.2026.09.29.10.46
 
 ## Vignette Build Fixes & Release Polish
