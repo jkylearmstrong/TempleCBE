@@ -1,3 +1,7 @@
+# TempleCBE (Development)
+
+* **`cbe_explain_survival()`'s risk scores for parsnip models and workflows have the right sign.** The default risk function used `predict(type = "linear_pred")`, which tidymodels' censored regression returns increasing with survival time (the opposite sign of the engine's own linear predictor), so survex's risk-based performance and importances for `model_fit` and `workflow` explainers were computed with a reversed sign. The risk is now the negative of that linear predictor. A regression test compares it with `survival::coxph()` for the `survival`, `glmnet`, and `coxnet` engines, alone and in a workflow.
+
 # TempleCBE 0.3.80001.2026.09.28.18.00
 
 ## Survival modeling fixes: `coxnet()` and its tidymodels tie-ins
