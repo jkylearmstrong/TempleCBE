@@ -246,3 +246,49 @@ test_that("cbe_explain_survival refuses start/stop outcomes that survex would mi
     "start/stop"
   )
 })
+
+test_that("explain_predict_risk returns a risk score, not tidymodels' increasing linear predictor, for parsnip and workflow fits", {
+  # Regression test: parsnip's censored-regression linear_pred defaults to
+  # increasing with survival time (the opposite sign of the engine's own), and
+  # the risk function used it as-is, so survex's risk-based performance and
+  # importance were computed with the wrong sign.
+  skip_if_not_installed("parsnip")
+  skip_if_not_installed("workflows")
+  skip_if_not_installed("censored")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("hardhat")
+  loadNamespace("censored")  # registers the "survival" and "glmnet" engines
+
+  set.seed(1)
+  n <- 120
+  df <- data.frame(time = stats::rexp(n, 0.1) + 0.1, status = stats::rbinom(n, 1, 0.75), x1 = stats::rnorm(n), x2 = stats::rnorm(n))
+  df$time <- df$time * exp(-df$x1)  # x1 raises the hazard
+  f <- survival::Surv(time, status) ~ x1 + x2
+  new <- df[1:15, ]
+  cox <- survival::coxph(f, data = df)
+  ref <- unname(stats::predict(cox, newdata = new, type = "lp"))  # engine sign: higher = higher risk
+
+  # Compared up to a constant: censored's "survival" engine doesn't center the
+  # linear predictor as predict.coxph() does, which is irrelevant to a risk ranking.
+  centered <- function(x) x - mean(x)
+  spec <- parsnip::set_engine(parsnip::proportional_hazards(), "survival")
+  fit <- parsnip::fit(spec, f, data = df)
+  # tidymodels' documented default: the linear predictor increases with survival time.
+  expect_equal(centered(predict(fit, new, type = "linear_pred")$.pred_linear_pred), centered(-ref), tolerance = 1e-6)
+  expect_equal(centered(explain_predict_risk(fit, new)), centered(ref), tolerance = 1e-6)
+
+  wf <- parsnip::fit(workflows::workflow(f, spec), data = df)
+  expect_equal(centered(explain_predict_risk(wf, new)), centered(ref), tolerance = 1e-6)
+  expect_gt(stats::cor(explain_predict_risk(wf, new), ref), 0.999)
+
+  penalized <- parsnip::proportional_hazards(penalty = 0.01, mixture = 1)
+  glmnet_fit <- suppressWarnings(parsnip::fit(parsnip::set_engine(penalized, "glmnet"), f, data = df))
+  expect_gt(stats::cor(explain_predict_risk(glmnet_fit, new), ref), 0.95)
+  coxnet_fit <- parsnip::fit(parsnip::set_engine(penalized, "coxnet"), f, data = df)
+  expect_gt(stats::cor(explain_predict_risk(coxnet_fit, new), ref), 0.95)
+  # Same sign convention as the direct coxnet() model.
+  direct <- coxnet(f, data = df, penalty = 0.01)
+  expect_equal(explain_predict_risk(coxnet_fit, new), explain_predict_risk(direct, new), tolerance = 1e-6)
+})

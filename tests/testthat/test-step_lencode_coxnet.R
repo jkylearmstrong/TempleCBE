@@ -103,3 +103,24 @@ test_that("step_lencode_coxnet's tunable method is registered with generics::tun
   expect_equal(tun$component, rep("step_lencode_coxnet", 2))
   expect_equal(generics::required_pkgs(rec$steps[[1]]), c("TempleCBE", "glmnet", "survival"))
 })
+
+test_that("step_lencode_coxnet fits with Breslow ties, as coxnet() does, whatever glmnet's default", {
+  # glmnet 5.1 changes the default Cox ties method and warns until `cox.ties`
+  # is passed, so the step must pin it whenever glmnet() accepts it.
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  lung <- lencode_lung()
+  ties <- NULL
+  testthat::local_mocked_bindings(
+    glmnet = function(x, y, family, alpha, lambda, cox.ties = "efron", ...) {
+      ties <<- cox.ties
+      stop("stop here")
+    },
+    .package = "glmnet"
+  )
+  rec <- recipes::recipe(~ age + sex + time + status, data = lung) |>
+    step_lencode_coxnet(sex, outcome = c("time", "status"))
+  suppressWarnings(recipes::prep(rec, training = lung))
+  expect_identical(ties, "breslow")
+})

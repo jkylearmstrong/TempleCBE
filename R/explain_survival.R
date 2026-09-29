@@ -208,6 +208,11 @@ cbe_explain_survival <- function(model,
 # `predict.coxnet_model()` flips the sign by default (larger = longer survival,
 # as in censored), so glmnet's own sign is requested explicitly. `predict.coxph()`
 # has no `new_data` argument, and would silently score the training data.
+# Fitted parsnip models and workflows return tidymodels' censored-regression
+# linear predictor, which by default increases with survival time (the opposite
+# sign of the engine's own), so a risk score is its negative. Engines may also
+# differ from `predict()` by a constant (censored's "survival" engine doesn't
+# center the linear predictor), which doesn't change a risk ranking.
 explain_predict_risk <- function(m, new_data) {
   if (inherits(m, c("coxnet_model", "cv_coxnet"))) {
     p <- stats::predict(m, new_data = new_data, type = "linear_pred", increasing = FALSE)
@@ -215,6 +220,10 @@ explain_predict_risk <- function(m, new_data) {
   }
   if (inherits(m, "coxph")) {
     return(as.numeric(stats::predict(m, newdata = new_data, type = "lp")))
+  }
+  if (inherits(m, c("model_fit", "workflow"))) {
+    p <- stats::predict(m, new_data = new_data, type = "linear_pred")
+    return(-as.numeric(p[[1]]))
   }
   NULL
 }
