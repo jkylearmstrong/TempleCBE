@@ -153,14 +153,10 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
     # glmnet needs two or more columns, so a two-level factor (one indicator)
     # gets an all-zero padding column, which glmnet drops.
     x_fit <- if (ncol(mm) < 2) cbind(mm, .pad = 0) else mm
+    # fit_glmnet_cox() pins Breslow ties, as coxnet() does, so the encoding
+    # doesn't change (or warn) with glmnet's default.
     coefs <- tryCatch({
-      fit <- glmnet::glmnet(
-        x = x_fit,
-        y = surv_obj,
-        family = "cox",
-        alpha = x$mixture,
-        lambda = x$penalty
-      )
+      fit <- fit_glmnet_cox(x_fit, surv_obj, x$mixture, x$penalty, list())
       as.numeric(fit$beta[seq_len(ncol(mm)), 1])
     }, error = function(e) {
       warning(

@@ -270,14 +270,18 @@ test_that("explain_predict_risk returns a risk score, not tidymodels' increasing
   cox <- survival::coxph(f, data = df)
   ref <- unname(stats::predict(cox, newdata = new, type = "lp"))  # engine sign: higher = higher risk
 
+  # Compared up to a constant: censored's "survival" engine doesn't center the
+  # linear predictor as predict.coxph() does, which is irrelevant to a risk ranking.
+  centered <- function(x) x - mean(x)
   spec <- parsnip::set_engine(parsnip::proportional_hazards(), "survival")
   fit <- parsnip::fit(spec, f, data = df)
   # tidymodels' documented default: the linear predictor increases with survival time.
-  expect_equal(predict(fit, new, type = "linear_pred")$.pred_linear_pred, -ref, tolerance = 1e-6)
-  expect_equal(explain_predict_risk(fit, new), ref, tolerance = 1e-6)
+  expect_equal(centered(predict(fit, new, type = "linear_pred")$.pred_linear_pred), centered(-ref), tolerance = 1e-6)
+  expect_equal(centered(explain_predict_risk(fit, new)), centered(ref), tolerance = 1e-6)
 
   wf <- parsnip::fit(workflows::workflow(f, spec), data = df)
-  expect_equal(explain_predict_risk(wf, new), ref, tolerance = 1e-6)
+  expect_equal(centered(explain_predict_risk(wf, new)), centered(ref), tolerance = 1e-6)
+  expect_gt(stats::cor(explain_predict_risk(wf, new), ref), 0.999)
 
   penalized <- parsnip::proportional_hazards(penalty = 0.01, mixture = 1)
   glmnet_fit <- suppressWarnings(parsnip::fit(parsnip::set_engine(penalized, "glmnet"), f, data = df))
