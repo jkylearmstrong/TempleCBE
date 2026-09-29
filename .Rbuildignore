@@ -19,6 +19,9 @@
 ^vignettes/.*_files$
 ^vignettes/.*\.html$
 ^vignettes/.*\.pdf$
+^vignettes/.*\.rmarkdown$
+^vignettes/.*\.xpt$
+^vignettes/.*\.sas7bdat$
 ^\.quarto$
 ^vignettes/\.quarto$
 ^.*\.docx$

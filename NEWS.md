@@ -1,5 +1,14 @@
 # TempleCBE (Development)
 
+# TempleCBE 0.3.800009.2026.09.29.10.46
+
+## Vignette Build Fixes & Release Polish
+
+* **Vignette Engine Directives (`sas_survival.Rmd`)**: Formatted `%\VignetteIndexEntry`, `%\VignetteEngine`, and `%\VignetteEncoding` onto separate lines in YAML metadata, allowing `tools::buildVignettes()` to correctly detect the knitr vignette engine.
+* **Namespace Resolution in Vignettes (`R_to_SAS.Rmd`)**: Explicitly called `dplyr::lag()` and `dplyr::first()` in the `compress_tumor_tidy` chunk to prevent namespace collisions with `stats::lag()` under `conflicted`.
+* **Vignette Title Synchronization (`compute_graph.Rmd`, `nested_survival_cv.Rmd`)**: Synchronized YAML `title:` fields with `\VignetteIndexEntry{}` values ("03. Visualizing Computational Pipeline Dependencies" and "02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data") to eliminate R CMD build title mismatch warnings.
+* **Build Artifact Cleanup (`.Rbuildignore`, `vignettes/.gitignore`)**: Ignored generated vignette artifacts (`*.rmarkdown`, `*.xpt`, `*.sas7bdat`, `*.docx`) to keep package builds clean.
+
 # TempleCBE 0.3.80002.2026.09.28.20.36
 
 ## Bug Fixes & Documentation

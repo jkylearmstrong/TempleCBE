@@ -1,5 +1,5 @@
 ---
-title: "Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data"
+title: "02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data}

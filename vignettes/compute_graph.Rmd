@@ -1,5 +1,5 @@
 ---
-title: "Visualizing Computational Pipeline Dependencies"
+title: "03. Visualizing Computational Pipeline Dependencies"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{03. Visualizing Computational Pipeline Dependencies}

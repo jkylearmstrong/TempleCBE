@@ -46,7 +46,9 @@ format:
   typst:
     number-sections: true
 vignette: >
-  %\VignetteIndexEntry{04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup_knitr, include = FALSE}

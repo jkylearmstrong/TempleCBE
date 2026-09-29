@@ -327,13 +327,13 @@ To reproduce the exact compressed 102-row table output by SAS's `if (pp[_i_] ^= 
 #    forming contiguous blocks of unchanged covariate periods per subject.
 tumor_tidy_compressed <- tumor_tidy %>%
   arrange(ID, tstart) %>%
-  group_by(ID, block = cumsum(NPap != lag(NPap, default = first(NPap) - 1))) %>%
+  group_by(ID, block = cumsum(NPap != dplyr::lag(NPap, default = dplyr::first(NPap) - 1))) %>%
   summarise(
     T1 = min(tstart),
     T2 = max(tstop),
     Status = max(Status),
-    Dose = first(Dose),
-    NPap = first(NPap),
+    Dose = dplyr::first(Dose),
+    NPap = dplyr::first(NPap),
     .groups = "drop"
   ) %>%
   select(ID, T1, T2, Status, Dose, NPap)
