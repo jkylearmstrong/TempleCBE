@@ -52,3 +52,21 @@ test_that("as_database() validates and stamps a plain nodes/edges list", {
   expect_error(as_database(list(nodes = raw$nodes)), "requires `nodes` and `edges`")
   expect_error(as_database(list(nodes = 1, edges = raw$edges)), "requires `nodes` and `edges`")
 })
+
+test_that("as_database() assigns default N_j vertex names when igraph has no name attribute", {
+  g_unnamed <- igraph::make_ring(4)
+  expect_null(igraph::V(g_unnamed)$name)
+
+  db <- as_database(g_unnamed)
+  expect_s3_class(db, "cbe_database")
+  expect_equal(db$nodes$name, c("N_1", "N_2", "N_3", "N_4"))
+  expect_true(all(db$edges$from %in% c("N_1", "N_2", "N_3", "N_4")))
+  expect_true(all(db$edges$to %in% c("N_1", "N_2", "N_3", "N_4")))
+
+  # Round-trip through database_to_igraph() works without error
+  g_restored <- database_to_igraph(db)
+  expect_s3_class(g_restored, "igraph")
+  expect_equal(igraph::vcount(g_restored), 4)
+  expect_equal(igraph::ecount(g_restored), 4)
+  expect_equal(igraph::V(g_restored)$name, c("N_1", "N_2", "N_3", "N_4"))
+})

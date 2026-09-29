@@ -26,6 +26,7 @@
 #'   class \code{cbe_database} -- the class \code{\link{database_setops}} and
 #'   \code{\link{cbe_compare_df}} dispatch on.
 #' @name as_database
+#' @aliases as_database cbe_database
 #' @export
 #' @examples
 #' g <- igraph::make_ring(5)
@@ -56,6 +57,13 @@ new_cbe_database <- function(nodes, edges) {
 #' @rdname as_database
 #' @export
 as_database.igraph <- function(x, ...) {
+  if (is.null(igraph::vertex_attr(x, "name"))) {
+    x <- igraph::set_vertex_attr(
+      x,
+      "name",
+      value = paste0("N_", seq_len(igraph::vcount(x)))
+    )
+  }
   new_cbe_database(
     igraph::as_data_frame(x, what = "vertices"),
     igraph::as_data_frame(x, what = "edges")

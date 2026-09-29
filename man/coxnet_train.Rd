@@ -7,7 +7,14 @@
 \alias{predict_coxnet_survival}
 \title{The `coxnet` Engine for `parsnip::proportional_hazards()`}
 \usage{
-coxnet_train(formula, data, penalty = NULL, mixture = NULL, weights = NULL, ...)
+coxnet_train(
+  formula,
+  data,
+  penalty = NULL,
+  mixture = NULL,
+  weights = NULL,
+  ...
+)
 
 predict_coxnet_linear_pred(object, new_data, penalty = NULL)
 
@@ -59,20 +66,19 @@ fit <- parsnip::fit(spec, survival::Surv(time, status) ~ ., data = lung)
 predict(fit, lung, type = "linear_pred")
 predict(fit, lung, type = "survival", eval_time = c(180, 365))
 ```
-\itemize{
-\item `penalty` is required (it is glmnet's `lambda`); `mixture` defaults to 1,
-the lasso. Both can be [tune::tune()]d. Each candidate is fit separately;
-the coxnet engine doesn't use glmnet's path to evaluate a grid of
-penalties from one fit, so tuning `penalty` alone costs one fit per value.
-\item Engine arguments given to [parsnip::set_engine()] are passed on to
-[glmnet::glmnet()], such as `nlambda` or `cox.ties`.
-\item Predictions: `"linear_pred"` (larger means longer survival, as in
-\pkg{censored}), `"survival"`, which needs `eval_time`, and `"time"`, the
-restricted mean survival time, which static metrics such as
-[yardstick::concordance_survival()] use.
-\item Case weights aren't supported, and neither is `strata()` in the formula.
-\item [generics::tidy()] on the parsnip fit returns the coefficients.
-}
+
+* `penalty` is required (it is glmnet's `lambda`); `mixture` defaults to 1,
+  the lasso. Both can be [tune::tune()]d. Each candidate is fit separately;
+  the coxnet engine doesn't use glmnet's path to evaluate a grid of
+  penalties from one fit, so tuning `penalty` alone costs one fit per value.
+* Engine arguments given to [parsnip::set_engine()] are passed on to
+  [glmnet::glmnet()], such as `nlambda` or `cox.ties`.
+* Predictions: `"linear_pred"` (larger means longer survival, as in
+  \pkg{censored}), `"survival"`, which needs `eval_time`, and `"time"`, the
+  restricted mean survival time, which static metrics such as
+  [yardstick::concordance_survival()] use.
+* Case weights aren't supported, and neither is `strata()` in the formula.
+* [generics::tidy()] on the parsnip fit returns the coefficients.
 }
 \examples{
 if (requireNamespace("parsnip", quietly = TRUE) &&

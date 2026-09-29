@@ -1,8 +1,18 @@
 # TempleCBE (Development)
 
+# TempleCBE 0.3.80002.2026.09.28.20.36
+
+## Bug Fixes & Documentation
+
 * **`step_lencode_coxnet()` fits with Breslow ties**, as `coxnet()` does, instead of glmnet's default. Under glmnet 5.1, whose default Cox ties method is changing, the step otherwise warned on every factor it encoded.
 
 * **`cbe_explain_survival()`'s risk scores for parsnip models and workflows have the right sign.** The default risk function used `predict(type = "linear_pred")`, which tidymodels' censored regression returns increasing with survival time (the opposite sign of the engine's own linear predictor), so survex's risk-based performance and importances for `model_fit` and `workflow` explainers were computed with a reversed sign. The risk is now the negative of that linear predictor. A regression test compares it with `survival::coxph()` for the `survival`, `glmnet`, and `coxnet` engines, alone and in a workflow.
+
+* **`as_database()` assigns default `N_j` vertex names** when an `igraph` has no `name` attribute, preventing downstream errors in `database_to_igraph()` round-trips. Added `@aliases as_database cbe_database` for cross-reference discoverability.
+
+* **Documentation cross-references**: Fixed three `\link{cbe_database}` references to nonexistent topics in `cbe_compare_df()`, `database_setops()`, and `database_to_igraph()` by using `\link[=as_database]{cbe_database}` instead.
+
+* **`.Rbuildignore`**: Added `^vignettes/.*\\.pdf$` and `^.*\\.rds$` patterns to prevent accidental bundling of compiled vignette PDFs and binary data files.
 
 # TempleCBE 0.3.80001.2026.09.28.18.00
 

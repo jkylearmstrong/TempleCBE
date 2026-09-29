@@ -2,6 +2,7 @@
 % Please edit documentation in R/as_database.R
 \name{as_database}
 \alias{as_database}
+\alias{cbe_database}
 \alias{as_database.default}
 \alias{as_database.igraph}
 \alias{as_database.visNetwork}

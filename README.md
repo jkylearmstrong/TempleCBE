@@ -5,19 +5,33 @@
 # TempleCBE <img src="man/figures/logo.png" align="right" style="height: 138px; max-height: 138px; width: auto; max-width: 138px;" alt="TempleCBE logo" />
 
 [![R-CMD-check](https://github.com/jkylearmstrong/TempleCBE/workflows/R-CMD-check/badge.svg)](https://github.com/jkylearmstrong/TempleCBE/actions)
-[![Codecov test coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)
-[![License: GPL-3 \| MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](LICENSE.md)
+[![Codecov test
+coverage](https://codecov.io/gh/jkylearmstrong/TempleCBE/branch/master/graph/badge.svg)](https://app.codecov.io/gh/jkylearmstrong/TempleCBE)
+[![License: GPL-3 \|
+MIT](https://img.shields.io/badge/License-GPL--3%20%7C%20MIT-yellow.svg)](LICENSE.md)
 [![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkylearmstrong%2FTempleCBE%2Fmaster%2FDESCRIPTION&query=%24.Version&label=version&color=blue)](https://github.com/jkylearmstrong/TempleCBE)
 
-**TempleCBE** is an open-source clinical data science, biostatistical modeling, and pipeline orchestration framework developed for Temple University’s **Center for Biostatistics and Epidemiology (CBE)** at the Lewis Katz School of Medicine and College of Public Health.
+**TempleCBE** is an open-source clinical data science, biostatistical
+modeling, and pipeline orchestration framework developed for Temple
+University’s **Center for Biostatistics and Epidemiology (CBE)** at the
+Lewis Katz School of Medicine and College of Public Health.
 
-`TempleCBE` bridges the critical methodology gap between **classical regulatory biostatistics** (SAS numerical parity, exact contingency inference, counting-process survival analysis), **modern machine learning** (`tidymodels`, penalized Cox regression, joint survival-status-time ensembles, Python `reticulate` export), and **automated clinical pipeline orchestration** (multi-table databases, Excel round-trips, DAG dependency tracking).
+`TempleCBE` bridges the critical methodology gap between **classical
+regulatory biostatistics** (SAS numerical parity, exact contingency
+inference, counting-process survival analysis), **modern machine
+learning** (`tidymodels`, penalized Cox regression, joint
+survival-status-time ensembles, Python `reticulate` export), and
+**automated clinical pipeline orchestration** (multi-table databases,
+Excel round-trips, DAG dependency tracking).
 
 ------------------------------------------------------------------------
 
 ## 🎯 Which Gap Areas Does TempleCBE Cover?
 
-Clinical research and biostatistical pipelines often face tooling fragmentation across language boundaries, regulatory standards, and modeling ecosystems. `TempleCBE` directly addresses six foundational gap areas:
+Clinical research and biostatistical pipelines often face tooling
+fragmentation across language boundaries, regulatory standards, and
+modeling ecosystems. `TempleCBE` directly addresses six foundational gap
+areas:
 
 | \# | Methodology Gap Area | The Clinical & Modeling Problem | How `TempleCBE` Fills the Gap | Dedicated Vignette |
 |:---|:---|:---|:---|:---|
@@ -61,7 +75,9 @@ library(survival)
 
 ### 1. Multi-Table Clinical Databases & Relational Linkage
 
-Manage multi-domain clinical trial databases (e.g. baseline inputs, serial labs, and survival endpoints), compile unified data dictionaries, and evaluate entity-relationship linkages:
+Manage multi-domain clinical trial databases (e.g. baseline inputs,
+serial labs, and survival endpoints), compile unified data dictionaries,
+and evaluate entity-relationship linkages:
 
 ``` r
 # 1. Define multi-table database list
@@ -95,7 +111,8 @@ cbe_database_venn(clinical_db, id_col = "patient_id") # Visual Venn overlap
 
 ### 2. SAS `PROC COMPARE` Parity & Visual Concordance
 
-Audit dataset concordance down to the individual cell with tolerance-based matching and 2-set Venn visualizations:
+Audit dataset concordance down to the individual cell with
+tolerance-based matching and 2-set Venn visualizations:
 
 ``` r
 df_base <- data.frame(id = 1:5, age = c(45, 52, 60, 65, 70), stage = c("I", "II", "II", "III", "IV"))
@@ -114,7 +131,11 @@ autoplot(cmp, type = "discrepancies")
 
 ### 3. Penalized Cox Models for Start/Stop & Longitudinal Data (`tidymodels`)
 
-`coxnet()` and `cv_coxnet()` provide a `tidymodels`-native `hardhat` interface for regularized Cox regression with subject-grouped cross-validation. Outcomes can be right-censored, `Surv(time, status)`, or start/stop counting-process data, `Surv(tstart, tstop, status)`, for time-varying covariates:
+`coxnet()` and `cv_coxnet()` provide a `tidymodels`-native `hardhat`
+interface for regularized Cox regression with subject-grouped
+cross-validation. Outcomes can be right-censored, `Surv(time, status)`,
+or start/stop counting-process data, `Surv(tstart, tstop, status)`, for
+time-varying covariates:
 
 ``` r
 lung_clean <- na.omit(lung[, c("time", "status", "age", "sex", "ph.ecog")])
@@ -133,7 +154,11 @@ cv_ss <- cv_coxnet(
 )
 ```
 
-A `penalty` below the end of glmnet’s default path is honored (the path is continued down to it; `penalty = 0` is the unpenalized fit) rather than silently clamped. `coxnet` is also registered as an engine of `parsnip::proportional_hazards()`, so it works in workflows and `tune::tune_grid()`:
+A `penalty` below the end of glmnet’s default path is honored (the path
+is continued down to it; `penalty = 0` is the unpenalized fit) rather
+than silently clamped. `coxnet` is also registered as an engine of
+`parsnip::proportional_hazards()`, so it works in workflows and
+`tune::tune_grid()`:
 
 ``` r
 spec <- parsnip::proportional_hazards(penalty = 0.05, mixture = 0.5) |>
@@ -146,7 +171,9 @@ predict(fit, lung_clean[1:3, ], type = "survival", eval_time = c(180, 365))
 
 ### 4. Joint Survival-Status-Time Modeling
 
-`joint_model()` blends penalized Cox proportional hazards, binary event classification, follow-up duration regression, and calibrated stacked ensembles into a unified risk score:
+`joint_model()` blends penalized Cox proportional hazards, binary event
+classification, follow-up duration regression, and calibrated stacked
+ensembles into a unified risk score:
 
 ``` r
 # Fit multi-paradigm joint ensemble
@@ -164,7 +191,8 @@ predict(jm_fit, lung_clean[1:5, ], eval_time = c(180, 365))
 
 ### 5. Principal Component Analysis (SAS `PROC PRINCOMP` Parity)
 
-`proc_pca()` executes standardized PCA and outputs the exact eigenvalue variance table produced by SAS `PROC PRINCOMP`:
+`proc_pca()` executes standardized PCA and outputs the exact eigenvalue
+variance table produced by SAS `PROC PRINCOMP`:
 
 ``` r
 # Standardized PCA on continuous variables
@@ -203,7 +231,8 @@ get_render_plan(graph)
 
 ## 📚 Comprehensive Vignettes
 
-`TempleCBE` includes extensive vignettes covering theory, simulation, and clinical workflows:
+`TempleCBE` includes extensive vignettes covering theory, simulation,
+and clinical workflows:
 
 | \# | Vignette Title | Key Topics & Methodology |
 |:---|:---|:---|
@@ -225,23 +254,35 @@ vignette("nested_survival_cv", package = "TempleCBE")
 
 ## 🏛️ Ecosystem Architecture
 
-`TempleCBE` serves as the public, auditable methodological layer of Temple University CBE’s clinical data science framework. Protected institutional studies and EHR analyses import `TempleCBE` to ensure statistical rigor while keeping confidential patient data secure:
+`TempleCBE` serves as the public, auditable methodological layer of
+Temple University CBE’s clinical data science framework. Protected
+institutional studies and EHR analyses import `TempleCBE` to ensure
+statistical rigor while keeping confidential patient data secure:
 
-- **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**: Longitudinal propensity score simulation engine generating synthetic benchmark cohorts.
-- **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**: High-performance OMOP Common Data Model querying with DuckDB.
-- **[`quarto_temple_brand`](https://github.com/jkylearmstrong-temple/quarto_temple_brand)**: Official Temple University institutional Quarto document and slide deck templates.
+- **[`pslongSim`](https://github.com/jkylearmstrong/pslongSim)**:
+  Longitudinal propensity score simulation engine generating synthetic
+  benchmark cohorts.
+- **[`omop-duck-db`](https://github.com/jkylearmstrong/omop-duck-db)**:
+  High-performance OMOP Common Data Model querying with DuckDB.
+- **[`quarto_temple_brand`](https://github.com/jkylearmstrong-temple/quarto_temple_brand)**:
+  Official Temple University institutional Quarto document and slide
+  deck templates.
 
 ------------------------------------------------------------------------
 
 ## 👥 Authors & Contributors
 
-- **J. Kyle Armstrong** (`j.kyle.armstrong@temple.edu` / `@jkylearmstrong-temple`) — Author, Creator, and Maintainer\
-- **Darina Chudnovskaya** (`darina.c@temple.edu` / `tub51812@temple.edu`) — Contributor (PCA Analysis & Vignette Suite)
+- **J. Kyle Armstrong** (`j.kyle.armstrong@temple.edu` /
+  `@jkylearmstrong-temple`) — Author, Creator, and Maintainer  
+- **Darina Chudnovskaya** (`darina.c@temple.edu` /
+  `tub51812@temple.edu`) — Contributor (PCA Analysis & Vignette Suite)
 
-*Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology*
+*Lewis Katz School of Medicine at Temple University, Center for
+Biostatistics & Epidemiology*
 
 ------------------------------------------------------------------------
 
 ## 📄 License
 
-Dual-licensed at your option under [GPL-3](LICENSE.md) or [MIT](LICENSE).
+Dual-licensed at your option under [GPL-3](LICENSE.md) or
+[MIT](LICENSE).

@@ -1,10 +1,52 @@
 ---
 title: "04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE"
 output: rmarkdown::html_vignette
+format:
+  html:
+    smooth-scroll: true
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+    section-divs: true
+    toc-location: left
+    toc-expand: true
+  docx:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+  pdf:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 8
+    toc-depth: 4
+    standalone: true
+    number-sections: true
+    keep-md: false
+    keep-tex: false
+    template-partials:
+      - ../inst/templates/title.tex
+    include-in-header:
+      text: |
+        \usepackage[noblocks]{authblk}
+        \renewcommand*{\Authsep}{, }
+        \renewcommand*{\Authand}{, }
+        \renewcommand*{\Authands}{, }
+        \renewcommand\Affilfont{\small}
+        \usepackage{lscape}
+        \newcommand{\blandscape}{\begin{landscape}}
+        \newcommand{\elandscape}{\end{landscape}}
+  typst:
+    number-sections: true
 vignette: >
-  %\VignetteIndexEntry{04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{04. Validation and Workflow Guide for SAS Users: Cox Models in TempleCBE} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup_knitr, include = FALSE}
@@ -36,12 +78,12 @@ The `TempleCBE` package is designed to streamline survival analysis with univari
 
 This vignette demonstrates:
 
-- **Part 1**: Univariable and multivariable time-fixed survival workflows using the public `survival::lung` dataset, illustrating SAS-to-R syntax equivalencies.
-- **Part 2**: A formal validation benchmark reproducing SAS Institute's published results from **Example 85.7 ("Time-Dependent Repeated Measurements of a Covariate")**, showing numerical concordance to multiple decimal places.
-- **Part 3**: Time-dependent covariate construction comparing the SAS DATA-step macro pattern with `survival::tmerge` and TempleCBE's `tidy_tmerge_cox()`.
-- **Part 4**: Model calibration and Integrated Brier Score (IBS) validation with inverse-probability-of-censoring weights (IPCW), comparing TempleCBE to SAS.
-- **Part 5**: Biostatistics Team Entry Point & SAS Macro Suite Guide (for Dariana, Lu, and team) detailing bundled macros, macro directory access, and execution via `run_sas_script()`.
-- **Part 6**: A comprehensive translation cheat sheet mapping SAS `PROC PHREG` syntax to `TempleCBE`.
+- @sec-part1 — Univariable and multivariable time-fixed survival workflows using the public `survival::lung` dataset, illustrating SAS-to-R syntax equivalencies.
+- @sec-part2 — A formal validation benchmark reproducing SAS Institute's published results from **Example 85.7 ("Time-Dependent Repeated Measurements of a Covariate")**, showing numerical concordance to multiple decimal places.
+- @sec-part3 — Time-dependent covariate construction comparing the SAS DATA-step macro pattern with `survival::tmerge` and TempleCBE's `tidy_tmerge_cox()`.
+- @sec-part4 — Model calibration and Integrated Brier Score (IBS) validation with inverse-probability-of-censoring weights (IPCW), comparing TempleCBE to SAS.
+- @sec-part5 — Biostatistics Team Entry Point & SAS Macro Suite Guide detailing bundled macros, macro directory access, and execution via `run_sas_script()`.
+- @sec-part6 — A comprehensive translation cheat sheet mapping SAS `PROC PHREG` syntax to `TempleCBE`.
 
 ```{r load_pkgs}
 library(TempleCBE)
@@ -51,7 +93,6 @@ library(dplyr)
 library(ggplot2)
 ```
 
----
 
 ## Key Default Differences: SAS vs. R
 
@@ -64,9 +105,9 @@ When validating Cox models between SAS and R, four primary default discrepancies
 | **Baseline Hazards** | Centered at covariate means or zeroes via `BASELINE` | Centered at covariate means in `survfit.coxph` | Use `plot_cox_survival()` which handles prediction curves transparently. |
 | **Clustered / Repeated Data** | `ID` statement specifies subject grouping | `id = ...` or `cluster(...)` | Pass `id = ID` directly via `cbe_cox_multi()`. |
 
----
+\clearpage
 
-## Part 1: Time-Fixed Cox Regression (Public Dataset: `survival::lung`)
+## Time-Fixed Cox Regression (Public Dataset: `survival::lung`)  {#sec-part1}
 
 To illustrate the side-by-side syntax without proprietary data, we use the public `survival::lung` cohort from the North Central Cancer Treatment Group (NCCTG). In `survival::lung`, the status variable is coded as `1 = censored` and `2 = dead`. We recode this to standard 0/1 binary status (`0 = censored`, `1 = dead`).
 
@@ -78,11 +119,13 @@ lung_data <- survival::lung %>%
   )
 ```
 
-### 1.1 Univariable Model: Age as a Continuous Predictor
+### Univariable Model: Age as a Continuous Predictor
 
 #### SAS Equivalent
 
-```sas
+```{.sas}
+#| lst-label: lst-phreg-univariable
+#| lst-cap: "SAS PROC PHREG: Univariable continuous predictor (Breslow ties)"
 /* SAS PROC PHREG: Univariable Continuous Model */
 proc phreg data=lung;
     model time*status(0) = age / ties=breslow;
@@ -118,7 +161,7 @@ res_age$zph_table
 cat(res_age$zph_text)
 ```
 
-### 1.2 Univariable Visualizations: Forest, Survival, and Marginal Risk
+### Univariable Visualizations: Forest, Survival, and Marginal Risk
 
 In SAS, plotting survival curves or marginal effects requires chaining `PROC PHREG` output with `BASELINE` statements and `PROC SGPLOT`. In `TempleCBE`, one-line functions produce presentation-ready `ggplot2` graphics adhering to CBE styling.
 
@@ -132,7 +175,9 @@ plot_cox_forest(res_age)
 
 In SAS, one might run:
 
-```sas
+```{.sas}
+#| lst-label: lst-phreg-baseline-surv
+#| lst-cap: "SAS PROC PHREG + BASELINE + PROC SGPLOT: Predicted survival curve"
 proc phreg data=lung;
     model time*status(0) = age / ties=breslow;
     baseline out=pred_surv survival=s / covariates=lung;
@@ -156,15 +201,16 @@ To inspect how the relative hazard or mortality probability varies smoothly acro
 plot_cox_marginal(res_age, data = lung_data, scale = "hr")
 ```
 
----
 
-### 1.3 Multivariable Modeling with Categorical Factors
+### Multivariable Modeling with Categorical Factors
 
 When analyzing multiple predictors, including categorical variables, SAS uses the `CLASS` statement:
 
 #### SAS Equivalent
 
-```sas
+```{.sas}
+#| lst-label: lst-phreg-multivariable
+#| lst-cap: "SAS PROC PHREG: Multivariable model with CLASS reference level"
 /* SAS PROC PHREG: Multivariable Model with Reference Level */
 proc phreg data=lung;
     class sex(ref="Male") / param=ref;
@@ -205,13 +251,13 @@ And presentation table formatting with global sorting options:
 cbe_cox_table(res_multi, sort = "magnitude")
 ```
 
----
+\clearpage
 
-## Part 2: Time-Dependent Covariates & Counting Process Benchmark (SAS Example 85.7)
+## Time-Dependent Covariates & Counting Process Benchmark (SAS Example 85.7) {#sec-part2}
 
 To formally prove numerical equivalence, we implement and validate against **SAS/STAT User's Guide Example 85.7 / 91.7: "Time-Dependent Repeated Measurements of a Covariate"**.
 
-### 2.1 Benchmark Study Design
+### Benchmark Study Design
 
 - **Cohort**: 45 rodents exposed to a carcinogen and randomized to three dose levels of a tumor-promoting agent (`Dose`: 1.0, 2.5, 10.0).
 - **Time-Dependent Predictor**: Number of papillomas (`NPap`), observed repeatedly across 15 scheduled observation times (weeks 27, 34, 37, 41, 43, 45, 46, 47, 49, 50, 51, 53, 65, 67, 71).
@@ -220,67 +266,40 @@ To formally prove numerical equivalence, we implement and validate against **SAS
 The raw data is structured in wide format with columns `P1` through `P15` indicating papilloma counts at the 15 measurement weeks:
 
 ```{r inspect_tumor_wide}
-w <- TempleCBE:::tumor_wide()
-dim(w)
-head(w[, 1:9])
+tumor_wide <- TempleCBE:::tumor_wide()
+dim(tumor_wide)
+head(tumor_wide[, 1:9])
 ```
 
-### 2.2 Wide to Counting-Process (Start/Stop) Transformation
+### Wide to Counting-Process (Start/Stop) Transformation
 
 In SAS, repeated measurements can be handled either with programming statements or by transforming the data into counting-process format (`Tumor1`), where each animal has multiple intervals `(T1, T2]` corresponding to time segments where `NPap` remained constant:
 
-```sas
-/* SAS Counting-Process Transformation (Example 85.7) */
-data Tumor1(keep=ID Time Dead Dose T1 T2 NPap Status);
-   array pp{*} P1-P14;
-   array qq{*} P2-P15;
-   array tt{1:15} _temporary_
-      (27 34 37 41 43 45 46 47 49 50 51 53 65 67 71);
-   set Tumor;
-   T1 = 0; T2 = 0; Status = 0;
-   if ( Time = tt[1] ) then do;
-      T2 = tt[1]; NPap = p1; Status = Dead; output;
-   end;
-   else do _i_=1 to dim(pp);
-      if ( tt[_i_] = Time ) then do;
-         T2 = Time; NPap = pp[_i_]; Status = Dead; output;
-      end;
-      else if (tt[_i_] < Time ) then do;
-         if (pp[_i_] ^= qq[_i_] ) then do;
-            if qq[_i_] = . then T2 = Time;
-            else                T2 = tt[_i_];
-            NPap = pp[_i_]; Status = 0; output;
-            T1 = T2;
-         end;
-      end;
-   end;
-   if ( Time >= tt[15] ) then do;
-      T2 = Time; NPap = P15; Status = Dead; output;
-   end;
-run;
-```
+
 
 `TempleCBE` implements this exact DATA step algorithm in `tumor_long()`:
 
 ```{r transform_tumor_long}
-l <- TempleCBE:::tumor_long(w)
-dim(l)
+tumor_long <- TempleCBE:::tumor_long(tumor_wide)
+dim(tumor_long)
 ```
 
 Let us examine Subject 1, an animal that died at week 47 with increasing papilloma counts over time:
 
 ```{r inspect_subject_1}
-filter(l, ID == 1)
+filter(tumor_long, ID == 1)
 ```
 
 As published in SAS documentation, Subject 1 produces exactly 5 intervals:
 `(0, 27, 0, 0)`, `(27, 34, 5, 0)`, `(34, 37, 6, 0)`, `(37, 41, 8, 0)`, and `(41, 47, 10, 1)`.
 
-### 2.3 Model Fitting in SAS vs. TempleCBE
+### Model Fitting in SAS vs. TempleCBE
 
 In SAS, the counting-process model is specified as:
 
-```sas
+```{.sas}
+#| lst-label: lst-phreg-counting-process
+#| lst-cap: "SAS PROC PHREG: Start/stop counting-process specification (Example 85.7)"
 /* SAS PROC PHREG: Counting Process Specification */
 proc phreg data=Tumor1;
    model (T1,T2)*Status(0) = Dose NPap / ties=breslow;
@@ -333,7 +352,7 @@ In `TempleCBE`, we pass the counting-process formula and forward `id = ID` and `
 
 ```{r fit_tumor_model}
 fit_tumor <- cbe_cox_multi(
-  data = l,
+  data = tumor_long,
   formula = Surv(T1, T2, Status) ~ Dose + NPap,
   id = ID,
   ties = "breslow"
@@ -342,37 +361,23 @@ fit_tumor <- cbe_cox_multi(
 fit_tumor$table
 ```
 
-### 2.4 Numerical Concordance Validation
+### Numerical Concordance Validation
 
-Below is the side-by-side comparison between the published SAS/STAT Example 85.7 results and the estimates computed by `TempleCBE`:
+Below 
 
-| Parameter | Metric | SAS Published Value | TempleCBE (R) Estimate | Absolute Difference | Concordance |
-|:---|:---|:---:|:---:|:---:|:---:|
-| **Dose** | Coefficient ($\beta$) | `0.06885` | `0.06885` | `< 0.00001` | **Exact match** |
-| **Dose** | Standard Error | `0.05620` | `0.05620` | `< 0.00001` | **Exact match** |
-| **Dose** | Hazard Ratio ($\exp(\beta)$) | `1.071` | `1.071` | `< 0.001` | **Exact match** |
-| **Dose** | Wald Chi-Square / p-value | `p = 0.2205` | `p = 0.221` | `< 0.001` | **Exact match** |
-| **NPap** | Coefficient ($\beta$) | `0.11714` | `0.11715` | `0.00001` | **Exact match** |
-| **NPap** | Standard Error | `0.02998` | `0.02998` | `< 0.00001` | **Exact match** |
-| **NPap** | Hazard Ratio ($\exp(\beta)$) | `1.124` | `1.124` | `< 0.001` | **Exact match** |
-| **NPap** | Wald Chi-Square / p-value | `p < 0.0001` | `p < 0.001` | `< 0.0001` | **Exact match** |
-| **Global Fit** | Likelihood Ratio $\chi^2$ (2 df) | `23.5243` | `23.52` | `< 0.01` | **Exact match** |
-
-The statistical conclusions are identical: `Dose` of the tumor promoter is not statistically significant ($p = 0.22$), whereas `NPap` (current papilloma count) is strongly associated with death ($p < 0.0001$).
-
----
-
-## Part 3: Time-Dependent Merging: SAS DATA Step vs. `survival::tmerge` vs. `tidy_tmerge_cox`
+\clearpage
+## Time-Dependent Merging: SAS DATA Step vs. `survival::tmerge` vs. `tidy_tmerge_cox` {#sec-part3}
 
 In SAS clinical programming, transforming repeated biomarker panels into counting-process layouts often relies on complex, verbose DATA-step macros with temporary arrays, lag lookups, and index boundaries. R provides modern, elegant alternatives.
 
-### 3.1 The Canonical R Approach: `survival::tmerge`
+### The Canonical R Approach: `survival::tmerge`
 
 Therneau's `survival::tmerge` constructs start-stop survival intervals by combining baseline cohort data with sequential event and time-dependent covariate tables:
 
 ```{r tmerge_demo}
 # 1. Base cohort with primary follow-up interval and event status
-base_df <- w %>% select(ID, Time, Dead, Dose)
+base_df <- tumor_wide %>%
+  select(ID, Time, Dead, Dose)
 
 tumor_tmerge <- tmerge(
   data1 = base_df,
@@ -380,14 +385,17 @@ tumor_tmerge <- tmerge(
   id = ID,
   Status = event(Time, Dead)
 )
+```
 
+
+```{r tdc_tumor}
 # 2. Extract longitudinal transitions: at each observation time, update NPap
 tt <- c(27, 34, 37, 41, 43, 45, 46, 47, 49, 50, 51, 53, 65, 67, 71)
 transitions <- list()
-for (r in seq_len(nrow(w))) {
-  id_i <- w$ID[r]
-  tm_i <- w$Time[r]
-  p_vals <- as.numeric(w[r, paste0("P", 1:15)])
+for (r in seq_len(nrow(tumor_wide))) {
+  id_i <- tumor_wide$ID[r]
+  tm_i <- tumor_wide$Time[r]
+  p_vals <- as.numeric(tumor_wide[r, paste0("P", 1:15)])
   transitions[[length(transitions) + 1]] <- data.frame(ID = id_i, time = 0, NPap = p_vals[1])
   for (k in 1:14) {
     if (tt[k] < tm_i && !is.na(p_vals[k + 1])) {
@@ -396,7 +404,9 @@ for (r in seq_len(nrow(w))) {
   }
 }
 tdc_df <- bind_rows(transitions)
+```
 
+```{r tmerge_tdc}
 # 3. Apply time-dependent covariate update via tmerge
 tumor_tmerge <- tmerge(
   data1 = tumor_tmerge,
@@ -404,7 +414,14 @@ tumor_tmerge <- tmerge(
   id = ID,
   NPap = tdc(time, NPap)
 )
+```
 
+```{r}
+# proc_compare(tumor_tmerge, Tumor1)
+```
+
+
+```{r fit_tmerge}
 # Fit Cox model on tmerge data
 fit_tmerge <- cbe_cox_multi(
   data = tumor_tmerge,
@@ -426,7 +443,7 @@ max(abs(coef(fit_tmerge$model) - coef(fit_tumor$model)))
 
 Both models are **identical to $10^{-17}$**! While the SAS DATA step collapsed adjacent intervals with identical values (resulting in 102 rows), `tmerge` splits at each observation time (resulting in 412 rows). Because the hazard and risk set contributions during intervals of unchanged covariates are identical, the partial likelihood and resulting estimates match exactly.
 
-### 3.2 The Tidy Alternative: `tidy_tmerge_cox()`
+### The Tidy Alternative: `tidy_tmerge_cox()`
 
 To further eliminate the boilerplate of multi-step merges for longitudinal clinical records, `TempleCBE` provides `tidy_tmerge_cox()`. It accepts separate measurement and event data frames and directly outputs tidy start--stop survival intervals:
 
@@ -476,18 +493,52 @@ cbe_cox_multi(
 )
 ```
 
----
 
-## Part 4: Model Calibration & Integrated Brier Score (IBS) Parity
+\clearpage
+## Model Calibration & Integrated Brier Score (IBS) Parity {#sec-part4}
 
 In clinical risk prediction, model discrimination (such as Harrell's $C$-index) evaluates relative ordering, but fails to assess whether predicted absolute probabilities match observed clinical outcomes. Proper scoring rules—specifically the **Brier score** and **Integrated Brier Score (IBS)**—quantify mean squared prediction error under right censoring.
 
-### 4.1 Theoretical Foundation: IPCW Brier Score & IBS (Graf et al. 1999)
+### Theoretical Foundation: IPCW Brier Score & IBS (Graf et al. 1999)
 
 At a specific evaluation time horizon $t$, the Brier score measures the squared difference between the true binary survival status $I(T_i > t)$ and the predicted survival probability $\hat{S}(t \mid X_i)$. To prevent bias from censored individuals whose status at $t$ is unknown, Graf et al. (1999) weight observations by the **Inverse Probability of Censoring Weights (IPCW)**:
 
 $$BS(t) = \frac{1}{N} \sum_{i=1}^N w_i(t) \cdot \left[ I(T_i > t) - \hat{S}(t \mid X_i) \right]^2$$
 
+\clearpage
+
+```{.sas}
+#| lst-label: lst-tumor1-datastep
+#| lst-cap: "SAS DATA step: Wide-to-counting-process transformation (Tumor1, Example 85.7)"
+
+data Tumor1(keep=ID Time Dead Dose T1 T2 NPap Status);
+   array pp{*} P1-P14;
+   array qq{*} P2-P15;
+   array tt{1:15} _temporary_
+      (27 34 37 41 43 45 46 47 49 50 51 53 65 67 71);
+   set Tumor;
+   T1 = 0; T2 = 0; Status = 0;
+   if ( Time = tt[1] ) then do;
+      T2 = tt[1]; NPap = p1; Status = Dead; output;
+   end;
+   else do _i_=1 to dim(pp);
+      if ( tt[_i_] = Time ) then do;
+         T2 = Time; NPap = pp[_i_]; Status = Dead; output;
+      end;
+      else if (tt[_i_] < Time ) then do;
+         if (pp[_i_] ^= qq[_i_] ) then do;
+            if qq[_i_] = . then T2 = Time;
+            else                T2 = tt[_i_];
+            NPap = pp[_i_]; Status = 0; output;
+            T1 = T2;
+         end;
+      end;
+   end;
+   if ( Time >= tt[15] ) then do;
+      T2 = Time; NPap = P15; Status = Dead; output;
+   end;
+run;
+```
 where the IPCW weight $w_i(t)$ is derived from the Kaplan-Meier estimate of the censoring distribution $\hat{G}(u) = P(C > u)$:
 
 $$w_i(t) = \begin{cases}
@@ -500,7 +551,7 @@ To summarize overall model accuracy across an entire follow-up horizon $[t_{\min
 
 $$\text{IBS} = \frac{1}{t_{\max}} \int_0^{t_{\max}} BS(t) \, dt \approx \frac{1}{t_K} \sum_{k=1}^{K-1} \frac{BS(t_k) + BS(t_{k+1})}{2} \cdot (t_{k+1} - t_k)$$
 
-### 4.2 TempleCBE Implementation on NCCTG Lung Cancer Cohort
+### TempleCBE Implementation on NCCTG Lung Cancer Cohort
 
 In `TempleCBE`, survival predictions are scored using `censoring_km()`, `add_graf_weights()`, and `yardstick::brier_survival()`:
 
@@ -548,11 +599,13 @@ brier_res
 ibs_res
 ```
 
-### 4.3 The SAS Equivalent: `%cbe_brier_score` Macro
+### The SAS Equivalent: `%cbe_brier_score` Macro
 
 In SAS, the bundled `%cbe_brier_score` macro executes the identical IPCW algorithm:
 
-```sas
+```{.sas}
+#| lst-label: lst-macro-brier-score
+#| lst-cap: "SAS %cbe_brier_score macro: IPCW Brier Score and Integrated Brier Score"
 /* SAS Equivalent: IPCW Brier Score & Integrated Brier Score */
 %include "&templecbe_sas_dir/cbe_brier_score.sas";
 
@@ -570,7 +623,7 @@ In SAS, the bundled `%cbe_brier_score` macro executes the identical IPCW algorit
 );
 ```
 
-### 4.4 Numerical Concordance Validation
+### Numerical Concordance Validation
 
 Both SAS and `TempleCBE` utilize reverse Kaplan-Meier censoring estimation with left-continuous limits $\hat{G}(T_i^-)$ and trapezoidal numerical integration. Below is the side-by-side benchmark across all evaluation time points:
 
@@ -583,7 +636,7 @@ Both SAS and `TempleCBE` utilize reverse Kaplan-Meier censoring estimation with 
 | **Brier Score ($t = 500\text{ days}$)** | `0.20005` | `0.20005` | `< 0.00001` | **Exact match** |
 | **Integrated Brier Score (IBS)** | `0.16273` | `0.16273` | `< 0.00001` | **Exact match** |
 
-### 4.5 Time-Dependent Calibration by Risk Quantile
+### Time-Dependent Calibration by Risk Quantile
 
 To verify clinical calibration at milestone $t = 300$ days (near median survival), we divide patients into predicted survival quintiles and compare mean predicted survival against observed Kaplan-Meier survival:
 
@@ -624,19 +677,20 @@ ggplot(calib_df, aes(x = mean_pred, y = obs_km)) +
   theme(panel.grid.minor = element_blank())
 ```
 
----
 
-## Part 5: Biostatistics Team Entry Point & SAS Macro Suite Guide
+\clearpage
 
-This section provides a direct onboarding guide for biostatisticians, statistical programmers, and validation engineers (such as Dariana, Lu, and the Temple biostatistics team) bridging between SAS and R.
+## Biostatistics Team Entry Point & SAS Macro Suite Guide {#sec-part5}
 
-### 5.1 Architecture & Workflow Philosophy
+This section provides a direct onboarding guide for biostatisticians, statistical programmers, and validation engineers bridging between SAS and R.
+
+### Architecture & Workflow Philosophy
 
 `TempleCBE` is architected with a **dual-engine philosophy**:
 - **Interactive Development & Visualization**: Use R (`cbe_cox_multi()`, `cbe_explain_survival()`, `plot_cox_forest()`) for agile exploration, nested cross-validation, and publication-ready graphics.
 - **Regulatory Parity & Benchmark Audit**: Use SAS (`PROC PHREG`, `%cbe_brier_score`, `%cbe_cox_phreg`) to execute identical models in batch mode and audit numerical concordance to machine precision.
 
-### 5.2 Locating Bundled SAS Macros from R
+### Locating Bundled SAS Macros from R
 
 `TempleCBE` ships with production SAS macros located in `inst/sas/`. When the package is installed, you can programmatically discover the macro directory or any individual macro file:
 
@@ -652,18 +706,22 @@ master_macro_file
 
 Inside SAS (whether running in SAS Enterprise Guide, SAS Studio, or batch mode), simply include the master loader:
 
-```sas
+```{.sas}
+#| lst-label: lst-macro-loader
+#| lst-cap: "SAS: Include TempleCBE macro suite via master loader file"
 /* In SAS: Include TempleCBE Macro Suite */
 %let templecbe_sas = <path_returned_by_cbe_sas_macro_dir>;
 %include "&templecbe_sas/cbe_macros.sas";
 ```
 
-### 5.3 SAS Macro Catalog & Syntax Reference
+### SAS Macro Catalog & Syntax Reference
 
 The library provides three core macros matching `TempleCBE`'s R functions:
 
 #### 1. `%cbe_brier_score`: IPCW Brier Score & IBS Calibration
-```sas
+```{.sas}
+#| lst-label: lst-macro-brier-syntax
+#| lst-cap: "SAS %cbe_brier_score: Macro parameter reference"
 %cbe_brier_score(
     data       = <input dataset>,
     time       = <follow-up time var>,
@@ -679,7 +737,9 @@ The library provides three core macros matching `TempleCBE`'s R functions:
 ```
 
 #### 2. `%cbe_cox_phreg`: Standardized Cox Modeling & Assumption Checking
-```sas
+```{.sas}
+#| lst-label: lst-macro-cox-phreg-syntax
+#| lst-cap: "SAS %cbe_cox_phreg: Macro parameter reference"
 %cbe_cox_phreg(
     data       = <input dataset>,
     time       = <event time var>,
@@ -695,7 +755,9 @@ The library provides three core macros matching `TempleCBE`'s R functions:
 ```
 
 #### 3. `%cbe_counting_process`: Time-Dependent Covariate Reshaping
-```sas
+```{.sas}
+#| lst-label: lst-macro-counting-process-syntax
+#| lst-cap: "SAS %cbe_counting_process: Macro parameter reference"
 %cbe_counting_process(
     data_wide  = <wide dataset with P1..Pn>,
     id         = ID,
@@ -708,7 +770,7 @@ The library provides three core macros matching `TempleCBE`'s R functions:
 );
 ```
 
-### 5.4 Running SAS Batch Programs Directly from R (`run_sas_script`)
+### Running SAS Batch Programs Directly from R (`run_sas_script`)
 
 `TempleCBE` provides `run_sas_script()` to execute SAS batch programs directly from R scripts or test pipelines:
 
@@ -726,7 +788,7 @@ cat("SAS batch execution completed with exit status:", exit_code, "\n")
 - Creates a `list/` directory containing `<stem>.lst` for formatted ODS outputs.
 - Returns standard process exit codes (0 = clean execution, 1 = warnings, 2 = errors).
 
-### 5.5 End-to-End Hybrid Workflow: Calling a SAS Macro from R (R $\rightarrow$ SAS $\rightarrow$ R)
+### End-to-End Hybrid Workflow: Calling a SAS Macro from R (R $\rightarrow$ SAS $\rightarrow$ R)
 
 In many clinical environments, analysts want to call a validated SAS macro directly on an R data frame without manually writing standalone SAS programs by hand. 
 
@@ -796,11 +858,13 @@ sas_ibs_tbl
 dplyr::distinct(sas_brier_tbl, eval_time, brier_score)
 ```
 
-### 5.6 Calling R from SAS (SAS $\rightarrow$ R)
+### Calling R from SAS (SAS $\rightarrow$ R)
 
 For statistical programmers working primarily inside SAS Enterprise Guide, SAS Studio, or batch scripts who wish to trigger `TempleCBE` survival routines or automated Quarto report generation from SAS:
 
-```sas
+```{.sas}
+#| lst-label: lst-sas-call-r-systask
+#| lst-cap: "SAS SYSTASK: Trigger TempleCBE R script from SAS batch mode"
 /* In SAS: Trigger TempleCBE script via OS command */
 systask command "powershell -File ""C:\PathTo\TempleCBE\scripts\Rscript.ps1"" -e ""TempleCBE::render('vignettes/sas_survival.Rmd', 'all')""" 
     taskname=r_cbe_job wait;
@@ -808,7 +872,9 @@ systask command "powershell -File ""C:\PathTo\TempleCBE\scripts\Rscript.ps1"" -e
 
 Alternatively, SAS `PROC IML` supports direct embedded R execution:
 
-```sas
+```{.sas}
+#| lst-label: lst-sas-proc-iml-r
+#| lst-cap: "SAS PROC IML: Embedded R execution via submit / R block"
 /* In SAS: Interactive Matrix Language (IML) R Interface */
 proc iml;
     submit / R;
@@ -820,7 +886,7 @@ proc iml;
 run;
 ```
 
-### 5.7 Portable CI/CD Validation Workflow (`has_sas`)
+### Portable CI/CD Validation Workflow (`has_sas`)
 
 To ensure scripts, tests, and vignettes run portably across local workstations (with SAS) and CI/CD environments (such as GitHub Actions without SAS), use the conditional evaluation pattern:
 
@@ -836,7 +902,7 @@ if (has_sas) {
 }
 ```
 
-### 5.8 Beyond Naive Time-Dependent Covariates: Joint Modeling (SAS `%JM` vs. `TempleCBE::joint_model`)
+### Beyond Naive Time-Dependent Covariates: Joint Modeling (SAS `%JM` vs. `TempleCBE::joint_model`)
 
 Parts 2 and 3 illustrated how time-dependent covariates can be structured into start/stop counting-process intervals via SAS DATA steps or `tidy_tmerge_cox()`. However, when longitudinal biomarker trajectories are measured with biological noise or subject to informative dropout, treating them as fixed step-functions introduces attenuation bias (Rizopoulos 2010, *JSS* 35(9); Garcia-Hernandez & Rizopoulos 2018, *JSS* 84(12)).
 
@@ -865,9 +931,9 @@ jm_fit <- joint_model(toy_long, surv ~ biomarker + trt, subject_id = "patid", pe
 print(jm_fit)
 ```
 
----
+\clearpage
 
-## Part 6: SAS to TempleCBE Translation Reference
+## SAS to TempleCBE Translation Reference {#sec-part6}
 
 | Task | SAS `PROC PHREG` Syntax | `TempleCBE` / R Equivalent |
 |:---|:---|:---|
@@ -893,8 +959,8 @@ print(jm_fit)
 | **Locate Macro File** | `%include "path/to/macro.sas";` | `TempleCBE::cbe_sas_macro_path("cbe_macros.sas")` |
 | **Batch Run SAS from R** | Command line `sas -sysin ...` | `TempleCBE::run_sas_script("script.sas")` |
 
----
 
 ## Conclusion
 
 By combining dedicated screening engines, automated assumption validators, flexible argument forwarding, modern time-dependent interval builders, and integrated IPCW Brier score calibration, `TempleCBE` provides an end-to-end survival modeling ecosystem in R that delivers exact numerical parity with SAS while introducing modern tidy programming ergonomics and cross-platform reproducibility for clinical study teams.
+

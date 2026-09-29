@@ -1,6 +1,6 @@
 #' Set Operations on R Databases
 #'
-#' \code{cbe_database} methods for the generic \code{dplyr::intersect()}/
+#' \code{\link[=as_database]{cbe_database}} methods for the generic \code{dplyr::intersect()}/
 #' \code{dplyr::union()}/\code{dplyr::setdiff()} verbs (the same generics
 #' \pkg{dbplyr}/\pkg{dtplyr} extend for their own backends) -- the table-level
 #' building blocks behind \code{\link{graph_intersect}}/\code{\link{graph_subtract}}/
@@ -195,7 +195,7 @@ union.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to"), 
 #' Build an igraph From an R Database's Nodes/Edges Tables
 #'
 #' The other direction from \code{\link{as_database}}: takes a
-#' \code{cbe_database} (or plain \code{list(nodes = ..., edges = ...)})
+#' \code{\link[=as_database]{cbe_database}} (or plain \code{list(nodes = ..., edges = ...)})
 #' -- such as one produced by \code{\link{as_database}} or the
 #' \code{\link{database_setops}} verbs -- and builds an \code{igraph} from it.
 #'

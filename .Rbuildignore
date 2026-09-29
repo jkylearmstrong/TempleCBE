@@ -18,6 +18,7 @@
 ^scripts$
 ^vignettes/.*_files$
 ^vignettes/.*\.html$
+^vignettes/.*\.pdf$
 ^\.quarto$
 ^vignettes/\.quarto$
 ^.*\.docx$
@@ -27,3 +28,6 @@
 ^claude.*$
 ^Dockerfile$
 ^Dockerfile.*$
+^.*\.rds$
+^\.vscode$
+^figure$
