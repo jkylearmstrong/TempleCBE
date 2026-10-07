@@ -70,7 +70,7 @@ generate_pi_names(1)
 generate_pi_names(3, format = "full_name")
 #> [1] "Bella Medina"  "Kathryn Burns" "Kathryn Henry"
 generate_pi_names(3, format = "token")
-#> [1] "PI_c1e4caa771da33aa" "PI_2b15cfb636dbc847" "PI_84752fc2d0138a08"
+#> [1] "PI_224b811eeadf6732" "PI_a8486ebe61e238d1" "PI_11200229ce44ecc5"
 generate_pi_names(3, format = "token", n_chars = 8)
-#> [1] "PI_d3a0973e" "PI_9d315bbe" "PI_9d7b475b"
+#> [1] "PI_5d1bc1d9" "PI_b7be5971" "PI_28f4ff5b"
 ```
