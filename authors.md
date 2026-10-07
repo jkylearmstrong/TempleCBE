@@ -14,7 +14,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/jkylearmstrong/TempleCBE/blob/master/DESCRIPTION)
 
 Armstrong J (2026). *TempleCBE: Temple CBE Biostatistics, Clinical Data
 Science, and Modeling Utilities*. R package version 0.5.0,

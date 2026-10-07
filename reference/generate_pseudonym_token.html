@@ -55,7 +55,7 @@ tokens), and custom renaming/formatting functions."><meta property="og:image" co
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Generate Pseudonym Tokens (Cryptographic Hash)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.0/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
       <div class="d-none name"><code>generate_pseudonym_token.Rd</code></div>
     </div>
 
@@ -156,15 +156,15 @@ de-identified (see the scope notes in <code><a href="pi_anonymizer.html">pi_anon
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random tokens need no key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_a7dba0b614ed76b3" "PI_93a15390a4cfbd3c" "PI_ab0fa92da3e2ebd7"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_a72661486b982f60" "PI_c0da1d1845a7bb82" "PI_df1b3796cdde10a2"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short tokens (8 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_c4a55104" "PI_256af40e" "PI_41938d60"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_e4f7ea7b" "PI_2d95d350" "PI_ed3f4755"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_4e5aa6fcd83e617b" "pi_273912c0d1260a76"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_544054fb778362a5" "pi_6fc2bfc4d41b5220"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Deterministic tokens need a secret key. In real use keep it in the</span></span></span>
 <span class="r-in"><span><span class="co"># TEMPLECBE_SECRET_KEY environment variable (see ?pi_anonymizer), never in a</span></span></span>
