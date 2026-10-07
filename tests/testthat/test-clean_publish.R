@@ -1205,7 +1205,10 @@ test_that("the R and the shell URL normalisers give the same result for every sp
   sh_normalise <- function(shell, urls) {
     input <- withr::local_tempfile()
     writeBin(charToRaw(paste0(paste(urls, collapse = "\n"), "\n")), input)
-    suppressWarnings(system2(shell, shQuote(script), stdin = input, stdout = TRUE, stderr = TRUE))
+    withr::with_env(
+      list(LC_ALL = "C", LC_CTYPE = "C", LANG = "C"),
+      suppressWarnings(system2(shell, shQuote(script), stdin = input, stdout = TRUE, stderr = FALSE))
+    )
   }
 
   by_r <- .cp_normalize_url(cp_url_corpus)
