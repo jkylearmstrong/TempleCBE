@@ -1,0 +1,608 @@
+1                                           The SAS System               15:21 Monday, October 5, 2026
+
+NOTE: Copyright (c) 2023 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M8) 
+      Licensed to TEMPLE UNIVERSITY - T&R - SFA, Site <redacted>.
+NOTE: This session is executing on the X64_WIN+HOME  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.3
+      SAS/ETS 15.3
+      SAS/OR 15.3
+      SAS/IML 15.3
+      SAS/QC 15.3
+
+NOTE: Additional host information:
+
+ X64_WIN+HOME WIN 10.0.26300  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.42 seconds
+      cpu time            0.34 seconds
+      
+1          /*==============================================================================
+2            TempleCBE SAS Validation Benchmark: PROC COMPARE against cbe_compare_df()
+3          
+4            Nine small comparisons, each on data typed into this program (so R and SAS see
+5            the very same numbers; a test in test-sas_parity_reference.R checks the
+6            datalines). All use METHOD=ABSOLUTE and a CRITERION that is the tolerance given
+7            to cbe_compare_df(): 1E-7 (its default), except s4_edge (0.25) and s9_trap (0.1).
+8          
+9              s1_id       ID id. Identical variables, a difference inside and beyond the
+10                         criterion, a missing value on one side only, a missing value on
+11                         both sides, character differences (including case and a blank),
+12                         a variable that is numeric in BASE and character in COMPARE, a
+13                         variable only in BASE and one only in COMPARE, a character
+14                         variable with different lengths, two observations only in BASE
+15                         and one only in COMPARE. COMPARE is typed unsorted and sorted
+16                         here, because PROC COMPARE needs sorted data; cbe_compare_df()
+17                         does not.
+18             s2_rows     No ID: observations are compared by position; BASE has two more.
+19             s3_dup      ID values that occur more than once (paired in order).
+20             s4_edge     Differences of exactly the criterion, just below and just above.
+21             s5_decimal  Differences of 9E-8 and 1.1E-7 at criterion 1E-7, on numbers of
+22                         different size and in both directions.
+23             s6_same     A data set compared with a copy of itself.
+24             s7_within   Differences that are all inside the criterion.
+25             s8_text     Character differences: case, and a trailing blank.
+26             s9_trap     A difference of 0.1 (as a decimal) at criterion 0.1: decimal
+27                         fractions are not exact in binary, so it is a difference for
+28                         1 against 1.1 and none for 0.5 against 0.6.
+29         
+30           The listing is read by tests/testthat/helper-sas-reference.R (parse_compare_lst);
+31           the numbers are in tests/testthat/reference/sas_proc_compare.csv. SYSINFO is the
+2                                           The SAS System               15:21 Monday, October 5, 2026
+
+32           return code PROC COMPARE leaves in &SYSINFO (a bit mask), saved before the DATA
+33           step that prints it, because a DATA step resets it.
+34         
+35           Can be executed directly from R:
+36             TempleCBE::run_sas_script(
+37               TempleCBE::cbe_sas_macro_path("benchmark_proc_compare.sas")
+38             )
+39         ==============================================================================*/
+40         
+41         options nodate nonumber linesize=100 pagesize=32767;
+42         
+43         %macro show_sysinfo(scenario);
+44             %let rc = &sysinfo;
+45             data _null_;
+46                 file print;
+47                 put "SYSINFO &scenario &rc";
+48             run;
+49         %mend show_sysinfo;
+50         
+51         /*------------------------------------------------------------------------------
+52           s1_id
+53         ------------------------------------------------------------------------------*/
+54         data work.s1_base;
+55             infile datalines dsd missover;
+56             length id same_num within_tol over_tol miss_num conf only_base 8
+57                    chr_diff $ 8 chr_blank $ 8 chr_len $ 8;
+58             input id same_num within_tol over_tol miss_num chr_diff $ chr_blank $ chr_len $ conf
+58       ! only_base;
+59         datalines;
+
+NOTE: The data set WORK.S1_BASE has 10 observations and 10 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+70         ;
+71         run;
+72         
+73         data work.s1_comp;
+74             infile datalines dsd missover;
+75             length id same_num within_tol over_tol miss_num 8 only_comp $ 8
+76                    chr_diff $ 8 chr_blank $ 8 chr_len $ 12 conf $ 8;
+77             input id same_num within_tol over_tol miss_num chr_diff $ chr_blank $ chr_len $ conf
+77       ! $ only_comp $;
+78         datalines;
+
+NOTE: The data set WORK.S1_COMP has 9 observations and 10 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+88         ;
+89         run;
+90         
+91         proc sort data=work.s1_comp;
+92             by id;
+93         run;
+
+NOTE: There were 9 observations read from the data set WORK.S1_COMP.
+NOTE: The data set WORK.S1_COMP has 9 observations and 10 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+94         
+95         title "Scenario s1_id: ID id, METHOD=ABSOLUTE CRITERION=1E-7";
+96         proc compare base=work.s1_base compare=work.s1_comp method=absolute criterion=1e-7
+96       ! listall listequalvar;
+97             id id;
+98         run;
+
+NOTE: There were 10 observations read from the data set WORK.S1_BASE.
+NOTE: There were 9 observations read from the data set WORK.S1_COMP.
+NOTE: At least one W.D format was too small for the number to be printed. The decimal may be 
+      shifted by the "BEST" format.
+NOTE: The PROCEDURE COMPARE printed page 1.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.01 seconds
+      
+
+99         %show_sysinfo(s1_id)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 2.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+100        
+101        /*------------------------------------------------------------------------------
+102          s2_rows
+103        ------------------------------------------------------------------------------*/
+104        data work.s2_base;
+105            infile datalines dsd missover;
+106            length a b c 8 s $ 8;
+107            input a b c s $;
+108        datalines;
+
+NOTE: The data set WORK.S2_BASE has 7 observations and 4 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+116        ;
+117        run;
+118        
+119        data work.s2_comp;
+120            infile datalines dsd missover;
+121            length a b c 8 s $ 8;
+122            input a b c s $;
+123        datalines;
+
+NOTE: The data set WORK.S2_COMP has 5 observations and 4 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+129        ;
+130        run;
+131        
+132        title "Scenario s2_rows: no ID, observations compared by position";
+133        proc compare base=work.s2_base compare=work.s2_comp method=absolute criterion=1e-7
+133      ! listall listequalvar;
+134        run;
+
+NOTE: There were 7 observations read from the data set WORK.S2_BASE.
+NOTE: There were 5 observations read from the data set WORK.S2_COMP.
+NOTE: At least one W.D format was too small for the number to be printed. The decimal may be 
+      shifted by the "BEST" format.
+NOTE: The PROCEDURE COMPARE printed page 3.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+135        %show_sysinfo(s2_rows)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 4.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+136        
+137        /*------------------------------------------------------------------------------
+138          s3_dup
+139        ------------------------------------------------------------------------------*/
+140        data work.s3_base;
+141            infile datalines dsd missover;
+142            length id v 8;
+143            input id v;
+144        datalines;
+
+NOTE: The data set WORK.S3_BASE has 6 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+151        ;
+152        run;
+153        
+154        data work.s3_comp;
+155            infile datalines dsd missover;
+156            length id v 8;
+157            input id v;
+158        datalines;
+
+NOTE: The data set WORK.S3_COMP has 6 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+165        ;
+166        run;
+167        
+168        title "Scenario s3_dup: ID values that occur more than once";
+169        proc compare base=work.s3_base compare=work.s3_comp method=absolute criterion=1e-7
+169      ! listall listequalvar;
+170            id id;
+171        run;
+
+WARNING: The data set WORK.S3_BASE contains a duplicate observation at observation number 2.
+NOTE: At observation 2 the current and previous ID values are:
+      id=1.
+NOTE: Further warnings for duplicate observations in this data set will not be printed.
+WARNING: The data set WORK.S3_COMP contains a duplicate observation at observation number 2.
+NOTE: At observation 2 the current and previous ID values are:
+      id=1.
+NOTE: Further warnings for duplicate observations in this data set will not be printed.
+NOTE: There were 6 observations read from the data set WORK.S3_BASE.
+NOTE: There were 6 observations read from the data set WORK.S3_COMP.
+NOTE: The PROCEDURE COMPARE printed page 5.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.00 seconds
+      
+
+172        %show_sysinfo(s3_dup)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 6.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+173        
+174        /*------------------------------------------------------------------------------
+175          s4_edge: CRITERION=0.25 (exact in binary)
+176        ------------------------------------------------------------------------------*/
+177        data work.s4_base;
+178            infile datalines dsd missover;
+179            length id x 8;
+180            input id x;
+181        datalines;
+
+NOTE: The data set WORK.S4_BASE has 7 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+189        ;
+190        run;
+191        
+192        data work.s4_comp;
+193            infile datalines dsd missover;
+194            length id x 8;
+195            input id x;
+196        datalines;
+
+NOTE: The data set WORK.S4_COMP has 7 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+204        ;
+205        run;
+206        
+207        title "Scenario s4_edge: ID id, METHOD=ABSOLUTE CRITERION=0.25";
+208        proc compare base=work.s4_base compare=work.s4_comp method=absolute criterion=0.25
+208      ! listall listequalvar;
+209            id id;
+210        run;
+
+NOTE: There were 7 observations read from the data set WORK.S4_BASE.
+NOTE: There were 7 observations read from the data set WORK.S4_COMP.
+NOTE: The PROCEDURE COMPARE printed page 7.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+211        %show_sysinfo(s4_edge)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 8.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+212        
+213        /*------------------------------------------------------------------------------
+214          s5_decimal
+215        ------------------------------------------------------------------------------*/
+216        data work.s5_base;
+217            infile datalines dsd missover;
+218            length id x 8;
+219            input id x;
+220        datalines;
+
+NOTE: The data set WORK.S5_BASE has 8 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+229        ;
+230        run;
+231        
+232        data work.s5_comp;
+233            infile datalines dsd missover;
+234            length id x 8;
+235            input id x;
+236        datalines;
+
+NOTE: The data set WORK.S5_COMP has 8 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+245        ;
+246        run;
+247        
+248        title "Scenario s5_decimal: ID id, METHOD=ABSOLUTE CRITERION=1E-7";
+249        proc compare base=work.s5_base compare=work.s5_comp method=absolute criterion=1e-7
+249      ! listall listequalvar;
+250            id id;
+251        run;
+
+NOTE: There were 8 observations read from the data set WORK.S5_BASE.
+NOTE: There were 8 observations read from the data set WORK.S5_COMP.
+NOTE: At least one W.D format was too small for the number to be printed. The decimal may be 
+      shifted by the "BEST" format.
+NOTE: The PROCEDURE COMPARE printed page 9.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+252        %show_sysinfo(s5_decimal)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 10.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+253        
+254        /*------------------------------------------------------------------------------
+255          s6_same
+256        ------------------------------------------------------------------------------*/
+257        data work.s6_comp;
+258            set work.s1_base;
+259        run;
+
+NOTE: There were 10 observations read from the data set WORK.S1_BASE.
+NOTE: The data set WORK.S6_COMP has 10 observations and 10 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+260        
+261        title "Scenario s6_same: ID id, a data set and a copy of it";
+262        proc compare base=work.s1_base compare=work.s6_comp method=absolute criterion=1e-7
+262      ! listall listequalvar;
+263            id id;
+264        run;
+
+NOTE: There were 10 observations read from the data set WORK.S1_BASE.
+NOTE: There were 10 observations read from the data set WORK.S6_COMP.
+NOTE: The PROCEDURE COMPARE printed page 11.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+265        %show_sysinfo(s6_same)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 12.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+266        
+267        /*------------------------------------------------------------------------------
+268          s7_within
+269        ------------------------------------------------------------------------------*/
+270        data work.s7_base;
+271            infile datalines dsd missover;
+272            length id x 8;
+273            input id x;
+274        datalines;
+
+NOTE: The data set WORK.S7_BASE has 4 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+279        ;
+280        run;
+281        
+282        data work.s7_comp;
+283            infile datalines dsd missover;
+284            length id x 8;
+285            input id x;
+286        datalines;
+
+NOTE: The data set WORK.S7_COMP has 4 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+291        ;
+292        run;
+293        
+294        title "Scenario s7_within: ID id, every difference inside the criterion";
+295        proc compare base=work.s7_base compare=work.s7_comp method=absolute criterion=1e-7
+295      ! listall listequalvar;
+296            id id;
+297        run;
+
+NOTE: There were 4 observations read from the data set WORK.S7_BASE.
+NOTE: There were 4 observations read from the data set WORK.S7_COMP.
+NOTE: At least one W.D format was too small for the number to be printed. The decimal may be 
+      shifted by the "BEST" format.
+NOTE: The PROCEDURE COMPARE printed page 13.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+298        %show_sysinfo(s7_within)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 14.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+299        
+300        /*------------------------------------------------------------------------------
+301          s8_text
+302        ------------------------------------------------------------------------------*/
+303        data work.s8_base;
+304            infile datalines dsd missover;
+305            length id n 8 s $ 8;
+306            input id s $ n;
+307        datalines;
+
+NOTE: The data set WORK.S8_BASE has 4 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+312        ;
+313        run;
+314        
+315        data work.s8_comp;
+316            infile datalines dsd missover;
+317            length id n 8 s $ 8;
+318            input id s $ n;
+319        datalines;
+
+NOTE: The data set WORK.S8_COMP has 4 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+324        ;
+325        run;
+326        
+327        title "Scenario s8_text: ID id, character values";
+328        proc compare base=work.s8_base compare=work.s8_comp method=absolute criterion=1e-7
+328      ! listall listequalvar;
+329            id id;
+330        run;
+
+NOTE: There were 4 observations read from the data set WORK.S8_BASE.
+NOTE: There were 4 observations read from the data set WORK.S8_COMP.
+NOTE: The PROCEDURE COMPARE printed page 15.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+331        %show_sysinfo(s8_text)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 16.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+332        
+333        /*------------------------------------------------------------------------------
+334          s9_trap: CRITERION=0.1 (not exact in binary)
+335        ------------------------------------------------------------------------------*/
+336        data work.s9_base;
+337            infile datalines dsd missover;
+338            length id x 8;
+339            input id x;
+340        datalines;
+
+NOTE: The data set WORK.S9_BASE has 3 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+344        ;
+345        run;
+346        
+347        data work.s9_comp;
+348            infile datalines dsd missover;
+349            length id x 8;
+350            input id x;
+351        datalines;
+
+NOTE: The data set WORK.S9_COMP has 3 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+355        ;
+356        run;
+357        
+358        title "Scenario s9_trap: ID id, METHOD=ABSOLUTE CRITERION=0.1";
+359        proc compare base=work.s9_base compare=work.s9_comp method=absolute criterion=0.1 listall
+359      !  listequalvar;
+360            id id;
+361        run;
+
+NOTE: There were 3 observations read from the data set WORK.S9_BASE.
+NOTE: There were 3 observations read from the data set WORK.S9_COMP.
+NOTE: The PROCEDURE COMPARE printed page 17.
+NOTE: PROCEDURE COMPARE used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+362        %show_sysinfo(s9_trap)
+
+NOTE: 1 lines were written to file PRINT.
+NOTE: The DATA step printed page 18.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           0.69 seconds
+      cpu time            0.53 seconds
+      

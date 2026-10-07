@@ -1,0 +1,5 @@
+name: Pairwise t-test example
+description: >
+  R Markdown report (PDF, Word, HTML) with a Table 1, cross-references, and a
+  child document repeated for each pairwise t-test.
+create_dir: true

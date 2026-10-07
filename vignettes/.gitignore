@@ -1,0 +1,8 @@
+pipeline_graph.png
+*.html
+*_files/
+*.rmarkdown
+*.xpt
+*.sas7bdat
+*.docx
+

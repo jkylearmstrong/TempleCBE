@@ -1,0 +1,23 @@
+# SAS 9.4 (TS1M8), SAS/STAT 15.3, X64_WIN+HOME; run 2026-09-17 13:31.
+# Numbers copied from inst/sas/list/example_85_7.lst, the listing of inst/sas/example_85_7.sas
+# (SAS/STAT Example 85.7: PROC PHREG on counting-process data, TIES=BRESLOW; 102 rows, 25 events).
+# quantity/term as in tests/testthat/helper-sas-reference.R; values as SAS printed them.
+# p of NPap is NA: SAS prints it as <.0001 (comparisons skip NA values).
+quantity,term,value
+estimate,Dose,0.06885
+std_error,Dose,0.0562
+chisq,Dose,1.501
+p,Dose,0.2205
+hazard_ratio,Dose,1.071
+estimate,NPap,0.11714
+std_error,NPap,0.02998
+chisq,NPap,15.2705
+p,NPap,NA
+hazard_ratio,NPap,1.124
+neg2loglik_null,model,166.793
+neg2loglik_model,model,143.269
+aic,model,147.269
+sbc,model,149.707
+lr_chisq,model,23.5243
+score_chisq,model,28.0498
+wald_chisq,model,21.1646

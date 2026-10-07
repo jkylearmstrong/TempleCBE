@@ -1,0 +1,69 @@
+                                            The SAS System      13:31 Thursday, September 17, 2026   1
+
+                                         The PHREG Procedure
+
+                                          Model Information
+
+                                 Data Set                 WORK.TUMOR1
+                                 Dependent Variable       T1         
+                                 Dependent Variable       T2         
+                                 Censoring Variable       Status     
+                                 Censoring Value(s)       0          
+                                 Ties Handling            BRESLOW    
+
+
+                               Number of Observations Read         102
+                               Number of Observations Used         102
+
+
+                          Summary of the Number of Event and Censored Values
+ 
+                                                                  Percent
+                                Total       Event    Censored    Censored
+
+                                  102          25          77       75.49
+
+
+                                          Convergence Status
+
+                            Convergence criterion (GCONV=1E-8) satisfied.          
+
+
+                                        Model Fit Statistics
+ 
+                                                Without           With
+                               Criterion     Covariates     Covariates
+
+                               -2 LOG L         166.793        143.269
+                               AIC              166.793        147.269
+                               SBC              166.793        149.707
+
+
+                               Testing Global Null Hypothesis: BETA=0
+ 
+                       Test                 Chi-Square       DF     Pr > ChiSq
+
+                       Likelihood Ratio        23.5243        2         <.0001
+                       Score                   28.0498        2         <.0001
+                       Wald                    21.1646        2         <.0001
+
+
+                                            The SAS System      13:31 Thursday, September 17, 2026   2
+
+                                         The PHREG Procedure
+
+                              Analysis of Maximum Likelihood Estimates
+ 
+                             Parameter      Standard                                  Hazard
+         Parameter    DF      Estimate         Error    Chi-Square    Pr > ChiSq       Ratio
+
+         Dose          1       0.06885       0.05620        1.5010        0.2205       1.071
+         NPap          1       0.11714       0.02998       15.2705        <.0001       1.124
+                     SAS/STAT Example 85.7: Counting Process Parameter Estimates                     3
+                                                                    13:31 Thursday, September 17, 2026
+
+                                                                          Prob      Hazard
+           Parameter    DF      Estimate        StdErr         ChiSq     ChiSq       Ratio
+
+             Dose        1       0.06885       0.05620        1.5010    0.2205       1.071
+             NPap        1       0.11714       0.02998       15.2705    <.0001       1.124

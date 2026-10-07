@@ -1,0 +1,47 @@
+# SAS 9.4 (TS1M8), SAS/STAT 15.3, X64_WIN+HOME; run 2026-09-29 21:33.
+# Numbers copied from inst/sas/list/benchmark_brier_lung_full.lst, the listing of inst/sas/benchmark_brier_lung_full.sas:
+# PROC PHREG (TIES=BRESLOW) and the IPCW Brier score / IBS of %cbe_brier_score (trunc 0.05, eval times
+# 100..500) on the full survival::lung cohort (227 of its 228 rows: ph.karno is missing in one). Brier scores
+# are per evaluation time (term); ibs is the integrated Brier score over 100..500. Values as SAS printed them.
+# Note: 63 of the 227 subjects are censored, 49 of them by day 500, so, unlike sas_brier_lung31.csv, the censoring
+# weights G(t) and G(T-) matter here. Before the G(T-) fix in %cbe_brier_score SAS printed 0.11248 0.19918 0.22247
+# 0.21612 0.18977 and IBS 0.15778 for this program (every event weight was 1); R and the fixed macro give the numbers below.
+quantity,term,value
+estimate,age,0.01235
+std_error,age,0.0094
+chisq,age,1.7259
+p,age,0.1889
+hazard_ratio,age,1.012
+estimate,sex,-0.49673
+std_error,sex,0.16772
+chisq,sex,8.7714
+p,sex,0.0031
+hazard_ratio,sex,0.609
+estimate,ph_karno,-0.01331
+std_error,ph_karno,0.00588
+chisq,ph_karno,5.126
+p,ph_karno,0.0236
+hazard_ratio,ph_karno,0.987
+neg2loglik_null,model,1489.396
+neg2loglik_model,model,1470.631
+aic,model,1476.631
+sbc,model,1485.931
+lr_chisq,model,18.7643
+score_chisq,model,18.9936
+wald_chisq,model,18.695
+n_events_by_t,100,31
+n_events_by_t,200,71
+n_events_by_t,300,100
+n_events_by_t,400,125
+n_events_by_t,500,137
+n_at_risk,100,195
+n_at_risk,200,144
+n_at_risk,300,91
+n_at_risk,400,57
+n_at_risk,500,41
+brier_score,100,0.11252
+brier_score,200,0.20093
+brier_score,300,0.22951
+brier_score,400,0.22692
+brier_score,500,0.20005
+ibs,ibs,0.16273

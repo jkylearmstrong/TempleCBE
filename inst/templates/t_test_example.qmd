@@ -1,0 +1,218 @@
+---
+title: "Example"
+geometry: margin=1in
+author:
+- name: J Kyle Armstrong, PhD
+  orcid: 0000-0002-4269-0121
+  email: j.kyle.armstrong@temple.edu
+  affiliation: Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology
+- name: Example Author 
+  email: example@temple.edu
+  affiliation: Lewis Katz School of Medicine at Temple University Center for Biostatistics & Epidemiology
+date: today
+date-format: medium
+fontsize: 10pt
+bibliography:
+  - bib.bib
+  - grateful-refs.bib
+format:
+  html:
+    smooth-scroll: true
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+    section-divs: true
+    toc-location: left
+    toc-expand: true
+  docx:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 6
+    number-sections: true
+  pdf:
+    toc: true
+    lot: true
+    lof: true
+    number-depth: 8
+    toc-depth: 4
+    standalone: true
+    number-sections: true
+    template-partials:
+      - title.tex
+    include-in-header:
+      text: |
+        \usepackage[noblocks]{authblk}
+        \renewcommand*{\Authsep}{, }
+        \renewcommand*{\Authand}{, }
+        \renewcommand*{\Authands}{, }
+        \renewcommand\Affilfont{\small}
+        \usepackage{lscape}
+        \newcommand{\blandscape}{\begin{landscape}}
+        \newcommand{\elandscape}{\end{landscape}}
+---
+
+
+```{r setup, echo= FALSE, message=FALSE}
+knitr::opts_chunk$set(include = TRUE) 
+knitr::opts_chunk$set(echo = FALSE) 
+knitr::opts_chunk$set(message = FALSE) 
+knitr::opts_chunk$set(warning = FALSE) 
+```
+
+```{r}
+library('ggplot2')
+library('purrr')
+library('dplyr')
+library('gtsummary')
+library('gt')
+```
+
+```{r}
+# Self-contained synthetic data: this example ships with the public package
+# and must not depend on any private data source.
+set.seed(42)
+n <- 60
+input_parameters_raw <- tibble::tibble(
+  subject_id = sprintf("SUBJ-%03d", seq_len(n)),
+  treatment_group = sample(c("Control", "Treatment"), n, replace = TRUE),
+  site = sample(c("Hospital A", "Hospital B", "Clinic C"), n, replace = TRUE),
+  baseline_sbp = round(rnorm(n, mean = 130, sd = 10), 1),
+  followup_sbp = round(rnorm(n, mean = 122, sd = 12), 1),
+  biomarker_a = round(rgamma(n, shape = 4, rate = 1), 2),
+  biomarker_b = round(biomarker_a + rgamma(n, shape = 2, rate = 1), 2),
+  duration_days = round(rgamma(n, shape = 6, rate = 0.8), 2),
+  cholesterol_mg_dl = round(rgamma(n, shape = 5, rate = 1.2), 2),
+  adverse_event_1 = sample(c(0, 1), n, replace = TRUE, prob = c(0.7, 0.3)),
+  adverse_event_2 = sample(c(0, 1), n, replace = TRUE, prob = c(0.85, 0.15)),
+  adverse_event_3 = sample(c(0, 1), n, replace = TRUE, prob = c(0.6, 0.4))
+)
+```
+
+\pagebreak
+
+# Quarto Example 
+
+This is an example of a Quarto document, you will need to install Quarto from <https://quarto.org/>. This package comes with several common R packages, it is also recommended to install:  
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+
+install.packages(c('gt', # general table formatting
+                   'gtsummary', # for univariate and regression tables
+                   'here', # where you are working (better when working with git)
+                   'knitr', # r package for working with documents 
+                   'quarto', # R package for working with quarto 
+                   'rmarkdown', # creating documents
+                   'tidymodels', # modern interface for fitting models 
+                   'tidyverse', # modern R language 
+                   'tinytex', # needed for pdf documents 
+                   'devtools' # package creation development tools
+                   ))
+
+
+remotes::install_github("Pakillo/grateful") # for package citation
+```
+
+To create pdf documents it is also recommended to run
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+
+tinytex::install_tinytex()
+```
+
+```{r}
+#| label: tbl-knitr-example
+#| tbl-cap: first 5 records and 5 columns of the data 
+
+input_parameters_raw %>%
+  head(n = 5) %>%
+  select(subject_id, treatment_group, site, baseline_sbp, followup_sbp) %>%
+  knitr::kable()
+```
+
+# Table One
+
+```{r}
+#| label: tbl-table1
+#| tbl-cap: "An example of a Table 1"
+
+input_parameters_raw %>%
+  select(-subject_id, -adverse_event_1, -adverse_event_2, -adverse_event_3) %>%
+  tbl_summary(by = "treatment_group",
+              type = all_continuous() ~ "continuous2",
+              statistic = list(
+                all_continuous() ~ c("{mean} ({sd})","{median} ({p25}, {p75})","{median} ({min} - {max})")
+                )
+  ) %>%
+  add_p(pvalue_fun = ~ style_pvalue(.x, digits = 2)) %>%
+  add_overall(last = TRUE, col_label = "**Overall**") %>%
+  separate_p_footnotes() %>% 
+  as_gt() %>%
+  gt::as_latex() # for pdf documents 
+```
+
+
+# Cross Refrence 
+You can cross-reference tables, listings, figures and page numbers 
+
+You can use the `label`s you created to reference the tables like @tbl-table1 or items in the `bib.bib` file such as @Al-Helali2021-as. 
+
+You can even reference later items such as @fig-2 or sections like @sec-software or even the page number that something happens on like page \pageref{fig-3}.
+
+
+# Pairwise t-tests
+
+Suppose we wanted to visualize all pairwise t-tests (we will only do first four but you get the idea). There are other ways to do this but this is a good enough example of repeated analysis. 
+
+
+```{r}
+features_numeric <- input_parameters_raw %>%
+  select(-subject_id) %>%
+  select(where(is.numeric)) %>%
+  colnames()
+
+
+pairs <- combn(features_numeric,2) |> 
+  t() %>%
+  as_tibble() %>%
+  mutate(pair_number = row_number()) 
+
+pair_number_list <- pairs %>% filter(pair_number <= 4) %>% pull(pair_number)
+```
+
+
+```{r}
+#| label: t_test_child
+#| results: 'asis'
+
+if(!interactive()){
+  src <- lapply(pair_number_list,
+                function(pair_number){knitr::knit_expand('t_test_child.qmd')})
+  res = knitr::knit_child(text = unlist(src), quiet = TRUE)
+  cat(res, sep = '\n')
+}
+```
+
+
+\pagebreak
+# Software {#sec-software}
+
+```{r}
+grateful::cite_packages(output = "paragraph",
+                        out.dir = getwd(),
+                        omit = NULL,
+                        include.RStudio = F,
+                        passive.voice = T)
+```
+
+
+# Refrences 

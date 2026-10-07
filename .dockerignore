@@ -1,0 +1,11 @@
+.git
+.github
+.Rproj.user
+*.Rproj
+.Rhistory
+.RData
+docs
+_freeze
+renv/library
+renv/staging
+renv/sandbox

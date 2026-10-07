@@ -1,0 +1,104 @@
+// Temple CBE Shared pkgdown styling
+$temple-cherry: #a41e35;
+$temple-cherry-dark: #82172a;
+$temple-night-owl: #005a70;
+$temple-book-nook: #fff2e8;
+$temple-clear-skies: #deefec;
+
+// Light Mode Navbar - Rich Temple Cherry Banner
+.navbar {
+  background-color: $temple-cherry !important;
+  border-bottom: 2px solid $temple-cherry-dark;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .navbar-brand,
+  .nav-link,
+  .btn,
+  small.nav-text {
+    color: #ffffff !important;
+  }
+
+  .nav-link:hover,
+  .nav-link:focus {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.4);
+    .navbar-toggler-icon {
+      filter: invert(1);
+    }
+  }
+
+  .dropdown-menu {
+    border-top: 3px solid $temple-cherry;
+  }
+}
+
+// Dark Mode Overrides
+[data-bs-theme="dark"] {
+  .navbar {
+    background-color: #1a1d20 !important;
+    border-bottom: 2px solid $temple-cherry;
+
+    .navbar-brand {
+      color: #ff7588 !important;
+    }
+
+    .nav-link,
+    small.nav-text {
+      color: #e2e8f0 !important;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus {
+      color: #ffffff !important;
+    }
+
+    .dropdown-menu {
+      border-top: 3px solid $temple-cherry;
+      background-color: #242830;
+      .dropdown-item {
+        color: #e2e8f0;
+        &:hover, &:focus {
+          background-color: #2d333b;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .page-header h1 {
+    color: #ff7588 !important;
+  }
+
+  code {
+    background-color: #2b2b2b;
+    color: #ff99aa;
+  }
+}
+
+// Typography & Headers
+.page-header h1 {
+  font-weight: 700;
+  color: $temple-cherry;
+}
+
+code {
+  background-color: $temple-book-nook;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+// Package Logo Constraints & Sizing
+.pkgdown-header img,
+img[alt*="logo" i],
+img[src*="logo.png" i],
+.contents img[src*="logo.png" i],
+.page-header img {
+  height: 138px !important;
+  max-height: 138px !important;
+  width: auto !important;
+  max-width: 138px !important;
+  object-fit: contain;
+}

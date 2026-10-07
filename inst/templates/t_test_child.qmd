@@ -1,0 +1,52 @@
+
+
+```{r}
+#class({{pair_number}})
+```
+
+```{r}
+current_pair <- pairs %>%
+   filter(pair_number == {{pair_number}})
+```
+
+```{r}
+current_vars <- pairs %>%   
+  filter(pair_number == {{pair_number}}) %>%
+  select(V1, V2) %>%
+  colnames()
+```
+
+```{r}
+V1 <- pairs %>%
+   filter(pair_number == {{pair_number}}) %>%
+   pull(V1) 
+ 
+V2 <- pairs %>%
+  filter(pair_number == {{pair_number}}) %>%
+  pull(V2) 
+```
+
+```{r}
+V1_V2 <- paste0(V1, " and ", V2)
+my_title <- paste0("Pairwise t-test between ",V1_V2)
+ 
+dt <- input_parameters_raw %>% 
+   select(all_of(c(V1, V2))) %>%
+   tidyr::pivot_longer(everything()) 
+
+t_test_result <- t.test(value ~ name, data = dt) %>%
+   broom::tidy()
+```
+\pagebreak
+## between `r V1` and `r V2`
+```{r, fig.cap = my_title}
+#| label: fig-{{pair_number}}
+
+dt %>%
+   ggplot(aes(x=name, y=value, fill= name)) +
+   geom_boxplot() +
+   labs(
+     title = my_title,
+     caption = paste0("t-test p-value = ", round(t_test_result$p.value,2))
+     )
+```

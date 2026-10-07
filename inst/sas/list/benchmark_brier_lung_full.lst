@@ -1,0 +1,99 @@
+                                            The SAS System       22:11 Tuesday, September 29, 2026   1
+
+                                         The PHREG Procedure
+
+                                          Model Information
+
+                                  Data Set                 WORK.LUNG
+                                  Dependent Variable       time     
+                                  Censoring Variable       event    
+                                  Censoring Value(s)       0        
+                                  Ties Handling            BRESLOW  
+
+
+                               Number of Observations Read         227
+                               Number of Observations Used         227
+
+
+                          Summary of the Number of Event and Censored Values
+ 
+                                                                  Percent
+                                Total       Event    Censored    Censored
+
+                                  227         164          63       27.75
+
+
+                                          Convergence Status
+
+                            Convergence criterion (GCONV=1E-8) satisfied.          
+
+
+                                        Model Fit Statistics
+ 
+                                                Without           With
+                               Criterion     Covariates     Covariates
+
+                               -2 LOG L        1489.396       1470.631
+                               AIC             1489.396       1476.631
+                               SBC             1489.396       1485.931
+
+
+                               Testing Global Null Hypothesis: BETA=0
+ 
+                       Test                 Chi-Square       DF     Pr > ChiSq
+
+                       Likelihood Ratio        18.7643        3         0.0003
+                       Score                   18.9936        3         0.0003
+                       Wald                    18.6950        3         0.0003
+
+
+                                            The SAS System       22:11 Tuesday, September 29, 2026   2
+
+                                         The PHREG Procedure
+
+                              Analysis of Maximum Likelihood Estimates
+ 
+                   Parameter     Standard                               Hazard     95% Hazard Ratio
+ Parameter   DF     Estimate        Error   Chi-Square   Pr > ChiSq      Ratio    Confidence Limits
+
+ age          1      0.01235      0.00940       1.7259       0.1889      1.012      0.994      1.031
+ sex          1     -0.49673      0.16772       8.7714       0.0031      0.609      0.438      0.845
+ ph_karno     1     -0.01331      0.00588       5.1260       0.0236      0.987      0.975      0.998
+
+
+                         Supremum Test for Proportionals Hazards Assumption
+ 
+                                Maximum
+                               Absolute                                      Pr > 
+                   Variable       Value    Replications          Seed    MaxAbsVal
+
+                   age           1.1294            1000           123       0.1390
+                   sex           0.9774            1000           123       0.2470
+                   ph_karno      1.8004            1000           123       <.0001
+                  TempleCBE: Cox Proportional Hazards Model Estimates (TIES=BRESLOW)                 3
+                                                                     22:11 Tuesday, September 29, 2026
+
+                                std_                             hazard_    hr_lower_    hr_upper_
+    Estimate    term           error    statistic    p_value       ratio       95           95
+
+      0.0124    age           0.0094        1.73     0.1889        1.012       0.994        1.031 
+     -0.4967    sex           0.1677        8.77     0.0031        0.609       0.438        0.845 
+     -0.0133    ph_karno      0.0059        5.13     0.0236        0.987       0.975        0.998 
+                 TempleCBE: Time-Dependent Brier Score Evaluation (IPCW Graf Method)                 4
+                                                                     22:11 Tuesday, September 29, 2026
+
+                          eval_              n_events_    n_at_      brier_
+                           time    n_eval       by_t       risk       score
+
+                           100       227         31        195      0.11252
+                           200       227         71        144      0.20093
+                           300       227        100         91      0.22951
+                           400       227        125         57      0.22692
+                           500       227        137         41      0.20005
+                               TempleCBE: Integrated Brier Score (IBS)                               5
+                                                                     22:11 Tuesday, September 29, 2026
+
+                                     eval_       eval_
+                                   time_min    time_max         ibs
+
+                                      100         500       0.16273

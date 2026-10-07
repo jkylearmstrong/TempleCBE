@@ -1,0 +1,90 @@
+meta:
+  name:
+    full: Center for Biostatistics & Epidemiology
+    short: CBE
+  description: >
+    Center for Biostatistics & Epidemiology,
+    Department of Biomedical Education and Data Science,
+    Lewis Katz School of Medicine at Temple University
+  link: https://medicine.temple.edu/research/research-centers/center-biostatistics-epidemiology
+
+# Palette and fonts follow Temple's current brand as published by the
+# College of Liberal Arts: https://liberalarts.temple.edu/marcom/logos-and-brand
+color:
+  palette:
+    # Primary
+    cherry:           "#a41e35"  # Temple Cherry
+    white:            "#ffffff"
+    black:            "#000000"
+    # Secondary
+    clear-skies:      "#deefec"
+    book-nook:        "#fff2e8"
+    # Accents: formal
+    academic-gold:    "#ad7422"
+    diamond-acres:    "#9e9597"
+    founders-garden:  "#772762"
+    night-owl:        "#005a70"
+    # Accents: casual
+    owls-eye:         "#f3aa00"
+    conwell-blue:     "#12d0ff"
+    upward-momentum:  "#1fceb6"
+    cherry-blossom:   "#fe649f"
+
+  # Semantic role assignments
+  foreground:   black
+  background:   white
+  primary:      cherry
+  secondary:    night-owl
+  tertiary:     academic-gold
+  success:      upward-momentum
+  info:         conwell-blue
+  warning:      owls-eye
+  danger:       cherry-blossom
+  light:        book-nook
+  dark:         black
+
+typography:
+  # Fonts used on the CLA brand site: Faustina (body), Roboto (headings).
+  # The brand does not name a monospace face.
+  fonts:
+    - family: "Faustina"
+      source: google
+    - family: "Roboto"
+      source: google
+    - family: "JetBrains Mono"
+      source: google
+
+  base:
+    family: "Faustina"
+    size: 1rem
+    weight: 400
+    line-height: 1.6
+
+  headings:
+    family: "Roboto"
+    weight: 700
+    color: cherry
+    line-height: 1.2
+
+  monospace:
+    family: "JetBrains Mono"
+    size: 0.9em
+
+  monospace-inline:
+    family: "JetBrains Mono"
+    background-color: book-nook
+
+  # Conventional link blue rather than cherry: the brand guide sets no link
+  # color, and red links read as errors, especially in print.
+  link:
+    color: "#0563c1"
+    decoration: underline
+
+  # Code block background uses Book Nook, the warm secondary color
+  monospace-block:
+    family: "JetBrains Mono"
+    background-color: book-nook
+    color: black
+
+logo:
+  medium: "Temple_T_logo.png"

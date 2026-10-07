@@ -1,0 +1,716 @@
+                       Scenario s1_id: ID id, METHOD=ABSOLUTE CRITERION=1E-7
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S1_BASE with WORK.S1_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S1_BASE  05OCT26:15:21:30  05OCT26:15:21:30    10      10
+                   WORK.S1_COMP  05OCT26:15:21:30  05OCT26:15:21:30    10       9
+
+
+                                         Variables Summary
+
+                  Number of Variables in Common: 9.
+                  Number of Variables in WORK.S1_BASE but not in WORK.S1_COMP: 1.
+                  Number of Variables in WORK.S1_COMP but not in WORK.S1_BASE: 1.
+                  Number of Variables with Conflicting Types: 1.
+                  Number of Variables with Differing Attributes: 1.
+                  Number of ID Variables: 1.
+
+
+                    Listing of Variables in WORK.S1_BASE but not in WORK.S1_COMP
+
+                                      Variable   Type  Length
+
+                                      only_base  Num        8
+
+
+                    Listing of Variables in WORK.S1_COMP but not in WORK.S1_BASE
+
+                                      Variable   Type  Length
+
+                                      only_comp  Char       8
+
+
+                         Listing of Common Variables with Conflicting Types
+
+                                Variable  Dataset       Type  Length
+
+                                conf      WORK.S1_BASE  Num        8
+                                          WORK.S1_COMP  Char       8
+
+
+                       Listing of Common Variables with Differing Attributes
+
+                                Variable  Dataset       Type  Length
+
+                                chr_len   WORK.S1_BASE  Char       8
+                                          WORK.S1_COMP  Char      12
+
+                                Comparison Results for Observations
+
+                  Observation 7 in WORK.S1_BASE not found in WORK.S1_COMP: id=7.
+
+                  Observation 10 in WORK.S1_BASE not found in WORK.S1_COMP: id=10.
+
+                  Observation 9 in WORK.S1_COMP not found in WORK.S1_BASE: id=11.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       2        2  id=2
+                              Last  Unequal       8        7  id=8
+                              Last  Match         9        8  id=9
+                              Last  Obs          10        .  id=10
+                                                  .        9  id=11
+
+                 Number of Observations in Common: 8.
+                 Number of Observations in WORK.S1_BASE but not in WORK.S1_COMP: 2.
+                 Number of Observations in WORK.S1_COMP but not in WORK.S1_BASE: 1.
+                 Total Number of Observations Read from WORK.S1_BASE: 10.
+                 Total Number of Observations Read from WORK.S1_COMP: 9.
+
+                 Number of Observations with Some Compared Variables Unequal: 6.
+                 Number of Observations with All Compared Variables Equal: 2.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 3.
+                  Number of Variables Compared with Some Observations Unequal: 4.
+                  Number of Variables with Missing Value Differences: 2.
+                  Total Number of Values which Compare Unequal: 9.
+                  Total Number of Values not EXACTLY Equal: 12.
+                  Maximum Difference: 2.5.
+
+
+                                  Variables with All Equal Values
+
+                               Variable    Type  Len1 Len2   MaxDif
+
+                               same_num    NUM      8    8        0
+                               within_tol  NUM      8    8     5E-8
+                               chr_len     CHAR     8   12
+
+                                   Variables with Unequal Values
+
+                       Variable    Type  Len1 Len2  Ndif   MaxDif  MissDif
+
+                       over_tol    NUM      8    8     3    2.500        0
+                       miss_num    NUM      8    8     2        0        2
+                       chr_diff    CHAR     8    8     2                 0
+                       chr_blank   CHAR     8    8     2                 2
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||   over_tol   over_tol      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            3  ||     7.0000     7.0010   0.001000     0.0143
+                            5  ||     9.0000    11.5000     2.5000    27.7778
+                            8  ||    12.0000    12.0000       1E-6  8.3333E-6
+                     _________________________________________________________
+
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||   miss_num   miss_num      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            4  ||          .     4.4000          .          .
+                            6  ||     6.6000          .          .          .
+                     _________________________________________________________
+
+
+                     _________________________________________________________
+                               ||  Base Value           Compare Value
+                           id  ||  chr_diff              chr_diff
+                      _______  ||  ________              ________
+                               ||
+                            2  ||  abc                   abd
+                            6  ||  pqr                   Pqr
+                     _________________________________________________________
+
+
+                     _________________________________________________________
+                               ||  Base Value           Compare Value
+                           id  ||  chr_blank             chr_blank
+                      _______  ||  ________              ________
+                               ||
+                            5  ||                        x
+                            8  ||  y
+                     _________________________________________________________
+                       Scenario s1_id: ID id, METHOD=ABSOLUTE CRITERION=1E-7
+SYSINFO s1_id 15568
+                     Scenario s2_rows: no ID, observations compared by position
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S2_BASE with WORK.S2_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S2_BASE  05OCT26:15:21:30  05OCT26:15:21:30     4       7
+                   WORK.S2_COMP  05OCT26:15:21:30  05OCT26:15:21:30     4       5
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 4.
+
+                                Comparison Results for Observations
+
+                  Observation 6 in WORK.S2_BASE not found in WORK.S2_COMP.
+
+                  Observation 7 in WORK.S2_BASE not found in WORK.S2_COMP.
+
+
+                                        Observation Summary
+
+                                   Observation      Base  Compare
+
+                                   First Obs           1        1
+                                   First Unequal       2        2
+                                   Last  Unequal       5        5
+                                   Last  Match         5        5
+                                   Last  Obs           7        .
+
+                 Number of Observations in Common: 5.
+                 Number of Observations in WORK.S2_BASE but not in WORK.S2_COMP: 2.
+                 Total Number of Observations Read from WORK.S2_BASE: 7.
+                 Total Number of Observations Read from WORK.S2_COMP: 5.
+
+                 Number of Observations with Some Compared Variables Unequal: 3.
+                 Number of Observations with All Compared Variables Equal: 2.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 1.
+                  Number of Variables Compared with Some Observations Unequal: 3.
+                  Number of Variables with Missing Value Differences: 1.
+                  Total Number of Values which Compare Unequal: 4.
+                  Maximum Difference: 1.5.
+
+
+                                  Variables with All Equal Values
+
+                                   Variable  Type  Len   MaxDif
+
+                                   a         NUM     8        0
+
+                                   Variables with Unequal Values
+
+                           Variable  Type  Len  Ndif   MaxDif  MissDif
+
+                           b         NUM     8     1    1.500        0
+                           c         NUM     8     2     2E-7        1
+                           s         CHAR    8     1                 0
+
+
+
+                               Value Comparison Results for Variables
+
+                     __________________________________________________________
+                                ||       Base    Compare
+                            Obs ||          b          b      Diff.     % Diff
+                      ________  ||  _________  _________  _________  _________
+                                ||
+                             2  ||    20.0000    21.5000     1.5000     7.5000
+                     __________________________________________________________
+
+
+                     __________________________________________________________
+                                ||       Base    Compare
+                            Obs ||          c          c      Diff.     % Diff
+                      ________  ||  _________  _________  _________  _________
+                                ||
+                             3  ||          .   300.0000          .          .
+                             5  ||   500.0000   500.0000       2E-7       4E-8
+                     __________________________________________________________
+
+
+                     __________________________________________________________
+                                ||  Base Value           Compare Value
+                            Obs ||  s                     s
+                      ________  ||  ________              ________
+                                ||
+                             3  ||  r                     x
+                     __________________________________________________________
+                     Scenario s2_rows: no ID, observations compared by position
+SYSINFO s2_rows 4160
+                        Scenario s3_dup: ID values that occur more than once
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S3_BASE with WORK.S3_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S3_BASE  05OCT26:15:21:30  05OCT26:15:21:30     2       6
+                   WORK.S3_COMP  05OCT26:15:21:30  05OCT26:15:21:30     2       6
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 2.
+                               Number of ID Variables: 1.
+                  WARNING: The data set WORK.S3_BASE contains a duplicate observation at
+                           observation number 2.
+                  NOTE: At observation 2 the current and previous ID values are:
+                        id=1.
+                  NOTE: Further warnings for duplicate observations in this data set will not be
+                        printed.
+                  WARNING: The data set WORK.S3_COMP contains a duplicate observation at
+                           observation number 2.
+                  NOTE: At observation 2 the current and previous ID values are:
+                        id=1.
+                  NOTE: Further warnings for duplicate observations in this data set will not be
+                        printed.
+
+                                Comparison Results for Observations
+
+                  Observation 3 in WORK.S3_COMP not found in WORK.S3_BASE: id=1.
+
+                  Observation 6 in WORK.S3_BASE not found in WORK.S3_COMP: id=3.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       5        6  id=3
+                              Last  Unequal       5        6  id=3
+                              Last  Match         5        6  id=3
+                              Last  Obs           6        .  id=3
+
+                 Number of Observations in Common: 5.
+                 Number of Observations in WORK.S3_BASE but not in WORK.S3_COMP: 1.
+                 Number of Observations in WORK.S3_COMP but not in WORK.S3_BASE: 1.
+                 Number of Duplicate Observations found in WORK.S3_BASE: 3.
+                 Number of Duplicate Observations found in WORK.S3_COMP: 3.
+                 Total Number of Observations Read from WORK.S3_BASE: 6.
+                 Total Number of Observations Read from WORK.S3_COMP: 6.
+
+                 Number of Observations with Some Compared Variables Unequal: 1.
+                 Number of Observations with All Compared Variables Equal: 4.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 0.
+                  Number of Variables Compared with Some Observations Unequal: 1.
+                  Total Number of Values which Compare Unequal: 1.
+                  Maximum Difference: 68.
+
+
+                             All Variables Compared have Unequal Values
+
+                                Variable  Type  Len  Ndif   MaxDif
+
+                                v         NUM     8     1   68.000
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||          v          v      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            3  ||    31.0000    99.0000    68.0000   219.3548
+                     _________________________________________________________
+                        Scenario s3_dup: ID values that occur more than once
+SYSINFO s3_dup 4288
+                      Scenario s4_edge: ID id, METHOD=ABSOLUTE CRITERION=0.25
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S4_BASE with WORK.S4_COMP
+                                 (Method=ABSOLUTE, Criterion=0.25)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S4_BASE  05OCT26:15:21:30  05OCT26:15:21:30     2       7
+                   WORK.S4_COMP  05OCT26:15:21:30  05OCT26:15:21:30     2       7
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 2.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       2        2  id=2
+                              Last  Unequal       7        7  id=7
+                              Last  Obs           7        7  id=7
+
+                  Number of Observations in Common: 7.
+                  Total Number of Observations Read from WORK.S4_BASE: 7.
+                  Total Number of Observations Read from WORK.S4_COMP: 7.
+
+                  Number of Observations with Some Compared Variables Unequal: 4.
+                  Number of Observations with All Compared Variables Equal: 3.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 0.
+                  Number of Variables Compared with Some Observations Unequal: 1.
+                  Total Number of Values which Compare Unequal: 4.
+                  Total Number of Values not EXACTLY Equal: 7.
+                  Maximum Difference: 0.5.
+
+
+                             All Variables Compared have Unequal Values
+
+                                Variable  Type  Len  Ndif   MaxDif
+
+                                x         NUM     8     4    0.500
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||          x          x      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            2  ||     1.0000     1.2500     0.2500    25.0000
+                            5  ||     1.0000     1.5000     0.5000    50.0000
+                            6  ||     1.0000     0.7500    -0.2500   -25.0000
+                            7  ||     1.0000     1.2500     0.2500    25.0000
+                     _________________________________________________________
+                      Scenario s4_edge: ID id, METHOD=ABSOLUTE CRITERION=0.25
+SYSINFO s4_edge 4096
+                     Scenario s5_decimal: ID id, METHOD=ABSOLUTE CRITERION=1E-7
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S5_BASE with WORK.S5_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S5_BASE  05OCT26:15:21:30  05OCT26:15:21:30     2       8
+                   WORK.S5_COMP  05OCT26:15:21:30  05OCT26:15:21:30     2       8
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 2.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       2        2  id=2
+                              Last  Unequal       8        8  id=8
+                              Last  Obs           8        8  id=8
+
+                  Number of Observations in Common: 8.
+                  Total Number of Observations Read from WORK.S5_BASE: 8.
+                  Total Number of Observations Read from WORK.S5_COMP: 8.
+
+                  Number of Observations with Some Compared Variables Unequal: 4.
+                  Number of Observations with All Compared Variables Equal: 4.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 0.
+                  Number of Variables Compared with Some Observations Unequal: 1.
+                  Total Number of Values which Compare Unequal: 4.
+                  Total Number of Values not EXACTLY Equal: 8.
+                  Maximum Difference: 1.1E-07.
+
+
+                             All Variables Compared have Unequal Values
+
+                                Variable  Type  Len  Ndif   MaxDif
+
+                                x         NUM     8     4   1.1E-7
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||          x          x      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            2  ||     1.0000     1.0000     1.1E-7  0.0000110
+                            4  ||   100.0000   100.0000     1.1E-7     1.1E-7
+                            6  ||   0.001000   0.001000     1.1E-7     0.0110
+                            8  ||     1.0000     1.0000    -1.1E-7  -0.000011
+                     _________________________________________________________
+                     Scenario s5_decimal: ID id, METHOD=ABSOLUTE CRITERION=1E-7
+SYSINFO s5_decimal 4096
+                        Scenario s6_same: ID id, a data set and a copy of it
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S1_BASE with WORK.S6_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S1_BASE  05OCT26:15:21:30  05OCT26:15:21:30    10      10
+                   WORK.S6_COMP  05OCT26:15:21:31  05OCT26:15:21:31    10      10
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 10.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              Last  Obs          10       10  id=10
+
+                  Number of Observations in Common: 10.
+                  Total Number of Observations Read from WORK.S1_BASE: 10.
+                  Total Number of Observations Read from WORK.S6_COMP: 10.
+
+                  Number of Observations with Some Compared Variables Unequal: 0.
+                  Number of Observations with All Compared Variables Equal: 10.
+
+                  NOTE: No unequal values were found. All values compared are exactly equal.
+
+                                  Variables with All Equal Values
+
+                                  Variable    Type  Len   MaxDif
+
+                                  same_num    NUM     8        0
+                                  within_tol  NUM     8        0
+                                  over_tol    NUM     8        0
+                                  miss_num    NUM     8        0
+                                  conf        NUM     8        0
+                                  only_base   NUM     8        0
+                                  chr_diff    CHAR    8
+                                  chr_blank   CHAR    8
+                                  chr_len     CHAR    8
+
+                        Scenario s6_same: ID id, a data set and a copy of it
+SYSINFO s6_same 0
+                  Scenario s7_within: ID id, every difference inside the criterion
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S7_BASE with WORK.S7_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S7_BASE  05OCT26:15:21:31  05OCT26:15:21:31     2       4
+                   WORK.S7_COMP  05OCT26:15:21:31  05OCT26:15:21:31     2       4
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 2.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              Last  Obs           4        4  id=4
+
+                  Number of Observations in Common: 4.
+                  Total Number of Observations Read from WORK.S7_BASE: 4.
+                  Total Number of Observations Read from WORK.S7_COMP: 4.
+
+                  Number of Observations with Some Compared Variables Unequal: 0.
+                  Number of Observations with All Compared Variables Equal: 4.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 1.
+                  Number of Variables Compared with Some Observations Unequal: 0.
+                  Total Number of Values which Compare Unequal: 0.
+                  Total Number of Values not EXACTLY Equal: 4.
+                  Maximum Difference: 5.0E-08.
+
+
+                                  Variables with All Equal Values
+
+                                   Variable  Type  Len   MaxDif
+
+                                   x         NUM     8     5E-8
+
+                  Scenario s7_within: ID id, every difference inside the criterion
+SYSINFO s7_within 0
+                             Scenario s8_text: ID id, character values
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S8_BASE with WORK.S8_COMP
+                               (Method=ABSOLUTE, Criterion=0.0000001)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S8_BASE  05OCT26:15:21:31  05OCT26:15:21:31     3       4
+                   WORK.S8_COMP  05OCT26:15:21:31  05OCT26:15:21:31     3       4
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 3.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       3        3  id=3
+                              Last  Unequal       3        3  id=3
+                              Last  Obs           4        4  id=4
+
+                  Number of Observations in Common: 4.
+                  Total Number of Observations Read from WORK.S8_BASE: 4.
+                  Total Number of Observations Read from WORK.S8_COMP: 4.
+
+                  Number of Observations with Some Compared Variables Unequal: 1.
+                  Number of Observations with All Compared Variables Equal: 3.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 1.
+                  Number of Variables Compared with Some Observations Unequal: 1.
+                  Total Number of Values which Compare Unequal: 1.
+                  Maximum Difference: 0.
+
+
+                                  Variables with All Equal Values
+
+                                   Variable  Type  Len   MaxDif
+
+                                   n         NUM     8        0
+
+                                   Variables with Unequal Values
+
+                                Variable  Type  Len  Ndif   MaxDif
+
+                                s         CHAR    8     1
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||  Base Value           Compare Value
+                           id  ||  s                     s
+                      _______  ||  ________              ________
+                               ||
+                            3  ||  ghi                   GHI
+                     _________________________________________________________
+                             Scenario s8_text: ID id, character values
+SYSINFO s8_text 4096
+                       Scenario s9_trap: ID id, METHOD=ABSOLUTE CRITERION=0.1
+
+                                       The COMPARE Procedure
+                            Comparison of WORK.S9_BASE with WORK.S9_COMP
+                                  (Method=ABSOLUTE, Criterion=0.1)
+
+                                         Data Set Summary
+
+                   Dataset                Created          Modified  NVar    NObs
+
+                   WORK.S9_BASE  05OCT26:15:21:31  05OCT26:15:21:31     2       3
+                   WORK.S9_COMP  05OCT26:15:21:31  05OCT26:15:21:31     2       3
+
+
+                                         Variables Summary
+
+                               Number of Variables in Common: 2.
+                               Number of ID Variables: 1.
+
+
+                                        Observation Summary
+
+                              Observation      Base  Compare  ID
+
+                              First Obs           1        1  id=1
+                              First Unequal       1        1  id=1
+                              Last  Unequal       1        1  id=1
+                              Last  Obs           3        3  id=3
+
+                  Number of Observations in Common: 3.
+                  Total Number of Observations Read from WORK.S9_BASE: 3.
+                  Total Number of Observations Read from WORK.S9_COMP: 3.
+
+                  Number of Observations with Some Compared Variables Unequal: 1.
+                  Number of Observations with All Compared Variables Equal: 2.
+
+
+                                     Values Comparison Summary
+
+                  Number of Variables Compared with All Observations Equal: 0.
+                  Number of Variables Compared with Some Observations Unequal: 1.
+                  Total Number of Values which Compare Unequal: 1.
+                  Total Number of Values not EXACTLY Equal: 3.
+                  Maximum Difference: 0.1.
+
+
+                             All Variables Compared have Unequal Values
+
+                                Variable  Type  Len  Ndif   MaxDif
+
+                                x         NUM     8     1    0.100
+
+
+
+                               Value Comparison Results for Variables
+
+                     _________________________________________________________
+                               ||       Base    Compare
+                           id  ||          x          x      Diff.     % Diff
+                      _______  ||  _________  _________  _________  _________
+                               ||
+                            1  ||     1.0000     1.1000     0.1000    10.0000
+                     _________________________________________________________
+                       Scenario s9_trap: ID id, METHOD=ABSOLUTE CRITERION=0.1
+SYSINFO s9_trap 4096

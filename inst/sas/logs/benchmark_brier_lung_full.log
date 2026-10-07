@@ -1,0 +1,667 @@
+1                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+NOTE: Copyright (c) 2023 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M8) 
+      Licensed to TEMPLE UNIVERSITY - T&R - SFA, Site <redacted>.
+NOTE: This session is executing on the X64_WIN+HOME  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.3
+      SAS/ETS 15.3
+      SAS/OR 15.3
+      SAS/IML 15.3
+      SAS/QC 15.3
+
+NOTE: Additional host information:
+
+ X64_WIN+HOME WIN 10.0.26200  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.69 seconds
+      cpu time            0.65 seconds
+      
+1          /*==============================================================================
+2            TempleCBE SAS Validation Benchmark: Full NCCTG Lung Cancer Cohort (survival::lung)
+3            IPCW Brier Score & Integrated Brier Score with real censoring
+4          
+5            The same analysis as benchmark_brier_lung.sas, on all 228 rows of
+6            survival::lung (227 after dropping the row with missing ph_karno). 49 of the
+7            227 subjects are censored by day 500, so, unlike the 31-subject benchmark,
+8            this one exercises the IPCW weights G(t) and G(T_i-) of %cbe_brier_score.
+9          
+10           The datalines below are survival::lung as it ships with the R package
+11           survival (status 1 = censored, 2 = dead; NA written as .).
+12         
+13           Can be executed directly from R:
+14             TempleCBE::run_sas_script(
+15               TempleCBE::cbe_sas_macro_path("benchmark_brier_lung_full.sas")
+16             )
+17         ==============================================================================*/
+18         
+19         /* 1. Set SAS macro search path or define macros */
+20         %let script_dir = %sysfunc(tranwrd(%sysfunc(getoption(sysin)),
+20       ! benchmark_brier_lung_full.sas, %str()));
+21         %if %length(&script_dir) > 0 %then %do;
+22             %include "&script_dir/cbe_brier_score.sas";
+367            %include "&script_dir/cbe_cox_phreg.sas";
+491        %end;
+492        
+493        /* 2. Load or transcribe NCCTG Lung Dataset (survival::lung) */
+494        data work.lung;
+495            infile datalines dsd missover;
+496            length inst 8 time 8 status 8 age 8 sex 8 ph_ecog 8 ph_karno 8 pat_karno 8 meal_cal 8
+496      ! wt_loss 8;
+2                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+497            input inst time status age sex ph_ecog ph_karno pat_karno meal_cal wt_loss;
+498            /* Recode status: NCCTG has 1=censored, 2=dead. Recode to 0=censored, 1=dead */
+499            if status = 2 then event = 1;
+500            else if status = 1 then event = 0;
+501            else delete;
+502            if missing(ph_karno) then delete;
+503        datalines;
+
+NOTE: The data set WORK.LUNG has 227 observations and 11 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.03 seconds
+      
+
+732        ;
+733        run;
+734        
+735        /* 3. Run Cox PHREG Model */
+736        %cbe_cox_phreg(
+737            data       = work.lung,
+738            time       = time,
+739            status     = event,
+740            vars       = age sex ph_karno,
+741            ties       = BRESLOW,
+742            out_est    = work.lung_estimates,
+743            out_fit    = work.lung_fit
+744        );
+      ----------------------------------------------------------------
+NOTE: TempleCBE: Running %cbe_cox_phreg...
+      ----------------------------------------------------------------
+
+
+NOTE: You must enable ODS graphics to display the plots for the ASSESS statement.
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set WORK.LUNG_FIT has 3 observations and 3 variables.
+NOTE: The data set WORK._CBE_RAW_EST has 3 observations and 9 variables.
+NOTE: The PROCEDURE PHREG printed pages 1-2.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           0.48 seconds
+      cpu time            0.40 seconds
+      
+
+
+NOTE: There were 3 observations read from the data set WORK._CBE_RAW_EST.
+NOTE: The data set WORK.LUNG_ESTIMATES has 3 observations and 8 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Deleting WORK._CBE_RAW_EST (memtype=DATA).
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.00 seconds
+3                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 3 observations read from the data set WORK.LUNG_ESTIMATES.
+NOTE: The PROCEDURE PRINT printed page 3.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: TempleCBE: %cbe_cox_phreg completed successfully.
+745        
+746        /* 4. Evaluate Time-Dependent IPCW Brier Score & IBS */
+747        %cbe_brier_score(
+748            data       = work.lung,
+749            time       = time,
+750            status     = event,
+751            pred_vars  = age sex ph_karno,
+752            eval_times = 100 200 300 400 500,
+753            ties       = BRESLOW,
+754            trunc      = 0.05,
+755            out_brier  = work.lung_brier,
+756            out_ibs    = work.lung_ibs,
+757            out_calib  = work.lung_calib
+758        );
+      ----------------------------------------------------------------
+NOTE: TempleCBE: Running %cbe_brier_score...
+      ----------------------------------------------------------------
+
+NOTE: There were 227 observations read from the data set WORK.LUNG.
+NOTE: The data set WORK._CBE_BASE has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 1 observations read from the data set WORK._CBE_BASE.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_BASE.
+NOTE: The data set WORK._CBE_CENSOR_IN has 227 observations and 15 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+WARNING: ODS graphics must be enabled to obtain the full features of the PLOTS= option.
+4                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+NOTE: The LOGLOG transform is used to compute the confidence limits for the quartiles of the survivor 
+      distribution and the confidence limit for the survivor function. To suppress using this 
+      transform, specify CONFTYPE=LINEAR in the PROC LIFETEST statement.
+NOTE: The data set WORK._CBE_KM_CENSOR has 225 observations and 5 variables.
+NOTE: PROCEDURE LIFETEST used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 225 observations read from the data set WORK._CBE_KM_CENSOR.
+NOTE: The data set WORK._CBE_G_GRID has 225 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 225 observations read from the data set WORK._CBE_G_GRID.
+NOTE: 38 observations with duplicate key values were deleted.
+NOTE: The data set WORK._CBE_G_GRID has 187 observations and 2 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_BASE.
+NOTE: The data set WORK._CBE_COVS has 227 observations and 4 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set WORK._CBE_PREDS has 1135 observations and 6 variables.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.06 seconds
+      
+
+
+NOTE: There were 1135 observations read from the data set WORK._CBE_PREDS.
+NOTE: The data set WORK._CBE_PRED_LONG has 1135 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_ALL_BS has 0 observations and 5 variables.
+NOTE: DATA statement used (Total process time):
+5                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: The data set WORK._CBE_ALL_CALIB has 0 observations and 5 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 187 observations read from the data set WORK._CBE_G_GRID.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SUBJ_T created, with 227 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SCORED_T created, with 227 rows and 6 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.04 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_SCORED_T.
+NOTE: The data set WORK._CBE_SCORED_T2 has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_BS_T created, with 1 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: Appending WORK._CBE_BS_T to WORK._CBE_ALL_BS.
+NOTE: There were 1 observations read from the data set WORK._CBE_BS_T.
+NOTE: 1 observations added.
+NOTE: The data set WORK._CBE_ALL_BS has 1 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+6                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_RANKED has 227 observations and 15 variables.
+NOTE: PROCEDURE RANK used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_CAL_T created, with 10 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Appending WORK._CBE_CAL_T to WORK._CBE_ALL_CALIB.
+NOTE: There were 10 observations read from the data set WORK._CBE_CAL_T.
+NOTE: 10 observations added.
+NOTE: The data set WORK._CBE_ALL_CALIB has 10 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 187 observations read from the data set WORK._CBE_G_GRID.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SUBJ_T created, with 227 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_SCORED_T created, with 227 rows and 6 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.06 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_SCORED_T.
+NOTE: The data set WORK._CBE_SCORED_T2 has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+7                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+      
+
+NOTE: Table WORK._CBE_BS_T created, with 1 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: Appending WORK._CBE_BS_T to WORK._CBE_ALL_BS.
+NOTE: There were 1 observations read from the data set WORK._CBE_BS_T.
+NOTE: 1 observations added.
+NOTE: The data set WORK._CBE_ALL_BS has 2 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_RANKED has 227 observations and 15 variables.
+NOTE: PROCEDURE RANK used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_CAL_T created, with 10 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Appending WORK._CBE_CAL_T to WORK._CBE_ALL_CALIB.
+NOTE: There were 10 observations read from the data set WORK._CBE_CAL_T.
+NOTE: 10 observations added.
+NOTE: The data set WORK._CBE_ALL_CALIB has 20 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 187 observations read from the data set WORK._CBE_G_GRID.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SUBJ_T created, with 227 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+8                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_SCORED_T created, with 227 rows and 6 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.04 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_SCORED_T.
+NOTE: The data set WORK._CBE_SCORED_T2 has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_BS_T created, with 1 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Appending WORK._CBE_BS_T to WORK._CBE_ALL_BS.
+NOTE: There were 1 observations read from the data set WORK._CBE_BS_T.
+NOTE: 1 observations added.
+NOTE: The data set WORK._CBE_ALL_BS has 3 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_RANKED has 227 observations and 15 variables.
+NOTE: PROCEDURE RANK used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_CAL_T created, with 10 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Appending WORK._CBE_CAL_T to WORK._CBE_ALL_CALIB.
+NOTE: There were 10 observations read from the data set WORK._CBE_CAL_T.
+NOTE: 10 observations added.
+NOTE: The data set WORK._CBE_ALL_CALIB has 30 observations and 5 variables.
+9                                           The SAS System           22:11 Tuesday, September 29, 2026
+
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 187 observations read from the data set WORK._CBE_G_GRID.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SUBJ_T created, with 227 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_SCORED_T created, with 227 rows and 6 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.04 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_SCORED_T.
+NOTE: The data set WORK._CBE_SCORED_T2 has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_BS_T created, with 1 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: Appending WORK._CBE_BS_T to WORK._CBE_ALL_BS.
+NOTE: There were 1 observations read from the data set WORK._CBE_BS_T.
+NOTE: 1 observations added.
+NOTE: The data set WORK._CBE_ALL_BS has 4 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_RANKED has 227 observations and 15 variables.
+NOTE: PROCEDURE RANK used (Total process time):
+10                                          The SAS System           22:11 Tuesday, September 29, 2026
+
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_CAL_T created, with 10 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: Appending WORK._CBE_CAL_T to WORK._CBE_ALL_CALIB.
+NOTE: There were 10 observations read from the data set WORK._CBE_CAL_T.
+NOTE: 10 observations added.
+NOTE: The data set WORK._CBE_ALL_CALIB has 40 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 187 observations read from the data set WORK._CBE_G_GRID.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SUBJ_T created, with 227 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_SCORED_T created, with 227 rows and 6 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.06 seconds
+      
+
+
+NOTE: There were 227 observations read from the data set WORK._CBE_SCORED_T.
+NOTE: The data set WORK._CBE_SCORED_T2 has 227 observations and 14 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: Table WORK._CBE_BS_T created, with 1 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+11                                          The SAS System           22:11 Tuesday, September 29, 2026
+
+      cpu time            0.01 seconds
+      
+
+
+NOTE: Appending WORK._CBE_BS_T to WORK._CBE_ALL_BS.
+NOTE: There were 1 observations read from the data set WORK._CBE_BS_T.
+NOTE: 1 observations added.
+NOTE: The data set WORK._CBE_ALL_BS has 5 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: The data set WORK._CBE_RANKED has 227 observations and 15 variables.
+NOTE: PROCEDURE RANK used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+NOTE: Table WORK._CBE_CAL_T created, with 10 rows and 5 columns.
+
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.03 seconds
+      
+
+
+NOTE: Appending WORK._CBE_CAL_T to WORK._CBE_ALL_CALIB.
+NOTE: There were 10 observations read from the data set WORK._CBE_CAL_T.
+NOTE: 10 observations added.
+NOTE: The data set WORK._CBE_ALL_CALIB has 50 observations and 5 variables.
+NOTE: PROCEDURE APPEND used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 5 observations read from the data set WORK._CBE_ALL_BS.
+NOTE: The data set WORK.LUNG_BRIER has 5 observations and 5 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 5 observations read from the data set WORK.LUNG_BRIER.
+NOTE: The data set WORK.LUNG_IBS has 1 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+12                                          The SAS System           22:11 Tuesday, September 29, 2026
+
+NOTE: There were 50 observations read from the data set WORK._CBE_ALL_CALIB.
+NOTE: The data set WORK.LUNG_CALIB has 50 observations and 5 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: Deleting WORK._CBE_BASE (memtype=DATA).
+NOTE: Deleting WORK._CBE_CENSOR_IN (memtype=DATA).
+NOTE: Deleting WORK._CBE_KM_CENSOR (memtype=DATA).
+NOTE: Deleting WORK._CBE_G_GRID (memtype=DATA).
+NOTE: Deleting WORK._CBE_PREDS (memtype=DATA).
+NOTE: Deleting WORK._CBE_PRED_LONG (memtype=DATA).
+NOTE: Deleting WORK._CBE_ALL_BS (memtype=DATA).
+NOTE: Deleting WORK._CBE_ALL_CALIB (memtype=DATA).
+NOTE: Deleting WORK._CBE_SUBJ_T (memtype=DATA).
+NOTE: Deleting WORK._CBE_SCORED_T (memtype=DATA).
+NOTE: Deleting WORK._CBE_SCORED_T2 (memtype=DATA).
+NOTE: Deleting WORK._CBE_BS_T (memtype=DATA).
+NOTE: Deleting WORK._CBE_RANKED (memtype=DATA).
+NOTE: Deleting WORK._CBE_CAL_T (memtype=DATA).
+NOTE: PROCEDURE DATASETS used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+
+NOTE: There were 5 observations read from the data set WORK.LUNG_BRIER.
+NOTE: The PROCEDURE PRINT printed page 4.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+
+NOTE: There were 1 observations read from the data set WORK.LUNG_IBS.
+NOTE: The PROCEDURE PRINT printed page 5.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: TempleCBE: %cbe_brier_score completed successfully.
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           2.37 seconds
+      cpu time            1.90 seconds
+      

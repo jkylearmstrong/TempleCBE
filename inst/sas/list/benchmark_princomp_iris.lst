@@ -1,0 +1,45 @@
+                      PROC PRINCOMP on the 150 iris rows (correlation matrix)
+
+                                       The PRINCOMP Procedure
+
+                                      Observations         150
+                                      Variables              4
+
+
+                                         Simple Statistics
+ 
+                      sepal_length       sepal_width      petal_length       petal_width
+
+            Mean       5.843333333       3.057333333       3.758000000       1.199333333
+            StD        0.828066128       0.435866285       1.765298233       0.762237669
+
+
+                                         Correlation Matrix
+ 
+                                      sepal_      sepal_      petal_      petal_
+                                      length       width      length       width
+
+                    sepal_length      1.0000      -.1176      0.8718      0.8179
+                    sepal_width       -.1176      1.0000      -.4284      -.3661
+                    petal_length      0.8718      -.4284      1.0000      0.9629
+                    petal_width       0.8179      -.3661      0.9629      1.0000
+
+
+                                Eigenvalues of the Correlation Matrix
+ 
+                            Eigenvalue    Difference    Proportion    Cumulative
+
+                       1    2.91849782    2.00446735        0.7296        0.7296
+                       2    0.91403047    0.76727360        0.2285        0.9581
+                       3    0.14675688    0.12604204        0.0367        0.9948
+                       4    0.02071484                      0.0052        1.0000
+
+
+                                            Eigenvectors
+ 
+                                     Prin1         Prin2         Prin3         Prin4
+
+                sepal_length      0.521066      0.377418      -.719566      -.261286
+                sepal_width       -.269347      0.923296      0.244382      0.123510
+                petal_length      0.580413      0.024492      0.142126      0.801449
+                petal_width       0.564857      0.066942      0.634273      -.523597

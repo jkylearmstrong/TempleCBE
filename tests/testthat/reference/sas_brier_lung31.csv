@@ -1,0 +1,46 @@
+# SAS 9.4 (TS1M8), SAS/STAT 15.3, X64_WIN+HOME; run 2026-09-17 13:32.
+# Numbers copied from inst/sas/list/benchmark_brier_lung.lst, the listing of inst/sas/benchmark_brier_lung.sas:
+# PROC PHREG (TIES=BRESLOW) and the IPCW Brier score / IBS of %cbe_brier_score (trunc 0.05, eval times
+# 100..500) on the 31 lung-cancer subjects typed into that program (lung-data style; only 10 of the 31 rows are
+# rows of survival::lung). Brier scores are per evaluation time (term); ibs is the integrated Brier score over
+# 100..500. Values as SAS printed them.
+# Note: the three censoring times (705, 1010, 1022) are all after day 500, so every censoring weight is 1.
+quantity,term,value
+estimate,age,-0.03043
+std_error,age,0.03797
+chisq,age,0.6424
+p,age,0.4228
+hazard_ratio,age,0.97
+estimate,sex,0.15475
+std_error,sex,0.44542
+chisq,sex,0.1207
+p,sex,0.7283
+hazard_ratio,sex,1.167
+estimate,ph_karno,-0.00865
+std_error,ph_karno,0.01338
+chisq,ph_karno,0.4183
+p,ph_karno,0.5178
+hazard_ratio,ph_karno,0.991
+neg2loglik_null,model,151.215
+neg2loglik_model,model,150.436
+aic,model,156.436
+sbc,model,160.432
+lr_chisq,model,0.7791
+score_chisq,model,0.7756
+wald_chisq,model,0.7737
+n_events_by_t,100,4
+n_events_by_t,200,8
+n_events_by_t,300,14
+n_events_by_t,400,18
+n_events_by_t,500,20
+n_at_risk,100,27
+n_at_risk,200,23
+n_at_risk,300,17
+n_at_risk,400,13
+n_at_risk,500,11
+brier_score,100,0.10716
+brier_score,200,0.18166
+brier_score,300,0.23406
+brier_score,400,0.2394
+brier_score,500,0.22992
+ibs,ibs,0.16473

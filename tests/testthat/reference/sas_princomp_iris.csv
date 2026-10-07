@@ -1,0 +1,21 @@
+# SAS 9.4 (TS1M8), SAS/STAT 15.3, X64_WIN+HOME; run 2026-10-03.
+# Numbers copied from inst/sas/list/benchmark_princomp_iris.lst, the listing of inst/sas/benchmark_princomp_iris.sas:
+# PROC PRINCOMP (correlation matrix) on the 150 rows of datasets::iris typed into that program.
+# quantity/term as in tests/testthat/helper-sas-reference.R (term = component number); values as SAS printed them:
+# eigenvalue and difference to 8 decimals, proportion and cumulative to 4. The last component has no difference.
+quantity,term,value
+eigenvalue,1,2.91849782
+eigenvalue,2,0.91403047
+eigenvalue,3,0.14675688
+eigenvalue,4,0.02071484
+difference,1,2.00446735
+difference,2,0.76727360
+difference,3,0.12604204
+proportion,1,0.7296
+proportion,2,0.2285
+proportion,3,0.0367
+proportion,4,0.0052
+cumulative,1,0.7296
+cumulative,2,0.9581
+cumulative,3,0.9948
+cumulative,4,1.0000

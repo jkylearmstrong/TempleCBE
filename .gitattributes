@@ -1,0 +1,46 @@
+# Treat office/document and other binary formats as binary: `git diff` shows
+# "Binary files ... differ" instead of a line-by-line dump (this is what made
+# vignettes/*.pdf show up as tens of thousands of "+" lines in review diffs).
+# To force a real diff when you actually need one:
+#   git diff --text -- path/to/file.pdf
+#
+# Plain text formats (.csv, .txt, .md, .R, .Rmd, .qmd, .yaml, ...) are left
+# alone - git already diffs those correctly and quickly.
+
+# Word
+*.doc   binary
+*.docx  binary
+*.dot   binary
+*.dotx  binary
+*.rtf   binary
+
+# Excel
+*.xls   binary
+*.xlsx  binary
+*.xlsm  binary
+*.xltx  binary
+
+# PowerPoint
+*.ppt   binary
+*.pptx  binary
+*.potx  binary
+
+# PDF
+*.pdf   binary
+
+# OpenDocument
+*.odt   binary
+*.ods   binary
+*.odp   binary
+
+# Images / archives / R data
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.zip      binary
+*.rds      binary
+*.rda      binary
+*.rdata    binary
+*.sas7bdat binary
