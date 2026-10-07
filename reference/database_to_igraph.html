@@ -51,7 +51,7 @@ database_setops verbs – and builds an igraph from it."><meta property="og:imag
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Build an igraph From an R Database's Nodes/Edges Tables</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/database_setops.R" class="external-link"><code>R/database_setops.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.0/R/database_setops.R" class="external-link"><code>R/database_setops.R</code></a></small>
       <div class="d-none name"><code>database_to_igraph.Rd</code></div>
     </div>
 
@@ -102,9 +102,9 @@ calls instead of falling through to <code>.default</code>.</p>
 <span class="r-in"><span>  edges <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, to <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b"</span>, <span class="st">"c"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">database_to_igraph</span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH a633f9e DN-- 3 2 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 61f3fc8 DN-- 3 2 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from a633f9e (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 61f3fc8 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] a-&gt;b b-&gt;c</span>
 </code></pre></div>
     </div>

@@ -49,7 +49,7 @@ Offers stateless keyed-HMAC hashing as well as a stateful mapping table."><meta 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Pseudonymize Investigator Names (Vectorized)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.0/R/pi_anonymizer.R" class="external-link"><code>R/pi_anonymizer.R</code></a></small>
       <div class="d-none name"><code>anonymize_pi.Rd</code></div>
     </div>
 
@@ -215,7 +215,7 @@ does not skip it.</p>
 <span class="r-in"><span><span class="co"># temporary directory; in real use leave secrets_path at its default.</span></span></span>
 <span class="r-in"><span><span class="va">mapping</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pi_mapping_example.json"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">anonymize_pi</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Franklin"</span>, <span class="st">"Taylor"</span>, <span class="st">"Franklin"</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"token"</span>, secrets_path <span class="op">=</span> <span class="va">mapping</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_1b77ceb8df0d93fc" "PI_0d7ad1fb58023375" "PI_1b77ceb8df0d93fc"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_9f09b0cc5c2fbb4f" "PI_976ed284afc00827" "PI_9f09b0cc5c2fbb4f"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">mapping</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
