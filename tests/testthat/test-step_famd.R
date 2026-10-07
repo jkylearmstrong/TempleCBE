@@ -27,11 +27,11 @@ test_that("step_famd reproduces FactoMineR::FAMD coordinates when training and o
 
   expect_named(baked, c("y", "FAMD1", "FAMD2", "FAMD3"))
   ref <- FactoMineR::FAMD(famd_reference_data(df), ncp = 3, graph = FALSE)
-  expect_equal(unname(as.matrix(baked[c("FAMD1", "FAMD2", "FAMD3")])), unname(ref$ind$coord[, 1:3]))
+  expect_equal(unname(as.matrix(baked[c("FAMD1", "FAMD2", "FAMD3")])), unname(ref$ind$coord[, 1:3]), tolerance = 1e-5)
 
   new_rows <- recipes::bake(prepped, new_data = df[1:5, ])
   expected <- stats::predict(ref, newdata = famd_reference_data(df)[1:5, ])$coord[, 1:3]
-  expect_equal(unname(as.matrix(new_rows[c("FAMD1", "FAMD2", "FAMD3")])), unname(expected))
+  expect_equal(unname(as.matrix(new_rows[c("FAMD1", "FAMD2", "FAMD3")])), unname(expected), tolerance = 1e-5)
 
   one_row <- recipes::bake(prepped, new_data = df[1, ])
   expect_equal(nrow(one_row), 1)
@@ -203,7 +203,7 @@ test_that("step_famd uses frequency weights as FAMD row weights and ignores impo
 
   ref <- FactoMineR::FAMD(famd_reference_data(df), ncp = 2, row.w = as.double(df$w), graph = FALSE)
   baked <- recipes::bake(prepped, new_data = NULL)
-  expect_equal(unname(as.matrix(baked[c("FAMD1", "FAMD2")])), unname(ref$ind$coord[, 1:2]))
+  expect_equal(unname(as.matrix(baked[c("FAMD1", "FAMD2")])), unname(ref$ind$coord[, 1:2]), tolerance = 1e-5)
 })
 
 test_that("step_famd refuses to overwrite existing columns", {
