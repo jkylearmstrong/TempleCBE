@@ -24,7 +24,8 @@
      ```
    * Open a Pull Request targeting `master` on `jkylearmstrong/TempleCBE`.
 3. **Continuous Integration (GitHub Actions):**
-   * All GitHub Actions runners (`R-CMD-check` on Windows, macOS, Ubuntu, `pkgdown`, `test-coverage`) run free and unthrottled on `TempleCBE`.
+   * **Pull Requests (Full Gate):** Run the complete cross-platform test matrix (`ubuntu-latest`, `windows-latest`, `macOS-latest`) and `test-coverage`. On Windows, vignette building is skipped during check to reduce check times from 35+ min to ~12 min.
+   * **Push to Master (Fast Sanity & Deploy):** Runs a fast 5-minute sanity check on `ubuntu-latest`, after which documentation (`pkgdown`) and container images (`docker-publish`) deploy promptly without redundant 35-minute Windows rebuilds.
    * Workflows automatically cancel superseded in-progress runs when new commits are pushed (`cancel-in-progress: true`).
 
 ---
@@ -44,10 +45,8 @@
   # Run the full test suite locally:
   testthat::test_local()
   ```
-* **Parallel Test Execution:**
-  * `Config/testthat/parallel: TRUE` is enabled in `DESCRIPTION`.
-  * `testthat` (edition 3) will execute test files concurrently across available CPU cores (controlled via `TESTTHAT_CPUS`).
-
+* **Test Execution:**
+  * Tests run sequentially by default. Do not set `Config/testthat/parallel: TRUE` in `DESCRIPTION`; running testthat in parallel causes deadlocks on Windows CI because several test suites (e.g. `missforest-mtry`, `missranger-mtry`) spin up their own nested `future::multisession` / socket worker clusters.
 ---
 
 ## 4. Key Conventions & Safeguards

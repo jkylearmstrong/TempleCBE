@@ -6,6 +6,10 @@ on:
     types: [published]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 name: pkgdown
 
 permissions:
@@ -14,12 +18,11 @@ permissions:
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
-    concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     steps:
       - uses: actions/checkout@v4
 
