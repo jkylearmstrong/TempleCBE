@@ -1,5 +1,36 @@
 # Changelog
 
+## TempleCBE 0.5.1
+
+### CI/CD Pipeline & Build Architecture
+
+- **Two-Tier CI/CD Pipeline (Strategy A):** Pushes to `master` execute a
+  fast 5-minute sanity check on Ubuntu before deploying documentation
+  (`pkgdown`) and container images (`docker-publish`), eliminating
+  redundant 35-minute Windows rebuilds on merged code. Pull requests and
+  release tags continue to enforce full cross-platform verification
+  across Ubuntu, Windows, and macOS.
+- **Windows CI Acceleration:** `check-r-package` skips redundant
+  vignette rendering (`--no-build-vignettes`) on Windows CI runners,
+  cutting Windows check time from 35+ minutes to ~12 minutes while
+  preserving full vignette building on Ubuntu and `pkgdown`.
+- **Sequential Test Execution & Deadlock Prevention:** Removed
+  `Config/testthat/parallel: TRUE` from `DESCRIPTION` and enforced
+  `TESTTHAT_PARALLEL: "FALSE"` in CI. Prevents Windows TCP loopback
+  socket deadlocks caused by nested
+  [`future::multisession`](https://future.futureverse.org/reference/multisession.html)
+  clusters running inside `callr` worker processes.
+- **Docker Publishing Speedup & Docker Hub Integration:** Switched
+  routine master container builds to native `linux/amd64` with GitHub
+  Actions layer caching, reducing Docker build time from ~50 minutes
+  under QEMU software emulation to ~4 minutes. Automated direct
+  deployment to Docker Hub (`<user>/templecbe`) using repository
+  secrets.
+- **On-Demand Matrix Verification:** Added `workflow_dispatch` trigger
+  with `full_matrix` parameter to `R-CMD-check.yaml`, enabling manual
+  execution of the full 3-OS check on any branch directly from the
+  GitHub Actions UI.
+
 ## TempleCBE 0.5.0
 
 ### Breaking Changes

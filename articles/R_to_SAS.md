@@ -1419,7 +1419,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.0
+#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.1
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] writexl_2.0.1       rlang_1.3.0         magrittr_2.0.5     

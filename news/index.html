@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,6 +48,22 @@
       <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.1" id="templecbe-051">TempleCBE 0.5.1<a class="anchor" aria-label="anchor" href="#templecbe-051"></a></h2>
+<div class="section level3">
+<h3 id="cicd-pipeline--build-architecture-0-5-1">CI/CD Pipeline &amp; Build Architecture<a class="anchor" aria-label="anchor" href="#cicd-pipeline--build-architecture-0-5-1"></a></h3>
+<ul><li>
+<strong>Two-Tier CI/CD Pipeline (Strategy A):</strong> Pushes to <code>master</code> execute a fast 5-minute sanity check on Ubuntu before deploying documentation (<code>pkgdown</code>) and container images (<code>docker-publish</code>), eliminating redundant 35-minute Windows rebuilds on merged code. Pull requests and release tags continue to enforce full cross-platform verification across Ubuntu, Windows, and macOS.</li>
+<li>
+<strong>Windows CI Acceleration:</strong> <code>check-r-package</code> skips redundant vignette rendering (<code>--no-build-vignettes</code>) on Windows CI runners, cutting Windows check time from 35+ minutes to ~12 minutes while preserving full vignette building on Ubuntu and <code>pkgdown</code>.</li>
+<li>
+<strong>Sequential Test Execution &amp; Deadlock Prevention:</strong> Removed <code>Config/testthat/parallel: TRUE</code> from <code>DESCRIPTION</code> and enforced <code>TESTTHAT_PARALLEL: "FALSE"</code> in CI. Prevents Windows TCP loopback socket deadlocks caused by nested <code><a href="https://future.futureverse.org/reference/multisession.html" class="external-link">future::multisession</a></code> clusters running inside <code>callr</code> worker processes.</li>
+<li>
+<strong>Docker Publishing Speedup &amp; Docker Hub Integration:</strong> Switched routine master container builds to native <code>linux/amd64</code> with GitHub Actions layer caching, reducing Docker build time from ~50 minutes under QEMU software emulation to ~4 minutes. Automated direct deployment to Docker Hub (<code>&lt;user&gt;/templecbe</code>) using repository secrets.</li>
+<li>
+<strong>On-Demand Matrix Verification:</strong> Added <code>workflow_dispatch</code> trigger with <code>full_matrix</code> parameter to <code>R-CMD-check.yaml</code>, enabling manual execution of the full 3-OS check on any branch directly from the GitHub Actions UI.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.0" id="templecbe-050">TempleCBE 0.5.0<a class="anchor" aria-label="anchor" href="#templecbe-050"></a></h2>
 <div class="section level3">
