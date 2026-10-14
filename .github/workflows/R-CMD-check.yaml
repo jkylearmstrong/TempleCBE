@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 name: R-CMD-check
 
 jobs:
@@ -17,6 +21,7 @@ jobs:
       LANG: ${{ matrix.config.locale }}
       LC_ALL: ${{ matrix.config.locale }}
       LANGUAGE: en_US:en
+      TESTTHAT_CPUS: 2
 
     strategy:
       fail-fast: false
@@ -44,6 +49,7 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
+          args: 'c("--no-manual")'
 
   optional-deps-installed-tests:
     runs-on: ${{ matrix.config.os }}
