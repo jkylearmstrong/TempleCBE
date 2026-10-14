@@ -53,8 +53,8 @@ db <- as_database(list(
   edges = data.frame(from = c("a", "b"), to = c("b", "c"))
 ))
 database_to_igraph(db)
-#> IGRAPH eb2d341 DN-- 3 2 -- 
+#> IGRAPH 84d9803 DN-- 3 2 -- 
 #> + attr: name (v/c)
-#> + edges from eb2d341 (vertex names):
+#> + edges from 84d9803 (vertex names):
 #> [1] a->b b->c
 ```
