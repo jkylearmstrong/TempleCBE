@@ -156,9 +156,8 @@ loco_mp_coxnet(
 
   Additional arguments passed to
   [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md),
-  and so to
-  [`glmnet`](https://glmnet.stanford.edu/reference/glmnet.html), such as
-  `cox.ties`, `standardize`, or `penalty.factor`. Not `weights` or
+  and so to [`glmnet`](https://rdrr.io/pkg/glmnet/man/glmnet.html), such
+  as `cox.ties`, `standardize`, or `penalty.factor`. Not `weights` or
   `offset`.
 
 ## Value

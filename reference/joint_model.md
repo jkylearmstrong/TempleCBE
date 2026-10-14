@@ -98,9 +98,8 @@ joint_model(
   [`cv_coxnet`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
   (when `penalty` is `NULL`) or
   [`coxnet`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md),
-  and so to
-  [`glmnet`](https://glmnet.stanford.edu/reference/glmnet.html) for the
-  survival model only.
+  and so to [`glmnet`](https://rdrr.io/pkg/glmnet/man/glmnet.html) for
+  the survival model only.
 
 ## Value
 
@@ -175,7 +174,7 @@ The status calibrator is fitted on out-of-fold predictions, never on the
 training rows' own predictions, which are overfit (a bagged tree
 classifies its training rows almost perfectly, and a calibrator fitted
 on them amplifies the overfit). For `engine = "glmnet"` these are
-[`cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html)'s
+[`cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html)'s
 prevalidated predictions at `lambda.min`; for the bagged trees, the
 predictions of an inner 5-fold cross-validation. With start/stop data
 and a `subject_id`, the folds are grouped by subject, so a subject's
