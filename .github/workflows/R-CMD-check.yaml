@@ -13,10 +13,40 @@ concurrency:
 name: R-CMD-check
 
 jobs:
-  R-CMD-check:
+  sanity-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: ubuntu-latest (release)
+    env:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      LANGUAGE: en_US:en
+      TESTTHAT_PARALLEL: "FALSE"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          args: 'c("--no-manual")'
+
+  cross-platform-check:
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 45
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || matrix.config.os == 'ubuntu-latest'
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
     env:
@@ -29,7 +59,6 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,   r: 'release', locale: C.UTF-8,                    check_args: 'c("--no-manual")',                          build_args: 'character()'}
           - {os: windows-latest,  r: 'release', locale: English_United States.utf8, check_args: 'c("--no-manual", "--no-build-vignettes")', build_args: 'c("--no-build-vignettes")'}
           - {os: macOS-latest,    r: 'release', locale: en_US.UTF-8,                check_args: 'c("--no-manual")',                          build_args: 'character()'}
 
@@ -55,9 +84,9 @@ jobs:
           build_args: ${{ matrix.config.build_args }}
 
   optional-deps-installed-tests:
+    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 15
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || matrix.config.os == 'ubuntu-latest'
     name: optional-tests-${{ matrix.config.os }}
     env:
       LANG: ${{ matrix.config.locale }}
