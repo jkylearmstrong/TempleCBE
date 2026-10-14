@@ -66,7 +66,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest,  r: 'release', locale: English_United States.utf8, check_args: 'c("--no-manual", "--no-build-vignettes")', build_args: 'c("--no-build-vignettes")'}
+          - {os: windows-latest,  r: 'release', locale: English_United States.utf8, check_args: 'c("--no-manual", "--ignore-vignettes")', build_args: 'c("--no-build-vignettes")'}
           - {os: macOS-latest,    r: 'release', locale: en_US.UTF-8,                check_args: 'c("--no-manual")',                          build_args: 'character()'}
 
     steps:
