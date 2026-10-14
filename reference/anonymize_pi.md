@@ -178,6 +178,6 @@ if (requireNamespace("withr", quietly = TRUE)) {
 # temporary directory; in real use leave secrets_path at its default.
 mapping <- file.path(tempdir(), "pi_mapping_example.json")
 anonymize_pi(c("Franklin", "Taylor", "Franklin"), method = "token", secrets_path = mapping)
-#> [1] "PI_61cc19e928e35def" "PI_7d27ad7fc2fb58c6" "PI_61cc19e928e35def"
+#> [1] "PI_822621fe9d42833b" "PI_c9c76224e90cf5d0" "PI_822621fe9d42833b"
 unlink(mapping)
 ```
