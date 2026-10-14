@@ -15,6 +15,3 @@ for full architecture and testing details.
 - **Load Dev Package:** `Rscript --vanilla -e "pkgload::load_all('.')"`
 - **Run Tests:**
   `Rscript --vanilla -e "devtools::load_all('.'); testthat::test_file('tests/testthat/test-XYZ.R')"`
-- **Parallel Testing:** `DESCRIPTION` has
-  `Config/testthat/parallel: TRUE`. You can set `TESTTHAT_CPUS=2` for
-  concurrent test execution.

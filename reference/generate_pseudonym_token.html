@@ -156,15 +156,15 @@ de-identified (see the scope notes in <code><a href="pi_anonymizer.html">pi_anon
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Random tokens need no key</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_634b13b1896681fa" "PI_469718cc1a30abe7" "PI_652a60a209893085"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_89d0f2f0436dfe84" "PI_02104e7e01a1d077" "PI_a543855f414a22c5"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Short tokens (8 hex chars)</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">3</span>, n_chars <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_17ca4a5e" "PI_0a57c631" "PI_19578a34"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "PI_dc141ce6" "PI_058f164c" "PI_fd348cfb"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom renaming function</span></span></span>
 <span class="r-in"><span><span class="fu">generate_pseudonym_token</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">2</span>, rename_fn <span class="op">=</span> <span class="va">tolower</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_29314d74d8c8c300" "pi_ad3c39215df45f3e"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pi_0b9a59067f4dd409" "pi_4c299d9d029407d8"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Deterministic tokens need a secret key. In real use keep it in the</span></span></span>
 <span class="r-in"><span><span class="co"># TEMPLECBE_SECRET_KEY environment variable (see ?pi_anonymizer), never in a</span></span></span>

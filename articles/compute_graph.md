@@ -284,7 +284,7 @@ report
 #>   Stage:       report 
 #>   Role:        report_source 
 #>   Renders:     TRUE 
-#>   Modified:    2026-10-14 15:48:25 
+#>   Modified:    2026-10-14 17:22:35 
 #>   Description: Worked example of a one/two-sample t-test report 
 #>   Dependencies:
 #>     - t_test_child
