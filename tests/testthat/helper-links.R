@@ -7,7 +7,10 @@
 make_dir_link <- function(target, link) {
   ok <- suppressWarnings(file.symlink(target, link))
   if (!isTRUE(ok) && .Platform$OS.type == "windows") {
-    to_win <- function(p) gsub("/", "\\", normalizePath(p, winslash = "/", mustWork = FALSE), fixed = TRUE)
+    to_win <- function(p) {
+      dir_win <- gsub("/", "\\", normalizePath(dirname(p), winslash = "/", mustWork = FALSE), fixed = TRUE)
+      file.path(dir_win, basename(p), fsep = "\\")
+    }
     suppressWarnings(system2(
       "cmd", c("/c", "mklink", "/J", shQuote(to_win(link)), shQuote(to_win(target))),
       stdout = FALSE, stderr = FALSE
@@ -22,7 +25,11 @@ make_dir_link <- function(target, link) {
 remove_dir_link <- function(link) {
   if (!file.exists(link) && is.na(Sys.readlink(link))) return(invisible(FALSE))
   if (.Platform$OS.type == "windows") {
-    to_win <- gsub("/", "\\", normalizePath(link, winslash = "/", mustWork = FALSE), fixed = TRUE)
+    # Do not call normalizePath() directly on `link`, because on Windows normalizePath()
+    # resolves the junction/symlink to its target, causing rmdir to target the non-empty
+    # target directory instead of removing the link itself.
+    dir_win <- gsub("/", "\\", normalizePath(dirname(link), winslash = "/", mustWork = FALSE), fixed = TRUE)
+    to_win <- file.path(dir_win, basename(link), fsep = "\\")
     suppressWarnings(system2("cmd", c("/c", "rmdir", shQuote(to_win)), stdout = FALSE, stderr = FALSE))
   } else {
     suppressWarnings(unlink(link))
