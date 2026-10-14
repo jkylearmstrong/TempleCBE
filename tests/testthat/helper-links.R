@@ -15,3 +15,17 @@ make_dir_link <- function(target, link) {
   }
   dir.exists(link)
 }
+
+# Remove a directory link without touching what it points at. unlink(recursive = TRUE)
+# cannot delete a Windows junction ("mismatch between the tag ... reparse point"), so
+# use rmdir there, which drops the junction itself and leaves the target alone.
+remove_dir_link <- function(link) {
+  if (!file.exists(link) && is.na(Sys.readlink(link))) return(invisible(FALSE))
+  if (.Platform$OS.type == "windows") {
+    to_win <- gsub("/", "\\", normalizePath(link, winslash = "/", mustWork = FALSE), fixed = TRUE)
+    suppressWarnings(system2("cmd", c("/c", "rmdir", shQuote(to_win)), stdout = FALSE, stderr = FALSE))
+  } else {
+    suppressWarnings(unlink(link))
+  }
+  invisible(!dir.exists(link))
+}

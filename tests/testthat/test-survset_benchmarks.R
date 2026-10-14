@@ -119,12 +119,18 @@ test_that("SurvSet benchmark integrates with DALEX and Shapley explainability", 
   lung <- load_survset_benchmark("lung")
   lung_sub <- lung[1:80, ]
 
-  jm <- joint_model(
-    data = lung_sub,
-    outcome = survival::Surv(time, event) ~ age + sex + ph.karno,
-    engine = "glmnet",
-    penalty = 0.05,
-    calibration = FALSE
+  # 80 rows leave a rare status class in some folds; glmnet says so once per fold
+  jm <- withCallingHandlers(
+    joint_model(
+      data = lung_sub,
+      outcome = survival::Surv(time, event) ~ age + sex + ph.karno,
+      engine = "glmnet",
+      penalty = 0.05,
+      calibration = FALSE
+    ),
+    warning = function(w) {
+      if (grepl("fewer than 8", conditionMessage(w), fixed = TRUE)) invokeRestart("muffleWarning")
+    }
   )
 
   exp_all <- explain_joint(jm, data = lung_sub, verbose = FALSE)

@@ -233,7 +233,8 @@ test_that("raced results work with the rest of tidymodels: select_best, show_bes
 
   best <- tune::select_best(res, metric = "brier_survival_integrated")
   expect_true(is.numeric(best$penalty) && best$penalty > 0)
-  shown <- tune::show_best(res, metric = "concordance_survival", n = 2)
+  # ranking by a metric the race did not optimise is the point; finetune warns about it
+  shown <- suppressWarnings(tune::show_best(res, metric = "concordance_survival", n = 2))
   expect_true(nrow(shown) >= 1)
   expect_s3_class(finetune::plot_race(res), "ggplot")
 

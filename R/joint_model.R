@@ -280,7 +280,7 @@ joint_model <- function(data,
     meta_x[is.na(meta_x)] <- 0
 
     cv_args <- list(x = meta_x, y = comp$surv_obj, family = "cox")
-    if ("cox.ties" %in% names(formals(glmnet::cv.glmnet))) {
+    if ("cox.ties" %in% names(formals(glmnet::glmnet))) {
       cv_args$cox.ties <- "breslow"
     }
     stack_fit <- tryCatch(

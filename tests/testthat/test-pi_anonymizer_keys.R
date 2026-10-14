@@ -39,6 +39,7 @@ test_that("a key must be a single non-missing string", {
 })
 
 test_that("an explicit key or the environment variable gives deterministic pseudonyms", {
+  withr::local_options(templecbe_suppress_weak_key_warning = TRUE)
   withr::local_envvar(TEMPLECBE_SECRET_KEY = NA)
   nm <- c("Smith", "Jones")
 
@@ -97,6 +98,7 @@ test_that("allow_default_key = TRUE keeps the old fallback but warns that it is 
 })
 
 test_that("the safe default is pinned so flipping it is a deliberate change", {
+  withr::local_options(templecbe_suppress_weak_key_warning = TRUE)
   expect_false(formals(anonymize_pi)$allow_default_key)
   expect_false(formals(generate_pseudonym_token)$allow_default_key)
   # documented default token length
@@ -140,6 +142,7 @@ test_that("token and synthetic methods work without a key and never use the publ
 })
 
 test_that("NA handling is unchanged", {
+  withr::local_options(templecbe_suppress_weak_key_warning = TRUE)
   withr::local_envvar(TEMPLECBE_SECRET_KEY = NA)
   x <- c("Smith", NA, "Jones", NA)
   f <- file.path(withr::local_tempdir(), "map.json")
@@ -303,6 +306,11 @@ link_fixture <- function(env = parent.frame()) {
     make_dir_link(repo, link_root) && make_dir_link(file.path(repo, "sub"), link_sub),
     "cannot create directory links here"
   )
+  # Registered after the temp dir, so it runs first: junctions need rmdir, not unlink().
+  withr::defer({
+    remove_dir_link(link_root)
+    remove_dir_link(link_sub)
+  }, envir = env)
   list(repo = repo, outside = outside, link_root = link_root, link_sub = link_sub)
 }
 
