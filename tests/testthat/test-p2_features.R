@@ -415,3 +415,13 @@ test_that("glmnet_IBS supports parallel options and does not clash with tune_met
   expect_s3_class(res_dots, "tbl_df")
 })
 
+test_that("render defaults to workers = 1 and never touches future::plan unless requested", {
+  skip_if_not_installed("future")
+  current_plan <- future::plan()
+  on.exit(future::plan(current_plan), add = TRUE)
+  future::plan(future::sequential)
+
+  res <- render(character(0), dry_run = TRUE, renv_guard = FALSE)
+  expect_true(inherits(future::plan(), "sequential"))
+})
+

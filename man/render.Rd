@@ -10,7 +10,7 @@ render(
   formats = getOption("pipeline.default_formats", c("pdf", "docx")),
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
-  workers = NULL,
+  workers = 1,
   only_stale = TRUE,
   from = NULL,
   to = NULL,
@@ -31,7 +31,7 @@ render_me(
   formats = getOption("pipeline.default_formats", c("pdf", "docx")),
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
-  workers = NULL,
+  workers = 1,
   only_stale = TRUE,
   from = NULL,
   to = NULL,
@@ -57,7 +57,9 @@ objects (`FilePath`, `FileUses`, `FileOutputs`).}
 
 \item{engine}{Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.}
 
-\item{workers}{Number of parallel workers for concurrent rendering via `future`/`furrr`.}
+\item{workers}{Number of parallel workers for concurrent rendering via `future`/`furrr`.
+Defaults to `1` (sequential). Set to `> 1` to initialize multisession workers, or `NULL`
+to use an existing `future::plan()` without altering it.}
 
 \item{only_stale}{Logical. When `TRUE` (default), only out-of-date documents are rendered.
 When `FALSE`, performs a full graph rerun.}

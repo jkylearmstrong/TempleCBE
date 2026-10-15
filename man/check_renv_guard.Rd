@@ -45,11 +45,11 @@ Defaults to \code{"\\.(qmd|Rmd|rmd)$"}.}
 When \code{"auto"}, \code{.qmd} files are rendered via \pkg{quarto}, and \code{.Rmd} files
 are rendered via \pkg{quarto} if available or \pkg{rmarkdown} otherwise.}
 
-\item{workers}{Integer specifying the number of multisession parallel
-workers when rendering multiple documents. Defaults to \code{NULL},
-which caps at available cores minus one. Ignored (rendering falls back
-to sequential) when the \pkg{future}/\pkg{furrr} packages are not
-installed.}
+\item{workers}{Number of parallel workers when rendering multiple documents.
+Defaults to \code{1} (sequential execution). Set to \code{> 1} to explicitly
+initialize multisession workers, or \code{NULL} to use an externally configured
+\pkg{future} plan without altering it. Following package guidelines,
+\code{render()} never touches \code{future::plan()} unless explicitly requested.}
 
 \item{only_stale}{Logical. When \code{path} is a compute graph or list of pipeline objects,
 controls whether to plan and render only out-of-date documents (\code{TRUE}, default)

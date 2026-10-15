@@ -1,3 +1,11 @@
+# TempleCBE 0.5.5
+
+## Execution Governance & Parallel Plan Safety
+
+* **Sequential-by-Default Execution (`render(workers = 1)`):** `render()` now defaults to `workers = 1` (sequential execution). Adhering to the "never plan() inside functions" fleet rule, `render()` never modifies `future::plan()` unless the caller explicitly passes `workers > 1`.
+* **Quarto & Nested-CV Safety:** Running sequentially by default eliminates race conditions and directory contention over project-level state (`.quarto`, `_freeze`, and shared build directories) across concurrent Quarto renders, and ensures nested cross-validation models within reports retain full access to multisession worker pools.
+* **External Plan Passthrough:** Setting `workers = NULL` respects any pre-configured active `future::plan()` without altering it.
+
 # TempleCBE 0.5.4
 
 ## Pipeline Robustness, Outer Resampling & Modeling Extensions

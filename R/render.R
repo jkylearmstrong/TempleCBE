@@ -97,11 +97,11 @@ extract_yaml_formats <- function(file_path) {
 #' @param engine Rendering engine: \code{"auto"} (default), \code{"quarto"}, or \code{"rmarkdown"}.
 #'   When \code{"auto"}, \code{.qmd} files are rendered via \pkg{quarto}, and \code{.Rmd} files
 #'   are rendered via \pkg{quarto} if available or \pkg{rmarkdown} otherwise.
-#' @param workers Integer specifying the number of multisession parallel
-#'   workers when rendering multiple documents. Defaults to \code{NULL},
-#'   which caps at available cores minus one. Ignored (rendering falls back
-#'   to sequential) when the \pkg{future}/\pkg{furrr} packages are not
-#'   installed.
+#' @param workers Number of parallel workers when rendering multiple documents.
+#'   Defaults to \code{1} (sequential execution). Set to \code{> 1} to explicitly
+#'   initialize multisession workers, or \code{NULL} to use an externally configured
+#'   \pkg{future} plan without altering it. Following package guidelines,
+#'   \code{render()} never touches \code{future::plan()} unless explicitly requested.
 #' @param only_stale Logical. When \code{path} is a compute graph or list of pipeline objects,
 #'   controls whether to plan and render only out-of-date documents (\code{TRUE}, default)
 #'   or all documents in topological dependency order (\code{FALSE}, for full pipeline reruns).
@@ -291,6 +291,8 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
 #' @param pattern File pattern regex matching documents to render.
 #' @param engine Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.
 #' @param workers Number of parallel workers for concurrent rendering via `future`/`furrr`.
+#'   Defaults to `1` (sequential). Set to `> 1` to initialize multisession workers, or `NULL`
+#'   to use an existing `future::plan()` without altering it.
 #' @param only_stale Logical. When `TRUE` (default), only out-of-date documents are rendered.
 #'   When `FALSE`, performs a full graph rerun.
 #' @param from Optional starting node name or index in the topological plan.
@@ -319,7 +321,7 @@ render <- function(path,
                    formats = getOption("pipeline.default_formats", c("pdf", "docx")),
                    pattern = "\\.(qmd|Rmd|rmd)$",
                    engine = c("auto", "quarto", "rmarkdown"),
-                   workers = NULL,
+                   workers = 1,
                    only_stale = TRUE,
                    from = NULL,
                    to = NULL,
@@ -743,21 +745,28 @@ render <- function(path,
   }
 
   # 3. Execution: Topological waves across targets.
-  # Independent branches within each wave render concurrently in parallel when
-  # future/furrr are available and workers > 1.
+  # Independent branches within each wave can render in parallel when explicitly requested.
   has_future <- requireNamespace("future", quietly = TRUE) && requireNamespace("furrr", quietly = TRUE)
-  can_parallelize <- has_future && length(targets) > 1
 
-  max_workers <- if (requireNamespace("future", quietly = TRUE)) max(1L, future::availableCores() - 1L) else 1L
-  n_workers <- if (is.null(workers)) max_workers else as.integer(workers)
-  n_workers <- max(1L, n_workers)
+  # Fleet rule: never touch future::plan() inside functions unless explicitly asked (workers > 1)
+  touch_plan <- !is.null(workers) && is.numeric(workers) && as.integer(workers) > 1L
 
-  if (can_parallelize && n_workers > 1L) {
+  n_workers <- if (is.null(workers)) {
+    if (has_future && !inherits(future::plan(), "sequential")) {
+      2L # Parallel-capable under external plan
+    } else {
+      1L
+    }
+  } else {
+    max(1L, as.integer(workers))
+  }
+
+  can_parallelize <- has_future && length(targets) > 1 && n_workers > 1L
+
+  if (can_parallelize && touch_plan) {
     old_plan <- future::plan()
     on.exit(future::plan(old_plan), add = TRUE)
-    if (inherits(future::plan(), "sequential")) {
-      future::plan(future::multisession, workers = n_workers)
-    }
+    future::plan(future::multisession, workers = n_workers)
   }
 
   # Build dependency mapping between targets
