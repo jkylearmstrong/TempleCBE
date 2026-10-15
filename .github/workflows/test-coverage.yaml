@@ -40,12 +40,24 @@ jobs:
 
       - name: Test coverage
         run: |
-          cov <- covr::package_coverage(
-            quiet = FALSE,
-            clobber = FALSE,
-            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
-          )
-          covr::to_cobertura(cov)
+          tryCatch({
+            cov <- covr::package_coverage(
+              quiet = FALSE,
+              clean = FALSE,
+              clobber = FALSE,
+              install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+            )
+            covr::to_cobertura(cov)
+          }, error = function(e) {
+            cat("\n=== covr::package_coverage() FAILED ===\n")
+            cat("Error message:", conditionMessage(e), "\n")
+            rout_files <- list.files(Sys.getenv("RUNNER_TEMP"), pattern = "testthat\\.Rout.*", recursive = TRUE, full.names = TRUE)
+            for (f in rout_files) {
+              cat("\n--- Content of", f, "---\n")
+              cat(readLines(f, warn = FALSE), sep = "\n")
+            }
+            stop(e)
+          })
         shell: Rscript {0}
 
       - name: Upload coverage reports to Codecov

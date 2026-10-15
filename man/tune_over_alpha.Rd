@@ -12,7 +12,8 @@ tune_over_alpha(
   alphas = NULL,
   formulas = NULL,
   progress = FALSE,
-  seed = NULL
+  seed = NULL,
+  checkpoint_dir = NULL
 )
 }
 \arguments{
@@ -36,6 +37,9 @@ a list of one-sided formulas, each fit as a separate model (see
 
 \item{seed}{Optional integer seed for reproducible random draws of `alpha`
 and formulas.}
+
+\item{checkpoint_dir}{Optional directory path to save per-alpha checkpoint files.
+Finished fits are loaded from disk on rerun, skipping recomputation.}
 }
 \value{
 A list named by `alpha`, one element per fit, each the output of

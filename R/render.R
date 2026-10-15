@@ -151,8 +151,13 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
   }
 
   git_sha <- tryCatch({
-    res <- system2("git", c("rev-parse", "HEAD"), stdout = TRUE, stderr = FALSE)
-    if (length(res) > 0 && nzchar(res[1])) trimws(res[1]) else NA_character_
+    res <- suppressWarnings(system2("git", c("rev-parse", "HEAD"), stdout = TRUE, stderr = FALSE))
+    status <- attr(res, "status")
+    if ((is.null(status) || status == 0) && length(res) > 0 && nzchar(res[1])) {
+      trimws(res[1])
+    } else {
+      NA_character_
+    }
   }, error = function(e) NA_character_)
 
   plan_name <- tryCatch({
@@ -265,6 +270,7 @@ render <- function(path,
   is_pipeline_obj <- function(x) is(x, "FilePath") || is(x, "FileOutputs") || is(x, "FileUses")
   pipeline_graph <- NULL
   if (is.list(path) && length(path) > 0L && all(vapply(path, is_pipeline_obj, logical(1)))) {
+    path <- refresh_pipeline(path)
     pipeline_graph <- tryCatch(as_igraph(path), error = function(e) NULL)
     plan <- get_render_plan(path, only_stale = only_stale, from = from, to = to, dry_run = FALSE)
     path <- plan

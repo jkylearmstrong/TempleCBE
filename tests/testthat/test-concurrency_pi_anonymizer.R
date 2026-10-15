@@ -53,7 +53,10 @@ test_that("parallel calls to anonymize_pi maintain data integrity with locking",
   } else {
     sprintf("library(TempleCBE, lib.loc = %s)", deparse(dirname(pkg_path)))
   }
-  withr::local_envvar(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
+  withr::local_envvar(
+    R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep),
+    R_LIBS_USER = paste(.libPaths(), collapse = .Platform$path.sep)
+  )
 
   # Worker script that loads the package and anonymizes a batch of names
   worker_script <- file.path(tmp_dir, "worker.R")
@@ -67,6 +70,7 @@ test_that("parallel calls to anonymize_pi maintain data integrity with locking",
     "note <- function(...) cat(format(Sys.time(), '%H:%M:%OS2'), ..., '\\n', file = status_file, append = TRUE)",
     "note('started')",
     "tryCatch({",
+    "  if (requireNamespace('covr', quietly = TRUE)) suppressPackageStartupMessages(try(library(covr), silent = TRUE))",
     paste0("  ", load_line),
     "  note('loaded TempleCBE')",
     "  res <- TempleCBE::anonymize_pi(names_batch, method = 'token', secrets_path = secrets_file)",
@@ -86,11 +90,11 @@ test_that("parallel calls to anonymize_pi maintain data integrity with locking",
   system2(rscript, c(shQuote(worker_script), shQuote(secrets_file), shQuote(names_worker2), shQuote(status[2])),
           stdout = logs[2], stderr = logs[2], wait = FALSE)
 
-  # Wait up to 60 seconds for both background workers to finish; loading the
+  # Wait up to 120 seconds for both background workers to finish; loading the
   # covr-instrumented package takes several seconds per worker on slow runners
   t0 <- Sys.time()
   finished <- FALSE
-  while (as.numeric(difftime(Sys.time(), t0, units = "secs")) < 60) {
+  while (as.numeric(difftime(Sys.time(), t0, units = "secs")) < 120) {
     if (file.exists(secrets_file)) {
       data <- tryCatch(jsonlite::fromJSON(secrets_file), error = function(e) NULL)
       if (!is.null(data) && length(data$mappings) == 10) {

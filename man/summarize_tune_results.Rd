@@ -50,6 +50,17 @@ Calls [tune_over_alpha()] on each split of `object` and row-binds the
 successful fits. Fits that errored are dropped. A split draws its own random
 `alpha` values, reproducibly: the map runs with `furrr_options(seed = TRUE)`.
 }
+\section{Nested Parallelism & Benchmarking}{
+
+When tuning penalized survival models across nested resampling structures, computation
+scales multiplicatively: \eqn{\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}}.
+Parallelism is managed via \pkg{future} and \pkg{furrr}.
+For optimal cluster throughput and to prevent socket exhaustion on Windows/macOS,
+set \code{future::plan(multisession, workers = N)} at the outer level (e.g. over splits)
+while keeping nested inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
+Using \code{checkpoint_dir} is strongly recommended for long runs across multiple nodes.
+}
+
 \seealso{
 [glmnet_IBS()], [tune_over_alpha()], [nested_cv_coxnet()]
 }

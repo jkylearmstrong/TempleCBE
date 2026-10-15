@@ -929,6 +929,37 @@ dedupe_pipeline <- function(all_objects,
   all_objects
 }
 
+#' Refresh Modification Timestamps Across Pipeline Objects
+#'
+#' Traverses pipeline objects (\code{FilePath}, \code{FileUses}, \code{FileOutputs})
+#' and inspects files on disk to update \code{@mtime} to the current disk timestamp
+#' (or \code{as.POSIXct(NA)} if missing/deleted). Recursively refreshes \code{@dependencies}
+#' and \code{@output}.
+#'
+#' @param x A \code{FilePath}, \code{FileUses}, \code{FileOutputs}, or list of such objects.
+#' @return The refreshed pipeline object(s).
+#' @export
+refresh_pipeline <- function(x) {
+  if (is.null(x)) return(NULL)
+  if (is.list(x)) {
+    return(lapply(x, refresh_pipeline))
+  }
+  if (is(x, "FilePath")) {
+    if (file.exists(x@path)) {
+      x@mtime <- file.info(x@path)$mtime
+    } else {
+      x@mtime <- as.POSIXct(NA)
+    }
+    if (is(x, "FileUses") && length(x@dependencies) > 0L) {
+      x@dependencies <- lapply(x@dependencies, refresh_pipeline)
+    }
+    if (is(x, "FileOutputs") && length(x@output) > 0L) {
+      x@output <- lapply(x@output, refresh_pipeline)
+    }
+  }
+  x
+}
+
 #' Visualize FilePath dependencies with stage-based coloring and staleness check
 #'
 #' @param all_objects The full list of FilePath, FileUses, and FileOutputs objects.
@@ -2012,6 +2043,7 @@ get_render_plan <- function(all_objects,
   if (!is.list(all_objects) || length(all_objects) == 0L) {
     return(list())
   }
+  all_objects <- refresh_pipeline(all_objects)
   .check_pipeline(all_objects)
 
   node_names <- vapply(all_objects, \(x) x@name, character(1))

@@ -191,9 +191,21 @@ glmnet_IBS <- function(object,
   } else {
     train_raw
   }
+  if (!"package:recipes" %in% search() && requireNamespace("recipes", quietly = TRUE)) {
+    suppressPackageStartupMessages(require("recipes", quietly = TRUE, character.only = TRUE))
+  }
   prepped <- recipes::prep(recipe, training = prep_data)
   train <- recipes::bake(prepped, new_data = train_raw)
   test <- recipes::bake(prepped, new_data = test_raw)
+
+  if (all(train[[status_col]] == 1)) {
+    freq <- if (isTRUE(getOption("templecbe_suppress_frequency_limit", FALSE))) "always" else "once"
+    rlang::inform(
+      "Training data contains no censored subjects; 'none' and 'ipcw' censoring weights produce identical scores.",
+      .frequency = freq,
+      .frequency_id = "TempleCBE_no_censored_subjects_notice"
+    )
+  }
 
   missing_keys <- setdiff(c(id_col, start_col, stop_col, status_col), names(train))
   if (length(missing_keys) > 0) {
@@ -333,6 +345,8 @@ glmnet_IBS <- function(object,
 #' @param progress Show a progress bar.
 #' @param seed Optional integer seed for reproducible random draws of `alpha`
 #'   and formulas.
+#' @param checkpoint_dir Optional directory path to save per-alpha checkpoint files.
+#'   Finished fits are loaded from disk on rerun, skipping recomputation.
 #' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
 #'   `NULL`) and `error` (`NULL`, or the condition).
@@ -345,12 +359,19 @@ tune_over_alpha <- function(object,
                             alphas = NULL,
                             formulas = NULL,
                             progress = FALSE,
-                            seed = NULL) {
+                            seed = NULL,
+                            checkpoint_dir = NULL) {
   require_packages("furrr", "tune_over_alpha")
   dots <- list(...)
   if (!is.null(seed)) {
     local_seed(seed)
   }
+
+  if (!is.null(checkpoint_dir)) {
+    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
 
   if (!is.null(formulas)) {
     if ("formula" %in% names(dots)) {
@@ -370,11 +391,27 @@ tune_over_alpha <- function(object,
       alphas,
       formulas,
       purrr::safely(function(a, f) {
+        ckpt_file <- if (!is.null(checkpoint_dir)) {
+          safe_a <- gsub("[^A-Za-z0-9._-]", "_", as.character(round(a, 6)))
+          safe_f <- gsub("[^A-Za-z0-9._-]", "_", as.character(f))
+          file.path(checkpoint_dir, sprintf("tune_alpha_%s_%s.rds", safe_a, safe_f))
+        } else {
+          NULL
+        }
+        if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+          cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+          if (is.data.frame(cached) && nrow(cached) > 0L) {
+            return(cached)
+          }
+        }
         res <- do.call(glmnet_IBS, c(list(object = object, alpha = a, formula = f), dots))
         res$formula <- f
+        if (!is.null(ckpt_file)) {
+          tryCatch(saveRDS(res, ckpt_file), error = function(e) NULL)
+        }
         res
       }),
-      .options = furrr::furrr_options(seed = TRUE),
+      .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
       .progress = progress
     )
     names(runs) <- alphas
@@ -390,9 +427,25 @@ tune_over_alpha <- function(object,
   furrr::future_map(
     alphas,
     purrr::safely(function(a) {
-      do.call(glmnet_IBS, c(list(object = object, alpha = a), dots))
+      ckpt_file <- if (!is.null(checkpoint_dir)) {
+        safe_a <- gsub("[^A-Za-z0-9._-]", "_", as.character(round(a, 6)))
+        file.path(checkpoint_dir, sprintf("tune_alpha_%s.rds", safe_a))
+      } else {
+        NULL
+      }
+      if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+        cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+        if (is.data.frame(cached) && nrow(cached) > 0L) {
+          return(cached)
+        }
+      }
+      res <- do.call(glmnet_IBS, c(list(object = object, alpha = a), dots))
+      if (!is.null(ckpt_file)) {
+        tryCatch(saveRDS(res, ckpt_file), error = function(e) NULL)
+      }
+      res
     }),
-    .options = furrr::furrr_options(seed = TRUE),
+    .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
     .progress = progress
   )
 }
@@ -402,6 +455,15 @@ tune_over_alpha <- function(object,
 #' Calls [tune_over_alpha()] on each split of `object` and row-binds the
 #' successful fits. Fits that errored are dropped. A split draws its own random
 #' `alpha` values, reproducibly: the map runs with `furrr_options(seed = TRUE)`.
+#'
+#' @section Nested Parallelism & Benchmarking:
+#' When tuning penalized survival models across nested resampling structures, computation
+#' scales multiplicatively: \eqn{\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}}.
+#' Parallelism is managed via \pkg{future} and \pkg{furrr}.
+#' For optimal cluster throughput and to prevent socket exhaustion on Windows/macOS,
+#' set \code{future::plan(multisession, workers = N)} at the outer level (e.g. over splits)
+#' while keeping nested inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
+#' Using \code{checkpoint_dir} is strongly recommended for long runs across multiple nodes.
 #'
 #' @param object A resampling object with a `splits` column (e.g. one element
 #'   of the `inner_resamples` column of [rsample::nested_cv()]).
@@ -434,6 +496,12 @@ summarize_tune_results <- function(object,
 
   if (!is.null(checkpoint_dir)) {
     dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    if (isTRUE(progress)) {
+      existing_ckpts <- list.files(checkpoint_dir, pattern = "^tune_split_.*\\.rds$")
+      if (length(existing_ckpts) > 0) {
+        message(sprintf("Found %d cached checkpoint file(s) in '%s'; skipping.", length(existing_ckpts), checkpoint_dir))
+      }
+    }
   }
 
   split_names <- names(object$splits)
@@ -441,7 +509,9 @@ summarize_tune_results <- function(object,
     split_names <- as.character(seq_along(object$splits))
   }
 
-  furrr::future_map2_dfr(
+  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
+
+  res_all <- furrr::future_map2_dfr(
     object$splits,
     seq_along(object$splits),
     function(split, split_idx) {
@@ -469,6 +539,19 @@ summarize_tune_results <- function(object,
         dots
       ))
       ok <- vapply(runs, function(run) is.null(run$error), logical(1))
+      n_fits <- length(runs)
+      n_ok <- sum(ok)
+      if (n_ok == 0L) {
+        first_err <- if (n_fits > 0L && !is.null(runs[[1]]$error)) {
+          conditionMessage(runs[[1]]$error)
+        } else "unknown error"
+        stop(sprintf("All %d model fit(s) failed for split '%s'. First error: %s", n_fits, s_id, first_err), call. = FALSE)
+      }
+      if (n_ok < n_fits) {
+        first_err_idx <- which(!ok)[1]
+        first_err <- conditionMessage(runs[[first_err_idx]]$error)
+        warning(sprintf("%d of %d model fit(s) failed for split '%s'. First error: %s", n_fits - n_ok, n_fits, s_id, first_err), call. = FALSE)
+      }
       res_split <- dplyr::bind_rows(lapply(runs[ok], `[[`, "result"))
 
       if (!is.null(ckpt_file)) {
@@ -478,9 +561,15 @@ summarize_tune_results <- function(object,
       res_split
     },
     .id = "inner_resamples_splits",
-    .options = furrr::furrr_options(seed = TRUE),
+    .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
     .progress = progress
   )
+
+  if (!is.data.frame(res_all) || nrow(res_all) == 0L) {
+    stop("All model fits across all splits failed in summarize_tune_results().", call. = FALSE)
+  }
+
+  res_all
 }
 
 #' Turn a Formula or Formula String Into `+`-Separated Term Names

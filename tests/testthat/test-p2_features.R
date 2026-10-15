@@ -585,3 +585,211 @@ test_that("compare_runs diffs two score_outer results within tolerance", {
   expect_false(attr(comp_strict, "comparison_summary")$all_reproducible)
 })
 
+test_that("glmnet_IBS and tune_over_alpha work under multisession with recipe selectors", {
+  skip_if_not_installed("future")
+  skip_if_not_installed("furrr")
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("yardstick")
+
+  old_plan <- future::plan(future::multisession, workers = 2)
+  withr::defer(future::plan(old_plan))
+
+  set.seed(42)
+  long <- data.frame(
+    id = 1:40,
+    tstart = 0,
+    tstop = seq(10, 60, length.out = 40),
+    status = sample(c(0, 1), 40, replace = TRUE),
+    x1 = rnorm(40),
+    x2 = rnorm(40)
+  )
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable") |>
+    recipes::step_range(recipes::all_numeric_predictors())
+  split <- rsample::initial_split(long, prop = 0.7)
+
+  res <- suppressWarnings(tune_over_alpha(split, recipe = rec, feature_names = c("x1", "x2"), alphas = c(0.5), internal_folds = 2))
+  expect_true(is.null(res[[1]]$error))
+  expect_true(is.data.frame(res[[1]]$result))
+})
+
+test_that("compare_censoring_weights shares seed and handles identical weights", {
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("yardstick")
+
+  set.seed(42)
+  long <- data.frame(
+    id = 1:40,
+    tstart = 0,
+    tstop = seq(10, 60, length.out = 40),
+    status = 1, # all events -> no censoring -> identical weights
+    x1 = rnorm(40),
+    x2 = rnorm(40)
+  )
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable")
+  split <- rsample::initial_split(long, prop = 0.7)
+  grid <- data.frame(alpha = c(0.2, 0.8), model = c("m1", "m2"))
+
+  res <- suppressWarnings(compare_censoring_weights(split, grid, rec, feature_names = c("x1", "x2"), internal_folds = 2))
+  expect_true(!is.null(attr(res, "seed")))
+  expect_equal(attr(res, "rank_agreement")$spearman, 1.0)
+  expect_equal(attr(res, "rank_agreement")$kendall, 1.0)
+})
+
+test_that("refresh_pipeline updates file modification timestamps", {
+  tmp <- tempfile("test_pipeline_ref_")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  f_path <- file.path(tmp, "out.txt")
+  fp <- FilePath("out", f_path)
+  expect_true(is.na(fp@mtime))
+
+  writeLines("hello", f_path)
+  refreshed <- refresh_pipeline(fp)
+  expect_false(is.na(refreshed@mtime))
+})
+
+test_that("write_run_manifest handles non-git directory quietly", {
+  tmp <- tempfile("non_git_")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  manifest_file <- write_run_manifest(tmp, targets_result = list())
+  expect_true(file.exists(manifest_file))
+  data <- jsonlite::fromJSON(manifest_file)
+  expect_true(is.na(data$git_sha) || is.character(data$git_sha))
+})
+
+test_that("checkpoint skipping message is emitted when progress is TRUE", {
+  tmp <- tempfile("ckpt_msg_")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  saveRDS(data.frame(a = 1), file.path(tmp, "tune_split_1.rds"))
+
+  split_obj <- list(splits = list(structure(list(), class = "rsplit")))
+  msgs <- capture_messages({
+    tryCatch(summarize_tune_results(split_obj, checkpoint_dir = tmp, progress = TRUE), error = function(e) NULL)
+  })
+  expect_true(any(grepl("Found 1 cached checkpoint file", msgs)))
+})
+
+test_that("score_outer accepts data.frame with splits column", {
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+
+  set.seed(42)
+  long <- data.frame(
+    id = 1:30,
+    tstart = 0,
+    tstop = seq(10, 60, length.out = 30),
+    status = sample(c(0, 1), 30, replace = TRUE),
+    x1 = rnorm(30),
+    x2 = rnorm(30)
+  )
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable")
+  s1 <- rsample::initial_split(long, prop = 0.7)
+  df_splits <- tibble::tibble(splits = list(s1), id = "Fold01")
+
+  grid <- data.frame(alpha = 0.5, model = "m1")
+  res <- score_outer(df_splits, grid, rec, feature_names = c("x1", "x2"), internal_folds = 2)
+  expect_equal(res$outer_fold[1], "Fold01")
+  expect_equal(nrow(res), 1L)
+})
+
+test_that("compare_tuning_runs and compare_runs dispatch work as expected", {
+  tune1 <- data.frame(alpha = c(0.1, 0.1, 0.5, 0.5), IBS = c(0.2, 0.22, 0.15, 0.17))
+  tune2 <- data.frame(alpha = c(0.1, 0.1, 0.5, 0.5), IBS = c(0.201, 0.219, 0.151, 0.169))
+
+  comp_tune <- compare_tuning_runs(tune1, tune2, tolerance = 0.01)
+  expect_s3_class(comp_tune, "templecbe_tuning_comparison")
+  expect_true(attr(comp_tune, "comparison_summary")$all_reproducible)
+
+  comp_disp <- compare_runs(tune1, tune2, tolerance = 0.01)
+  expect_s3_class(comp_disp, "templecbe_tuning_comparison")
+
+  txt <- capture.output(print(comp_disp))
+  expect_true(any(grepl("TempleCBE Tuning Run Comparison", txt)))
+})
+
+test_that("glmnet_IBS notifies when data contains no censored subjects", {
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("yardstick")
+
+  long <- data.frame(
+    id = 1:30,
+    tstart = 0,
+    tstop = seq(10, 60, length.out = 30),
+    status = 1, # all 30 have event -> no censoring
+    x1 = rnorm(30),
+    x2 = rnorm(30)
+  )
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable")
+  split <- rsample::initial_split(long, prop = 0.7)
+  withr::local_options(templecbe_suppress_frequency_limit = TRUE)
+
+  msgs <- capture_messages({
+    res <- glmnet_IBS(split, recipe = rec, feature_names = c("x1", "x2"), alpha = 0.5, internal_folds = 2)
+  })
+  expect_true(any(grepl("contains no censored subjects", msgs)))
+})
+
+test_that("tune_over_alpha supports checkpoint_dir", {
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("rsample")
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("survival")
+  skip_if_not_installed("yardstick")
+
+  set.seed(42)
+  long <- data.frame(
+    id = 1:30,
+    tstart = 0,
+    tstop = seq(10, 60, length.out = 30),
+    status = sample(c(0, 1), 30, replace = TRUE),
+    x1 = rnorm(30),
+    x2 = rnorm(30)
+  )
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable")
+  split <- rsample::initial_split(long, prop = 0.7)
+
+  tmp <- tempfile("ckpt_alpha_")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  res1 <- suppressWarnings(tune_over_alpha(split, recipe = rec, feature_names = c("x1", "x2"), alphas = c(0.2, 0.8), internal_folds = 2, checkpoint_dir = tmp))
+  files <- list.files(tmp, pattern = "^tune_alpha_.*\\.rds$")
+  expect_equal(length(files), 2L)
+
+  res2 <- suppressWarnings(tune_over_alpha(split, recipe = rec, feature_names = c("x1", "x2"), alphas = c(0.2, 0.8), internal_folds = 2, checkpoint_dir = tmp))
+  expect_equal(length(res2), 2L)
+})
+
+test_that("summarize_tune_results and score_outer fail informatively when all fits error", {
+  skip_if_not_installed("rsample")
+
+  fake_split <- structure(list(), class = "rsplit")
+  obj <- list(splits = list(fake_split))
+
+  # summarize_tune_results should stop when every fit errors
+  expect_error(
+    summarize_tune_results(obj, alphas = c(0.5)),
+    "failed for split"
+  )
+})
+

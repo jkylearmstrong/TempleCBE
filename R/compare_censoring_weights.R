@@ -49,7 +49,7 @@ score_outer <- function(object,
   if (inherits(object, "rsplit")) {
     splits <- list(object)
     fold_names <- "split"
-  } else if (inherits(object, "nested_cv") || inherits(object, "rset")) {
+  } else if (inherits(object, "nested_cv") || inherits(object, "rset") || (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits))) {
     splits <- object$splits
     if ("id" %in% names(object)) {
       if ("id2" %in% names(object)) {
@@ -108,6 +108,12 @@ score_outer <- function(object,
 
   if (!is.null(checkpoint_dir)) {
     dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    if (isTRUE(progress)) {
+      existing_ckpts <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$")
+      if (length(existing_ckpts) > 0) {
+        message(sprintf("Found %d cached checkpoint file(s) in '%s'; skipping.", length(existing_ckpts), checkpoint_dir))
+      }
+    }
   }
 
   score_one_task <- function(task_idx, s_seed) {
@@ -155,7 +161,13 @@ score_outer <- function(object,
       }
     }
 
-    res <- do.call(glmnet_IBS, call_args)
+    res <- tryCatch(
+      do.call(glmnet_IBS, call_args),
+      error = function(e) {
+        warning("score_outer() task failed: ", conditionMessage(e), call. = FALSE)
+        tibble::tibble(IBS = NA_real_, lambda = NA_real_, term = character(), estimate = numeric())
+      }
+    )
 
     has_coefs <- all(c("term", "estimate") %in% names(res))
     coef_tbl <- if (has_coefs && nrow(res) > 0) {
@@ -188,12 +200,14 @@ score_outer <- function(object,
   can_furrr <- requireNamespace("furrr", quietly = TRUE) &&
     requireNamespace("future", quietly = TRUE)
 
+  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
+
   if (can_furrr) {
     res_list <- furrr::future_map2(
       seq_len(n_tasks),
       task_seeds,
       score_one_task,
-      .options = furrr::furrr_options(seed = TRUE),
+      .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
       .progress = progress
     )
   } else {
@@ -204,7 +218,15 @@ score_outer <- function(object,
     )
   }
 
-  dplyr::bind_rows(res_list)
+  res_tbl <- dplyr::bind_rows(res_list)
+  if (!is.data.frame(res_tbl) || nrow(res_tbl) == 0L || all(is.na(res_tbl$IBS))) {
+    stop("All candidate model fits failed in score_outer().", call. = FALSE)
+  }
+  n_failed <- sum(is.na(res_tbl$IBS))
+  if (n_failed > 0L) {
+    warning(sprintf("%d candidate model fit(s) failed in score_outer().", n_failed), call. = FALSE)
+  }
+  res_tbl
 }
 
 #' Tidy Outer Model Coefficients into Long Format
@@ -286,7 +308,9 @@ compare_censoring_weights <- function(object,
                                       ...,
                                       seed = NULL,
                                       progress = FALSE) {
-  if (is.data.frame(object) && is.data.frame(grid)) {
+  shared_seed <- if (!is.null(seed)) seed else sample.int(1e9, 1L)
+
+  if (is.data.frame(object) && !("splits" %in% names(object)) && any(c("IBS", "ibs_none") %in% names(object)) && is.data.frame(grid)) {
     # Pre-scored tables mode
     tbl_none <- tibble::as_tibble(object)
     tbl_ipcw <- tibble::as_tibble(grid)
@@ -308,18 +332,18 @@ compare_censoring_weights <- function(object,
     sub_ipcw <- dplyr::rename(sub_ipcw, ibs_ipcw = !!ibs_col_ipcw)
 
     out <- dplyr::inner_join(sub_none, sub_ipcw, by = id_cols)
-  } else if (inherits(object, "rsplit") || inherits(object, "nested_cv") || inherits(object, "rset") || (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit")))) {
+  } else if (inherits(object, "rsplit") || inherits(object, "nested_cv") || inherits(object, "rset") || (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits)) || (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit")))) {
     if (is.null(recipe)) {
       stop("`recipe` is required when scoring on an rsplit `object`.", call. = FALSE)
     }
     # Direct evaluation mode
     scored_none <- score_outer(
       object, grid, recipe = recipe, ...,
-      censoring_weights = "none", seed = seed, progress = progress
+      censoring_weights = "none", seed = shared_seed, progress = progress
     )
     scored_ipcw <- score_outer(
       object, grid, recipe = recipe, ...,
-      censoring_weights = "ipcw", seed = seed, progress = progress
+      censoring_weights = "ipcw", seed = shared_seed, progress = progress
     )
 
     id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(scored_none))
@@ -350,9 +374,25 @@ compare_censoring_weights <- function(object,
   }
 
   n_valid <- sum(!is.na(out$ibs_none) & !is.na(out$ibs_ipcw))
-  spearman_rho <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "spearman", use = "complete.obs") else NA_real_
-  kendall_tau <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "kendall", use = "complete.obs") else NA_real_
+  if (n_valid == 0L) {
+    stop("All model evaluations failed in compare_censoring_weights().", call. = FALSE)
+  }
 
+  is_identical <- n_valid > 0L && all(abs(out$ibs_none - out$ibs_ipcw) < 1e-12, na.rm = TRUE)
+  if (is_identical) {
+    rlang::inform(
+      "Censoring weights 'none' and 'ipcw' produce identical scores across all models.",
+      .frequency = "once",
+      .frequency_id = "TempleCBE_compare_censoring_weights_identical"
+    )
+    spearman_rho <- 1.0
+    kendall_tau <- 1.0
+  } else {
+    spearman_rho <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "spearman", use = "complete.obs") else NA_real_
+    kendall_tau <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "kendall", use = "complete.obs") else NA_real_
+  }
+
+  attr(out, "seed") <- shared_seed
   attr(out, "rank_agreement") <- list(
     spearman = spearman_rho,
     kendall = kendall_tau
@@ -541,6 +581,12 @@ compare_runs <- function(run1,
     run2 <- readRDS(run2)
   }
 
+  if (is.data.frame(run1) && is.data.frame(run2) &&
+      !"model" %in% names(run1) && !"model" %in% names(run2) &&
+      all(c("alpha", "IBS") %in% names(run1)) && all(c("alpha", "IBS") %in% names(run2))) {
+    return(compare_tuning_runs(run1, run2, tolerance = tolerance, label1 = label1, label2 = label2))
+  }
+
   if (!is.data.frame(run1) || !is.data.frame(run2)) {
     stop("`run1` and `run2` must be data frames or valid paths to RDS files.", call. = FALSE)
   }
@@ -665,6 +711,117 @@ print.templecbe_run_comparison <- function(x, ...) {
   if (!s$all_reproducible) {
     discrepant <- x[!x$reproducible, , drop = FALSE]
     cat(sprintf("\n%d model(s) exceeded tolerance:\n", nrow(discrepant)))
+    print(utils::head(discrepant, 10))
+  }
+  invisible(x)
+}
+
+#' Compare and Summarize Two Tuning Runs
+#'
+#' Computes comparative summary statistics (mean, median, 25th and 75th percentiles)
+#' of integrated Brier scores (IBS) across candidate alpha values and formulas between
+#' two tuning runs (e.g. from [summarize_tune_results()] or [tune_over_alpha()]).
+#'
+#' @param tune1 A data frame of tuning results containing `alpha` and `IBS` columns,
+#'   or a path to an `.rds` file.
+#' @param tune2 A second data frame of tuning results to compare against `tune1`,
+#'   or a path to an `.rds` file.
+#' @param tolerance Numeric tolerance for differences in mean IBS (default `1e-4`).
+#' @param label1 Character label for `tune1` (default `"run1"`).
+#' @param label2 Character label for `tune2` (default `"run2"`).
+#' @return An object of class `c("templecbe_tuning_comparison", "tbl_df", "tbl", "data.frame")`
+#'   summarizing per-alpha IBS distributions and shifts.
+#' @seealso [summarize_tune_results()], [compare_runs()]
+#' @export
+compare_tuning_runs <- function(tune1,
+                                tune2,
+                                tolerance = 1e-4,
+                                label1 = "run1",
+                                label2 = "run2") {
+  if (is.character(tune1) && length(tune1) == 1L && file.exists(tune1)) {
+    tune1 <- readRDS(tune1)
+  }
+  if (is.character(tune2) && length(tune2) == 1L && file.exists(tune2)) {
+    tune2 <- readRDS(tune2)
+  }
+
+  if (!is.data.frame(tune1) || !is.data.frame(tune2)) {
+    stop("`tune1` and `tune2` must be data frames or valid paths to RDS files.", call. = FALSE)
+  }
+  if (!all(c("alpha", "IBS") %in% names(tune1)) || !all(c("alpha", "IBS") %in% names(tune2))) {
+    stop("Both tuning runs must contain 'alpha' and 'IBS' columns.", call. = FALSE)
+  }
+
+  group_cols <- "alpha"
+  if ("formula" %in% names(tune1) && "formula" %in% names(tune2)) {
+    group_cols <- c("alpha", "formula")
+  }
+
+  summarize_tune <- function(df, lbl) {
+    g <- dplyr::group_by(df, dplyr::across(dplyr::all_of(group_cols)))
+    s <- dplyr::summarize(
+      g,
+      n_fits = dplyr::n(),
+      mean_ibs = mean(.data$IBS, na.rm = TRUE),
+      median_ibs = stats::median(.data$IBS, na.rm = TRUE),
+      q25_ibs = stats::quantile(.data$IBS, 0.25, na.rm = TRUE),
+      q75_ibs = stats::quantile(.data$IBS, 0.75, na.rm = TRUE),
+      .groups = "drop"
+    )
+    names(s)[names(s) %in% c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs")] <-
+      paste0(c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs"), "_", lbl)
+    s
+  }
+
+  s1 <- summarize_tune(tune1, label1)
+  s2 <- summarize_tune(tune2, label2)
+
+  merged <- dplyr::inner_join(s1, s2, by = group_cols)
+  if (nrow(merged) == 0L) {
+    stop("No matching alpha/formula configurations found between tune1 and tune2.", call. = FALSE)
+  }
+
+  mean1_col <- paste0("mean_ibs_", label1)
+  mean2_col <- paste0("mean_ibs_", label2)
+  diff_mean <- abs(merged[[mean1_col]] - merged[[mean2_col]])
+  reproducible <- is.na(diff_mean) | (diff_mean <= tolerance)
+
+  merged$diff_mean_ibs <- diff_mean
+  merged$reproducible <- reproducible
+
+  spearman_rho <- if (nrow(merged) >= 2) stats::cor(merged[[mean1_col]], merged[[mean2_col]], method = "spearman", use = "complete.obs") else NA_real_
+
+  summary_info <- list(
+    label1 = label1,
+    label2 = label2,
+    tolerance = tolerance,
+    n_configs = nrow(merged),
+    all_reproducible = all(reproducible),
+    max_mean_diff = max(diff_mean, na.rm = TRUE),
+    rank_correlation = spearman_rho
+  )
+
+  attr(merged, "comparison_summary") <- summary_info
+  class(merged) <- c("templecbe_tuning_comparison", class(merged))
+  merged
+}
+
+#' @export
+print.templecbe_tuning_comparison <- function(x, ...) {
+  s <- attr(x, "comparison_summary")
+  cat("====================================================\n")
+  cat("TempleCBE Tuning Run Comparison\n")
+  cat(sprintf("Runs compared: '%s' vs '%s'\n", s$label1, s$label2))
+  cat(sprintf("Tuning configurations: %d\n", s$n_configs))
+  cat(sprintf("Tolerance: mean |IBS diff| <= %g\n", s$tolerance))
+  cat("----------------------------------------------------\n")
+  cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
+  cat(sprintf("Max mean |IBS diff|:   %g\n", s$max_mean_diff))
+  cat(sprintf("Spearman Rank Corr:    %.4f\n", s$rank_correlation))
+  cat("====================================================\n")
+  if (!s$all_reproducible) {
+    discrepant <- x[!x$reproducible, , drop = FALSE]
+    cat(sprintf("\n%d configuration(s) exceeded tolerance:\n", nrow(discrepant)))
     print(utils::head(discrepant, 10))
   }
   invisible(x)

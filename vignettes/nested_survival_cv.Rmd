@@ -419,24 +419,42 @@ yardstick::brier_survival_integrated(scored_predictions, truth = .truth, .pred)
 ### 3. Distributed elastic net tuning with `survival_metrics`
 
 When searching over a broad grid of elastic net mixing parameters ($\alpha$) or
-evaluating competing candidate clinical formulas, `tune_over_alpha()` and
-`summarize_tune_results()` orchestrate parallel evaluation using `furrr`:
+evaluating competing candidate clinical formulas, `tune_over_alpha()`,
+`summarize_tune_results()`, and `score_outer()` orchestrate parallel evaluation using `furrr`.
+
+#### Nested Parallelism & Cluster Benchmarking Architecture
+
+In nested survival cross-validation, total computational workload scales multiplicatively:
+$$\text{Total Fits} = N_{\text{outer folds}} \times N_{\text{inner splits}} \times N_{\alpha \text{ values}} \times N_{\text{internal CV folds}}$$
+
+For example, a study with 7 outer folds, 7 inner resamples, 10 candidate $\alpha$ mixing parameters, and 5 internal penalty selection folds requires $7 \times 7 \times 10 \times 5 = 2,450$ penalized Cox model estimations per clinical domain.
+
+**Best Practices for Cluster & Multicore Execution:**
+1. **Outer/Split Parallelism**: Set `future::plan(multisession, workers = N)` at the session level before invoking tuning or scoring. `TempleCBE` functions strictly adhere to the *never call plan() inside functions* fleet rule.
+2. **Sequential Inner Fits**: Avoid setting `parallel = TRUE` inside `glmnet_IBS()` when `summarize_tune_results()` is already running across parallel workers; nested socket clusters lead to worker resource contention and OS deadlocks.
+3. **Resilience with Checkpoints**: Pass `checkpoint_dir = "checkpoints/tuning_abg"` to `summarize_tune_results()`, `tune_over_alpha()`, and `score_outer()`. Completed tasks save atomic `.rds` artifacts per split/fold. If a run is interrupted across cluster nodes, rerunning detects cached checkpoints and skips recomputation with an informative progress notice.
+4. **Environment Isolation**: Multisession worker processes automatically import required preprocessing namespaces (`recipes`, `rsample`, `yardstick`, `survival`, `glmnet`).
 
 ```{r tune_alpha_demo, eval = FALSE}
 library(furrr)
 plan(multisession, workers = 4)
 
-# Parallel grid search across alpha values for an rsample split
+# Parallel grid search across alpha values with checkpointing
 alpha_results <- tune_over_alpha(
   split,
   recipe = cox_rec,
   num_alpha_values = 10,
   internal_folds = 5,
-  progress = TRUE
+  progress = TRUE,
+  checkpoint_dir = "checkpoints/alpha_grid"
 )
 
 # Summarize results across all inner splits of a nested resample
-nested_alpha_summary <- summarize_tune_results(nested_folds$inner_resamples[[1]])
+nested_alpha_summary <- summarize_tune_results(
+  nested_folds$inner_resamples[[1]],
+  checkpoint_dir = "checkpoints/inner_splits",
+  progress = TRUE
+)
 ```
 
 ### 4. Translating survival curves to GraphPad Prism with `km_summary_to_prism()`
