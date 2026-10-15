@@ -1,6 +1,11 @@
+skip_if_no_joint_deps <- function() {
+  for (pkg in c("glmnet", "survival", "yardstick", "rsample")) {
+    testthat::skip_if_not_installed(pkg)
+  }
+}
+
 test_that("joint_model fits coxnet, status, and time models on 2-parameter data", {
-  skip_if_not_installed("glmnet")
-  skip_if_not_installed("survival")
+  skip_if_no_joint_deps()
 
   set.seed(123)
   n <- 50
@@ -35,8 +40,7 @@ test_that("joint_model fits coxnet, status, and time models on 2-parameter data"
 })
 
 test_that("joint_model supports counting-process start/stop data", {
-  skip_if_not_installed("glmnet")
-  skip_if_not_installed("survival")
+  skip_if_no_joint_deps()
 
   set.seed(42)
   t_mid <- stats::runif(30, 2, 5)
@@ -95,6 +99,7 @@ test_that("joint_model auto-tunes penalty for counting-process data with subject
 })
 
 test_that("joint_model supports baguette and stacks engines", {
+  skip_if_no_coxnet_deps()
   skip_if_not_installed("baguette")
   skip_if_not_installed("stacks")
   skip_if_not_installed("parsnip")
@@ -284,8 +289,7 @@ test_that("nested_cv_joint_model scores outer splits across models", {
 })
 
 test_that("joint_model keeps subject_id out of the coxnet fit when the formula uses `~ .`", {
-  skip_if_not_installed("glmnet")
-  skip_if_not_installed("survival")
+  skip_if_no_coxnet_deps()
 
   set.seed(46)
   n_subjects <- 30
@@ -313,8 +317,7 @@ test_that("joint_model keeps subject_id out of the coxnet fit when the formula u
 })
 
 test_that("joint_model rejects a subject_id that is not a column of the data", {
-  skip_if_not_installed("glmnet")
-  skip_if_not_installed("survival")
+  skip_if_no_coxnet_deps()
 
   set.seed(47)
   df <- data.frame(
@@ -329,8 +332,7 @@ test_that("joint_model rejects a subject_id that is not a column of the data", {
 })
 
 test_that("predict.joint_model re-applies the training encoding to factor predictors", {
-  skip_if_not_installed("glmnet")
-  skip_if_not_installed("survival")
+  skip_if_no_coxnet_deps()
 
   set.seed(48)
   n <- 80

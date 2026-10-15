@@ -47,6 +47,7 @@ test_that("failure-mode: permission-denied paths and insecure secrets locations"
   # Simulate non-writable location
   loc <- withr::local_tempdir("readonly_report_dir")
   if (.Platform$OS.type != "windows") {
+    skip_if(identical(unname(Sys.info()["user"]), "root"), "permission checks do not fail when running as root")
     Sys.chmod(loc, mode = "0555")
     on.exit(Sys.chmod(loc, mode = "0755"), add = TRUE)
     expect_error(
@@ -69,6 +70,7 @@ test_that("failure-mode: corrupted template directories fail early with actionab
   read_only_file <- file.path(loc, "t_test_example.qmd")
   file.create(read_only_file)
   if (.Platform$OS.type != "windows") {
+    skip_if(identical(unname(Sys.info()["user"]), "root"), "permission checks do not fail when running as root")
     Sys.chmod(read_only_file, mode = "0444")
     on.exit(Sys.chmod(read_only_file, mode = "0644"), add = TRUE)
     # create_report() warns before it overwrites a report that exists (asserted in

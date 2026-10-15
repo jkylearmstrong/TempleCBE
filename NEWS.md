@@ -1,3 +1,24 @@
+# TempleCBE 0.5.2
+
+## Security & Privacy Hardening
+
+* **Hardened Docker Publish Workflow (`.github/workflows/docker-publish.yml`):** Secured `workflow_run` triggers by strictly verifying `event == 'push'` and matching `head_repository.full_name == github.repository`, eliminating vulnerability to unauthorized image building from fork PR runs. Added direct `push: tags: ['v*']` trigger enabling automated multi-architecture image publication (`linux/amd64,linux/arm64`) on release tags.
+* **Non-destructive Secrets Directory Permissions (`R/atomic_io.R`):** `validate_secrets_dir()` now tightens permissions (`0700`) only on newly created directories. Existing directories are left untouched (preventing unintended chmod on user home or working directories), while existing world-writable directories without a sticky bit are rejected. `atomic_write_file()` enforces `0600` permissions on temporary files prior to atomic rename on POSIX platforms.
+
+## Core Modeling & Packaging Improvements
+
+* **Directory Deliverable Copy Guards (`R/bundle_deliverables.R`, `R/zip_reports.R`):** Added explicit `!dir.exists()` guards before invoking `file.copy()`, preventing directory paths from silently copying as empty 0-byte files on older R runtimes (e.g. R 4.3.3).
+* **Caller RNG State Preservation (`R/racing_workflows.R`):** `tune_race_survival()` now scopes random seeds via `local_seed()` rather than bare `set.seed()`, cleanly preserving the caller's `.Random.seed` state across tuning routines.
+* **Cross-Version `cox.ties` Validation (`R/coxnet.R`):** `fit_glmnet_cox()` explicitly validates `cox.ties` via `match.arg(..., c("breslow", "efron"))`, ensuring consistent parameter rejection across all `glmnet` versions (including 4.1.8).
+* **Docker Hub Step Credential Scope (`.github/workflows/docker-publish.yml`):** Moved Docker Hub environment variables (`DOCKERHUB_USER`, `DOCKERHUB_PASS`) to job-level scope so conditional step evaluations (`if: ${{ env.DOCKERHUB_USER != '' }}`) evaluate reliably.
+* **Dependency Version Floor (`DESCRIPTION`):** Specified `openxlsx (>= 4.2.6)` in `Suggests` to eliminate upstream `sprintf` format string warnings.
+
+## Test Portability & CI Diagnostics
+
+* **Windows Junction Removal (`tests/testthat/helper-links.R`):** `remove_dir_link()` preserves un-normalized link paths when invoking `cmd /c rmdir`, preventing path resolution to the target directory and eliminating reparse point mismatch warnings.
+* **Root Execution Guards (`tests/testthat/test-failure_modes.R`):** Filesystem permission failure tests now safely skip when running under the `root` user in container environments where POSIX permissions are bypassed.
+* **Soft Dependency Gates (`tests/testthat/test-joint_model.R`):** Added helper skips for environments missing optional packages `yardstick` or `rsample`.
+
 # TempleCBE 0.5.1
 
 ## CI/CD Pipeline & Build Architecture

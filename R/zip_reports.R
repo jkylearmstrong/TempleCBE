@@ -105,7 +105,7 @@ zip_reports <- function(reports,
   # otherwise link to something that is not in the zip.
   stage_copy <- function(from, dest_dir, name) {
     if (!dir.exists(dest_dir)) dir.create(dest_dir, recursive = TRUE)
-    if (isTRUE(suppressWarnings(file.copy(from, file.path(dest_dir, name), overwrite = TRUE)))) {
+    if (!dir.exists(from) && isTRUE(suppressWarnings(file.copy(from, file.path(dest_dir, name), overwrite = TRUE)))) {
       return(TRUE)
     }
     warning("Could not copy '", from, "' into the zip; it is left out of the archive and of the index.", call. = FALSE)
@@ -208,7 +208,7 @@ zip_reports <- function(reports,
       # Two files with one name (a/results.csv, b/results.csv) must not be one
       # file in the zip: the later one is kept under a numbered name, with a warning.
       dest_file <- unique_staging_path(data_dir, basename(data_file), staged_data)
-      if (isTRUE(suppressWarnings(file.copy(data_file, dest_file)))) {
+      if (!dir.exists(data_file) && isTRUE(suppressWarnings(file.copy(data_file, dest_file)))) {
         staged_data <- c(staged_data, dest_file)
       } else {
         warning("Could not copy the data deliverable '", data_file, "' into the zip; it is left out of the archive.",

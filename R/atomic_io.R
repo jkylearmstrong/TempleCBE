@@ -58,32 +58,44 @@ validate_secrets_dir <- function(dir) {
   }
 
   # Ensure directory exists with user-only permissions (0700)
+  created_dir <- FALSE
   if (!dir.exists(dir_norm)) {
-    ok <- dir.create(dir_norm, recursive = TRUE, showWarnings = FALSE)
+    dir.create(dir_norm, recursive = TRUE, showWarnings = FALSE)
     if (!dir.exists(dir_norm)) {
       stop(
         "Failed to create secrets directory '", dir_norm, "'. Check path and permissions.",
         call. = FALSE
       )
     }
+    created_dir <- TRUE
     tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
   }
 
-  # On POSIX systems, verify that permissions are non-group and non-world accessible
+  # On POSIX systems, verify directory security
   if (.Platform$OS.type != "windows") {
     info <- file.info(dir_norm)
     if (!is.na(info$mode)) {
       mode_int <- as.integer(info$mode)
-      # Check group (octal 070) and world (octal 007) bits -> octal 077 = 63L
-      insecure_bits <- bitwAnd(mode_int, 63L)
-      if (insecure_bits != 0L) {
-        # Attempt to restrict permissions to 0700
+      if (created_dir) {
+        # Directories created by validate_secrets_dir must be restricted to 0700
         tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
         info_after <- file.info(dir_norm)
         if (bitwAnd(as.integer(info_after$mode), 63L) != 0L) {
           stop(
-            "Insecure permissions on secrets directory '", dir_norm,
-            "' (mode: ", format(info$mode), "). Directory must be user-only and not group- or world-accessible.",
+            "Insecure permissions on created secrets directory '", dir_norm,
+            "' (mode: ", format(info$mode), "). Directory must be user-only (0700).",
+            call. = FALSE
+          )
+        }
+      } else {
+        # Existing directory permissions are left untouched (e.g. never chmod ~).
+        # Refuse only if the existing directory is world-writable without a sticky bit.
+        is_world_writable <- bitwAnd(mode_int, 2L) != 0L
+        has_sticky_bit <- bitwAnd(mode_int, 512L) != 0L
+        if (is_world_writable && !has_sticky_bit) {
+          stop(
+            "Insecure permissions on existing secrets directory '", dir_norm,
+            "' (mode: ", format(info$mode), "). Directory is world-writable without sticky bit.",
             call. = FALSE
           )
         }
@@ -239,6 +251,11 @@ atomic_write_file <- function(content, target_path) {
   }, finally = {
     close(con)
   })
+
+  # Ensure user-only read/write permissions (0600) on POSIX before moving into place
+  if (.Platform$OS.type != "windows") {
+    tryCatch(Sys.chmod(tmp_file, mode = "0600"), error = function(e) NULL)
+  }
 
   # Atomically rename temporary file to target path
   success <- file.rename(tmp_file, target_path)

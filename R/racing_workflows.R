@@ -175,7 +175,7 @@ tune_race_survival <- function(object,
   }
 
   if (!is.null(seed)) {
-    set.seed(seed)
+    local_seed(seed)
   }
 
   if (call_fn == "tune_race_anova") {

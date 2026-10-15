@@ -56,7 +56,7 @@ package_deliverables <- function(pipeline_objects,
   # Copies one deliverable into the staging folder and records it; a copy that
   # fails is said so and does not count as packaged.
   stage_deliverable <- function(from, dest) {
-    if (isTRUE(suppressWarnings(file.copy(from, dest, overwrite = TRUE)))) {
+    if (!dir.exists(from) && isTRUE(suppressWarnings(file.copy(from, dest, overwrite = TRUE)))) {
       copied_files <<- c(copied_files, dest)
     } else {
       warning("Could not copy '", from, "' into the archive; it is left out.", call. = FALSE)
