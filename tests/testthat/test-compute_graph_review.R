@@ -916,3 +916,145 @@ test_that("R-CG-08: join_pipelines() does not duplicate the edges two graphs sha
   expect_setequal(igraph::edge_attr(ab, "type"), c("dependency", "output"))
   expect_true(all(nzchar(igraph::edge_attr(ab, "title"))))
 })
+
+test_that("is_stale() accurately reports output file staleness", {
+  dir <- withr::local_tempdir()
+  in_f <- cg_file(dir, "input.csv", 100)
+  out_f_stale <- cg_file(dir, "output_stale.rds", 50)
+  out_f_fresh <- cg_file(dir, "output_fresh.rds", 150)
+
+  producer_stale <- FileOutputs("stage1", cg_file(dir, "stage1.R", 100),
+                                dependencies = list(FilePath("input", in_f)),
+                                output = list(FilePath("out_stale", out_f_stale)))
+  producer_fresh <- FileOutputs("stage1", cg_file(dir, "stage1.R", 100),
+                                dependencies = list(FilePath("input", in_f)),
+                                output = list(FilePath("out_fresh", out_f_fresh)))
+
+  expect_true(is_stale(FilePath("out_stale", out_f_stale), producer_stale))
+  expect_false(is_stale(FilePath("out_fresh", out_f_fresh), producer_fresh))
+
+  # Missing file is always stale
+  expect_true(is_stale(FilePath("missing", file.path(dir, "nonexistent.rds")), producer_fresh))
+})
+
+test_that("get_render_plan supports only_stale = FALSE, from, to, and dry_run", {
+  dir <- withr::local_tempdir()
+
+  raw <- FilePath("raw", cg_file(dir, "raw.csv", 10))
+  qmd1_f <- cg_file(dir, "step1.qmd", 20)
+  out1_f <- cg_file(dir, "step1.pdf", 30)
+  qmd2_f <- cg_file(dir, "step2.qmd", 20)
+  out2_f <- cg_file(dir, "step2.pdf", 30)
+  qmd3_f <- cg_file(dir, "step3.qmd", 20)
+  out3_f <- cg_file(dir, "step3.pdf", 30)
+
+  node1 <- FileOutputs("step1", qmd1_f, dependencies = list(raw), output = list(FilePath("out1", out1_f)), renders = TRUE)
+  node2 <- FileOutputs("step2", qmd2_f, dependencies = list(FilePath("out1", out1_f)), output = list(FilePath("out2", out2_f)), renders = TRUE)
+  node3 <- FileOutputs("step3", qmd3_f, dependencies = list(FilePath("out2", out2_f)), output = list(FilePath("out3", out3_f)), renders = TRUE)
+
+  pipe <- list(raw, node1, node2, node3)
+
+  # All nodes are currently up to date
+  plan_stale <- quiet_plan(pipe)
+  expect_length(plan_stale, 0)
+
+  # only_stale = FALSE plans all renderable nodes in topological order
+  plan_all <- suppressMessages(get_render_plan(pipe, only_stale = FALSE))
+  expect_equal(names(plan_all), c("step1", "step2", "step3"))
+
+  # from and to by name
+  plan_sub1 <- suppressMessages(get_render_plan(pipe, only_stale = FALSE, from = "step2", to = "step3"))
+  expect_equal(names(plan_sub1), c("step2", "step3"))
+
+  # from and to by integer index
+  plan_sub2 <- suppressMessages(get_render_plan(pipe, only_stale = FALSE, from = 1, to = 2))
+  expect_equal(names(plan_sub2), c("step1", "step2"))
+
+  # invalid from / to
+  expect_error(get_render_plan(pipe, only_stale = FALSE, from = "step3", to = "step1"), "occurs after")
+  expect_error(get_render_plan(pipe, only_stale = FALSE, from = "nonexistent"), "not found")
+
+  # dry_run = TRUE prints plan and returns invisibly
+  out_dry <- capture.output({
+    plan_dry <- get_render_plan(pipe, only_stale = FALSE, dry_run = TRUE)
+  })
+  expect_equal(names(plan_dry), c("step1", "step2", "step3"))
+  expect_true(any(grepl("step1", out_dry)))
+  expect_true(any(grepl("step2", out_dry)))
+  expect_true(any(grepl("step3", out_dry)))
+})
+
+test_that("save_pipeline and load_pipeline serialize and refresh mtimes", {
+  dir <- withr::local_tempdir()
+
+  raw_f <- cg_file(dir, "raw.csv", 100)
+  out_f <- cg_file(dir, "out.rds", 200)
+
+  raw <- FilePath("raw", raw_f)
+  stage <- FileOutputs("stage", cg_file(dir, "stage.R", 150),
+                       dependencies = list(raw),
+                       output = list(FilePath("out", out_f)))
+
+  pipe <- list(raw, stage)
+
+  pipe_rds <- file.path(dir, "saved_pipe.rds")
+  save_pipeline(pipe, file = pipe_rds)
+  expect_true(file.exists(pipe_rds))
+
+  # Touch raw.csv to a newer mtime
+  cg_file(dir, "raw.csv", 300)
+  new_raw_mtime <- file.info(raw_f)$mtime
+
+  # load_pipeline with update_mtime = TRUE reflects the updated mtime
+  loaded <- load_pipeline(pipe_rds, update_mtime = TRUE)
+  expect_equal(length(loaded), 2)
+  expect_equal(loaded[[1]]@mtime, new_raw_mtime)
+
+  # Check that staleness detection works directly on loaded pipeline
+  expect_true(is_stale(loaded[[2]]@output[[1]], loaded[[2]], all_objects = loaded))
+})
+
+test_that("visualize_pipeline supports diagram controls and export_pipeline_diagram writes files", {
+  skip_if_not_installed("DiagrammeR")
+  dir <- withr::local_tempdir()
+
+  raw <- FilePath("raw", cg_file(dir, "raw.csv", 100))
+  stage <- FileOutputs("stage", cg_file(dir, "stage.R", 150),
+                       dependencies = list(raw),
+                       output = list(FilePath("out", cg_file(dir, "out.rds", 200))))
+  objs <- list(raw, stage, stage@output[[1]])
+
+  dot <- visualize_pipeline(
+    objs,
+    extract_graph_code = TRUE,
+    orientation = "LR",
+    font_size = 14,
+    node_size = c(2.0, 1.0),
+    node_sep = 0.8,
+    rank_sep = 1.2
+  )
+
+  expect_true(grepl('rankdir = "LR"', dot, fixed = TRUE))
+  expect_true(grepl('nodesep = 0.8', dot, fixed = TRUE))
+  expect_true(grepl('ranksep = 1.2', dot, fixed = TRUE))
+  expect_true(grepl('fontsize = 14', dot, fixed = TRUE))
+  expect_true(grepl('width = 2', dot, fixed = TRUE))
+  expect_true(grepl('height = 1', dot, fixed = TRUE))
+
+  # Test export_pipeline_diagram
+  skip_if_not_installed("DiagrammeRsvg")
+  out_svg <- file.path(dir, "diagram.svg")
+  export_pipeline_diagram(objs, file = out_svg, orientation = "LR")
+  expect_true(file.exists(out_svg))
+  expect_gt(file.info(out_svg)$size, 0)
+
+  if (requireNamespace("rsvg", quietly = TRUE)) {
+    out_pdf <- file.path(dir, "diagram.pdf")
+    export_pipeline_diagram(objs, file = out_pdf, format = "pdf", width = 6.5, height = 9.0)
+    expect_true(file.exists(out_pdf))
+    expect_gt(file.info(out_pdf)$size, 0)
+  }
+})
+
+
+

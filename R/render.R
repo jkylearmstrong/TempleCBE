@@ -102,6 +102,20 @@ extract_yaml_formats <- function(file_path) {
 #'   which caps at available cores minus one. Ignored (rendering falls back
 #'   to sequential) when the \pkg{future}/\pkg{furrr} packages are not
 #'   installed.
+#' @param only_stale Logical. When \code{path} is a compute graph or list of pipeline objects,
+#'   controls whether to plan and render only out-of-date documents (\code{TRUE}, default)
+#'   or all documents in topological dependency order (\code{FALSE}, for full pipeline reruns).
+#' @param from Optional node name or 1-based index in the render plan to start execution from.
+#' @param to Optional node name or 1-based index in the render plan to end execution at.
+#' @param dry_run Logical. When \code{TRUE}, prints the ordered render plan to console
+#'   without executing renders and returns the plan summary invisibly.
+#' @param cache Cache handling: \code{"keep"} (default, preserves existing cache and files),
+#'   \code{"refresh"} (wipes document's \code{_cache} and \code{_files} directories before rendering),
+#'   or \code{"stale"} (wipes cache only if document is stale).
+#' @param on_error Error handling strategy: \code{"continue"} (default, logs warning and
+#'   records failure message in result table) or \code{"stop"} (halts execution immediately on error).
+#' @param resume Optional data frame of previous render results (e.g. from an earlier interrupted
+#'   run). Target format pairs with \code{status == "success"} are skipped.
 #' @param ... Additional options passed directly to the rendering backend
 #'   (\code{quarto::quarto_render} or \code{rmarkdown::render}), such as
 #'   \code{params}, \code{execute_params}, \code{output_dir}, \code{clean}, or \code{quiet}.
@@ -129,24 +143,231 @@ extract_yaml_formats <- function(file_path) {
 #' # plan <- get_render_plan(pipeline)
 #' # render(plan)
 #'
-#' # Render all QMD and Rmd reports in a directory in parallel
-#' render("analysis/")
+#' # Full graph rerun with clean caches
+#' # render(pipeline, only_stale = FALSE, cache = "refresh")
+#'
+#' # Render a slice of the pipeline
+#' # render(pipeline, from = "02_clean_data", to = "05_analysis")
 #' }
+#' Guard Against Inactive renv or Lockfile Disagreements
+#'
+#' Checks whether an `renv.lock` exists in the project root or ancestors and
+#' warns if `renv` is inactive (which commonly occurs when Quarto renders from a
+#' subfolder, skipping the project-root `.Rprofile`), or if any currently loaded
+#' package versions disagree with the lockfile definitions.
+#'
+#' @param project_root Optional project root directory. Defaults to [here::here()]
+#'   if available, or the current working directory.
+#' @return Logical `TRUE` if clean or not using renv, `FALSE` if a warning was emitted.
+#' @export
+check_renv_guard <- function(project_root = NULL) {
+  lock_path <- NULL
+  candidates <- c("renv.lock", file.path("..", "renv.lock"), file.path("..", "..", "renv.lock"))
+  if (!is.null(project_root)) {
+    candidates <- c(file.path(project_root, "renv.lock"), candidates)
+  } else if (requireNamespace("here", quietly = TRUE)) {
+    candidates <- c(file.path(here::here(), "renv.lock"), candidates)
+  }
+  for (cand in candidates) {
+    if (file.exists(cand)) {
+      lock_path <- normalizePath(cand, winslash = "/")
+      break
+    }
+  }
+
+  if (is.null(lock_path)) return(invisible(TRUE))
+
+  renv_active <- FALSE
+  if (requireNamespace("renv", quietly = TRUE)) {
+    proj <- tryCatch(renv::project(), error = function(e) NULL)
+    renv_active <- !is.null(proj) && nzchar(proj)
+  }
+  if (!renv_active && nzchar(Sys.getenv("RENV_PROJECT"))) {
+    renv_active <- TRUE
+  }
+
+  if (!renv_active) {
+    if (!isTRUE(getOption("templecbe_suppress_renv_warning", FALSE))) {
+      warning(
+        "renv is inactive even though renv.lock exists at '", lock_path, "'. ",
+        "Quarto rendering from a subfolder skips the root .Rprofile. Activate renv or set RENV_PROJECT.",
+        call. = FALSE
+      )
+    }
+    return(invisible(FALSE))
+  }
+
+  if (requireNamespace("jsonlite", quietly = TRUE)) {
+    tryCatch({
+      lock_data <- jsonlite::read_json(lock_path)
+      if (!is.null(lock_data$Packages)) {
+        disagreements <- character()
+        loaded_pkgs <- loadedNamespaces()
+        for (pkg_name in intersect(names(lock_data$Packages), loaded_pkgs)) {
+          expected_ver <- lock_data$Packages[[pkg_name]]$Version
+          actual_ver <- as.character(utils::packageVersion(pkg_name))
+          if (!is.null(expected_ver) && expected_ver != actual_ver) {
+            disagreements <- c(disagreements, paste0(pkg_name, " (lock: ", expected_ver, ", loaded: ", actual_ver, ")"))
+          }
+        }
+        if (length(disagreements) > 0) {
+          warning(
+            "renv.lock disagrees with currently loaded package version(s): ",
+            paste(disagreements, collapse = ", "),
+            call. = FALSE
+          )
+          return(invisible(FALSE))
+        }
+      }
+    }, error = function(e) NULL)
+  }
+
+  invisible(TRUE)
+}
+
+#' Write a Run Manifest JSON Beside Render Outputs
+#'
+#' Records environment metadata, git commit hash, package versions, random number
+#' generator seed, execution future plan, and per-node wall times beside render outputs.
+#'
+#' @param output_dir Directory to write `render_manifest.json` into.
+#' @param targets_result Data frame of render timing and status from [render()].
+#' @param seed Optional integer RNG seed used for the run.
+#' @return The absolute path to the written `render_manifest.json` file.
+#' @export
+write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
+  if (!requireNamespace("jsonlite", quietly = TRUE)) {
+    warning("Package 'jsonlite' is required to write run manifest. Install it with install.packages(\"jsonlite\").", call. = FALSE)
+    return(invisible(NULL))
+  }
+
+  git_sha <- tryCatch({
+    res <- system2("git", c("rev-parse", "HEAD"), stdout = TRUE, stderr = FALSE)
+    if (length(res) > 0 && nzchar(res[1])) trimws(res[1]) else NA_character_
+  }, error = function(e) NA_character_)
+
+  plan_name <- tryCatch({
+    if (requireNamespace("future", quietly = TRUE)) {
+      as.character(class(future::plan())[1])
+    } else "sequential"
+  }, error = function(e) "unknown")
+
+  key_pkgs <- c("TempleCBE", "survival", "glmnet", "recipes", "rsample", "yardstick", "quarto", "rmarkdown", "renv")
+  pkg_versions <- list()
+  for (p in key_pkgs) {
+    if (requireNamespace(p, quietly = TRUE)) {
+      pkg_versions[[p]] <- as.character(utils::packageVersion(p))
+    }
+  }
+
+  clean_timing <- if (is.data.frame(targets_result)) {
+    as.data.frame(targets_result)
+  } else list()
+
+  manifest <- list(
+    timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    templecbe_version = as.character(utils::packageVersion("TempleCBE")),
+    git_sha = git_sha,
+    future_plan = plan_name,
+    seed = if (!is.null(seed)) seed else if (exists(".Random.seed", envir = .GlobalEnv)) .GlobalEnv$.Random.seed[1:min(2, length(.GlobalEnv$.Random.seed))] else NA,
+    package_versions = pkg_versions,
+    per_node_wall_time = clean_timing
+  )
+
+  manifest_path <- file.path(output_dir, "render_manifest.json")
+  jsonlite::write_json(manifest, manifest_path, pretty = TRUE, auto_unbox = TRUE)
+  invisible(manifest_path)
+}
+
+#' Render Pipeline Documents and Reports
+#'
+#' Dispatches Quarto or R Markdown compilation across single documents, directories,
+#' or computational pipeline graphs, with support for staleness detection, range filtering,
+#' cache invalidation, error recovery, run manifests, and renv guards.
+#'
+#' @param path A file path (character), directory, list of files, or list of pipeline
+#'   objects (`FilePath`, `FileUses`, `FileOutputs`).
+#' @param formats Character vector of output formats (e.g. `c("pdf", "docx", "html")`).
+#' @param pattern File pattern regex matching documents to render.
+#' @param engine Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.
+#' @param workers Number of parallel workers for concurrent rendering via `future`/`furrr`.
+#' @param only_stale Logical. When `TRUE` (default), only out-of-date documents are rendered.
+#'   When `FALSE`, performs a full graph rerun.
+#' @param from Optional starting node name or index in the topological plan.
+#' @param to Optional ending node name or index in the topological plan.
+#' @param dry_run Logical. When `TRUE`, prints the ordered render plan without executing.
+#' @param cache Cache handling: `"keep"` (default), `"refresh"` (wipes `_cache` and `_files`),
+#'   or `"stale"`.
+#' @param on_error Behavior upon error: `"continue"` (default) or `"stop"`.
+#' @param resume Optional data frame of previous render results to resume from.
+#' @param manifest Logical. When \code{TRUE} (default), writes a \code{render_manifest.json}
+#'   beside rendered outputs containing TempleCBE version, git commit hash, package versions,
+#'   RNG seed, future plan, and per-document wall time.
+#' @param renv_guard Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
+#'   if an \code{renv.lock} exists, and warns of any package version discrepancies.
+#' @param seed Optional integer seed for reproducible document execution.
+#' @param ... Additional arguments passed to rendering engines.
+#' @return A data frame of rendered files, output formats, durations, and status.
+#' @export
 render <- function(path,
                    formats = getOption("pipeline.default_formats", c("pdf", "docx")),
                    pattern = "\\.(qmd|Rmd|rmd)$",
                    engine = c("auto", "quarto", "rmarkdown"),
                    workers = NULL,
+                   only_stale = TRUE,
+                   from = NULL,
+                   to = NULL,
+                   dry_run = FALSE,
+                   cache = c("keep", "refresh", "stale"),
+                   on_error = c("continue", "stop"),
+                   resume = NULL,
+                   manifest = TRUE,
+                   renv_guard = TRUE,
+                   seed = NULL,
                    ...) {
+  if (isTRUE(renv_guard)) {
+    check_renv_guard()
+  }
+  if (!is.null(seed)) {
+    local_seed(seed)
+  }
   engine <- match.arg(engine)
+  cache <- match.arg(cache)
+  on_error <- match.arg(on_error)
   formats_explicit <- !missing(formats)
   dots <- list(...)
 
-  # 1. Resolve render targets from path argument
+  # 1. Resolve pipeline graph if path is a list of pipeline objects or a single FileOutputs/FilePath
+  is_pipeline_obj <- function(x) is(x, "FilePath") || is(x, "FileOutputs") || is(x, "FileUses")
+  if (is.list(path) && length(path) > 0L && all(vapply(path, is_pipeline_obj, logical(1)))) {
+    plan <- get_render_plan(path, only_stale = only_stale, from = from, to = to, dry_run = FALSE)
+    path <- plan
+  } else if (!is.null(from) || !is.null(to)) {
+    if (is.list(path) && length(path) > 0L) {
+      names_vec <- if (!is.null(names(path)) && any(nzchar(names(path)))) {
+        names(path)
+      } else {
+        vapply(path, function(x) if (is(x, "FileOutputs")) x@name else basename(as.character(x)), character(1))
+      }
+      start_idx <- 1L
+      end_idx <- length(path)
+      if (!is.null(from)) {
+        start_idx <- if (is.numeric(from)) as.integer(from) else match(as.character(from), names_vec)
+        if (is.na(start_idx) || start_idx < 1L || start_idx > length(path)) stop("'from' not found in path list: ", from, call. = FALSE)
+      }
+      if (!is.null(to)) {
+        end_idx <- if (is.numeric(to)) as.integer(to) else match(as.character(to), names_vec)
+        if (is.na(end_idx) || end_idx < 1L || end_idx > length(path)) stop("'to' not found in path list: ", to, call. = FALSE)
+      }
+      if (start_idx > end_idx) stop("'from' occurs after 'to'.", call. = FALSE)
+      path <- path[start_idx:end_idx]
+    }
+  }
+
   targets <- list()
   doc_exts <- c("pdf", "docx", "html", "gfm", "md", "rtf", "odt", "pptx", "epub")
 
-  add_target <- function(fpath, fmts = NULL) {
+  add_target <- function(fpath, fmts = NULL, derive_docx = FALSE) {
     if (is.null(fpath) || !nzchar(fpath)) return()
 
     resolved_fmts <- fmts
@@ -167,13 +388,16 @@ render <- function(path,
 
     targets[[length(targets) + 1L]] <<- list(
       path = fpath,
-      formats = resolved_fmts
+      formats = resolved_fmts,
+      derive_docx = derive_docx
     )
   }
 
   process_item <- function(item, item_name = NULL) {
     if (is(item, "FileOutputs")) {
       if (.hasSlot(item, "renders") && !isTRUE(item@renders)) return()
+
+      ctrls_data <- controls_datasets(item)
 
       # Extract deliverable report formats from item@output
       report_outs <- Filter(function(o) {
@@ -188,7 +412,17 @@ render <- function(path,
       } else NULL
 
       effective_fmts <- if (formats_explicit) formats else custom_fmts
-      add_target(item@path, effective_fmts)
+      if (is.null(effective_fmts)) effective_fmts <- c("pdf", "docx")
+
+      derive_docx <- FALSE
+      if (ctrls_data) {
+        if ("docx" %in% effective_fmts) {
+          derive_docx <- TRUE
+          effective_fmts <- unique(c("pdf", setdiff(effective_fmts, "docx")))
+        }
+      }
+
+      add_target(item@path, effective_fmts, derive_docx = derive_docx)
 
     } else if (is(item, "FilePath")) {
       if (.hasSlot(item, "renders") && isTRUE(item@renders)) {
@@ -236,8 +470,29 @@ render <- function(path,
   }
 
   if (length(targets) == 0) {
-    message("No files found to render matching pattern: ", pattern)
-    return(invisible(data.frame()))
+    if (isTRUE(dry_run)) {
+      message("Render plan is empty.")
+    } else {
+      message("No files found to render matching pattern: ", pattern)
+    }
+    return(invisible(data.frame(file = character(), output = character(), duration = numeric(), status = character(), stringsAsFactors = FALSE)))
+  }
+
+  if (isTRUE(dry_run)) {
+    cat("Render plan (dry run):\n")
+    for (i in seq_along(targets)) {
+      tgt <- targets[[i]]
+      tgt_fmts <- if (isTRUE(tgt$derive_docx)) c(tgt$formats, "docx(derived)") else tgt$formats
+      cat(sprintf("  [%d] %s -> %s\n", i, basename(tgt$path), paste(toupper(tgt_fmts), collapse = ", ")))
+    }
+    df <- data.frame(
+      file = vapply(targets, function(t) basename(t$path), character(1)),
+      output = vapply(targets, function(t) paste(if (isTRUE(t$derive_docx)) c(t$formats, "docx") else t$formats, collapse = ", "), character(1)),
+      duration = 0,
+      status = "dry_run",
+      stringsAsFactors = FALSE
+    )
+    return(invisible(df))
   }
 
   # Check engine availability
@@ -282,9 +537,43 @@ render <- function(path,
   }
 
   # 2. Worker helper to render all formats for a single target
-  render_single <- function(file_path, file_formats) {
+  render_single <- function(file_path, file_formats, derive_docx = FALSE) {
     ext <- tolower(tools::file_ext(file_path))
-    purrr::map_dfr(file_formats, function(fmt) {
+
+    # Handle cache wiping
+    stem <- tools::file_path_sans_ext(file_path)
+    doc_dir <- dirname(file_path)
+    doc_base <- basename(stem)
+    cache_dir <- file.path(doc_dir, paste0(doc_base, "_cache"))
+    files_dir <- file.path(doc_dir, paste0(doc_base, "_files"))
+
+    wipe_cache <- switch(cache,
+      "refresh" = TRUE,
+      "stale"   = TRUE,
+      "keep"    = FALSE
+    )
+    if (wipe_cache) {
+      if (dir.exists(cache_dir)) unlink(cache_dir, recursive = TRUE)
+      if (dir.exists(files_dir)) unlink(files_dir, recursive = TRUE)
+    }
+
+    rows <- purrr::map_dfr(file_formats, function(fmt) {
+      # Check resume
+      if (!is.null(resume) && is.data.frame(resume)) {
+        m <- resume$file == basename(file_path) & tolower(resume$output) == tolower(fmt) & resume$status == "success"
+        if (any(m)) {
+          message("Resuming: skipping already completed '", basename(file_path), "' to ", toupper(fmt))
+          dur <- if ("duration" %in% names(resume)) resume$duration[which(m)[1]] else 0
+          return(data.frame(
+            file = basename(file_path),
+            output = fmt,
+            duration = dur,
+            status = "success",
+            stringsAsFactors = FALSE
+          ))
+        }
+      }
+
       message("Rendering '", basename(file_path), "' to ", toupper(fmt), "...")
       tic <- Sys.time()
 
@@ -347,6 +636,9 @@ render <- function(path,
         }
         "success"
       }, error = function(e) {
+        if (on_error == "stop") {
+          stop("Error rendering '", basename(file_path), "' to ", fmt, ": ", conditionMessage(e), call. = FALSE)
+        }
         warning("Error rendering '", basename(file_path), "' to ", fmt, ": ", conditionMessage(e), call. = FALSE)
         conditionMessage(e)
       })
@@ -361,6 +653,49 @@ render <- function(path,
         stringsAsFactors = FALSE
       )
     })
+
+    if (isTRUE(derive_docx)) {
+      docx_row <- if (!is.null(resume) && is.data.frame(resume) &&
+                      any(resume$file == basename(file_path) & tolower(resume$output) == "docx" & resume$status == "success")) {
+        message("Resuming: skipping already completed '", basename(file_path), "' to DOCX")
+        m_idx <- which(resume$file == basename(file_path) & tolower(resume$output) == "docx" & resume$status == "success")[1]
+        data.frame(
+          file = basename(file_path),
+          output = "docx",
+          duration = if ("duration" %in% names(resume)) resume$duration[m_idx] else 0,
+          status = "success",
+          stringsAsFactors = FALSE
+        )
+      } else {
+        message("Deriving DOCX from PDF for '", basename(file_path), "'...")
+        tic_docx <- Sys.time()
+        src_pdf <- sub("\\.(qmd|Rmd|rmd)$", ".pdf", file_path, ignore.case = TRUE)
+        dest_docx <- sub("\\.(qmd|Rmd|rmd)$", ".docx", file_path, ignore.case = TRUE)
+        conv_status <- tryCatch({
+          if (!file.exists(src_pdf)) stop("Cannot derive DOCX: source PDF not found at ", src_pdf, call. = FALSE)
+          conv <- convert_pdf_to_docx(src_pdf, dest = dest_docx)
+          if (identical(conv, FALSE) || !file.exists(dest_docx)) {
+            stop("convert_pdf_to_docx failed to produce ", dest_docx, call. = FALSE)
+          }
+          "success"
+        }, error = function(e) {
+          if (on_error == "stop") stop(e)
+          warning("Error deriving DOCX from '", basename(src_pdf), "': ", conditionMessage(e), call. = FALSE)
+          conditionMessage(e)
+        })
+        dur_docx <- as.numeric(Sys.time() - tic_docx, units = "secs")
+        data.frame(
+          file = basename(file_path),
+          output = "docx",
+          duration = round(dur_docx, 2),
+          status = conv_status,
+          stringsAsFactors = FALSE
+        )
+      }
+      rows <- dplyr::bind_rows(rows, docx_row)
+    }
+
+    rows
   }
 
   # 3. Execution: parallel if multiple targets and future/furrr are available, sequential otherwise
@@ -383,11 +718,25 @@ render <- function(path,
 
     times <- furrr::future_map_dfr(
       targets,
-      function(tgt) render_single(tgt$path, tgt$formats),
+      function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)),
       .options = furrr::furrr_options(seed = TRUE)
     )
   } else {
-    times <- purrr::map_dfr(targets, function(tgt) render_single(tgt$path, tgt$formats))
+    times <- purrr::map_dfr(targets, function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)))
+  }
+
+  if (isTRUE(manifest) && length(targets) > 0 && !isTRUE(dry_run)) {
+    out_dirs <- unique(vapply(targets, function(t) dirname(t$path), character(1)))
+    manifest_paths <- character()
+    for (od in out_dirs) {
+      if (dir.exists(od)) {
+        mf <- tryCatch(write_run_manifest(od, times, seed = seed), error = function(e) NULL)
+        if (!is.null(mf)) manifest_paths <- c(manifest_paths, mf)
+      }
+    }
+    if (length(manifest_paths) > 0) {
+      attr(times, "manifest_path") <- manifest_paths[1]
+    }
   }
 
   times

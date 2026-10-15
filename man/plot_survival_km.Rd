@@ -12,7 +12,9 @@ plot_survival_km(
   color = "#9D2235",
   title = "Kaplan-Meier Survival Estimate",
   caption = NULL,
-  base_size = 13
+  base_size = 13,
+  risk_table = FALSE,
+  p_value = FALSE
 )
 }
 \arguments{
@@ -31,6 +33,10 @@ plot_survival_km(
 \item{caption}{Optional plot caption.}
 
 \item{base_size}{Base font size (default: 13).}
+
+\item{risk_table}{Logical. If `TRUE`, appends a number-at-risk table below the survival curve. Default `FALSE`.}
+
+\item{p_value}{Logical. If `TRUE` and `group_col` is specified, displays log-rank test p-value. Default `FALSE`.}
 }
 \value{
 A ggplot2 object.

@@ -11,7 +11,8 @@ summarize_tune_results(
   num_fixed = 6,
   alphas = NULL,
   formulas = NULL,
-  progress = FALSE
+  progress = FALSE,
+  seed = NULL
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ a list of one-sided formulas, each fit as a separate model (see
 [glmnet_IBS()]'s `formula`).}
 
 \item{progress}{Show a progress bar.}
+
+\item{seed}{Optional integer seed for reproducible random draws across splits.}
 }
 \value{
 A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`

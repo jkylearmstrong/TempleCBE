@@ -131,10 +131,13 @@ test_that("glmnet_IBS validates its inputs and retired options", {
     glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, time_data = fx$times["tstop"]),
     "missing column\\(s\\): tstart"
   )
-  expect_error(
-    glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, censoring_weights = "none"),
-    "0\\.2\\.0"
+  # censoring_weights = "none" is accepted (legacy unweighted scoring)
+  res_none <- suppressWarnings(
+    glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, censoring_weights = "none",
+               time_data = fx$times, internal_folds = 3, cox.ties = "breslow")
   )
+  expect_s3_class(res_none, "tbl_df")
+  expect_true(is.numeric(res_none$IBS[1]) && !is.na(res_none$IBS[1]))
   expect_error(
     glmnet_IBS(fx$split, recipe = fx$recipe, feature_names = fx$features, metric = "not_a_metric"),
     "yardstick survival metric"
@@ -246,3 +249,56 @@ test_that("tune_over_alpha accepts formula objects in formulas", {
   expect_setequal(results[[1]]$term, c("x1", "x2"))
   expect_setequal(results[[2]]$term, c("x2", "x3"))
 })
+
+test_that("censoring_weights = 'none' warns once and produces expected numeric results", {
+  skip_if_no_ibs_deps()
+  fx <- ibs_fixture()
+  set.seed(42)
+
+  # Check that it warns with expected frequency id / condition
+  expect_warning(
+    res_none <- glmnet_IBS(
+      fx$split, alpha = 0.5, recipe = fx$recipe, feature_names = fx$features,
+      time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+      censoring_weights = "none"
+    ),
+    "legacy and does not adjust for censoring"
+  )
+
+  expect_s3_class(res_none, "tbl_df")
+  expect_true(res_none$IBS[1] >= 0 && res_none$IBS[1] <= 1)
+  expect_equal(res_none$alpha[1], 0.5)
+
+  # Repeat call in same session does not warn again due to once-per-session frequency
+  expect_silent(
+    res_none2 <- glmnet_IBS(
+      fx$split, alpha = 0.5, recipe = fx$recipe, feature_names = fx$features,
+      time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+      censoring_weights = "none"
+    )
+  )
+  expect_equal(res_none$IBS, res_none2$IBS)
+})
+
+test_that("tune_over_alpha seed produces reproducible draws", {
+  skip_if_no_ibs_deps()
+  skip_if_not_installed("furrr")
+  fx <- ibs_fixture()
+
+  # In formula mode with random alphas
+  run1 <- suppressWarnings(tune_over_alpha(
+    fx$split, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+    formulas = c("x1 + x2", "x2 + x3"), seed = 1234
+  ))
+  run2 <- suppressWarnings(tune_over_alpha(
+    fx$split, recipe = fx$recipe, feature_names = fx$features,
+    time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
+    formulas = c("x1 + x2", "x2 + x3"), seed = 1234
+  ))
+
+  alphas1 <- names(run1)
+  alphas2 <- names(run2)
+  expect_equal(alphas1, alphas2)
+})
+

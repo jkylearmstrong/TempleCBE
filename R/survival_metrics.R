@@ -39,9 +39,12 @@
 #'   penalty.
 #' @param id_col,start_col,stop_col,status_col Column names of the subject
 #'   identifier, interval start, interval stop, and event indicator (1 = event).
-#' @param censoring_weights Only `"ipcw"` is supported. `"none"`, which scored
-#'   interval rows without adjusting for censoring, was removed in TempleCBE
-#'   0.3.0; install TempleCBE 0.2.0 to reproduce results that used it.
+#' @param censoring_weights Weighting scheme for Brier score calculation:
+#'   `"ipcw"` (the default) uses inverse probability of censoring weighting via
+#'   Graf weights (a proper scoring rule). `"none"` applies unweighted unit
+#'   weights (1 for events and at-risk subjects, 0 for censored; legacy, emits
+#'   a once-per-session warning; useful for historical reproducibility or
+#'   sensitivity comparisons).
 #' @param prep_on `"baseline"` (default) preps `recipe` on each subject's first
 #'   interval in the analysis set; `"all"` preps on every analysis row.
 #' @param eval_time Evaluation times for the IBS. Defaults to the stop times of
@@ -112,11 +115,10 @@ glmnet_IBS <- function(object,
                        ...) {
   censoring_weights <- match.arg(censoring_weights)
   if (censoring_weights == "none") {
-    stop(
-      "`censoring_weights = \"none\"` was removed in TempleCBE 0.3.0: it scored interval rows ",
-      "without adjusting for censoring, so it was not a proper Brier score. Use \"ipcw\" (the ",
-      "default), or install TempleCBE 0.2.0 to reproduce results that used \"none\".",
-      call. = FALSE
+    rlang::warn(
+      "`censoring_weights = \"none\"` is legacy and does not adjust for censoring (not a proper Brier score). Use \"ipcw\" for proper scoring, or \"none\" only to reproduce historical runs or sensitivity comparisons.",
+      .frequency = "once",
+      .frequency_id = "TempleCBE_glmnet_IBS_censoring_weights_none"
     )
   }
   prep_on <- match.arg(prep_on)
@@ -211,7 +213,13 @@ glmnet_IBS <- function(object,
 
     truth_train <- surv_subject_truth(y_train, subject_train)
     truth_test <- surv_subject_truth(y_test, subject_test)
-    weights <- graf_weights(truth_test$.truth, cv$eval_time, censoring_km(truth_train$.truth))
+    weights <- if (censoring_weights == "ipcw") {
+      graf_weights(truth_test$.truth, cv$eval_time, censoring_km(truth_train$.truth))
+    } else {
+      w <- matrix(1, nrow = length(truth_test$.subject_id), ncol = length(cv$eval_time))
+      dimnames(w) <- list(NULL, format(cv$eval_time))
+      w
+    }
     scored <- score_coxnet_path(
       cv$fit$fit, cv$fit$x, y_train, predictors_matrix(test[selected]), y_test, subject_test,
       penalty = chosen, eval_time = cv$eval_time, truth = truth_test, weights = weights,
@@ -261,6 +269,8 @@ glmnet_IBS <- function(object,
 #'   a list of one-sided formulas, each fit as a separate model (see
 #'   [glmnet_IBS()]'s `formula`).
 #' @param progress Show a progress bar.
+#' @param seed Optional integer seed for reproducible random draws of `alpha`
+#'   and formulas.
 #' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
 #'   `NULL`) and `error` (`NULL`, or the condition).
@@ -272,9 +282,13 @@ tune_over_alpha <- function(object,
                             num_fixed = 6,
                             alphas = NULL,
                             formulas = NULL,
-                            progress = FALSE) {
+                            progress = FALSE,
+                            seed = NULL) {
   require_packages("furrr", "tune_over_alpha")
   dots <- list(...)
+  if (!is.null(seed)) {
+    local_seed(seed)
+  }
 
   if (!is.null(formulas)) {
     if ("formula" %in% names(dots)) {
@@ -330,6 +344,7 @@ tune_over_alpha <- function(object,
 #' @param object A resampling object with a `splits` column (e.g. one element
 #'   of the `inner_resamples` column of [rsample::nested_cv()]).
 #' @inheritParams tune_over_alpha
+#' @param seed Optional integer seed for reproducible random draws across splits.
 #' @return A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`
 #'   column giving the split's position in `object$splits`.
 #' @seealso [glmnet_IBS()], [tune_over_alpha()], [nested_cv_coxnet()]
@@ -340,16 +355,26 @@ summarize_tune_results <- function(object,
                                    num_fixed = 6,
                                    alphas = NULL,
                                    formulas = NULL,
-                                   progress = FALSE) {
+                                   progress = FALSE,
+                                   seed = NULL) {
   require_packages("furrr", "summarize_tune_results")
   dots <- list(...)
 
-  furrr::future_map_dfr(
+  if (!is.null(seed)) {
+    local_seed(seed)
+    split_seeds <- as.list(sample.int(1e9, length(object$splits)))
+  } else {
+    split_seeds <- vector("list", length(object$splits))
+  }
+
+  furrr::future_map2_dfr(
     object$splits,
-    function(split) {
+    split_seeds,
+    function(split, s_seed) {
       runs <- do.call(tune_over_alpha, c(
         list(object = split, num_alpha_values = num_alpha_values,
-             num_fixed = num_fixed, alphas = alphas, formulas = formulas),
+             num_fixed = num_fixed, alphas = alphas, formulas = formulas,
+             seed = s_seed),
         dots
       ))
       ok <- vapply(runs, function(run) is.null(run$error), logical(1))

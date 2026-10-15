@@ -9,7 +9,9 @@ visualize_pipeline_interactive(
   direction = "LR",
   hierarchical = TRUE,
   title = getOption("pipeline.study_name", "Computational Pipeline"),
-  subtitle = "Computational Pipeline"
+  subtitle = "Computational Pipeline",
+  font_size = 12,
+  node_size = 25
 )
 }
 \arguments{
@@ -23,6 +25,10 @@ visualize_pipeline_interactive(
 
 \item{subtitle}{Character, the document-specific name (e.g. "Computational
 Pipeline", or a subgraph's own name from export_subgraph()).}
+
+\item{font_size}{Numeric font size for node labels (default 12).}
+
+\item{node_size}{Numeric node size in pixels (default 25).}
 }
 \value{
 A visNetwork htmlwidget.

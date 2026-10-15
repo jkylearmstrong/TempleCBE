@@ -537,6 +537,40 @@ honest_metrics <- nested_cv_coxnet(nested_plan, clinical_rec, mixture = c(0.5, 1
 collect_metrics(honest_metrics)
 ```
 
+### Pattern 4b: Honest generalization with inner bootstrap resamples (`group_bootstraps`) vs Random-Alpha exploration
+
+When working with counting-process (start/stop) data where cohort size or event counts are modest, inner grouped bootstraps (`group_bootstraps(group = patient_id)`) provide smooth, low-variance hyperparameter tuning estimates for choosing $\alpha$ and $\lambda$:
+
+```{r pattern_nested_boot, eval = FALSE}
+boot_nested_plan <- nested_cv(
+  cohort_data,
+  outside = group_vfold_cv(group = patient_id, v = 5),
+  inside  = group_bootstraps(group = patient_id, times = 25)
+)
+
+honest_boot_metrics <- nested_cv_coxnet(
+  boot_nested_plan,
+  preprocessor = clinical_rec,
+  subject_id = "patient_id",
+  mixture = c(0.2, 0.5, 0.8, 1.0)
+)
+collect_metrics(honest_boot_metrics)
+```
+
+#### Choosing between Nested Cross-Validation and Random-Alpha Exploration
+
+It is vital to match your statistical strategy to your project question:
+
+1. **Nested Cross-Validation (`nested_cv_coxnet`)**:
+   - **Primary Objective**: Unbiased *generalization performance estimation* of the entire modeling strategy.
+   - **How it works**: In each outer split, hyperparameters ($\alpha, \lambda$) are optimized solely on inner resamples, refit on the outer analysis set, and scored on held-out outer subjects.
+   - **When to use**: Auditing models prior to clinical presentation, benchmarking expected out-of-sample performance, and guarding against optimization bias.
+
+2. **Random-Alpha Hyperparameter Exploration (`tune_over_alpha` / `summarize_tune_results`)**:
+   - **Primary Objective**: *Model selection and diagnostic characterization* across the $\alpha \in [0, 1]$ penalty continuum.
+   - **How it works**: Evaluates a dense grid or randomized draw of $\alpha$ values across resampling folds, measuring stability, coefficient shrinkage profiles, and Integrated Brier Score sensitivity.
+   - **When to use**: Investigating whether Ridge ($L_2$), Lasso ($L_1$), or Elastic Net yields superior feature sparsity and stability, and finalizing a single model specification for deployment.
+
 ### Pattern 5: Translational laboratory handoff
 Seamlessly bridge biostatistical analysis in R with laboratory GraphPad Prism
 figure creation using `km_summary_to_prism()`:

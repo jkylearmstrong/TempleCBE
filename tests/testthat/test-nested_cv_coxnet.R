@@ -216,3 +216,40 @@ test_that("nested_cv_coxnet validates its inputs", {
   )
   expect_error(nested_cv_coxnet(folds, "not a model"), "formula or a recipe")
 })
+
+test_that("nested_cv_coxnet works with group_bootstraps inner resamples on start-stop data with patient_id", {
+  skip_if_no_coxnet_deps()
+  d <- sim_counting(n = 60)
+  d$patient_id <- d$subject_id
+  d$subject_id <- NULL
+
+  set.seed(42)
+  folds <- rsample::nested_cv(
+    d,
+    outside = rsample::group_vfold_cv(group = patient_id, v = 2),
+    inside = rsample::group_bootstraps(group = patient_id, times = 3)
+  )
+
+  metrics <- yardstick::metric_set(yardstick::brier_survival_integrated)
+
+  res <- nested_cv_coxnet(
+    folds,
+    preprocessor = survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3,
+    subject_id = "patient_id",
+    mixture = c(0.2, 0.8),
+    metrics = metrics,
+    eval_time = c(3, 6, 9),
+    nlambda = 5,
+    cox.ties = "breslow"
+  )
+
+  expect_s3_class(res, "nested_cv_coxnet")
+  expect_equal(nrow(res), 2L)
+  expect_true(all(res$mixture %in% c(0.2, 0.8)))
+  expect_true(all(!is.na(res$penalty)))
+  expect_equal(length(res$.metrics), 2L)
+  expect_false(anyNA(res$.metrics[[1]]$.estimate))
+  expect_false(anyNA(res$.metrics[[2]]$.estimate))
+  expect_true(is.data.frame(res$.inner[[1]]))
+})
+

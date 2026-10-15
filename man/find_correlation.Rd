@@ -41,8 +41,16 @@ Identifies numeric columns to drop for multicollinearity, via
 \code{findCorrelation()}) so it doesn't shadow \pkg{caret}'s function of
 the same name for anyone with both packages loaded.
 }
+\details{
+**Note:** `find_correlation()` identifies column names or indices to *remove*
+to mitigate multicollinearity. To inspect the pairwise correlation coefficients
+themselves in a tidy table, use [correlated_pairs_table()] or [corr_test_all()].
+}
 \examples{
 if (requireNamespace("caret", quietly = TRUE)) {
   find_correlation(mtcars, cutoff = 0.8)
 }
+}
+\seealso{
+[correlated_pairs_table()], [corr_test_all()], [plot_corr_scatter()]
 }

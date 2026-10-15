@@ -25,6 +25,20 @@
 #' settings can differ between outer splits. To fit a final model, run
 #' [cv_coxnet()] on all the data.
 #'
+#' @section Nested CV vs Random-Alpha Design:
+#' It is essential to select the appropriate validation and tuning workflow for your project goal:
+#' \itemize{
+#'   \item \strong{Nested Cross-Validation (\code{nested_cv_coxnet})}: Designed for \emph{unbiased generalization performance estimation}
+#'     of the end-to-end modeling pipeline. Hyperparameters (\code{mixture} and \code{penalty}) are selected on inner resamples
+#'     (e.g., using [rsample::group_vfold_cv()] or [rsample::group_bootstraps()]), and the refit model is scored on completely held-out
+#'     outer assessment subjects. The chosen parameters may differ across outer splits, reflecting pipeline sensitivity and guarding
+#'     against optimization bias.
+#'   \item \strong{Random-Alpha Exploration (\code{tune_over_alpha} / \code{summarize_tune_results})}: Designed for
+#'     \emph{exploratory hyperparameter tuning and model selection} across a continuous spectrum of \eqn{\alpha \in [0, 1]}. This workflow
+#'     is ideal for comparing penalty properties (Ridge vs Lasso vs Elastic Net), profiling coefficient shrinkage paths across resamples,
+#'     and choosing a single final model specification for reporting or deployment.
+#' }
+#'
 #' @param object An [rsample::nested_cv()] object.
 #' @param preprocessor A formula with a `Surv()` outcome, or a
 #'   [recipes::recipe()] whose outcome is a `Surv` column.

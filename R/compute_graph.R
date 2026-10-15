@@ -614,15 +614,22 @@ create_qmd_renderer <- function(
   result
 }
 
-#' Check if an output file is stale
+#' Check if an Output File is Stale
 #'
 #' Stale when the output is missing, or older than its producer script, one of the producer's
 #' dependencies, or anything those dependencies read (through helper scripts); and, when
 #' `all_objects` is given, when any dependency is itself the output of a stale producer, however
 #' far up the pipeline and whether or not that producer renders a document. Without
 #' `all_objects` only the direct sources are compared.
-#' @noRd
-.is_stale <- function(output_file, producer_script, all_objects = NULL, seen = character(), cache = NULL) {
+#'
+#' @param output_file A [FilePath] object representing the output file to check.
+#' @param producer_script A [FileOutputs] object representing the producer.
+#' @param all_objects Optional list of pipeline objects to check upstream staleness.
+#' @param seen Internal character vector of visited node names to prevent cycles.
+#' @param cache Internal environment caching staleness decisions.
+#' @return Logical `TRUE` if stale, `FALSE` otherwise.
+#' @export
+is_stale <- function(output_file, producer_script, all_objects = NULL, seen = character(), cache = NULL) {
   out_mtime <- output_file@mtime
   if (is.na(out_mtime)) {
     return(TRUE)
@@ -644,6 +651,8 @@ create_qmd_renderer <- function(
   }
   FALSE
 }
+
+.is_stale <- is_stale
 
 #' Every file a list of pipeline objects declares
 #'
@@ -788,16 +797,27 @@ create_qmd_renderer <- function(
 #' @param all_objects The full list of FilePath, FileUses, and FileOutputs objects.
 #' @param extract_graph_code Logical. If TRUE, the graph source code will be extracted and returned as a character string.
 #' @param stage_colors Optional named list of stage colors. If NULL, uses pipeline_config() options.
+#' @param orientation Layout direction: `"TB"` (Top-to-Bottom, default), `"LR"` (Left-to-Right), `"BT"`, or `"RL"`.
+#' @param font_size Font size for node labels (default 12).
+#' @param node_size Optional numeric vector specifying node dimensions `c(width, height)`.
+#' @param node_sep Minimum space between adjacent nodes in inches (default 0.5).
+#' @param rank_sep Separation between successive ranks in inches (default 0.5).
 #' @export
 visualize_pipeline <- function(
   all_objects,
   extract_graph_code = FALSE,
-  stage_colors = NULL
+  stage_colors = NULL,
+  orientation = c("TB", "LR", "BT", "RL"),
+  font_size = 12,
+  node_size = NULL,
+  node_sep = 0.5,
+  rank_sep = 0.5
 ) {
   if (!extract_graph_code && !requireNamespace("DiagrammeR", quietly = TRUE)) {
     stop("Package \"DiagrammeR\" is required to render the graph. Install it, or call with `extract_graph_code = TRUE` to get the DOT source instead.", call. = FALSE)
   }
   .check_pipeline(all_objects)
+  orientation <- match.arg(orientation)
   if (is.null(stage_colors)) {
     stage_colors <- getOption("pipeline.stage_colors", list())
   }
@@ -819,7 +839,23 @@ visualize_pipeline <- function(
     }
   }
 
-  graph_code <- "digraph dependencies {\n  node [shape = box, style = filled];\n"
+  node_size_str <- ""
+  if (!is.null(node_size)) {
+    if (length(node_size) == 1) {
+      node_size_str <- sprintf(", width = %s, height = %s", format(node_size, scientific = FALSE), format(node_size * 0.5, scientific = FALSE))
+    } else if (length(node_size) >= 2) {
+      node_size_str <- sprintf(", width = %s, height = %s", format(node_size[1], scientific = FALSE), format(node_size[2], scientific = FALSE))
+    }
+  }
+
+  graph_code <- sprintf(
+    "digraph dependencies {\n  graph [rankdir = \"%s\", nodesep = %s, ranksep = %s];\n  node [shape = box, style = filled, fontsize = %s%s];\n",
+    orientation,
+    format(node_sep, scientific = FALSE),
+    format(rank_sep, scientific = FALSE),
+    format(font_size, scientific = FALSE),
+    node_size_str
+  )
   stale_cache <- new.env(parent = emptyenv())
 
   for (node in all_nodes) {
@@ -897,6 +933,84 @@ visualize_pipeline <- function(
   }
 
   DiagrammeR::grViz(graph_code)
+}
+
+#' Export Pipeline Diagram to Static Vector or Raster Format
+#'
+#' Exports a computational pipeline dependency graph to a static file (SVG, PDF, or PNG)
+#' formatted and sized appropriately for reports and Word documents (e.g. 6.5 x 9.0 inches
+#' for a standard portrait Word page with 1-inch margins).
+#'
+#' @param all_objects A list of pipeline objects (`FilePath`, `FileUses`, `FileOutputs`).
+#' @param file Character path to output file.
+#' @param format Target format: `"auto"` (inferred from `file` extension), `"svg"`, `"pdf"`, or `"png"`.
+#' @param width Page width in inches (default 6.5, fitting standard letter with 1-inch margins).
+#' @param height Page height in inches (default 9.0).
+#' @param orientation Layout orientation: `"TB"` (top-to-bottom, default) or `"LR"` (left-to-right).
+#' @param font_size Font size in points (default 10 for print readability).
+#' @param node_size Optional numeric vector of node dimensions `c(width, height)`.
+#' @param stage_colors Optional named list of stage colors.
+#' @return Invisibly returns the output `file` path.
+#' @export
+export_pipeline_diagram <- function(
+  all_objects,
+  file,
+  format = c("auto", "svg", "pdf", "png"),
+  width = 6.5,
+  height = 9.0,
+  orientation = c("TB", "LR", "BT", "RL"),
+  font_size = 10,
+  node_size = NULL,
+  stage_colors = NULL
+) {
+  format <- match.arg(format)
+  if (identical(format, "auto")) {
+    ext <- tolower(tools::file_ext(file))
+    if (ext %in% c("svg", "pdf", "png")) {
+      format <- ext
+    } else {
+      stop("Unable to infer format from file extension '", ext, "'. Please specify `format` explicitly.", call. = FALSE)
+    }
+  }
+
+  if (!requireNamespace("DiagrammeR", quietly = TRUE)) {
+    stop("Package \"DiagrammeR\" is required to export pipeline diagrams.", call. = FALSE)
+  }
+  if (!requireNamespace("DiagrammeRsvg", quietly = TRUE)) {
+    stop("Package \"DiagrammeRsvg\" is required to export pipeline diagrams.", call. = FALSE)
+  }
+
+  gv <- visualize_pipeline(
+    all_objects = all_objects,
+    extract_graph_code = FALSE,
+    stage_colors = stage_colors,
+    orientation = orientation,
+    font_size = font_size,
+    node_size = node_size
+  )
+
+  svg_str <- DiagrammeRsvg::export_svg(gv)
+
+  dir <- dirname(file)
+  if (!dir.exists(dir) && nzchar(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+
+  if (identical(format, "svg")) {
+    writeLines(svg_str, file)
+  } else if (identical(format, "pdf")) {
+    if (!requireNamespace("rsvg", quietly = TRUE)) {
+      stop("Package \"rsvg\" is required to export pipeline diagrams to PDF.", call. = FALSE)
+    }
+    rsvg::rsvg_pdf(charToRaw(svg_str), file = file, width = width * 72, height = height * 72)
+  } else if (identical(format, "png")) {
+    if (!requireNamespace("rsvg", quietly = TRUE)) {
+      stop("Package \"rsvg\" is required to export pipeline diagrams to PNG.", call. = FALSE)
+    }
+    rsvg::rsvg_png(charToRaw(svg_str), file = file, width = width * 300, height = height * 300)
+  }
+
+  invisible(file)
 }
 
 #' Wrap a node label to a target character width for print_pipeline()
@@ -1469,6 +1583,8 @@ collapse_by_stage <- function(g, stage_labels = NULL) {
 #' @param title Character, main title -- defaults to getOption("pipeline.study_name", "Computational Pipeline").
 #' @param subtitle Character, the document-specific name (e.g. "Computational
 #'   Pipeline", or a subgraph's own name from export_subgraph()).
+#' @param font_size Numeric font size for node labels (default 12).
+#' @param node_size Numeric node size in pixels (default 25).
 #' @return A visNetwork htmlwidget.
 #' @export
 visualize_pipeline_interactive <- function(
@@ -1476,7 +1592,9 @@ visualize_pipeline_interactive <- function(
   direction = "LR",
   hierarchical = TRUE,
   title = getOption("pipeline.study_name", "Computational Pipeline"),
-  subtitle = "Computational Pipeline"
+  subtitle = "Computational Pipeline",
+  font_size = 12,
+  node_size = 25
 ) {
   if (!requireNamespace("visNetwork", quietly = TRUE)) {
     stop("Package \"visNetwork\" is required for the interactive visualization.", call. = FALSE)
@@ -1530,7 +1648,8 @@ visualize_pipeline_interactive <- function(
     height = "850px"
   ) |>
     visNetwork::visNodes(
-      font = list(face = "Segoe UI, Arial, sans-serif", size = 12),
+      size = node_size,
+      font = list(face = "Segoe UI, Arial, sans-serif", size = font_size),
       shadow = list(enabled = TRUE, size = 3, color = "rgba(0,0,0,0.15)")
     ) |>
     visNetwork::visEdges(
@@ -1734,9 +1853,22 @@ export_subgraph <- function(
 #' of \code{all_objects} with the same name are an error. See \code{\link{as_igraph}}.
 #'
 #' @param all_objects The full list of FilePath, FileUses, and FileOutputs objects.
+#' @param only_stale Logical. When `TRUE` (default), plans only documents that are
+#'   out of date or affected by upstream changes. When `FALSE`, plans all renderable
+#'   nodes in topological dependency order (for full pipeline reruns).
+#' @param from Optional node name or 1-based integer index in the topological plan
+#'   to start execution from.
+#' @param to Optional node name or 1-based integer index in the topological plan
+#'   to end execution at.
+#' @param dry_run Logical. When `TRUE`, prints the ordered plan to console without
+#'   executing and returns the planned objects invisibly.
 #' @return A list of FileOutputs objects (the QMDs) in the correct render order.
 #' @export
-get_render_plan <- function(all_objects) {
+get_render_plan <- function(all_objects,
+                            only_stale = TRUE,
+                            from = NULL,
+                            to = NULL,
+                            dry_run = FALSE) {
   if (is(all_objects, "FilePath")) {
     all_objects <- list(all_objects) # a single object, not wrapped in a list
   }
@@ -1813,99 +1945,143 @@ get_render_plan <- function(all_objects) {
     )
   }
 
-  # 4. Find all *initially* stale QMDs
   renderers <- Filter(\(x) is(x, "FileOutputs") && x@renders, all_objects)
-  initial_stale_qmds <- c()
+  all_renderable_names <- vapply(renderers, \(x) x@name, character(1))
 
-  stale_cache <- new.env(parent = emptyenv())
-  for (qmd in renderers) {
-    is_qmd_stale <- FALSE
-    for (out_file in qmd@output) {
-      if (.is_stale(out_file, qmd, all_objects, cache = stale_cache)) {
-        is_qmd_stale <- TRUE
-        break
+  if (isTRUE(only_stale)) {
+    # 4. Find all *initially* stale QMDs
+    initial_stale_qmds <- c()
+
+    stale_cache <- new.env(parent = emptyenv())
+    for (qmd in renderers) {
+      is_qmd_stale <- FALSE
+      for (out_file in qmd@output) {
+        if (.is_stale(out_file, qmd, all_objects, cache = stale_cache)) {
+          is_qmd_stale <- TRUE
+          break
+        }
+      }
+      if (is_qmd_stale) {
+        initial_stale_qmds <- c(initial_stale_qmds, qmd@name)
       }
     }
-    if (is_qmd_stale) {
-      initial_stale_qmds <- c(initial_stale_qmds, qmd@name)
-    }
-  }
 
-  # Producers that do not render a document cannot be in the plan, but their staleness reaches the
-  # reports that read their outputs, which are.
-  stale_helpers <- Filter(
-    function(x) {
-      is(x, "FileOutputs") && !x@renders &&
-        any(vapply(x@output, function(o) .is_stale(o, x, all_objects, cache = stale_cache), logical(1)))
-    },
-    all_objects
-  )
-  if (length(stale_helpers) > 0) {
-    message(
-      "Out of date, but not rendered here: ",
-      paste(vapply(stale_helpers, function(x) x@name, character(1)), collapse = ", "),
-      ". Re-run them first; any report that reads their outputs is in the plan."
+    # Producers that do not render a document cannot be in the plan, but their staleness reaches the
+    # reports that read their outputs, which are.
+    stale_helpers <- Filter(
+      function(x) {
+        is(x, "FileOutputs") && !x@renders &&
+          any(vapply(x@output, function(o) .is_stale(o, x, all_objects, cache = stale_cache), logical(1)))
+      },
+      all_objects
     )
-  }
-
-  if (length(initial_stale_qmds) == 0) {
-    if (length(stale_helpers) == 0) {
-      message("\u2728 All files are up-to-date. Nothing to render.")
-    } else {
-      message("Nothing to render: no report reads the outputs of the out-of-date producer(s) above.")
+    if (length(stale_helpers) > 0) {
+      message(
+        "Out of date, but not rendered here: ",
+        paste(vapply(stale_helpers, function(x) x@name, character(1)), collapse = ", "),
+        ". Re-run them first; any report that reads their outputs is in the plan."
+      )
     }
-    return(list())
-  }
 
-  message(paste(
-    "Found",
-    length(initial_stale_qmds),
-    "initially stale QMD(s):",
-    paste(initial_stale_qmds, collapse = ", ")
-  ))
+    if (length(initial_stale_qmds) == 0) {
+      if (length(stale_helpers) == 0) {
+        message("\u2728 All files are up-to-date. Nothing to render.")
+      } else {
+        message("Nothing to render: no report reads the outputs of the out-of-date producer(s) above.")
+      }
+      return(list())
+    }
 
-  # 5. Propagate staleness: Find all nodes downstream of the stale ones
-  all_affected_nodes <- unique(unlist(
-    lapply(initial_stale_qmds, \(name) {
-      names(igraph::subcomponent(g, name, mode = "out"))
-    })
-  ))
+    message(paste(
+      "Found",
+      length(initial_stale_qmds),
+      "initially stale QMD(s):",
+      paste(initial_stale_qmds, collapse = ", ")
+    ))
 
-  # 6. Filter this list for *only* renderable QMDs
-  affected_qmd_names <- Filter(
-    \(name) {
-      obj <- obj_lookup[[name]]
-      !is.null(obj) && obj@renders
-    },
-    all_affected_nodes
-  )
+    # 5. Propagate staleness: Find all nodes downstream of the stale ones
+    all_affected_nodes <- unique(unlist(
+      lapply(initial_stale_qmds, \(name) {
+        names(igraph::subcomponent(g, name, mode = "out"))
+      })
+    ))
 
-  # Combine with the initial list
-  final_qmd_list <- unique(c(initial_stale_qmds, affected_qmd_names))
+    # 6. Filter this list for *only* renderable QMDs
+    affected_qmd_names <- Filter(
+      \(name) {
+        obj <- obj_lookup[[name]]
+        !is.null(obj) && obj@renders
+      },
+      all_affected_nodes
+    )
 
-  if (length(final_qmd_list) == 0) {
-    message("... but no QMDs need to be rendered.")
-    return(list())
+    # Combine with the initial list
+    final_qmd_list <- unique(c(initial_stale_qmds, affected_qmd_names))
+
+    if (length(final_qmd_list) == 0) {
+      message("... but no QMDs need to be rendered.")
+      return(list())
+    }
+  } else {
+    final_qmd_list <- all_renderable_names
+    if (length(final_qmd_list) == 0) {
+      message("No renderable QMDs found in pipeline objects.")
+      return(list())
+    }
   }
 
   # 7. Check for cycles and get the topological sort of the graph
-  if (!igraph::is_dag(g)) {
-    stop(
-      "Circular dependency detected in computational pipeline graph. ",
-      "A pipeline must be a directed acyclic graph (DAG) to determine render order.",
-      call. = FALSE
-    )
-  }
   sorted_all_names <- names(igraph::topo_sort(g))
 
   # 8. Filter the sorted list to get our final, ordered plan
   ordered_plan_names <- sorted_all_names[sorted_all_names %in% final_qmd_list]
+
+  if (length(ordered_plan_names) == 0L) {
+    if (isTRUE(dry_run)) {
+      message("Render plan is empty.")
+      return(invisible(list()))
+    }
+    return(list())
+  }
+
+  start_idx <- 1L
+  end_idx <- length(ordered_plan_names)
+
+  if (!is.null(from)) {
+    start_idx <- if (is.numeric(from)) as.integer(from) else match(as.character(from), ordered_plan_names)
+    if (is.na(start_idx) || start_idx < 1L || start_idx > length(ordered_plan_names)) {
+      stop("'from' node not found in render plan: ", from, call. = FALSE)
+    }
+  }
+
+  if (!is.null(to)) {
+    end_idx <- if (is.numeric(to)) as.integer(to) else match(as.character(to), ordered_plan_names)
+    if (is.na(end_idx) || end_idx < 1L || end_idx > length(ordered_plan_names)) {
+      stop("'to' node not found in render plan: ", to, call. = FALSE)
+    }
+  }
+
+  if (start_idx > end_idx) {
+    stop("'from' occurs after 'to' in the topological render plan.", call. = FALSE)
+  }
+
+  ordered_plan_names <- ordered_plan_names[start_idx:end_idx]
 
   message(paste(
     "Render plan includes",
     length(ordered_plan_names),
     "QMD(s) in total."
   ))
+
+  if (isTRUE(dry_run)) {
+    cat("Render plan (dry run):\n")
+    for (i in seq_along(ordered_plan_names)) {
+      nm <- ordered_plan_names[i]
+      obj <- obj_lookup[[nm]]
+      cat(sprintf("  [%d] %s (%s)\n", i, nm, obj@path))
+    }
+    return(invisible(obj_lookup[ordered_plan_names]))
+  }
 
   # Return the actual objects in the correct order
   return(obj_lookup[ordered_plan_names])
@@ -2283,3 +2459,78 @@ list_stage_data_artifacts <- function(
     mtime = file_infos$mtime
   )
 }
+
+#' Save and Load Computational Pipeline Graph
+#'
+#' Serializes a computational pipeline object list to an RDS file along with
+#' metadata, and reloads it while ensuring all node and file modification times
+#' (`mtime`) are accurately refreshed from disk. This replaces static, unmanaged
+#' pipeline dumps that become stale over time.
+#'
+#' @param pipeline A list of pipeline objects ([FilePath], [FileOutputs], [FileUses]).
+#' @param file Path to the `.rds` file to save to or read from.
+#' @param update_mtime Logical. When loading, should the `@mtime` slots of all
+#'   contained files be re-read from disk? Defaults to `TRUE`.
+#' @return
+#'   `save_pipeline` returns `file` invisibly on success.
+#'   `load_pipeline` returns the list of pipeline objects with refreshed timestamps.
+#' @export
+#' @rdname pipeline_storage
+save_pipeline <- function(pipeline, file = "pipeline.rds") {
+  if (is(pipeline, "FilePath") || is(pipeline, "FileOutputs") || is(pipeline, "FileUses")) {
+    pipeline <- list(pipeline)
+  }
+  if (!is.list(pipeline) || length(pipeline) == 0L) {
+    stop("`pipeline` must be a non-empty list of pipeline objects.", call. = FALSE)
+  }
+  .check_pipeline(pipeline)
+
+  payload <- list(
+    saved_at = Sys.time(),
+    templecbe_version = as.character(utils::packageVersion("TempleCBE")),
+    pipeline = pipeline
+  )
+  saveRDS(payload, file = file)
+  invisible(file)
+}
+
+#' @export
+#' @rdname pipeline_storage
+load_pipeline <- function(file = "pipeline.rds", update_mtime = TRUE) {
+  if (!file.exists(file)) {
+    stop("Pipeline file not found: ", file, call. = FALSE)
+  }
+  obj <- readRDS(file)
+  pipeline <- if (is.list(obj) && "pipeline" %in% names(obj)) obj$pipeline else obj
+
+  if (!is.list(pipeline)) {
+    stop("Loaded object does not contain a valid pipeline list.", call. = FALSE)
+  }
+
+  if (isTRUE(update_mtime)) {
+    refresh_file_mtime <- function(f) {
+      if (!is(f, "FilePath")) return(f)
+      if (file.exists(f@path)) {
+        f@mtime <- file.info(f@path)$mtime
+      } else {
+        f@mtime <- as.POSIXct(NA)
+      }
+      f
+    }
+    pipeline <- lapply(pipeline, function(node) {
+      if (is(node, "FilePath")) {
+        node <- refresh_file_mtime(node)
+      }
+      if (is(node, "FileUses") && length(node@dependencies) > 0) {
+        node@dependencies <- lapply(node@dependencies, refresh_file_mtime)
+      }
+      if (is(node, "FileOutputs") && length(node@output) > 0) {
+        node@output <- lapply(node@output, refresh_file_mtime)
+      }
+      node
+    })
+  }
+
+  pipeline
+}
+

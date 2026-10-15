@@ -52,9 +52,12 @@ penalty.}
 \item{id_col, start_col, stop_col, status_col}{Column names of the subject
 identifier, interval start, interval stop, and event indicator (1 = event).}
 
-\item{censoring_weights}{Only `"ipcw"` is supported. `"none"`, which scored
-interval rows without adjusting for censoring, was removed in TempleCBE
-0.3.0; install TempleCBE 0.2.0 to reproduce results that used it.}
+\item{censoring_weights}{Weighting scheme for Brier score calculation:
+`"ipcw"` (the default) uses inverse probability of censoring weighting via
+Graf weights (a proper scoring rule). `"none"` applies unweighted unit
+weights (1 for events and at-risk subjects, 0 for censored; legacy, emits
+a once-per-session warning; useful for historical reproducibility or
+sensitivity comparisons).}
 
 \item{prep_on}{`"baseline"` (default) preps `recipe` on each subject's first
 interval in the analysis set; `"all"` preps on every analysis row.}

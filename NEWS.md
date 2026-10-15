@@ -1,3 +1,33 @@
+# TempleCBE 0.5.3
+
+## Core Modeling & Statistical Features
+
+### P0 — Computational Graph Rerun & Censoring Weights
+* **Restored `censoring_weights = "none"` in `glmnet_IBS()`:** Restored unweighted Integrated Brier Score computation with a once-per-session advisory warning (`rlang::warn(..., .frequency = "once")`), allowing legacy model reproduction and direct comparison against IPCW.
+* **Dual Censoring Weights Comparison (`compare_censoring_weights()`):** Evaluates models across identical outer grids under both `"none"` and `"ipcw"`, returning tidy per-model IBS side by side along with rank agreement metrics (Spearman and Kendall rank correlations).
+* **Graph-Driven Full Rerun (`render()`, `get_render_plan()`):** Added `only_stale = FALSE` support to force full pipeline reruns; `from` and `to` topological node range filtering; `dry_run = TRUE` execution planning; restriction of `controls_datasets()` to PDF with automatic DOCX derivation (`convert_pdf_to_docx()`); fine-grained cache control (`cache = c("keep", "refresh", "stale")`); and failure recovery (`on_error = c("continue", "stop")`, `resume = <previous_result>`). Exported `is_stale()`.
+* **Seeded Draws in Hyperparameter Tuning (`tune_over_alpha()`, `summarize_tune_results()`):** Added `seed` parameter with caller RNG preservation (`local_seed()`) for deterministic random alpha and feature subset draws across distributed `future` worker clusters.
+
+### P1 — Pipeline Speed, Diagnostics & Outer Fold Helpers
+* **Run Manifest & renv Guard (`render()`):** Emits structured `render_manifest.json` recording TempleCBE version, git commit hash, package versions, seed, and per-document wall times. Automatically validates `renv` status against `renv.lock` when active, with option suppression (`templecbe_suppress_renv_warning`).
+* **Pipeline Graph Serialization (`save_pipeline()`, `load_pipeline()`):** Serializes computational pipeline objects while refreshing file modification times (`update_mtime = TRUE`) to eliminate stale cache artifacts.
+* **Tuning Diagnostics Family (`R/tune_diagnostics.R`):** Added `fit_ibs_mixed_model()` (dynamic mixed model fitting without hard-coded regression equations), `plot_tune_alpha_ibs()`, `plot_tune_lambda_ibs()`, `plot_tune_ibs_by_resample()`, `plot_tune_coef_boxplot()`, `tbl_tune_alpha()`, and `tbl_tune_coef()`.
+* **Outer-Fold Workflow Helpers (`select_candidate_models()`, `score_outer()`):** Simplifies outer-fold candidate model extraction and automated evaluation via `future_pmap(glmnet_IBS)`.
+* **Diagram Visualization Controls (`visualize_pipeline()`, `export_pipeline_diagram()`):** Added controls for font size, node size, orientation (`TB`, `LR`), and node/rank separation. Exported `export_pipeline_diagram()` to render Word-page-optimized static SVG, PDF, or PNG figures.
+* **Nested CV vs. Random-Alpha Documentation & Verification:** Verified `nested_cv_coxnet()` with `group_bootstraps` inner resamples on start-stop counting process data with `patient_id` clustering, adding comprehensive documentation and vignette guidance distinguishing nested CV generalization auditing from random-alpha model selection.
+
+### P2 — Duplication Removal & Presentation Helpers
+* **Correlation Toolkit (`R/corr_test_all.R`):** Added `correlated_pairs_table()`, `plot_corr_scatter()`, and `plot_rank_heatmap()`.
+* **Cutpoint Optimization (`R/km_cutpoints.R`):** Added `km_cutpoint_search()`, `plot_km_cutpoints()`, and `km_cutpoint_time_varying()` for right-censored and counting process cohorts.
+* **Composite Prognostic Indices (`R/composite_index.R`):** Added `center()`, `compute_composite_index()`, and `index_variable_table()`.
+* **Imputation Quality Auditing (`R/imputation_diagnostics.R`):** Added `compare_imputed_ecdf()`, `test_imputed_distributions()`, `plot_imputed_ridgeline()`, and `tune_impute_numeric()`.
+* **Safe Mixed Model Fitting (`R/lmer_safely.R`):** Added `fit_lmer_safely()` with graceful fallback to `stats::lm()` upon convergence or singularity failure.
+* **Presentation & Excel Helpers (`R/label_helpers.R`):** Added `pretty_name()`, `excel_colnames()`, and `copy_var_labels()`.
+* **Tidymodels Workflow & Importance (`R/workflow_tuning.R`):** Added `tune_best_glmnet_workflow()`, `summarize_dalex_importance()`, `plot_permutation_importance()`, and `tbl_permutation_importance()`.
+* **Plot Deck Extensions (`R/plot_deck.R`):** Added `risk_table` and `p_value` options to `plot_survival_km()`, and arbitrary color scale support to `plot_dynamic_trajectory()`.
+* **Parameterized Stage Report Template (`inst/templates/stage_report_template.qmd`):** Added template collapsing duplicate impute/non-impute report pairs.
+* **Naming Trap Clarifications:** Clarified `find_correlation()` (drops columns) vs `correlated_pairs_table()` (preserves pairs), and `normalize_safely()` (normalizes paths) vs `min_max_norm()` (scales numbers).
+
 # TempleCBE 0.5.2
 
 ## Security & Privacy Hardening

@@ -25,8 +25,8 @@ plot_dynamic_trajectory(
 
 \item{facet_col}{Optional character name of domain or biomarker column to facet wrap.}
 
-\item{colors}{Named character vector of colors matching group levels.
-Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.}
+\item{colors}{Named or unnamed character vector of colors matching group levels,
+or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.}
 
 \item{base_size}{Base font size (default: 12).}
 }
@@ -35,5 +35,5 @@ A ggplot2 object.
 }
 \description{
 Plots mean trajectory over time with standard error bars, stratified by outcome
-or treatment cohort (e.g. Survived vs. Died).
+or treatment cohort (e.g. Survived vs. Died), supporting arbitrary color scales.
 }

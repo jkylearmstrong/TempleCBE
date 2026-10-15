@@ -3,7 +3,7 @@
 \name{render}
 \alias{render}
 \alias{render_me}
-\title{Render Quarto and R Markdown Documents to Multiple Formats With Timing}
+\title{Render Pipeline Documents and Reports}
 \usage{
 render(
   path,
@@ -11,6 +11,16 @@ render(
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
   workers = NULL,
+  only_stale = TRUE,
+  from = NULL,
+  to = NULL,
+  dry_run = FALSE,
+  cache = c("keep", "refresh", "stale"),
+  on_error = c("continue", "stop"),
+  resume = NULL,
+  manifest = TRUE,
+  renv_guard = TRUE,
+  seed = NULL,
   ...
 )
 
@@ -20,85 +30,63 @@ render_me(
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
   workers = NULL,
+  only_stale = TRUE,
+  from = NULL,
+  to = NULL,
+  dry_run = FALSE,
+  cache = c("keep", "refresh", "stale"),
+  on_error = c("continue", "stop"),
+  resume = NULL,
+  manifest = TRUE,
+  renv_guard = TRUE,
+  seed = NULL,
   ...
 )
 }
 \arguments{
-\item{path}{Target document(s) to render. Can be:
-\itemize{
-  \item A character string specifying a file path or directory.
-  \item A character vector of file paths.
-  \item A list of file paths (e.g. \code{list("report1.qmd", "report2.Rmd")}).
-  \item An S4 compute graph object (\code{FileOutputs} or \code{FilePath}).
-  \item A list of compute graph objects, such as a topological render plan
-    returned by \code{\link{get_render_plan}} or a pipeline list from \code{\link{pipeline_config}}.
-  \item A named list or list of lists specifying per-document paths and formats
-    (e.g. \code{list("report1.qmd" = c("pdf", "docx"), "report2.Rmd" = "html")}).
-}}
+\item{path}{A file path (character), directory, list of files, or list of pipeline
+objects (`FilePath`, `FileUses`, `FileOutputs`).}
 
-\item{formats}{Output format(s) to generate. Defaults to
-\code{getOption("pipeline.default_formats", c("pdf", "docx"))}.
-Can be:
-\itemize{
-  \item A character vector of formats (e.g. \code{c("pdf", "docx")}, \code{"html"}, \code{"gfm"}).
-  \item \code{"yaml"} or \code{"auto"} (or \code{NULL}) to read and render the output formats
-    declared in each document's own YAML frontmatter.
-  \item Standard shorthand formats (\code{"pdf"}, \code{"docx"}, \code{"html"}, \code{"gfm"})
-    are automatically translated to R Markdown equivalents (\code{"pdf_document"},
-    \code{"word_document"}, \code{"html_document"}, \code{"github_document"}) when rendering with \pkg{rmarkdown}.
-}
-When a document in a compute graph defines its own deliverable output formats
-(via \code{\link{create_qmd_renderer}}), those document-level formats override
-the default \code{formats}.}
+\item{formats}{Character vector of output formats (e.g. `c("pdf", "docx", "html")`).}
 
-\item{pattern}{Optional regular expression to filter files when \code{path} is a directory.
-Defaults to \code{"\\.(qmd|Rmd|rmd)$"}.}
+\item{pattern}{File pattern regex matching documents to render.}
 
-\item{engine}{Rendering engine: \code{"auto"} (default), \code{"quarto"}, or \code{"rmarkdown"}.
-When \code{"auto"}, \code{.qmd} files are rendered via \pkg{quarto}, and \code{.Rmd} files
-are rendered via \pkg{quarto} if available or \pkg{rmarkdown} otherwise.}
+\item{engine}{Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.}
 
-\item{workers}{Integer specifying the number of multisession parallel
-workers when rendering multiple documents. Defaults to \code{NULL},
-which caps at available cores minus one. Ignored (rendering falls back
-to sequential) when the \pkg{future}/\pkg{furrr} packages are not
-installed.}
+\item{workers}{Number of parallel workers for concurrent rendering via `future`/`furrr`.}
 
-\item{...}{Additional options passed directly to the rendering backend
-(\code{quarto::quarto_render} or \code{rmarkdown::render}), such as
-\code{params}, \code{execute_params}, \code{output_dir}, \code{clean}, or \code{quiet}.}
+\item{only_stale}{Logical. When `TRUE` (default), only out-of-date documents are rendered.
+When `FALSE`, performs a full graph rerun.}
+
+\item{from}{Optional starting node name or index in the topological plan.}
+
+\item{to}{Optional ending node name or index in the topological plan.}
+
+\item{dry_run}{Logical. When `TRUE`, prints the ordered render plan without executing.}
+
+\item{cache}{Cache handling: `"keep"` (default), `"refresh"` (wipes `_cache` and `_files`),
+or `"stale"`.}
+
+\item{on_error}{Behavior upon error: `"continue"` (default) or `"stop"`.}
+
+\item{resume}{Optional data frame of previous render results to resume from.}
+
+\item{manifest}{Logical. When \code{TRUE} (default), writes a \code{render_manifest.json}
+beside rendered outputs containing TempleCBE version, git commit hash, package versions,
+RNG seed, future plan, and per-document wall time.}
+
+\item{renv_guard}{Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
+if an \code{renv.lock} exists, and warns of any package version discrepancies.}
+
+\item{seed}{Optional integer seed for reproducible document execution.}
+
+\item{...}{Additional arguments passed to rendering engines.}
 }
 \value{
-A data frame containing:
-  \item{file}{Base filename of the rendered document}
-  \item{output}{Output format (e.g., "pdf", "docx")}
-  \item{duration}{Execution time in seconds}
-  \item{status}{"success" or error condition message}
+A data frame of rendered files, output formats, durations, and status.
 }
 \description{
-Renders one or more Quarto (\code{.qmd}) or R Markdown (\code{.Rmd}) documents
-to multiple output formats (by default both PDF and DOCX, or formats defined in
-YAML or compute graphs) sequentially or in parallel, recording execution duration
-for each document/format combination. Useful for workflows where reviewers need a
-Word (\code{.docx}) file for track changes/edits while publication and archival
-copies need PDF.
-}
-\examples{
-\dontrun{
-# Render a single Quarto report to both PDF and DOCX
-render(here::here("analysis", "report.qmd"))
-
-# Render a single R Markdown report to both PDF and Word
-render(here::here("analysis", "report.Rmd"))
-
-# Render using formats declared in document's own YAML
-render("analysis/report.qmd", formats = "yaml")
-
-# Render a compute graph render plan
-# plan <- get_render_plan(pipeline)
-# render(plan)
-
-# Render all QMD and Rmd reports in a directory in parallel
-render("analysis/")
-}
+Dispatches Quarto or R Markdown compilation across single documents, directories,
+or computational pipeline graphs, with support for staleness detection, range filtering,
+cache invalidation, error recovery, run manifests, and renv guards.
 }

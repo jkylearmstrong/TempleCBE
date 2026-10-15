@@ -1,3 +1,5 @@
+withr::local_options(templecbe_suppress_renv_warning = TRUE)
+
 test_that("render errors on a missing path", {
   skip_if_not(requireNamespace("quarto", quietly = TRUE), "quarto package not available")
   expect_error(render(file.path(tempdir(), "does-not-exist.qmd")), "not found")
@@ -231,3 +233,155 @@ test_that("render renders .Rmd files using rmarkdown or quarto", {
   expect_equal(res$status[1], "success")
   expect_true(file.exists(file.path(tmp_dir, "report.html")))
 })
+
+test_that("render supports dry_run = TRUE without modifying disk", {
+  tmp_dir <- file.path(tempdir(), "test_render_dry_run")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  qmd_file <- file.path(tmp_dir, "dry.qmd")
+  writeLines(c("---", "title: 'Dry'", "---"), qmd_file)
+
+  out <- capture.output({
+    res <- render(qmd_file, formats = "gfm", dry_run = TRUE)
+  })
+
+  expect_s3_class(res, "data.frame")
+  expect_equal(res$status[1], "dry_run")
+  expect_true(any(grepl("dry.qmd", out)))
+  expect_false(file.exists(file.path(tmp_dir, "dry.md")))
+})
+
+test_that("render cache = 'refresh' wipes document cache and files directories", {
+  tmp_dir <- file.path(tempdir(), "test_render_cache_refresh")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  qmd_file <- file.path(tmp_dir, "cached.qmd")
+  writeLines(c("---", "title: 'Cached'", "---"), qmd_file)
+
+  cache_dir <- file.path(tmp_dir, "cached_cache")
+  files_dir <- file.path(tmp_dir, "cached_files")
+  dir.create(cache_dir, showWarnings = FALSE)
+  dir.create(files_dir, showWarnings = FALSE)
+  file.create(file.path(cache_dir, "dummy.txt"))
+
+  expect_true(dir.exists(cache_dir))
+  expect_true(dir.exists(files_dir))
+
+  # Render with dry_run or execution
+  render(qmd_file, formats = "gfm", cache = "refresh", dry_run = TRUE)
+  # When dry_run is TRUE, cache wiping happens during execution:
+  expect_true(dir.exists(cache_dir)) # dry_run didn't wipe
+
+  # Now simulate render_single call by running render on dummy Rmd
+  if (requireNamespace("rmarkdown", quietly = TRUE)) {
+    rmd_file <- file.path(tmp_dir, "dummy_rmd.Rmd")
+    writeLines(c("---", "title: 'Rmd Cache'", "output: html_document", "---"), rmd_file)
+    r_cache <- file.path(tmp_dir, "dummy_rmd_cache")
+    r_files <- file.path(tmp_dir, "dummy_rmd_files")
+    dir.create(r_cache, showWarnings = FALSE)
+    dir.create(r_files, showWarnings = FALSE)
+
+    render(rmd_file, formats = "html", engine = "rmarkdown", cache = "refresh")
+    expect_false(dir.exists(r_cache))
+    expect_false(dir.exists(r_files))
+  }
+})
+
+test_that("render resume skips completed targets", {
+  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE))
+
+  tmp_dir <- file.path(tempdir(), "test_render_resume")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  rmd1 <- file.path(tmp_dir, "r1.Rmd")
+  rmd2 <- file.path(tmp_dir, "r2.Rmd")
+  writeLines(c("---", "title: '1'", "output: html_document", "---"), rmd1)
+  writeLines(c("---", "title: '2'", "output: html_document", "---"), rmd2)
+
+  prev_res <- data.frame(
+    file = "r1.Rmd",
+    output = "html",
+    duration = 1.23,
+    status = "success",
+    stringsAsFactors = FALSE
+  )
+
+  msgs <- capture_messages({
+    res <- render(list(rmd1, rmd2), formats = "html", engine = "rmarkdown", resume = prev_res)
+  })
+
+  expect_true(any(grepl("Resuming: skipping already completed 'r1.Rmd'", msgs)))
+  expect_equal(nrow(res), 2)
+  expect_equal(res$duration[res$file == "r1.Rmd"], 1.23)
+  expect_equal(res$status, c("success", "success"))
+})
+
+test_that("render on_error = 'stop' halts immediately on failure", {
+  tmp_dir <- file.path(tempdir(), "test_render_error_stop")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  bad_file <- file.path(tmp_dir, "bad.qmd")
+  # Syntax error in R code block that fails during rendering
+  writeLines(c(
+    "---",
+    "title: 'Bad'",
+    "format: gfm",
+    "---",
+    "",
+    "```{r}",
+    "stop('Fatal document error')",
+    "```"
+  ), bad_file)
+
+  skip_if_not(requireNamespace("quarto", quietly = TRUE))
+
+  expect_error(
+    render(bad_file, formats = "gfm", on_error = "stop"),
+    "Error rendering"
+  )
+})
+
+test_that("render writes render_manifest.json beside outputs", {
+  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE))
+  skip_if_not(requireNamespace("jsonlite", quietly = TRUE))
+
+  tmp_dir <- file.path(tempdir(), "test_render_manifest")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  rmd_file <- file.path(tmp_dir, "doc.Rmd")
+  writeLines(c("---", "title: 'Manifest Test'", "output: html_document", "---"), rmd_file)
+
+  res <- render(rmd_file, formats = "html", engine = "rmarkdown", manifest = TRUE, renv_guard = FALSE)
+
+  manifest_file <- file.path(tmp_dir, "render_manifest.json")
+  expect_true(file.exists(manifest_file))
+
+  manifest_data <- jsonlite::read_json(manifest_file)
+  expect_true(!is.null(manifest_data$templecbe_version))
+  expect_true(!is.null(manifest_data$timestamp))
+  expect_true(!is.null(manifest_data$future_plan))
+  expect_true(!is.null(manifest_data$per_node_wall_time))
+  expect_equal(manifest_data$per_node_wall_time[[1]]$file, "doc.Rmd")
+})
+
+test_that("check_renv_guard warns when renv.lock exists but renv is inactive", {
+  tmp_dir <- file.path(tempdir(), "test_renv_guard")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  lock_file <- file.path(tmp_dir, "renv.lock")
+  writeLines(c("{\"Packages\": {}}"), lock_file)
+
+  withr::local_envvar(list(RENV_PROJECT = ""))
+  expect_warning(
+    check_renv_guard(project_root = tmp_dir),
+    "renv is inactive"
+  )
+})
+
+

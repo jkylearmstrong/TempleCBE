@@ -22,6 +22,8 @@ NULL
 #' @param title Optional plot title.
 #' @param caption Optional plot caption.
 #' @param base_size Base font size (default: 13).
+#' @param risk_table Logical. If `TRUE`, appends a number-at-risk table below the survival curve. Default `FALSE`.
+#' @param p_value Logical. If `TRUE` and `group_col` is specified, displays log-rank test p-value. Default `FALSE`.
 #' @return A ggplot2 object.
 #' @export
 plot_survival_km <- function(data,
@@ -31,7 +33,9 @@ plot_survival_km <- function(data,
                              color = "#9D2235",
                              title = "Kaplan-Meier Survival Estimate",
                              caption = NULL,
-                             base_size = 13) {
+                             base_size = 13,
+                             risk_table = FALSE,
+                             p_value = FALSE) {
   surv_fmla_str <- if (!is.null(group_col)) {
     sprintf("survival::Surv(%s, %s) ~ %s", time_col, status_col, group_col)
   } else {
@@ -39,9 +43,17 @@ plot_survival_km <- function(data,
   }
   surv_fmla <- stats::as.formula(surv_fmla_str)
 
-  p <- ggsurvfit::survfit2(surv_fmla, data = data) |>
-    ggsurvfit::ggsurvfit(color = color, linewidth = 1) +
-    ggsurvfit::add_confidence_interval(fill = color, alpha = 0.15) +
+  fit <- ggsurvfit::survfit2(surv_fmla, data = data)
+
+  p <- if (!is.null(group_col)) {
+    ggsurvfit::ggsurvfit(fit, linewidth = 1) +
+      ggsurvfit::add_confidence_interval(alpha = 0.15)
+  } else {
+    ggsurvfit::ggsurvfit(fit, color = color, linewidth = 1) +
+      ggsurvfit::add_confidence_interval(fill = color, alpha = 0.15)
+  }
+
+  p <- p +
     ggsurvfit::add_censor_mark(size = 2) +
     ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
     theme_cbe_deck(base_size = base_size) +
@@ -51,21 +63,30 @@ plot_survival_km <- function(data,
       y = "Survival Probability",
       caption = caption
     )
+
+  if (isTRUE(p_value) && !is.null(group_col)) {
+    p <- p + ggsurvfit::add_pvalue()
+  }
+
+  if (isTRUE(risk_table)) {
+    p <- p + ggsurvfit::add_risktable()
+  }
+
   p
 }
 
 #' Longitudinal Biomarker Trajectories by Cohort / Outcome
 #'
 #' Plots mean trajectory over time with standard error bars, stratified by outcome
-#' or treatment cohort (e.g. Survived vs. Died).
+#' or treatment cohort (e.g. Survived vs. Died), supporting arbitrary color scales.
 #'
 #' @param data Long-format data frame containing longitudinal measurements.
 #' @param value_col Character name of measurement column.
 #' @param time_col Character name of time point column.
 #' @param group_col Character name of cohort/grouping column.
 #' @param facet_col Optional character name of domain or biomarker column to facet wrap.
-#' @param colors Named character vector of colors matching group levels.
-#'   Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
+#' @param colors Named or unnamed character vector of colors matching group levels,
+#'   or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
 #' @param base_size Base font size (default: 12).
 #' @return A ggplot2 object.
 #' @export
@@ -102,8 +123,21 @@ plot_dynamic_trajectory <- function(data,
     ggplot2::geom_line(linewidth = 1) +
     ggplot2::geom_point(size = 2) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = mean - se, ymax = mean + se), width = 3) +
-    theme_cbe_deck(base_size = base_size) +
-    ggplot2::scale_color_manual(values = colors) +
+    theme_cbe_deck(base_size = base_size)
+
+  if (!is.null(colors)) {
+    if (is.null(names(colors))) {
+      group_lvls <- unique(summary_df[[group_col]])
+      if (length(colors) >= length(group_lvls)) {
+        names(colors) <- group_lvls[seq_along(colors)]
+      }
+    }
+    p <- p + ggplot2::scale_color_manual(values = colors)
+  } else {
+    p <- p + scale_color_cbe()
+  }
+
+  p <- p +
     ggplot2::labs(
       x = "Protocol Time",
       y = "Mean Index Value (\u00b1 SE)",
