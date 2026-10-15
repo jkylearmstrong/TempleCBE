@@ -14,11 +14,12 @@ name: pkgdown
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
@@ -36,8 +37,12 @@ jobs:
         with:
           extra-packages: any::pkgdown, local::.
 
+      - name: Restore renv
+        run: if (file.exists("renv.lock")) renv::restore(prompt = FALSE)
+        shell: Rscript {0}
+
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE)
+        run: pkgdown::build_site(new_process = FALSE)
         shell: Rscript {0}
 
       - name: Deploy to GitHub Pages
@@ -46,3 +51,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
+          single_commit: true
+          keep_files: false
