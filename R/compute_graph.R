@@ -947,8 +947,6 @@ refresh_pipeline <- function(x) {
   if (is(x, "FilePath")) {
     if (file.exists(x@path)) {
       x@mtime <- file.info(x@path)$mtime
-    } else {
-      x@mtime <- as.POSIXct(NA)
     }
     if (is(x, "FileUses") && length(x@dependencies) > 0L) {
       x@dependencies <- lapply(x@dependencies, refresh_pipeline)

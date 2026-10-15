@@ -121,10 +121,11 @@ test_that("render renders from computeGraph FileOutputs and pipeline lists", {
   expect_equal(res1$status[1], "success")
 
   # Passing a full pipeline list containing non-renderable raw data and renderable FileOutputs
+  file.create(file.path(tmp_dir, "raw.csv"))
   raw_data <- FilePath(name = "raw", path = file.path(tmp_dir, "raw.csv"), renders = FALSE)
   pipeline <- list(raw_data, cg_obj)
 
-  res2 <- render(pipeline)
+  res2 <- render(pipeline, only_stale = FALSE)
   expect_equal(nrow(res2), 1)
   expect_equal(res2$file[1], "cg_report.qmd")
   expect_equal(res2$status[1], "success")

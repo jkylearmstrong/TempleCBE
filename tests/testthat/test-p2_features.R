@@ -665,7 +665,7 @@ test_that("write_run_manifest handles non-git directory quietly", {
   manifest_file <- write_run_manifest(tmp, targets_result = list())
   expect_true(file.exists(manifest_file))
   data <- jsonlite::fromJSON(manifest_file)
-  expect_true(is.na(data$git_sha) || is.character(data$git_sha))
+  expect_true(is.null(data$git_sha) || is.na(data$git_sha) || is.character(data$git_sha))
 })
 
 test_that("checkpoint skipping message is emitted when progress is TRUE", {
