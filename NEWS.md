@@ -3,7 +3,7 @@
 ## Security & Privacy Hardening
 
 * **Hardened Docker Publish Workflow (`.github/workflows/docker-publish.yml`):** Secured `workflow_run` triggers by strictly verifying `event == 'push'` and matching `head_repository.full_name == github.repository`, eliminating vulnerability to unauthorized image building from fork PR runs. Added direct `push: tags: ['v*']` trigger enabling automated multi-architecture image publication (`linux/amd64,linux/arm64`) on release tags.
-* **Non-destructive Secrets Directory Permissions (`R/atomic_io.R`):** `validate_secrets_dir()` now only tightens permissions (`0700`) on newly created directories. Insecure permissions on pre-existing directories throw an actionable error without mutating existing host folder permissions. `atomic_write_file()` enforces `0600` permissions on temporary files prior to atomic rename on POSIX platforms.
+* **Non-destructive Secrets Directory Permissions (`R/atomic_io.R`):** `validate_secrets_dir()` now tightens permissions (`0700`) only on newly created directories. Existing directories are left untouched (preventing unintended chmod on user home or working directories), while existing world-writable directories without a sticky bit are rejected. `atomic_write_file()` enforces `0600` permissions on temporary files prior to atomic rename on POSIX platforms.
 
 ## Core Modeling & Packaging Improvements
 

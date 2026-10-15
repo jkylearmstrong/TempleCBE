@@ -71,30 +71,31 @@ validate_secrets_dir <- function(dir) {
     tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
   }
 
-  # On POSIX systems, verify that permissions are non-group and non-world accessible
+  # On POSIX systems, verify directory security
   if (.Platform$OS.type != "windows") {
     info <- file.info(dir_norm)
     if (!is.na(info$mode)) {
       mode_int <- as.integer(info$mode)
-      # Check group (octal 070) and world (octal 007) bits -> octal 077 = 63L
-      insecure_bits <- bitwAnd(mode_int, 63L)
-      if (insecure_bits != 0L) {
-        if (created_dir) {
-          # Attempt to restrict permissions to 0700 if created by this function
-          tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
-          info_after <- file.info(dir_norm)
-          if (bitwAnd(as.integer(info_after$mode), 63L) != 0L) {
-            stop(
-              "Insecure permissions on secrets directory '", dir_norm,
-              "' (mode: ", format(info$mode), "). Directory must be user-only and not group- or world-accessible.",
-              call. = FALSE
-            )
-          }
-        } else {
+      if (created_dir) {
+        # Directories created by validate_secrets_dir must be restricted to 0700
+        tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
+        info_after <- file.info(dir_norm)
+        if (bitwAnd(as.integer(info_after$mode), 63L) != 0L) {
+          stop(
+            "Insecure permissions on created secrets directory '", dir_norm,
+            "' (mode: ", format(info$mode), "). Directory must be user-only (0700).",
+            call. = FALSE
+          )
+        }
+      } else {
+        # Existing directory permissions are left untouched (e.g. never chmod ~).
+        # Refuse only if the existing directory is world-writable without a sticky bit.
+        is_world_writable <- bitwAnd(mode_int, 2L) != 0L
+        has_sticky_bit <- bitwAnd(mode_int, 512L) != 0L
+        if (is_world_writable && !has_sticky_bit) {
           stop(
             "Insecure permissions on existing secrets directory '", dir_norm,
-            "' (mode: ", format(info$mode), "). Directory must be user-only (0700) and not group- or world-accessible. ",
-            "Existing directory permissions are left untouched.",
+            "' (mode: ", format(info$mode), "). Directory is world-writable without sticky bit.",
             call. = FALSE
           )
         }
