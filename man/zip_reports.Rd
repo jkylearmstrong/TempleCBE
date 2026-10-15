@@ -60,7 +60,9 @@ DOCX cell of a report whose PDF exists but that has no DOCX to ship reads}
 
 \item{docx_strict}{Logical. When \code{TRUE}, fails loudly (stops execution with an error)
 if no PDF-to-DOCX conversion backend is available or if conversion fails to produce a current
-\code{.docx} for a requested report. When \code{FALSE} (default), warns and skips missing/stale DOCXs.}
+\code{.docx} for a requested report. When \code{FALSE} (default), warns and skips missing/stale DOCXs.
+Pass \code{docx_strict = TRUE} explicitly when packaging deliverables that must strictly guarantee
+current DOCX files.}
 
 \item{docx_backend}{Conversion backend passed to \code{\link{convert_pdf_to_docx}}:
 \code{"auto"} (default), \code{"python"}, \code{"libreoffice"}, or \code{"word_com"}.}

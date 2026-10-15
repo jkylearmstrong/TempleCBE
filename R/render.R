@@ -742,52 +742,93 @@ render <- function(path,
     rows
   }
 
-  # 3. Execution: parallel if multiple targets, not skip_downstream, and future/furrr are available; sequential otherwise
-  can_parallelize <- !isTRUE(skip_downstream) && length(targets) > 1 &&
-    requireNamespace("future", quietly = TRUE) &&
-    requireNamespace("furrr", quietly = TRUE)
+  # 3. Execution: Topological waves across targets.
+  # Independent branches within each wave render concurrently in parallel when
+  # future/furrr are available and workers > 1.
+  has_future <- requireNamespace("future", quietly = TRUE) && requireNamespace("furrr", quietly = TRUE)
+  can_parallelize <- has_future && length(targets) > 1
 
-  if (length(targets) > 1 && !can_parallelize && !isTRUE(skip_downstream)) {
-    message("Packages 'future'/'furrr' not available; rendering sequentially.")
-  }
+  max_workers <- if (requireNamespace("future", quietly = TRUE)) max(1L, future::availableCores() - 1L) else 1L
+  n_workers <- if (is.null(workers)) max_workers else as.integer(workers)
+  n_workers <- max(1L, n_workers)
 
-  if (can_parallelize) {
-    max_workers <- future::availableCores() - 1
-    n_workers <- if (is.null(workers)) min(length(targets), max_workers) else workers
-    n_workers <- max(1, n_workers)
-
+  if (can_parallelize && n_workers > 1L) {
     old_plan <- future::plan()
     on.exit(future::plan(old_plan), add = TRUE)
-    future::plan(future::multisession, workers = n_workers)
+    if (inherits(future::plan(), "sequential")) {
+      future::plan(future::multisession, workers = n_workers)
+    }
+  }
 
-    times <- furrr::future_map_dfr(
-      targets,
-      function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)),
-      .options = furrr::furrr_options(seed = TRUE)
-    )
-  } else {
-    times_list <- list()
-    failed_nodes <- character()
+  # Build dependency mapping between targets
+  n_targets <- length(targets)
+  target_deps <- vector("list", n_targets)
+  for (i in seq_len(n_targets)) {
+    tgt_i <- targets[[i]]
+    deps_i <- integer()
+    for (j in seq_len(n_targets)) {
+      if (i == j) next
+      tgt_j <- targets[[j]]
+      j_identifiers <- unique(c(tgt_j$name, tgt_j$path, tgt_j$outputs))
 
-    for (tgt in targets) {
-      is_downstream_failed <- FALSE
-      if (isTRUE(skip_downstream) && length(failed_nodes) > 0) {
-        reachable <- character()
-        if (!is.null(pipeline_graph)) {
-          for (fn in failed_nodes) {
-            if (fn %in% igraph::V(pipeline_graph)$name) {
-              reachable <- unique(c(reachable, setdiff(names(igraph::subcomponent(pipeline_graph, fn, mode = "out")), fn)))
-            }
-          }
-        }
-        if (tgt$name %in% reachable ||
-            any(tgt$dependencies %in% failed_nodes) ||
-            any(tgt$dependencies %in% reachable)) {
-          is_downstream_failed <- TRUE
+      # 1. Direct dependency match
+      dep_match <- any(tgt_i$dependencies %in% j_identifiers)
+
+      # 2. Graph reachability from tgt_j to tgt_i
+      graph_match <- FALSE
+      if (!dep_match && !is.null(pipeline_graph) && tgt_j$name %in% igraph::V(pipeline_graph)$name) {
+        reachable_from_j <- names(igraph::subcomponent(pipeline_graph, tgt_j$name, mode = "out"))
+        if (tgt_i$name %in% reachable_from_j || any(tgt_i$dependencies %in% reachable_from_j)) {
+          graph_match <- TRUE
         }
       }
 
-      if (is_downstream_failed) {
+      if (dep_match || graph_match) {
+        deps_i <- c(deps_i, j)
+      }
+    }
+    target_deps[[i]] <- unique(deps_i)
+  }
+
+  # Partition targets into topological waves (generations)
+  remaining <- seq_len(n_targets)
+  waves <- list()
+  while (length(remaining) > 0) {
+    ready <- remaining[vapply(remaining, function(idx) {
+      !any(target_deps[[idx]] %in% remaining)
+    }, logical(1))]
+    if (length(ready) == 0) {
+      ready <- remaining[1]
+    }
+    waves[[length(waves) + 1L]] <- ready
+    remaining <- setdiff(remaining, ready)
+  }
+
+  times_list <- list()
+  failed_nodes <- character()
+
+  for (wave_indices in waves) {
+    wave_targets <- targets[wave_indices]
+
+    # Check for upstream failures among targets in this wave
+    skipped_flags <- vapply(wave_targets, function(tgt) {
+      if (!isTRUE(skip_downstream) || length(failed_nodes) == 0) return(FALSE)
+      reachable <- character()
+      if (!is.null(pipeline_graph)) {
+        for (fn in failed_nodes) {
+          if (fn %in% igraph::V(pipeline_graph)$name) {
+            reachable <- unique(c(reachable, setdiff(names(igraph::subcomponent(pipeline_graph, fn, mode = "out")), fn)))
+          }
+        }
+      }
+      tgt$name %in% reachable ||
+        any(tgt$dependencies %in% failed_nodes) ||
+        any(tgt$dependencies %in% reachable)
+    }, logical(1))
+
+    # Mark skipped targets
+    if (any(skipped_flags)) {
+      for (tgt in wave_targets[skipped_flags]) {
         message("Skipping '", basename(tgt$path), "' due to upstream failure.")
         skip_fmts <- if (isTRUE(tgt$derive_docx)) unique(c(tgt$formats, "docx")) else tgt$formats
         skip_df <- data.frame(
@@ -799,16 +840,34 @@ render <- function(path,
         )
         times_list[[length(times_list) + 1L]] <- skip_df
         failed_nodes <- unique(c(failed_nodes, tgt$name, tgt$path, tgt$outputs))
+      }
+    }
+
+    # Execute runnable targets in parallel across workers if available
+    runnable_targets <- wave_targets[!skipped_flags]
+    if (length(runnable_targets) > 0) {
+      wave_results <- if (length(runnable_targets) > 1 && can_parallelize && n_workers > 1L) {
+        furrr::future_map(
+          runnable_targets,
+          function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)),
+          .options = furrr::furrr_options(seed = TRUE)
+        )
       } else {
-        tgt_res <- render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx))
+        lapply(runnable_targets, function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)))
+      }
+
+      for (k in seq_along(runnable_targets)) {
+        tgt <- runnable_targets[[k]]
+        tgt_res <- wave_results[[k]]
         times_list[[length(times_list) + 1L]] <- tgt_res
         if (any(tgt_res$status != "success")) {
           failed_nodes <- unique(c(failed_nodes, tgt$name, tgt$path, tgt$outputs))
         }
       }
     }
-    times <- dplyr::bind_rows(times_list)
   }
+
+  times <- dplyr::bind_rows(times_list)
 
   if (isTRUE(manifest) && length(targets) > 0 && !isTRUE(dry_run)) {
     out_dirs <- unique(vapply(targets, function(t) dirname(t$path), character(1)))

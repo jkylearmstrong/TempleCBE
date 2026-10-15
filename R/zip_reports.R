@@ -55,6 +55,8 @@
 #' @param docx_strict Logical. When \code{TRUE}, fails loudly (stops execution with an error)
 #'   if no PDF-to-DOCX conversion backend is available or if conversion fails to produce a current
 #'   \code{.docx} for a requested report. When \code{FALSE} (default), warns and skips missing/stale DOCXs.
+#'   Pass \code{docx_strict = TRUE} explicitly when packaging deliverables that must strictly guarantee
+#'   current DOCX files.
 #' @param docx_backend Conversion backend passed to \code{\link{convert_pdf_to_docx}}:
 #'   \code{"auto"} (default), \code{"python"}, \code{"libreoffice"}, or \code{"word_com"}.
 #' @return The path to the created zip file.
@@ -183,14 +185,18 @@ zip_reports <- function(reports,
 
         if (pdf_exists && !ship_docx) {
           if (!is.null(docx_converter)) {
-            converted <- tryCatch(
-              docx_converter(pdf_output_path, output_path),
-              error = function(e) {
-                if (isTRUE(docx_strict)) stop(e)
-                warning("PDF -> DOCX conversion failed for '", report$name, "': ", conditionMessage(e), call. = FALSE)
-                FALSE
-              }
-            )
+            converted <- if (is.null(docx_from_pdf)) {
+              tryCatch(
+                docx_converter(pdf_output_path, output_path),
+                error = function(e) {
+                  if (isTRUE(docx_strict)) stop(e)
+                  warning("PDF -> DOCX conversion failed for '", report$name, "': ", conditionMessage(e), call. = FALSE)
+                  FALSE
+                }
+              )
+            } else {
+              docx_converter(pdf_output_path, output_path)
+            }
             ship_docx <- !isFALSE(converted) && docx_is_current()
             if (!ship_docx) {
               if (isTRUE(docx_strict)) {

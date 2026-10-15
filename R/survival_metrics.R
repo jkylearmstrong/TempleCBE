@@ -60,6 +60,10 @@
 #' @param covariates `"path"` or `"baseline"`; see [cv_coxnet()].
 #' @param failure_ibs IBS reported when the model cannot be fit (default
 #'   `NA`); a warning gives the reason.
+#' @param parallel Logical or character. When \code{TRUE} (or \code{"resamples"} / \code{"everything"}),
+#'   evaluates internal CV folds in parallel using [furrr::future_map2()] for \code{tune_engine = "yardstick"}
+#'   or [glmnet::cv.glmnet()]'s parallel mode. When \code{FALSE} (default), evaluates sequentially.
+#' @param parallel_over Tidymodels-compatible partition option: \code{"resamples"} (default) or \code{"everything"}.
 #' @param ... Further arguments passed to [glmnet::glmnet()], such as
 #'   `cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
 #'   5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
@@ -117,6 +121,8 @@ glmnet_IBS <- function(object,
                        rule = c("min", "1se"),
                        covariates = c("path", "baseline"),
                        failure_ibs = NA_real_,
+                       parallel = FALSE,
+                       parallel_over = c("resamples", "everything"),
                        ...) {
   censoring_weights <- match.arg(censoring_weights)
   if (censoring_weights == "none") {
@@ -127,10 +133,6 @@ glmnet_IBS <- function(object,
     )
   }
   dots <- list(...)
-  if ("tune_method" %in% names(dots)) {
-    tune_engine <- dots$tune_method
-    dots$tune_method <- NULL
-  }
   tune_engine <- match.arg(tune_engine)
   if (tune_engine == "cv.glmnet") {
     rlang::warn(
@@ -142,13 +144,10 @@ glmnet_IBS <- function(object,
   prep_on <- match.arg(prep_on)
   rule <- match.arg(rule)
   covariates <- match.arg(covariates)
-  if ("parallel" %in% names(dots)) {
-    dots$parallel <- NULL
-    rlang::warn(
-      "`parallel` is no longer used by glmnet_IBS(); set a future::plan() for tune_over_alpha() instead.",
-      .frequency = "once", .frequency_id = "TempleCBE_glmnet_IBS_parallel"
-    )
-  }
+  is_parallel <- isTRUE(parallel) ||
+    (is.character(parallel) && parallel %in% c("resamples", "everything", "true")) ||
+    (is.list(parallel) && isTRUE(parallel$parallel_over %in% c("resamples", "everything"))) ||
+    (!missing(parallel_over) && isTRUE(match.arg(parallel_over) %in% c("resamples", "everything")) && !identical(parallel, FALSE))
   if ("type.measure" %in% names(dots)) {
     type_measure <- dots$type.measure
     dots$type.measure <- NULL
@@ -229,7 +228,8 @@ glmnet_IBS <- function(object,
           y = y_train,
           family = "cox",
           alpha = alpha,
-          nfolds = internal_folds
+          nfolds = internal_folds,
+          parallel = is_parallel
         ),
         dots
       )
@@ -267,7 +267,8 @@ glmnet_IBS <- function(object,
         list(
           spec_xy(as.data.frame(train[selected]), y_train, subject_train, train[[id_col]]),
           mixture = alpha, v = internal_folds, metrics = select_metrics,
-          eval_time = eval_time, metric = metric, covariates = covariates
+          eval_time = eval_time, metric = metric, covariates = covariates,
+          parallel = is_parallel, parallel_over = parallel_over
         ),
         dots
       ))

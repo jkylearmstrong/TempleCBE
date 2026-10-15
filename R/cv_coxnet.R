@@ -288,6 +288,7 @@ print.cv_coxnet <- function(x, ...) {
 cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, resamples = NULL,
                            v = 10, metrics = NULL, eval_time = NULL, metric = NULL,
                            covariates = c("path", "baseline"), trunc = 0.05, parallel = FALSE,
+                           parallel_over = c("resamples", "everything"),
                            check_subject_overlap = TRUE, ...) {
   rlang::check_installed(
     c("glmnet", "survival", "rsample", "yardstick"),
@@ -380,8 +381,13 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
     }))
   }
 
+  is_parallel <- isTRUE(parallel) ||
+    (is.character(parallel) && parallel %in% c("resamples", "everything", "true")) ||
+    (is.list(parallel) && isTRUE(parallel$parallel_over %in% c("resamples", "everything"))) ||
+    (!missing(parallel_over) && isTRUE(match.arg(parallel_over) %in% c("resamples", "everything")) && !identical(parallel, FALSE))
+
   fold_ids <- resample_ids(resamples)
-  results <- if (isTRUE(parallel)) {
+  results <- if (isTRUE(is_parallel)) {
     rlang::check_installed(c("furrr", "future"), reason = "to fit folds in parallel.")
     furrr::future_map2(resamples$splits, fold_ids, score_split, .options = furrr::furrr_options(seed = TRUE))
   } else {

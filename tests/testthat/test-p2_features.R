@@ -309,3 +309,109 @@ test_that("render skip_downstream marks dependent nodes as skipped_upstream_fail
   expect_equal(res$status[2], "skipped_upstream_failure")
   expect_equal(res$duration[2], 0)
 })
+
+test_that("render parallel wave execution renders independent branches even when another branch fails", {
+  skip_if_not_installed("rmarkdown")
+
+  tmp_dir <- tempfile("render_wave_test_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Branch A: a1 (fails) -> a2 (depends on a1)
+  # Branch B: b1 (succeeds) -> b2 (depends on b1)
+  a1_rmd <- file.path(tmp_dir, "a1.Rmd")
+  a2_rmd <- file.path(tmp_dir, "a2.Rmd")
+  b1_rmd <- file.path(tmp_dir, "b1.Rmd")
+  b2_rmd <- file.path(tmp_dir, "b2.Rmd")
+
+  writeLines(c("---", "title: A1", "---", "```{r}", "stop('A1 error')", "```"), a1_rmd)
+  writeLines(c("---", "title: A2", "---", "Hello from A2"), a2_rmd)
+  writeLines(c("---", "title: B1", "---", "Hello from B1"), b1_rmd)
+  writeLines(c("---", "title: B2", "---", "Hello from B2"), b2_rmd)
+
+  node_a1 <- FileOutputs(name = "a1", path = a1_rmd, renders = TRUE)
+  node_a2 <- FileOutputs(name = "a2", path = a2_rmd, renders = TRUE, dependencies = list(FilePath(name = "a1", path = a1_rmd)))
+  node_b1 <- FileOutputs(name = "b1", path = b1_rmd, renders = TRUE)
+  node_b2 <- FileOutputs(name = "b2", path = b2_rmd, renders = TRUE, dependencies = list(FilePath(name = "b1", path = b1_rmd)))
+
+  pipe <- list(node_a1, node_a2, node_b1, node_b2)
+
+  res <- suppressWarnings(
+    render(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
+           manifest = FALSE, renv_guard = FALSE, engine = "rmarkdown")
+  )
+
+  expect_s3_class(res, "data.frame")
+  expect_equal(nrow(res), 4)
+
+  # a1 failed
+  a1_row <- res[res$file == "a1.Rmd", ]
+  expect_true(a1_row$status != "success")
+
+  # a2 skipped due to upstream failure in branch A
+  a2_row <- res[res$file == "a2.Rmd", ]
+  expect_equal(a2_row$status, "skipped_upstream_failure")
+
+  # b1 succeeded in branch B
+  b1_row <- res[res$file == "b1.Rmd", ]
+  expect_equal(b1_row$status, "success")
+
+  # b2 succeeded in branch B because its upstream dependency b1 succeeded
+  b2_row <- res[res$file == "b2.Rmd", ]
+  expect_equal(b2_row$status, "success")
+})
+
+test_that("glmnet_IBS supports parallel options and does not clash with tune_method in dots", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("yardstick")
+  skip_if_not_installed("rsample")
+
+  set.seed(42)
+  long <- do.call(rbind, lapply(1:20, function(i) {
+    k <- sample(1:2, 1)
+    stops <- c(5, 10)[1:k]
+    risk <- rnorm(1)
+    data.frame(
+      subject_id = i,
+      tstart = c(0, head(stops, -1)),
+      tstop = stops,
+      status = c(rep(0, k - 1), rbinom(1, 1, 0.5)),
+      x1 = rnorm(k),
+      x2 = rnorm(k)
+    )
+  }))
+
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(subject_id, tstart, tstop, status, new_role = "id variable") |>
+    recipes::step_range(recipes::all_numeric_predictors())
+  split <- rsample::group_initial_split(long, group = subject_id)
+
+  # Passing parallel = FALSE and parallel_over = "everything" works without warnings
+  res <- glmnet_IBS(
+    split,
+    alpha = 0.5,
+    recipe = rec,
+    feature_names = c("x1", "x2"),
+    internal_folds = 2,
+    id_col = "subject_id",
+    cox.ties = "breslow",
+    parallel = FALSE,
+    parallel_over = "everything"
+  )
+  expect_s3_class(res, "tbl_df")
+  expect_true(all(c("IBS", "lambda", "term", "estimate", "alpha") %in% names(res)))
+
+  # tune_method passed in dots is not treated as tune_engine and does not cause error
+  res_dots <- glmnet_IBS(
+    split,
+    alpha = 0.5,
+    recipe = rec,
+    feature_names = c("x1", "x2"),
+    internal_folds = 2,
+    id_col = "subject_id",
+    cox.ties = "breslow",
+    tune_method = "resample"
+  )
+  expect_s3_class(res_dots, "tbl_df")
+})
+

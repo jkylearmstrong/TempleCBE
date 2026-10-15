@@ -24,6 +24,8 @@ glmnet_IBS(
   rule = c("min", "1se"),
   covariates = c("path", "baseline"),
   failure_ibs = NA_real_,
+  parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   ...
 )
 }
@@ -81,6 +83,12 @@ penalty, e.g. `"brier_survival_integrated"` or `"concordance_survival"`.}
 
 \item{failure_ibs}{IBS reported when the model cannot be fit (default
 `NA`); a warning gives the reason.}
+
+\item{parallel}{Logical or character. When \code{TRUE} (or \code{"resamples"} / \code{"everything"}),
+evaluates internal CV folds in parallel using [furrr::future_map2()] for \code{tune_engine = "yardstick"}
+or [glmnet::cv.glmnet()]'s parallel mode. When \code{FALSE} (default), evaluates sequentially.}
+
+\item{parallel_over}{Tidymodels-compatible partition option: \code{"resamples"} (default) or \code{"everything"}.}
 
 \item{...}{Further arguments passed to [glmnet::glmnet()], such as
 `cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
