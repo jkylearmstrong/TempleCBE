@@ -69,6 +69,7 @@ reference:
       - write_database_metadata
       - read_database_metadata
       - apply_database_metadata
+      - database_metadata_io
       - cbe_variable_roles
       - cbe_set_roles
       - cbe_get_roles
@@ -139,6 +140,19 @@ reference:
       - score_outer
       - select_candidate_models
       - tidy_outer_coefficients
+      - fit_ibs_mixed_model
+      - fit_lmer_safely
+      - plot_tune_alpha_ibs
+      - plot_tune_lambda_ibs
+      - plot_tune_coef_boxplot
+      - plot_tune_ibs_by_resample
+      - tbl_tune_alpha
+      - tbl_tune_coef
+      - tbl_censoring_comparison
+      - compare_runs
+      - compare_tuning_runs
+      - tune_diagnostics
+      - workflow_tuning
       - racing_workflows
       - control_race_survival
       - tune_race_survival
@@ -192,6 +206,11 @@ reference:
       - missranger_sweep_mtry
       - missranger_oob_by_mtry
       - missranger_max_mtry
+      - tune_impute_numeric
+      - compare_imputed_ecdf
+      - test_imputed_distributions
+      - plot_imputed_ridgeline
+      - imputation_diagnostics
 
   - title: Statistical Testing & EDA
     desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
@@ -205,12 +224,25 @@ reference:
       - correlation_diff
       - correlation_diff_heatmap
       - find_correlation
+      - correlated_pairs_table
+      - plot_corr_scatter
+      - plot_rank_heatmap
       - distribution_test
       - distribution_plot
       - is_normal
       - is_poisson
       - is.int
       - significance_stars
+
+  - title: Composite Clinical & Biomarker Indices
+    desc: >
+      Construct composite indices, center variables, and generate summary tables
+      and correlation structures of index components.
+    contents:
+      - compute_composite_index
+      - composite_index
+      - center
+      - index_variable_table
 
   - title: PCA & Dimensionality Reduction
     desc: Principal Component Analysis utilities, loadings, and biplots.
@@ -286,6 +318,10 @@ reference:
       - save_pipeline
       - load_pipeline
       - join_pipelines
+      - dedupe_pipeline
+      - refresh_pipeline
+      - pipeline_storage
+      - export_pipeline_diagram
       - graph_setops
       - FilePath
       - FilePath-class
@@ -352,6 +388,10 @@ reference:
       - cbe_cox_table
       - cbe_km_single
       - print.cbe_km
+      - km_cutpoints
+      - km_cutpoint_search
+      - km_cutpoint_time_varying
+      - plot_km_cutpoints
       - cbe_factor_reference
       - plot_cox_forest
       - plot_cox_forest_multi
@@ -430,6 +470,10 @@ reference:
       - clean_names
       - R_names
       - make_excel_names
+      - excel_colnames
+      - pretty_name
+      - copy_var_labels
+      - label_helpers
       - keep_only
       - delete_nul_files
       - find_code
