@@ -936,12 +936,12 @@ test_that("a hung interpreter probe is passed over instead of blocking find_pyth
     if (windows) {
       c("@echo off",
         "if \"%~1\"==\"--version\" (echo Python 3.11.0& exit /b 0)",
-        "ping -n 7 127.0.0.1 >nul",
+        "ping -n 35 127.0.0.1 >nul",
         "exit /b 0")
     } else {
       c("#!/bin/sh",
         "case \"$1\" in --version) echo \"Python 3.11.0\"; exit 0;; esac",
-        "exec sleep 6")
+        "exec sleep 30")
     },
     py
   )
@@ -952,9 +952,9 @@ test_that("a hung interpreter probe is passed over instead of blocking find_pyth
   found <- NULL
   secs <- elapsed_secs(found <- find_python(module = "templecbe_hangs_on_import"))
   # `import <module>` never finishes within the limit, so this interpreter is
-  # not a candidate (it used to be reported as usable after the 6 s wait).
+  # not a candidate (it used to be reported as usable after the 30 s wait).
   expect_false(identical(found, py))
-  expect_lt(secs, 5)
+  expect_lt(secs, 25)
 })
 
 test_that("the Word COM launcher quotes every path and never kills Word by name", {

@@ -20,6 +20,7 @@ jobs:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
+      TESTTHAT_PARALLEL: "FALSE"
 
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +61,7 @@ jobs:
         if: always()
         run: |
           ## --------------------------------------------------------------------
-          find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
+          find '${{ runner.temp }}' -name 'testthat.Rout*' -exec cat '{}' \; || true
         shell: bash
 
       - name: Upload test results
@@ -68,4 +69,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-test-failures
-          path: ${{ runner.temp }}/package
+          path: ${{ runner.temp }}/**/testthat.Rout*
+
