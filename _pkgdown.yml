@@ -320,7 +320,6 @@ reference:
       - join_pipelines
       - dedupe_pipeline
       - refresh_pipeline
-      - pipeline_storage
       - export_pipeline_diagram
       - graph_setops
       - FilePath
