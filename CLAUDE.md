@@ -1,8 +1,8 @@
 # Claude Code Instructions: TempleCBE
 
 Please refer to
-[AGENTS.md](file:///c:/Users/jkyle/Documents/GitHub/TempleCBE/AGENTS.md)
-for full architecture and testing details.
+[AGENTS.md](https://jkylearmstrong.github.io/TempleCBE/AGENTS.md) for
+full architecture and testing details.
 
 ## Quick Reference
 

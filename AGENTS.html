@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,7 +45,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>Developer &amp; Agent Guide: TempleCBE</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.1/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/AGENTS.md" class="external-link"><code>AGENTS.md</code></a></small>
     </div>
 
 <div id="developer--agent-guide-templecbe" class="section level1">
@@ -83,7 +83,7 @@
 <ul><li>
 <strong>Pull Requests (Full Gate):</strong> Run the complete cross-platform test matrix (<code>ubuntu-latest</code>, <code>windows-latest</code>, <code>macOS-latest</code>) and <code>test-coverage</code>. On Windows, vignette building is skipped during check to reduce check times from 35+ min to ~12 min.</li>
 <li>
-<strong>Push to Master (Fast Sanity &amp; Deploy):</strong> Runs a fast 5-minute sanity check on <code>ubuntu-latest</code>, after which documentation (<code>pkgdown</code>) and container images (<code>docker-publish</code>) deploy promptly without redundant 35-minute Windows rebuilds.</li>
+<strong>Push to Master (Fast Sanity &amp; Deploy):</strong> Runs a fast 5-minute sanity check on <code>ubuntu-latest</code> with documentation (<code>pkgdown</code>) deploying concurrently. Container images (<code>docker-publish</code>) deploy to Docker Hub upon successful completion of the sanity check (<code>workflow_run</code>), while tagged releases (<code>v*</code>) publish multi-arch images (<code>linux/amd64,linux/arm64</code>) directly.</li>
 <li>Workflows automatically cancel superseded in-progress runs when new commits are pushed (<code>cancel-in-progress: true</code>).</li>
 </ul></li>
 </ol><hr></div>

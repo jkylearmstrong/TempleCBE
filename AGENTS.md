@@ -38,9 +38,11 @@
       and `test-coverage`. On Windows, vignette building is skipped
       during check to reduce check times from 35+ min to ~12 min.
     - **Push to Master (Fast Sanity & Deploy):** Runs a fast 5-minute
-      sanity check on `ubuntu-latest`, after which documentation
-      (`pkgdown`) and container images (`docker-publish`) deploy
-      promptly without redundant 35-minute Windows rebuilds.
+      sanity check on `ubuntu-latest` with documentation (`pkgdown`)
+      deploying concurrently. Container images (`docker-publish`) deploy
+      to Docker Hub upon successful completion of the sanity check
+      (`workflow_run`), while tagged releases (`v*`) publish multi-arch
+      images (`linux/amd64,linux/arm64`) directly.
     - Workflows automatically cancel superseded in-progress runs when
       new commits are pushed (`cancel-in-progress: true`).
 

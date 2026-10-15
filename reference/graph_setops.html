@@ -19,7 +19,7 @@ class), and rebuilt into an igraph with database_to_igraph."><meta property="og:
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@ class), and rebuilt into an igraph with database_to_igraph."><meta property="og:
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Intersect, Subtract, or Union Two Graph Objects</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.1/R/graph_setops.R" class="external-link"><code>R/graph_setops.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/graph_setops.R" class="external-link"><code>R/graph_setops.R</code></a></small>
       <div class="d-none name"><code>graph_setops.Rd</code></div>
     </div>
 
@@ -133,18 +133,18 @@ results directly (or on the two graphs themselves).</p>
 <span class="r-in"><span>  vertices <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">graph_intersect</span><span class="op">(</span><span class="va">g1</span>, <span class="va">g2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 62036ec DN-- 2 1 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 6ae9a52 DN-- 2 1 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edge from 62036ec (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edge from 6ae9a52 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] a-&gt;b</span>
 <span class="r-in"><span><span class="fu">graph_subtract</span><span class="op">(</span><span class="va">g1</span>, <span class="va">g2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 45470ae DN-- 1 0 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 112ba86 DN-- 1 0 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 45470ae (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 112ba86 (vertex names):</span>
 <span class="r-in"><span><span class="fu">graph_union</span><span class="op">(</span><span class="va">g1</span>, <span class="va">g2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 99afd8d DN-- 3 2 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH fd48688 DN-- 3 2 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 99afd8d (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from fd48688 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] a-&gt;b b-&gt;c</span>
 </code></pre></div>
     </div>

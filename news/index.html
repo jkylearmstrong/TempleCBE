@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,9 +45,41 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.2" id="templecbe-052">TempleCBE 0.5.2<a class="anchor" aria-label="anchor" href="#templecbe-052"></a></h2>
+<div class="section level3">
+<h3 id="security--privacy-hardening-0-5-2">Security &amp; Privacy Hardening<a class="anchor" aria-label="anchor" href="#security--privacy-hardening-0-5-2"></a></h3>
+<ul><li>
+<strong>Hardened Docker Publish Workflow (<code>.github/workflows/docker-publish.yml</code>):</strong> Secured <code>workflow_run</code> triggers by strictly verifying <code>event == 'push'</code> and matching <code>head_repository.full_name == github.repository</code>, eliminating vulnerability to unauthorized image building from fork PR runs. Added direct <code>push: tags: ['v*']</code> trigger enabling automated multi-architecture image publication (<code>linux/amd64,linux/arm64</code>) on release tags.</li>
+<li>
+<strong>Non-destructive Secrets Directory Permissions (<code>R/atomic_io.R</code>):</strong> <code>validate_secrets_dir()</code> now tightens permissions (<code>0700</code>) only on newly created directories. Existing directories are left untouched (preventing unintended chmod on user home or working directories), while existing world-writable directories without a sticky bit are rejected. <code>atomic_write_file()</code> enforces <code>0600</code> permissions on temporary files prior to atomic rename on POSIX platforms.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="core-modeling--packaging-improvements-0-5-2">Core Modeling &amp; Packaging Improvements<a class="anchor" aria-label="anchor" href="#core-modeling--packaging-improvements-0-5-2"></a></h3>
+<ul><li>
+<strong>Directory Deliverable Copy Guards (<code>R/bundle_deliverables.R</code>, <code>R/zip_reports.R</code>):</strong> Added explicit <code>!dir.exists()</code> guards before invoking <code><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy()</a></code>, preventing directory paths from silently copying as empty 0-byte files on older R runtimes (e.g. R 4.3.3).</li>
+<li>
+<strong>Caller RNG State Preservation (<code>R/racing_workflows.R</code>):</strong> <code><a href="../reference/tune_race_survival.html">tune_race_survival()</a></code> now scopes random seeds via <code>local_seed()</code> rather than bare <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, cleanly preserving the caller’s <code>.Random.seed</code> state across tuning routines.</li>
+<li>
+<strong>Cross-Version <code>cox.ties</code> Validation (<code>R/coxnet.R</code>):</strong> <code>fit_glmnet_cox()</code> explicitly validates <code>cox.ties</code> via <code>match.arg(..., c("breslow", "efron"))</code>, ensuring consistent parameter rejection across all <code>glmnet</code> versions (including 4.1.8).</li>
+<li>
+<strong>Docker Hub Step Credential Scope (<code>.github/workflows/docker-publish.yml</code>):</strong> Moved Docker Hub environment variables (<code>DOCKERHUB_USER</code>, <code>DOCKERHUB_PASS</code>) to job-level scope so conditional step evaluations (<code>if: ${{ env.DOCKERHUB_USER != '' }}</code>) evaluate reliably.</li>
+<li>
+<strong>Dependency Version Floor (<code>DESCRIPTION</code>):</strong> Specified <code>openxlsx (&gt;= 4.2.6)</code> in <code>Suggests</code> to eliminate upstream <code>sprintf</code> format string warnings.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="test-portability--ci-diagnostics-0-5-2">Test Portability &amp; CI Diagnostics<a class="anchor" aria-label="anchor" href="#test-portability--ci-diagnostics-0-5-2"></a></h3>
+<ul><li>
+<strong>Windows Junction Removal (<code>tests/testthat/helper-links.R</code>):</strong> <code>remove_dir_link()</code> preserves un-normalized link paths when invoking <code>cmd /c rmdir</code>, preventing path resolution to the target directory and eliminating reparse point mismatch warnings.</li>
+<li>
+<strong>Root Execution Guards (<code>tests/testthat/test-failure_modes.R</code>):</strong> Filesystem permission failure tests now safely skip when running under the <code>root</code> user in container environments where POSIX permissions are bypassed.</li>
+<li>
+<strong>Soft Dependency Gates (<code>tests/testthat/test-joint_model.R</code>):</strong> Added helper skips for environments missing optional packages <code>yardstick</code> or <code>rsample</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.1" id="templecbe-051">TempleCBE 0.5.1<a class="anchor" aria-label="anchor" href="#templecbe-051"></a></h2>
 <div class="section level3">

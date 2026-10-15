@@ -102,15 +102,15 @@ for scope and key handling.
 ``` r
 # Random tokens need no key
 generate_pseudonym_token(n = 3)
-#> [1] "PI_a433ef09fd6adb0c" "PI_5f59a2997298439a" "PI_20520d874f981904"
+#> [1] "PI_c53b6e4e8d314042" "PI_994fa80132d6c09e" "PI_6a2cf4d2609b5e96"
 
 # Short tokens (8 hex chars)
 generate_pseudonym_token(n = 3, n_chars = 8)
-#> [1] "PI_2cf6fc70" "PI_e7b64b1c" "PI_b2c9e377"
+#> [1] "PI_97f57922" "PI_2a657e41" "PI_c08fe036"
 
 # Custom renaming function
 generate_pseudonym_token(n = 2, rename_fn = tolower)
-#> [1] "pi_c98f42223b49ad08" "pi_dffa0269a813a5fa"
+#> [1] "pi_f90bd69f85333524" "pi_aba2207d00f7f81e"
 
 # Deterministic tokens need a secret key. In real use keep it in the
 # TEMPLECBE_SECRET_KEY environment variable (see ?pi_anonymizer), never in a
