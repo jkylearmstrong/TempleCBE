@@ -99,3 +99,119 @@ test_that("score_outer and compare_censoring_weights run on rsplit", {
   expect_true(!is.null(agree$spearman))
   expect_true(!is.null(agree$kendall))
 })
+
+test_that("select_candidate_models supports by = 'row' with ntile and top_n", {
+  tune_res <- tibble::tibble(
+    alpha = c(0.1, 0.2, 0.5, 0.8, 1.0, 0.2, 0.5, 0.8, 1.0, 0.1),
+    IBS = c(0.50, 0.12, 0.35, 0.40, 0.45, 0.10, 0.30, 0.38, 0.42, 0.55)
+  )
+
+  # by = "row" with ntile = 0.2 (top 20% lowest IBS rows: 0.10, 0.12, both alpha 0.2)
+  sel_tile <- select_candidate_models(tune_res, "x1 + x2", ntile = 0.2, by = "row")
+  expect_equal(sel_tile$alpha, 0.2)
+
+  # by = "row" with top_n = 2 (top 2 distinct alphas: 0.2 and 0.5)
+  sel_top <- select_candidate_models(tune_res, c("x1 + x2", "x1 + x3"), top_n = 2, by = "row")
+  expect_setequal(unique(sel_top$alpha), c(0.2, 0.5))
+  expect_equal(nrow(sel_top), 4)
+
+  # by = "alpha" summarizes mean IBS per alpha
+  sel_alpha <- select_candidate_models(tune_res, "x1 + x2", top_n = 2, by = "alpha")
+  expect_setequal(unique(sel_alpha$alpha), c(0.2, 0.5))
+})
+
+test_that("score_outer handles multiple splits, coefficients options, tidy_outer_coefficients, and cv.glmnet", {
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(42)
+  long <- do.call(rbind, lapply(seq_len(40), function(i) {
+    data.frame(
+      id = i,
+      tstart = 0,
+      tstop = stats::runif(1, 5, 40),
+      status = stats::rbinom(1, 1, 0.5),
+      x1 = stats::rnorm(1),
+      x2 = stats::rnorm(1),
+      x3 = stats::rnorm(1)
+    )
+  }))
+  rec <- recipes::recipe(~ ., data = long)
+  rec <- recipes::update_role(rec, "id", "tstart", "tstop", "status", new_role = "id variable")
+
+  splits_list <- list(
+    Fold1 = rsample::initial_split(long[1:30, ], prop = 0.7),
+    Fold2 = rsample::initial_split(long[11:40, ], prop = 0.7)
+  )
+
+  grid <- data.frame(
+    alpha = c(0.5),
+    formula = c("x1 + x2 + x3"),
+    stringsAsFactors = FALSE
+  )
+
+  # 1. Score multiple outer splits
+  scored_all <- suppressWarnings(
+    score_outer(
+      splits_list,
+      grid,
+      recipe = rec,
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      coefficients = "all",
+      seed = 101
+    )
+  )
+
+  expect_s3_class(scored_all, "tbl_df")
+  expect_equal(nrow(scored_all), 2)
+  expect_true("outer_fold" %in% names(scored_all))
+  expect_equal(scored_all$outer_fold, c("Fold1", "Fold2"))
+  expect_true(is.list(scored_all$coefficients))
+  # With coefficients = "all", each row's coef table contains all 3 terms
+  expect_equal(nrow(scored_all$coefficients[[1]]), 3)
+  expect_setequal(scored_all$coefficients[[1]]$term, c("x1", "x2", "x3"))
+
+  # 2. Test tidy_outer_coefficients unnesting
+  tidied <- tidy_outer_coefficients(scored_all)
+  expect_s3_class(tidied, "tbl_df")
+  expect_equal(nrow(tidied), 6) # 2 folds * 3 terms
+  expect_named(tidied, c("outer_fold", "model", "alpha", "formula", "IBS", "lambda", "term", "estimate"))
+  expect_equal(tidy_outer_coefficients(scored_all), unnest_outer_coefficients(scored_all))
+
+  # 3. Test coefficients = "nonzero"
+  scored_nz <- suppressWarnings(
+    score_outer(
+      splits_list[[1]],
+      grid,
+      recipe = rec,
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      coefficients = "nonzero",
+      seed = 101
+    )
+  )
+  expect_true("outer_fold" %in% names(scored_nz))
+  expect_true(all(scored_nz$coefficients[[1]]$estimate != 0))
+
+  # 4. Test cv.glmnet legacy tuning engine
+  scored_legacy <- suppressWarnings(
+    glmnet_IBS(
+      splits_list[[1]],
+      alpha = 0.5,
+      recipe = rec,
+      feature_names = c("x1", "x2", "x3"),
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      tune_engine = "cv.glmnet"
+    )
+  )
+  expect_s3_class(scored_legacy, "tbl_df")
+  expect_true(!is.na(scored_legacy$IBS[1]))
+  expect_true(!is.na(scored_legacy$lambda[1]))
+  expect_equal(nrow(scored_legacy), 3)
+})

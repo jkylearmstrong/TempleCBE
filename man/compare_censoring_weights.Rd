@@ -14,7 +14,7 @@ compare_censoring_weights(
 )
 }
 \arguments{
-\item{object}{An `rsplit` object (e.g. from [rsample::initial_split()]) or a
+\item{object}{An `rsplit`, `nested_cv`, list of `rsplit`s, or a
 precomputed data frame scored under `censoring_weights = "none"`.}
 
 \item{grid}{A candidate model grid (data frame with `alpha` and optional `formula`),
@@ -31,6 +31,7 @@ is already a scored data frame.}
 }
 \value{
 A tibble with columns:
+  \item{outer_fold}{Outer fold identifier (if present)}
   \item{model}{Model identifier}
   \item{alpha}{Elastic net mixing parameter}
   \item{formula}{Formula specification (if present)}

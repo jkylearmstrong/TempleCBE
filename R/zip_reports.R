@@ -52,7 +52,11 @@
 #'   the PDF is there afterwards; a warning says so and no DOCX is shipped for
 #'   that report. Any other return value is taken as success. In the index, the
 #'   DOCX cell of a report whose PDF exists but that has no DOCX to ship reads
-#'   \code{"not converted"}.
+#' @param docx_strict Logical. When \code{TRUE}, fails loudly (stops execution with an error)
+#'   if no PDF-to-DOCX conversion backend is available or if conversion fails to produce a current
+#'   \code{.docx} for a requested report. When \code{FALSE} (default), warns and skips missing/stale DOCXs.
+#' @param docx_backend Conversion backend passed to \code{\link{convert_pdf_to_docx}}:
+#'   \code{"auto"} (default), \code{"python"}, \code{"libreoffice"}, or \code{"word_com"}.
 #' @return The path to the created zip file.
 #' @export
 #'
@@ -71,7 +75,9 @@ zip_reports <- function(reports,
                          data_deliverables = character(0),
                          zip_name = NULL,
                          output_dir = getwd(),
-                         docx_from_pdf = NULL) {
+                         docx_from_pdf = NULL,
+                         docx_strict = FALSE,
+                         docx_backend = "auto") {
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
     stop("Package 'openxlsx' is required by zip_reports(). Install it with install.packages(\"openxlsx\").", call. = FALSE)
   }
@@ -80,6 +86,18 @@ zip_reports <- function(reports,
   if (!("description" %in% names(reports))) reports$description <- NA_character_
 
   if ("all" %in% output_formats) output_formats <- c("pdf", "docx", "html")
+
+  docx_converter <- if (!is.null(docx_from_pdf)) {
+    if (identical(docx_from_pdf, convert_pdf_to_docx)) {
+      function(src, dest) convert_pdf_to_docx(src, dest, backend = docx_backend, strict = docx_strict)
+    } else {
+      docx_from_pdf
+    }
+  } else if (isTRUE(docx_strict) || !identical(docx_backend, "auto")) {
+    function(src, dest) convert_pdf_to_docx(src, dest, backend = docx_backend, strict = docx_strict)
+  } else {
+    NULL
+  }
 
   make_staged_stems <- function(paths) {
     paths <- as.character(paths)
@@ -163,20 +181,31 @@ zip_reports <- function(reports,
         }
         ship_docx <- docx_is_current()
 
-        if (pdf_exists && !ship_docx && !is.null(docx_from_pdf)) {
-          converted <- docx_from_pdf(pdf_output_path, output_path)
-          # `FALSE` is what convert_pdf_to_docx() returns when it fails; any
-          # other value (that function returns the path, others return NULL)
-          # counts, as long as a current file is there.
-          ship_docx <- !isFALSE(converted) && docx_is_current()
-          if (!ship_docx) {
-            warning("docx_from_pdf() did not produce a current DOCX for '", report$name, "' (",
-                    output_path, "); no DOCX is included for it.", call. = FALSE)
+        if (pdf_exists && !ship_docx) {
+          if (!is.null(docx_converter)) {
+            converted <- tryCatch(
+              docx_converter(pdf_output_path, output_path),
+              error = function(e) {
+                if (isTRUE(docx_strict)) stop(e)
+                warning("PDF -> DOCX conversion failed for '", report$name, "': ", conditionMessage(e), call. = FALSE)
+                FALSE
+              }
+            )
+            ship_docx <- !isFALSE(converted) && docx_is_current()
+            if (!ship_docx) {
+              if (isTRUE(docx_strict)) {
+                stop("Could not produce a current DOCX for '", report$name, "' (", output_path, ") under docx_strict = TRUE.", call. = FALSE)
+              }
+              warning("docx_from_pdf() did not produce a current DOCX for '", report$name, "' (",
+                      output_path, "); no DOCX is included for it.", call. = FALSE)
+            }
+          } else if (isTRUE(docx_strict)) {
+            stop("No current DOCX found for '", report$name, "' (", output_path, ") and no conversion backend is available under docx_strict = TRUE.", call. = FALSE)
+          } else if (file.exists(output_path)) {
+            warning("The DOCX for '", report$name, "' (", output_path, ") is older than its PDF and ",
+                    "was left out of the zip. Render it again, or pass docx_from_pdf to rebuild it.",
+                    call. = FALSE)
           }
-        } else if (!ship_docx && file.exists(output_path)) {
-          warning("The DOCX for '", report$name, "' (", output_path, ") is older than its PDF and ",
-                  "was left out of the zip. Render it again, or pass docx_from_pdf to rebuild it.",
-                  call. = FALSE)
         }
 
         if (ship_docx) {

@@ -38,11 +38,12 @@ tune_best_glmnet_workflow <- function(formula_or_recipe,
     formula_or_recipe,
     data = data,
     mixture = mixture,
+    resamples = resamples,
     ...
   )
 
-  best_mix <- fit$best_mixture %||% mixture[1]
-  best_pen <- if (rule == "1se") fit$lambda.1se else fit$lambda.min
+  best_mix <- fit$mixture %||% fit$best_mixture %||% mixture[1]
+  best_pen <- if (rule == "1se") (fit$lambda_1se %||% fit$lambda.1se) else (fit$lambda_min %||% fit$lambda.min)
 
   final_fit <- coxnet(
     formula_or_recipe,

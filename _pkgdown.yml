@@ -135,6 +135,10 @@ reference:
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+      - compare_censoring_weights
+      - score_outer
+      - select_candidate_models
+      - tidy_outer_coefficients
       - racing_workflows
       - control_race_survival
       - tune_race_survival
@@ -174,6 +178,10 @@ reference:
       - step_famd
       - get_model_parameters
       - fit_n_rank
+      - tune_best_glmnet_workflow
+      - summarize_dalex_importance
+      - plot_permutation_importance
+      - tbl_permutation_importance
 
   - title: Missing Data Imputation
     desc: Per-column mtry sweeps for missForest and missRanger imputation.
@@ -245,6 +253,9 @@ reference:
       - render
       - render_me
       - zip_reports
+      - write_run_manifest
+      - check_renv_guard
+      - extract_yaml_formats
       - scan_data_io
       - read_search
       - write_search
@@ -271,6 +282,9 @@ reference:
       - controls_datasets
       - create_qmd_renderer
       - get_render_plan
+      - is_stale
+      - save_pipeline
+      - load_pipeline
       - join_pipelines
       - graph_setops
       - FilePath

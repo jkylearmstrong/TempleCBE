@@ -21,6 +21,8 @@ render(
   manifest = TRUE,
   renv_guard = TRUE,
   seed = NULL,
+  skip_downstream = TRUE,
+  rerun = c("none", "full"),
   ...
 )
 
@@ -40,6 +42,8 @@ render_me(
   manifest = TRUE,
   renv_guard = TRUE,
   seed = NULL,
+  skip_downstream = TRUE,
+  rerun = c("none", "full"),
   ...
 )
 }
@@ -79,6 +83,14 @@ RNG seed, future plan, and per-document wall time.}
 if an \code{renv.lock} exists, and warns of any package version discrepancies.}
 
 \item{seed}{Optional integer seed for reproducible document execution.}
+
+\item{skip_downstream}{Logical. When `TRUE` (default), if an upstream node fails during
+pipeline rendering (with `on_error = "continue"`), all dependent downstream reports are
+skipped and marked with status `"skipped_upstream_failure"` to prevent compiling on stale data.}
+
+\item{rerun}{Rerun strategy shorthand: `"none"` (default, uses `only_stale` and `cache` settings)
+or `"full"` (forces full graph execution with fresh caches, setting `only_stale = FALSE`
+and `cache = "refresh"`).}
 
 \item{...}{Additional arguments passed to rendering engines.}
 }

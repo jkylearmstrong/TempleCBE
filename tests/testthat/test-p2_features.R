@@ -192,3 +192,120 @@ test_that("plot_deck extensions: plot_survival_km and plot_dynamic_trajectory", 
   p_dyn <- plot_dynamic_trajectory(long_df, "val", "time", "group", colors = c("#000000", "#FF0000"))
   expect_s3_class(p_dyn, "ggplot")
 })
+
+test_that("tune_best_glmnet_workflow tunes and finalizes a penalized Cox workflow", {
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(123)
+  lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex", "ph.ecog")])
+
+  res <- suppressWarnings(
+    tune_best_glmnet_workflow(
+      survival::Surv(time, status) ~ age + sex + ph.ecog,
+      data = lung,
+      mixture = c(0.5, 1.0),
+      v = 3
+    )
+  )
+
+  expect_type(res, "list")
+  expect_named(res, c("best_mixture", "best_penalty", "model", "cv_results"))
+  expect_true(res$best_mixture %in% c(0.5, 1.0))
+  expect_true(is.numeric(res$best_penalty) && res$best_penalty > 0)
+  expect_s3_class(res$model, "coxnet_model")
+  expect_s3_class(res$cv_results, "cv_coxnet")
+})
+
+test_that("write_run_manifest records metadata JSON beside outputs", {
+  skip_if_not_installed("jsonlite")
+
+  tmp_dir <- tempfile("manifest_test_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  dummy_results <- data.frame(
+    file = c("report1.qmd", "report2.qmd"),
+    output = c("pdf", "docx"),
+    duration = c(12.3, 4.5),
+    status = c("success", "success"),
+    stringsAsFactors = FALSE
+  )
+
+  mf_path <- write_run_manifest(tmp_dir, dummy_results, seed = 2026)
+  expect_true(file.exists(mf_path))
+
+  data <- jsonlite::read_json(mf_path)
+  expect_true("timestamp" %in% names(data))
+  expect_true("templecbe_version" %in% names(data))
+  expect_true("future_plan" %in% names(data))
+  expect_equal(data$seed, 2026)
+  expect_true("package_versions" %in% names(data))
+  expect_true("per_node_wall_time" %in% names(data))
+  expect_equal(length(data$per_node_wall_time), 2)
+})
+
+test_that("zip_reports fails loudly when docx_strict = TRUE and no backend exists", {
+  skip_if_not_installed("openxlsx")
+
+  tmp_dir <- tempfile("zip_strict_test_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Create a dummy report PDF without a DOCX
+  pdf_file <- file.path(tmp_dir, "test_rep.pdf")
+  writeLines("%PDF-1.4 dummy", pdf_file)
+
+  rep_df <- data.frame(
+    name = "Strict Report",
+    path = sub("\\.pdf$", ".qmd", pdf_file),
+    stringsAsFactors = FALSE
+  )
+
+  # When docx_strict = TRUE, fails if no backend exists or converter returns FALSE
+  expect_error(
+    zip_reports(
+      rep_df,
+      output_formats = c("pdf", "docx"),
+      output_dir = tmp_dir,
+      docx_from_pdf = function(src, dest) FALSE,
+      docx_strict = TRUE
+    ),
+    "docx_strict = TRUE"
+  )
+})
+
+test_that("render skip_downstream marks dependent nodes as skipped_upstream_failure", {
+  tmp_dir <- tempfile("render_skip_test_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Create two dummy scripts/reports
+  qmd1 <- file.path(tmp_dir, "step1.qmd")
+  qmd2 <- file.path(tmp_dir, "step2.qmd")
+  writeLines(c("---", "title: Step 1", "---", "", "```{r}", "stop('Intentional failure in step 1')", "```"), qmd1)
+  writeLines("title: Step 2", qmd2)
+
+  node1 <- FileOutputs(name = "step1", path = qmd1, renders = TRUE)
+  node2 <- FileOutputs(name = "step2", path = qmd2, renders = TRUE, dependencies = list(FilePath(name = "step1", path = qmd1)))
+
+  pipe <- list(node1, node2)
+
+  # Rerun shorthand works
+  plan_dry <- render(pipe, rerun = "full", dry_run = TRUE, renv_guard = FALSE)
+  expect_equal(nrow(plan_dry), 2)
+
+  # We verify render with on_error = "continue", rerun = "full", and skip_downstream = TRUE
+  res <- suppressWarnings(
+    render(pipe, rerun = "full", formats = "pdf", on_error = "continue", skip_downstream = TRUE, manifest = FALSE, renv_guard = FALSE)
+  )
+
+  expect_s3_class(res, "data.frame")
+  expect_equal(nrow(res), 2)
+  expect_equal(res$file[1], "step1.qmd")
+  expect_true(res$status[1] != "success")
+  expect_equal(res$file[2], "step2.qmd")
+  expect_equal(res$status[2], "skipped_upstream_failure")
+  expect_equal(res$duration[2], 0)
+})

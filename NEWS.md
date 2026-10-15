@@ -1,3 +1,16 @@
+# TempleCBE 0.5.4
+
+## Pipeline Robustness, Outer Resampling & Modeling Extensions
+
+* **Multi-Split Evaluation in `score_outer()`:** Accepts `nested_cv`, `rset`, or a list of `rsplit` objects in addition to single `rsplit`s, evaluating outer splits $\times$ candidate models from `grid` with an `outer_fold` identifier column.
+* **Full Coefficient Reporting & Unnest Helpers (`score_outer()`, `tidy_outer_coefficients()`):** Added `coefficients = c("all", "nonzero")` (default `"all"`) to preserve all feature coefficients (including those shrunk to 0). Added and exported `tidy_outer_coefficients()` (and alias `unnest_outer_coefficients()`) to unnest coefficients into long tidy format for variable-importance plots.
+* **Row-Level Candidate Model Selection (`select_candidate_models()`):** Added `by = c("row", "alpha")` (default `"row"`), selecting top-performing alphas appearing in the lowest quantile of individual rows (e.g. `ntile(IBS, 5) == 1L`) in addition to mean-summarized alpha selection.
+* **Upstream Failure Skipping in `render()`:** Added `skip_downstream = TRUE` (default). When `on_error = "continue"` and an upstream node fails during pipeline execution, dependent downstream reports are automatically skipped and recorded with status `"skipped_upstream_failure"` and zero duration, preventing stale report generation.
+* **Full Rerun Shorthand (`render(rerun = "full")`):** Added `rerun = c("none", "full")` shorthand; specifying `rerun = "full"` sets `only_stale = FALSE` and `cache = "refresh"`.
+* **Strict Mode & Backend Selection in `zip_reports()`:** Added `docx_strict` (default `FALSE`) and `docx_backend` (default `"auto"`). Under `docx_strict = TRUE`, packaging halts with an actionable error if no PDF-to-DOCX conversion backend is available or if conversion fails.
+* **Legacy `cv.glmnet` Tuning Reproduction in `glmnet_IBS()`:** Added `tune_engine = c("yardstick", "cv.glmnet")` (default `"yardstick"`). Allows historical reproduction of pre-0.3 penalty tuning across un-grouped intervals with a once-per-session advisory warning.
+* **Test Coverage:** Added comprehensive unit tests for `tune_best_glmnet_workflow()`, `write_run_manifest()`, `score_outer()` multi-split evaluation, `tidy_outer_coefficients()`, `select_candidate_models(by = "row")`, `render(skip_downstream = TRUE)`, and `zip_reports(docx_strict = TRUE)`.
+
 # TempleCBE 0.5.3
 
 ## Core Modeling & Statistical Features

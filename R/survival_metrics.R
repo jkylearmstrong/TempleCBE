@@ -45,6 +45,10 @@
 #'   weights (1 for events and at-risk subjects, 0 for censored; legacy, emits
 #'   a once-per-session warning; useful for historical reproducibility or
 #'   sensitivity comparisons).
+#' @param tune_engine Cross-validation tuning engine: `"yardstick"` (default, uses
+#'   subject-grouped folds via [cv_coxnet()]) or `"cv.glmnet"` (legacy, splits
+#'   intervals across folds without subject grouping using [glmnet::cv.glmnet()];
+#'   emits a once-per-session warning, useful for historical reproducibility).
 #' @param prep_on `"baseline"` (default) preps `recipe` on each subject's first
 #'   interval in the analysis set; `"all"` preps on every analysis row.
 #' @param eval_time Evaluation times for the IBS. Defaults to the stop times of
@@ -106,6 +110,7 @@ glmnet_IBS <- function(object,
                        stop_col = "tstop",
                        status_col = "status",
                        censoring_weights = c("ipcw", "none"),
+                       tune_engine = c("yardstick", "cv.glmnet"),
                        prep_on = c("baseline", "all"),
                        eval_time = NULL,
                        metric = "brier_survival_integrated",
@@ -121,10 +126,22 @@ glmnet_IBS <- function(object,
       .frequency_id = "TempleCBE_glmnet_IBS_censoring_weights_none"
     )
   }
+  dots <- list(...)
+  if ("tune_method" %in% names(dots)) {
+    tune_engine <- dots$tune_method
+    dots$tune_method <- NULL
+  }
+  tune_engine <- match.arg(tune_engine)
+  if (tune_engine == "cv.glmnet") {
+    rlang::warn(
+      "`tune_engine = \"cv.glmnet\"` is legacy and tunes without subject grouping. Use \"yardstick\" for grouped CV, or \"cv.glmnet\" only to reproduce historical runs.",
+      .frequency = "once",
+      .frequency_id = "TempleCBE_glmnet_IBS_tune_engine_cv_glmnet"
+    )
+  }
   prep_on <- match.arg(prep_on)
   rule <- match.arg(rule)
   covariates <- match.arg(covariates)
-  dots <- list(...)
   if ("parallel" %in% names(dots)) {
     dots$parallel <- NULL
     rlang::warn(
@@ -201,32 +218,76 @@ glmnet_IBS <- function(object,
     # subject, but keep a subject's copies in the same internal fold.
     subject_train <- subject_keys(y_train, train[[id_col]])
     subject_test <- subject_keys(y_test, test[[id_col]])
-    cv <- do.call(cv_coxnet_impl, c(
-      list(
-        spec_xy(as.data.frame(train[selected]), y_train, subject_train, train[[id_col]]),
-        mixture = alpha, v = internal_folds, metrics = select_metrics,
-        eval_time = eval_time, metric = metric, covariates = covariates
-      ),
-      dots
-    ))
-    chosen <- if (rule == "min") cv$lambda_min else cv$lambda_1se
-
     truth_train <- surv_subject_truth(y_train, subject_train)
     truth_test <- surv_subject_truth(y_test, subject_test)
-    weights <- if (censoring_weights == "ipcw") {
-      graf_weights(truth_test$.truth, cv$eval_time, censoring_km(truth_train$.truth))
+
+    if (tune_engine == "cv.glmnet") {
+      x_mat <- as.matrix(train[selected])
+      cv_args <- c(
+        list(
+          x = x_mat,
+          y = y_train,
+          family = "cox",
+          alpha = alpha,
+          nfolds = internal_folds
+        ),
+        dots
+      )
+      cv_res <- do.call(glmnet::cv.glmnet, cv_args)
+      chosen <- if (rule == "min") cv_res$lambda.min else cv_res$lambda.1se
+      fit_cox <- do.call(
+        coxnet,
+        c(
+          list(
+            x = as.data.frame(train[selected]),
+            y = y_train,
+            penalty = chosen,
+            mixture = alpha
+          ),
+          dots
+        )
+      )
+      effective_eval_time <- if (!is.null(eval_time)) eval_time else default_eval_time(truth_train$.truth)
+      weights <- if (censoring_weights == "ipcw") {
+        graf_weights(truth_test$.truth, effective_eval_time, censoring_km(truth_train$.truth))
+      } else {
+        w <- matrix(1, nrow = length(truth_test$.subject_id), ncol = length(effective_eval_time))
+        dimnames(w) <- list(NULL, format(effective_eval_time))
+        w
+      }
+      scored <- score_coxnet_path(
+        fit_cox$fit, fit_cox$x, y_train, predictors_matrix(test[selected]), y_test, subject_test,
+        penalty = chosen, eval_time = effective_eval_time, truth = truth_test, weights = weights,
+        metrics = ibs_metrics, info = surv_metric_info(ibs_metrics), covariates = covariates
+      )
+      coefs <- tidy.coxnet_model(fit_cox, penalty = chosen)
+      tibble::tibble(IBS = scored$.estimate[1], lambda = chosen, term = coefs$term, estimate = coefs$estimate, alpha = alpha)
     } else {
-      w <- matrix(1, nrow = length(truth_test$.subject_id), ncol = length(cv$eval_time))
-      dimnames(w) <- list(NULL, format(cv$eval_time))
-      w
+      cv <- do.call(cv_coxnet_impl, c(
+        list(
+          spec_xy(as.data.frame(train[selected]), y_train, subject_train, train[[id_col]]),
+          mixture = alpha, v = internal_folds, metrics = select_metrics,
+          eval_time = eval_time, metric = metric, covariates = covariates
+        ),
+        dots
+      ))
+      chosen <- if (rule == "min") cv$lambda_min else cv$lambda_1se
+
+      weights <- if (censoring_weights == "ipcw") {
+        graf_weights(truth_test$.truth, cv$eval_time, censoring_km(truth_train$.truth))
+      } else {
+        w <- matrix(1, nrow = length(truth_test$.subject_id), ncol = length(cv$eval_time))
+        dimnames(w) <- list(NULL, format(cv$eval_time))
+        w
+      }
+      scored <- score_coxnet_path(
+        cv$fit$fit, cv$fit$x, y_train, predictors_matrix(test[selected]), y_test, subject_test,
+        penalty = chosen, eval_time = cv$eval_time, truth = truth_test, weights = weights,
+        metrics = ibs_metrics, info = surv_metric_info(ibs_metrics), covariates = covariates
+      )
+      coefs <- tidy.coxnet_model(cv$fit, penalty = chosen)
+      tibble::tibble(IBS = scored$.estimate[1], lambda = chosen, term = coefs$term, estimate = coefs$estimate, alpha = alpha)
     }
-    scored <- score_coxnet_path(
-      cv$fit$fit, cv$fit$x, y_train, predictors_matrix(test[selected]), y_test, subject_test,
-      penalty = chosen, eval_time = cv$eval_time, truth = truth_test, weights = weights,
-      metrics = ibs_metrics, info = surv_metric_info(ibs_metrics), covariates = covariates
-    )
-    coefs <- tidy.coxnet_model(cv$fit, penalty = chosen)
-    tibble::tibble(IBS = scored$.estimate[1], lambda = chosen, term = coefs$term, estimate = coefs$estimate, alpha = alpha)
   }
 
   tryCatch(fit_and_score(), error = function(e) {

@@ -4,7 +4,13 @@
 \alias{select_candidate_models}
 \title{Select Candidate Models From Tuning Results}
 \usage{
-select_candidate_models(tune_results, formulas, ntile = 0.25, top_n = NULL)
+select_candidate_models(
+  tune_results,
+  formulas,
+  ntile = 0.25,
+  top_n = NULL,
+  by = c("row", "alpha")
+)
 }
 \arguments{
 \item{tune_results}{A data frame containing tuning results with at least `alpha`
@@ -14,13 +20,17 @@ and `IBS` columns (e.g. from [summarize_tune_results()]).}
 formula to evaluate.}
 
 \item{ntile}{Numeric quantile cutoff (between 0 and 1, default `0.25`) for
-selecting the best alphas with lowest mean IBS.}
+selecting the best alphas with lowest IBS.}
 
 \item{top_n}{Optional integer number of best alphas to keep (overrides `ntile`
 if provided).}
+
+\item{by}{Selection granularity: `"row"` (default, selects alphas appearing in the
+top `ntile` of individual tune result rows, e.g. `ntile(IBS, 5) == 1`) or `"alpha"`
+(summarizes mean IBS across all rows per alpha before selecting).}
 }
 \value{
-A tibble with columns `alpha`, `formula`, and `model`.
+A tibble with columns `model`, `alpha`, and `formula`.
 }
 \description{
 Takes results from [summarize_tune_results()] or [tune_over_alpha()], identifies

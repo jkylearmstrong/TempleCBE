@@ -10,7 +10,9 @@ zip_reports(
   data_deliverables = character(0),
   zip_name = NULL,
   output_dir = getwd(),
-  docx_from_pdf = NULL
+  docx_from_pdf = NULL,
+  docx_strict = FALSE,
+  docx_backend = "auto"
 )
 }
 \arguments{
@@ -54,8 +56,14 @@ The function counts as having failed when it returns \code{FALSE} (as
 \code{\link{convert_pdf_to_docx}} does) or when no DOCX at least as new as
 the PDF is there afterwards; a warning says so and no DOCX is shipped for
 that report. Any other return value is taken as success. In the index, the
-DOCX cell of a report whose PDF exists but that has no DOCX to ship reads
-\code{"not converted"}.}
+DOCX cell of a report whose PDF exists but that has no DOCX to ship reads}
+
+\item{docx_strict}{Logical. When \code{TRUE}, fails loudly (stops execution with an error)
+if no PDF-to-DOCX conversion backend is available or if conversion fails to produce a current
+\code{.docx} for a requested report. When \code{FALSE} (default), warns and skips missing/stale DOCXs.}
+
+\item{docx_backend}{Conversion backend passed to \code{\link{convert_pdf_to_docx}}:
+\code{"auto"} (default), \code{"python"}, \code{"libreoffice"}, or \code{"word_com"}.}
 }
 \value{
 The path to the created zip file.

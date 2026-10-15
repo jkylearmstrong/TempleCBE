@@ -2,7 +2,7 @@
 % Please edit documentation in R/compare_censoring_weights.R
 \name{score_outer}
 \alias{score_outer}
-\title{Score Candidate Models on an Outer Split}
+\title{Score Candidate Models on Outer Resampling Split(s)}
 \usage{
 score_outer(
   object,
@@ -10,13 +10,15 @@ score_outer(
   recipe,
   ...,
   censoring_weights = c("ipcw", "none"),
+  coefficients = c("all", "nonzero"),
   seed = NULL,
   progress = FALSE
 )
 }
 \arguments{
-\item{object}{An `rsplit` representing the evaluation split (e.g. from
-[rsample::initial_split()] or an outer split of [rsample::nested_cv()]).}
+\item{object}{An `rsplit` (e.g. from [rsample::initial_split()]), an `rset` /
+[rsample::nested_cv()] object containing outer splits, or a list of `rsplit`
+objects.}
 
 \item{grid}{A data frame or tibble defining candidate models to evaluate.
 Must contain an `alpha` column. If a `formula` or `formulas` column is present,
@@ -26,24 +28,29 @@ column will be preserved as the model identifier; if absent, one will be created
 \item{recipe}{A recipe object specifying preprocessing.}
 
 \item{...}{Additional arguments passed to [glmnet_IBS()] (such as `time_data`,
-`internal_folds`, `feature_names`, `id_col`, `cox.ties`, `covariates`, `rule`, `metric`).}
+`internal_folds`, `feature_names`, `id_col`, `cox.ties`, `covariates`, `rule`,
+`metric`, `tune_engine`).}
 
 \item{censoring_weights}{Weighting scheme: `"ipcw"` (default) or `"none"`.}
+
+\item{coefficients}{Option controlling which coefficients to store in the
+`coefficients` list column: `"all"` (default, includes predictors shrunk to 0)
+or `"nonzero"` (filters to non-zero estimates).}
 
 \item{seed}{Optional integer seed for reproducible model fitting across future plans.}
 
 \item{progress}{Show progress bar (default `FALSE`).}
 }
 \value{
-A tibble with one row per model in `grid`, containing model identifier,
-  `alpha`, `formula` (if provided), `IBS` (integrated Brier score), `lambda`, and
-  `coefficients` (list column of fitted non-zero coefficient estimates).
+A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
+  `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
+  coefficient estimates).
 }
 \description{
-A tidy wrapper around [glmnet_IBS()] using [furrr::future_pmap()] (or sequential
-[purrr::pmap()]) to evaluate a grid of candidate models on an outer resampling
-split.
+A tidy wrapper around [glmnet_IBS()] using [furrr::future_map()] (or sequential
+[purrr::map()]) to evaluate a grid of candidate models across one or more outer
+resampling splits.
 }
 \seealso{
-[glmnet_IBS()], [compare_censoring_weights()], [select_candidate_models()]
+[glmnet_IBS()], [tidy_outer_coefficients()], [compare_censoring_weights()], [select_candidate_models()]
 }

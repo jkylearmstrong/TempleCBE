@@ -296,6 +296,12 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
 #' @param from Optional starting node name or index in the topological plan.
 #' @param to Optional ending node name or index in the topological plan.
 #' @param dry_run Logical. When `TRUE`, prints the ordered render plan without executing.
+#' @param rerun Rerun strategy shorthand: `"none"` (default, uses `only_stale` and `cache` settings)
+#'   or `"full"` (forces full graph execution with fresh caches, setting `only_stale = FALSE`
+#'   and `cache = "refresh"`).
+#' @param skip_downstream Logical. When `TRUE` (default), if an upstream node fails during
+#'   pipeline rendering (with `on_error = "continue"`), all dependent downstream reports are
+#'   skipped and marked with status `"skipped_upstream_failure"` to prevent compiling on stale data.
 #' @param cache Cache handling: `"keep"` (default), `"refresh"` (wipes `_cache` and `_files`),
 #'   or `"stale"`.
 #' @param on_error Behavior upon error: `"continue"` (default) or `"stop"`.
@@ -324,7 +330,14 @@ render <- function(path,
                    manifest = TRUE,
                    renv_guard = TRUE,
                    seed = NULL,
+                   skip_downstream = TRUE,
+                   rerun = c("none", "full"),
                    ...) {
+  rerun <- match.arg(rerun)
+  if (rerun == "full") {
+    only_stale <- FALSE
+    cache <- "refresh"
+  }
   if (isTRUE(renv_guard)) {
     check_renv_guard()
   }
@@ -339,7 +352,9 @@ render <- function(path,
 
   # 1. Resolve pipeline graph if path is a list of pipeline objects or a single FileOutputs/FilePath
   is_pipeline_obj <- function(x) is(x, "FilePath") || is(x, "FileOutputs") || is(x, "FileUses")
+  pipeline_graph <- NULL
   if (is.list(path) && length(path) > 0L && all(vapply(path, is_pipeline_obj, logical(1)))) {
+    pipeline_graph <- tryCatch(as_igraph(path), error = function(e) NULL)
     plan <- get_render_plan(path, only_stale = only_stale, from = from, to = to, dry_run = FALSE)
     path <- plan
   } else if (!is.null(from) || !is.null(to)) {
@@ -367,7 +382,7 @@ render <- function(path,
   targets <- list()
   doc_exts <- c("pdf", "docx", "html", "gfm", "md", "rtf", "odt", "pptx", "epub")
 
-  add_target <- function(fpath, fmts = NULL, derive_docx = FALSE) {
+  add_target <- function(fpath, fmts = NULL, derive_docx = FALSE, node_name = NULL, dependencies = character(), outputs = character()) {
     if (is.null(fpath) || !nzchar(fpath)) return()
 
     resolved_fmts <- fmts
@@ -387,9 +402,12 @@ render <- function(path,
     }
 
     targets[[length(targets) + 1L]] <<- list(
+      name = if (!is.null(node_name) && nzchar(node_name)) node_name else basename(fpath),
       path = fpath,
       formats = resolved_fmts,
-      derive_docx = derive_docx
+      derive_docx = derive_docx,
+      dependencies = dependencies,
+      outputs = outputs
     )
   }
 
@@ -422,16 +440,42 @@ render <- function(path,
         }
       }
 
-      add_target(item@path, effective_fmts, derive_docx = derive_docx)
+      dep_names <- character()
+      dep_paths <- character()
+      if (length(item@dependencies) > 0) {
+        dep_names <- vapply(item@dependencies, function(d) d@name, character(1))
+        dep_paths <- vapply(item@dependencies, function(d) d@path, character(1))
+      }
+      out_names <- character()
+      out_paths <- character()
+      if (length(item@output) > 0) {
+        out_names <- vapply(item@output, function(o) o@name, character(1))
+        out_paths <- vapply(item@output, function(o) o@path, character(1))
+      }
+
+      add_target(
+        item@path,
+        effective_fmts,
+        derive_docx = derive_docx,
+        node_name = item@name,
+        dependencies = unique(c(dep_names, dep_paths)),
+        outputs = unique(c(out_names, out_paths))
+      )
 
     } else if (is(item, "FilePath")) {
       if (.hasSlot(item, "renders") && isTRUE(item@renders)) {
-        add_target(item@path, if (formats_explicit) formats else NULL)
+        add_target(item@path, if (formats_explicit) formats else NULL, node_name = item@name)
       }
     } else if (is.list(item) && "path" %in% names(item)) {
       item_f <- if ("formats" %in% names(item)) item$formats else if ("format" %in% names(item)) item$format else NULL
       effective_fmts <- if (!is.null(item_f)) item_f else formats
-      add_target(item$path, effective_fmts)
+      add_target(
+        item$path,
+        effective_fmts,
+        node_name = if ("name" %in% names(item)) item$name else NULL,
+        dependencies = if ("dependencies" %in% names(item)) item$dependencies else character(),
+        outputs = if ("output" %in% names(item)) item$output else character()
+      )
 
     } else if (is.character(item)) {
       if (!is.null(item_name) && (file.exists(item_name) || grepl(pattern, item_name))) {
@@ -698,12 +742,12 @@ render <- function(path,
     rows
   }
 
-  # 3. Execution: parallel if multiple targets and future/furrr are available, sequential otherwise
-  can_parallelize <- length(targets) > 1 &&
+  # 3. Execution: parallel if multiple targets, not skip_downstream, and future/furrr are available; sequential otherwise
+  can_parallelize <- !isTRUE(skip_downstream) && length(targets) > 1 &&
     requireNamespace("future", quietly = TRUE) &&
     requireNamespace("furrr", quietly = TRUE)
 
-  if (length(targets) > 1 && !can_parallelize) {
+  if (length(targets) > 1 && !can_parallelize && !isTRUE(skip_downstream)) {
     message("Packages 'future'/'furrr' not available; rendering sequentially.")
   }
 
@@ -722,7 +766,48 @@ render <- function(path,
       .options = furrr::furrr_options(seed = TRUE)
     )
   } else {
-    times <- purrr::map_dfr(targets, function(tgt) render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx)))
+    times_list <- list()
+    failed_nodes <- character()
+
+    for (tgt in targets) {
+      is_downstream_failed <- FALSE
+      if (isTRUE(skip_downstream) && length(failed_nodes) > 0) {
+        reachable <- character()
+        if (!is.null(pipeline_graph)) {
+          for (fn in failed_nodes) {
+            if (fn %in% igraph::V(pipeline_graph)$name) {
+              reachable <- unique(c(reachable, setdiff(names(igraph::subcomponent(pipeline_graph, fn, mode = "out")), fn)))
+            }
+          }
+        }
+        if (tgt$name %in% reachable ||
+            any(tgt$dependencies %in% failed_nodes) ||
+            any(tgt$dependencies %in% reachable)) {
+          is_downstream_failed <- TRUE
+        }
+      }
+
+      if (is_downstream_failed) {
+        message("Skipping '", basename(tgt$path), "' due to upstream failure.")
+        skip_fmts <- if (isTRUE(tgt$derive_docx)) unique(c(tgt$formats, "docx")) else tgt$formats
+        skip_df <- data.frame(
+          file = basename(tgt$path),
+          output = skip_fmts,
+          duration = 0,
+          status = "skipped_upstream_failure",
+          stringsAsFactors = FALSE
+        )
+        times_list[[length(times_list) + 1L]] <- skip_df
+        failed_nodes <- unique(c(failed_nodes, tgt$name, tgt$path, tgt$outputs))
+      } else {
+        tgt_res <- render_single(tgt$path, tgt$formats, isTRUE(tgt$derive_docx))
+        times_list[[length(times_list) + 1L]] <- tgt_res
+        if (any(tgt_res$status != "success")) {
+          failed_nodes <- unique(c(failed_nodes, tgt$name, tgt$path, tgt$outputs))
+        }
+      }
+    }
+    times <- dplyr::bind_rows(times_list)
   }
 
   if (isTRUE(manifest) && length(targets) > 0 && !isTRUE(dry_run)) {

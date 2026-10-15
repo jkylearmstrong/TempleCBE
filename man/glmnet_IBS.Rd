@@ -17,6 +17,7 @@ glmnet_IBS(
   stop_col = "tstop",
   status_col = "status",
   censoring_weights = c("ipcw", "none"),
+  tune_engine = c("yardstick", "cv.glmnet"),
   prep_on = c("baseline", "all"),
   eval_time = NULL,
   metric = "brier_survival_integrated",
@@ -58,6 +59,11 @@ Graf weights (a proper scoring rule). `"none"` applies unweighted unit
 weights (1 for events and at-risk subjects, 0 for censored; legacy, emits
 a once-per-session warning; useful for historical reproducibility or
 sensitivity comparisons).}
+
+\item{tune_engine}{Cross-validation tuning engine: `"yardstick"` (default, uses
+subject-grouped folds via [cv_coxnet()]) or `"cv.glmnet"` (legacy, splits
+intervals across folds without subject grouping using [glmnet::cv.glmnet()];
+emits a once-per-session warning, useful for historical reproducibility).}
 
 \item{prep_on}{`"baseline"` (default) preps `recipe` on each subject's first
 interval in the analysis set; `"all"` preps on every analysis row.}
