@@ -407,6 +407,8 @@ tune_over_alpha <- function(object,
 #'   of the `inner_resamples` column of [rsample::nested_cv()]).
 #' @inheritParams tune_over_alpha
 #' @param seed Optional integer seed for reproducible random draws across splits.
+#' @param checkpoint_dir Optional directory path to save per-split checkpoint files.
+#'   Finished splits are loaded from disk on rerun, skipping recomputation.
 #' @return A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`
 #'   column giving the split's position in `object$splits`.
 #' @seealso [glmnet_IBS()], [tune_over_alpha()], [nested_cv_coxnet()]
@@ -418,7 +420,8 @@ summarize_tune_results <- function(object,
                                    alphas = NULL,
                                    formulas = NULL,
                                    progress = FALSE,
-                                   seed = NULL) {
+                                   seed = NULL,
+                                   checkpoint_dir = NULL) {
   require_packages("furrr", "summarize_tune_results")
   dots <- list(...)
 
@@ -429,10 +432,36 @@ summarize_tune_results <- function(object,
     split_seeds <- vector("list", length(object$splits))
   }
 
+  if (!is.null(checkpoint_dir)) {
+    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  split_names <- names(object$splits)
+  if (is.null(split_names) || !all(nzchar(split_names))) {
+    split_names <- as.character(seq_along(object$splits))
+  }
+
   furrr::future_map2_dfr(
     object$splits,
-    split_seeds,
-    function(split, s_seed) {
+    seq_along(object$splits),
+    function(split, split_idx) {
+      s_seed <- split_seeds[[split_idx]]
+      s_id <- split_names[split_idx]
+
+      ckpt_file <- if (!is.null(checkpoint_dir)) {
+        safe_id <- gsub("[^A-Za-z0-9._-]", "_", s_id)
+        file.path(checkpoint_dir, sprintf("tune_split_%s.rds", safe_id))
+      } else {
+        NULL
+      }
+
+      if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+        cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+        if (is.data.frame(cached)) {
+          return(cached)
+        }
+      }
+
       runs <- do.call(tune_over_alpha, c(
         list(object = split, num_alpha_values = num_alpha_values,
              num_fixed = num_fixed, alphas = alphas, formulas = formulas,
@@ -440,7 +469,13 @@ summarize_tune_results <- function(object,
         dots
       ))
       ok <- vapply(runs, function(run) is.null(run$error), logical(1))
-      dplyr::bind_rows(lapply(runs[ok], `[[`, "result"))
+      res_split <- dplyr::bind_rows(lapply(runs[ok], `[[`, "result"))
+
+      if (!is.null(ckpt_file)) {
+        tryCatch(saveRDS(res_split, ckpt_file), error = function(e) NULL)
+      }
+
+      res_split
     },
     .id = "inner_resamples_splits",
     .options = furrr::furrr_options(seed = TRUE),

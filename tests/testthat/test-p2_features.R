@@ -277,18 +277,21 @@ test_that("zip_reports fails loudly when docx_strict = TRUE and no backend exist
 })
 
 test_that("render skip_downstream marks dependent nodes as skipped_upstream_failure", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available())
+
   tmp_dir <- tempfile("render_skip_test_")
   dir.create(tmp_dir)
   on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
 
   # Create two dummy scripts/reports
-  qmd1 <- file.path(tmp_dir, "step1.qmd")
-  qmd2 <- file.path(tmp_dir, "step2.qmd")
-  writeLines(c("---", "title: Step 1", "---", "", "```{r}", "stop('Intentional failure in step 1')", "```"), qmd1)
-  writeLines("title: Step 2", qmd2)
+  rmd1 <- file.path(tmp_dir, "step1.Rmd")
+  rmd2 <- file.path(tmp_dir, "step2.Rmd")
+  writeLines(c("---", "title: Step 1", "---", "", "```{r}", "stop('Intentional failure in step 1')", "```"), rmd1)
+  writeLines(c("---", "title: Step 2", "---", "Hello step 2"), rmd2)
 
-  node1 <- FileOutputs(name = "step1", path = qmd1, renders = TRUE)
-  node2 <- FileOutputs(name = "step2", path = qmd2, renders = TRUE, dependencies = list(FilePath(name = "step1", path = qmd1)))
+  node1 <- FileOutputs(name = "step1", path = rmd1, renders = TRUE)
+  node2 <- FileOutputs(name = "step2", path = rmd2, renders = TRUE, dependencies = list(FilePath(name = "step1", path = rmd1)))
 
   pipe <- list(node1, node2)
 
@@ -298,20 +301,22 @@ test_that("render skip_downstream marks dependent nodes as skipped_upstream_fail
 
   # We verify render with on_error = "continue", rerun = "full", and skip_downstream = TRUE
   res <- suppressWarnings(
-    render(pipe, rerun = "full", formats = "pdf", on_error = "continue", skip_downstream = TRUE, manifest = FALSE, renv_guard = FALSE)
+    render(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
+           manifest = FALSE, renv_guard = FALSE, engine = "rmarkdown")
   )
 
   expect_s3_class(res, "data.frame")
   expect_equal(nrow(res), 2)
-  expect_equal(res$file[1], "step1.qmd")
+  expect_equal(res$file[1], "step1.Rmd")
   expect_true(res$status[1] != "success")
-  expect_equal(res$file[2], "step2.qmd")
+  expect_equal(res$file[2], "step2.Rmd")
   expect_equal(res$status[2], "skipped_upstream_failure")
   expect_equal(res$duration[2], 0)
 })
 
 test_that("render parallel wave execution renders independent branches even when another branch fails", {
   skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available())
 
   tmp_dir <- tempfile("render_wave_test_")
   dir.create(tmp_dir)
@@ -423,5 +428,160 @@ test_that("render defaults to workers = 1 and never touches future::plan unless 
 
   res <- render(character(0), dry_run = TRUE, renv_guard = FALSE)
   expect_true(inherits(future::plan(), "sequential"))
+})
+
+test_that("never-rendered reports with no declared outputs are detected as stale", {
+  tmp_dir <- tempfile("render_never_stale_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  qmd1 <- file.path(tmp_dir, "new1.qmd")
+  qmd2 <- file.path(tmp_dir, "new2.qmd")
+  writeLines(c("---", "title: New 1", "---", "Content 1"), qmd1)
+  writeLines(c("---", "title: New 2", "---", "Content 2"), qmd2)
+
+  node1 <- FileOutputs(name = "new1", path = qmd1, renders = TRUE)
+  node2 <- FileOutputs(name = "new2", path = qmd2, renders = TRUE)
+  pipe <- list(node1, node2)
+
+  plan <- render(pipe, dry_run = TRUE, renv_guard = FALSE)
+  expect_equal(nrow(plan), 2)
+  expect_setequal(plan$file, c("new1.qmd", "new2.qmd"))
+})
+
+test_that("duplicate pipeline object names report conflicting paths and can be deduplicated", {
+  f1 <- FilePath("DupNode", path = "path/to/a.csv")
+  f2 <- FileOutputs("DupNode", path = "path/to/b.R")
+  f3 <- FileUses("DupNode", path = "path/to/c.R")
+  pipe <- list(f1, f2, f3)
+
+  err <- expect_error(as_igraph(pipe), "Duplicate pipeline object name\\(s\\) detected: DupNode")
+  expect_match(conditionMessage(err), "path/to/a.csv")
+  expect_match(conditionMessage(err), "path/to/b.R")
+  expect_match(conditionMessage(err), "path/to/c.R")
+  expect_match(conditionMessage(err), "dedupe_pipeline")
+
+  # dedupe_pipeline keep_first
+  p_first <- dedupe_pipeline(pipe, strategy = "keep_first")
+  expect_equal(length(p_first), 1)
+  expect_s4_class(p_first[[1]], "FilePath")
+  expect_equal(p_first[[1]]@path, "path/to/a.csv")
+
+  # dedupe_pipeline prefer_outputs prefers FileOutputs over FileUses/FilePath
+  p_outputs <- dedupe_pipeline(pipe, strategy = "prefer_outputs")
+  expect_equal(length(p_outputs), 1)
+  expect_s4_class(p_outputs[[1]], "FileOutputs")
+  expect_equal(p_outputs[[1]]@path, "path/to/b.R")
+
+  # dedupe_pipeline rename
+  p_rename <- dedupe_pipeline(pipe, strategy = "rename")
+  expect_equal(length(p_rename), 3)
+  expect_equal(p_rename[[1]]@name, "DupNode")
+  expect_equal(p_rename[[2]]@name, "DupNode_2")
+  expect_equal(p_rename[[3]]@name, "DupNode_3")
+})
+
+test_that("score_outer supports checkpoint_dir to save and resume tasks", {
+  skip_if_not_installed("glmnet")
+  skip_if_not_installed("yardstick")
+  skip_if_not_installed("rsample")
+
+  set.seed(42)
+  long <- do.call(rbind, lapply(1:20, function(i) {
+    data.frame(
+      id = i,
+      tstart = 0,
+      tstop = runif(1, 5, 40),
+      status = sample(0:1, 1),
+      x1 = rnorm(1),
+      x2 = rnorm(1)
+    )
+  }))
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable")
+  split <- rsample::initial_split(long, prop = 0.7)
+
+  tmp_ckpt <- tempfile("ckpt_score_")
+  dir.create(tmp_ckpt)
+  on.exit(unlink(tmp_ckpt, recursive = TRUE), add = TRUE)
+
+  grid <- data.frame(alpha = c(0.2, 0.8), model = c("m1", "m2"))
+
+  res1 <- suppressWarnings(
+    score_outer(split, grid, rec, checkpoint_dir = tmp_ckpt, internal_folds = 2)
+  )
+  expect_equal(nrow(res1), 2)
+
+  # Verify checkpoint files exist
+  ckpts <- list.files(tmp_ckpt, pattern = "\\.rds$")
+  expect_equal(length(ckpts), 2)
+
+  # Rerun loads from checkpoint without error
+  res2 <- suppressWarnings(
+    score_outer(split, grid, rec, checkpoint_dir = tmp_ckpt, internal_folds = 2)
+  )
+  expect_equal(res1$IBS, res2$IBS)
+})
+
+test_that("tbl_censoring_comparison produces formatted sensitivity table with rank agreement", {
+  comp_df <- tibble::tibble(
+    model = c("m1", "m2", "m3"),
+    alpha = c(0.1, 0.5, 0.9),
+    ibs_none = c(0.15, 0.18, 0.22),
+    ibs_ipcw = c(0.16, 0.17, 0.25),
+    rank_none = c(1, 2, 3),
+    rank_ipcw = c(1, 2, 3),
+    rank_diff = c(0, 0, 0)
+  )
+  attr(comp_df, "rank_agreement") <- list(spearman = 1.0, kendall = 1.0)
+
+  tbl <- tbl_censoring_comparison(comp_df, format = "tibble")
+  expect_s3_class(tbl, "tbl_df")
+  expect_equal(nrow(tbl), 3)
+  expect_true(all(c("model", "alpha", "ibs_none", "ibs_ipcw", "rank_none", "rank_ipcw", "rank_diff") %in% names(tbl)))
+  expect_equal(attr(tbl, "rank_agreement")$spearman, 1.0)
+
+  if (requireNamespace("gt", quietly = TRUE)) {
+    tbl_gt <- tbl_censoring_comparison(comp_df, format = "gt")
+    expect_s3_class(tbl_gt, "gt_tbl")
+  }
+})
+
+test_that("compare_runs diffs two score_outer results within tolerance", {
+  run_win <- tibble::tibble(
+    outer_fold = c("Fold1", "Fold2"),
+    model = c("m1", "m2"),
+    alpha = c(0.1, 0.5),
+    IBS = c(0.1500001, 0.2500001),
+    lambda = c(0.0100001, 0.0200001),
+    coefficients = list(
+      tibble::tibble(term = c("x1", "x2"), estimate = c(0.5000001, 0)),
+      tibble::tibble(term = c("x1", "x2"), estimate = c(0, 0.3000001))
+    )
+  )
+
+  run_linux <- tibble::tibble(
+    outer_fold = c("Fold1", "Fold2"),
+    model = c("m1", "m2"),
+    alpha = c(0.1, 0.5),
+    IBS = c(0.1500002, 0.2500002),
+    lambda = c(0.0100002, 0.0200002),
+    coefficients = list(
+      tibble::tibble(term = c("x1", "x2"), estimate = c(0.5000002, 0)),
+      tibble::tibble(term = c("x1", "x2"), estimate = c(0, 0.3000002))
+    )
+  )
+
+  comp <- compare_runs(run_win, run_linux, tolerance = 1e-5, label1 = "Windows", label2 = "Linux")
+  expect_s3_class(comp, "templecbe_run_comparison")
+  expect_true(attr(comp, "comparison_summary")$all_reproducible)
+  expect_lt(attr(comp, "comparison_summary")$max_ibs_diff, 1e-5)
+
+  out_txt <- capture.output(print(comp))
+  expect_true(any(grepl("TempleCBE Cross-Platform Run Comparison", out_txt)))
+  expect_true(any(grepl("YES", out_txt)))
+
+  comp_strict <- compare_runs(run_win, run_linux, tolerance = 1e-8)
+  expect_false(attr(comp_strict, "comparison_summary")$all_reproducible)
 })
 

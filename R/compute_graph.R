@@ -654,6 +654,47 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
 
 .is_stale <- is_stale
 
+#' Check if a rendering node (or its deliverables) is out of date
+#'
+#' For a node with `renders = TRUE`, checks whether its declared outputs or
+#' expected deliverable documents (.pdf, .docx, .html beside the document) are missing or older
+#' than the document source and its upstream dependencies.
+#' @param qmd A FileOutputs object representing a report/document renderer.
+#' @param all_objects Optional list of pipeline objects to check upstream staleness.
+#' @param cache Internal environment caching staleness decisions.
+#' @return Logical TRUE if stale, FALSE otherwise.
+#' @noRd
+.is_renderer_stale <- function(qmd, all_objects = NULL, cache = NULL) {
+  if (length(qmd@output) == 0L) {
+    # Node has no declared outputs: check deliverables beside the qmd/Rmd
+    base_path <- sub("\\.(qmd|Rmd|rmd)$", "", qmd@path, ignore.case = TRUE)
+    yaml_fmts <- extract_yaml_formats(qmd@path)
+    expected_fmts <- if (length(yaml_fmts) > 0) yaml_fmts else c("pdf", "docx", "html")
+    exts <- unique(stats::na.omit(c("pdf", "docx", "html", .format_extension(expected_fmts))))
+    candidate_files <- paste0(base_path, ".", exts)
+    existing <- candidate_files[file.exists(candidate_files)]
+    if (length(existing) == 0L) {
+      # No deliverable exists beside the document: never rendered -> stale!
+      return(TRUE)
+    }
+    # If one or more deliverables exist, check whether any of them is stale relative to qmd or dependencies
+    for (f in existing) {
+      fp <- FilePath(name = basename(f), path = f)
+      if (.is_stale(fp, qmd, all_objects, cache = cache)) {
+        return(TRUE)
+      }
+    }
+    return(FALSE)
+  }
+
+  for (out_file in qmd@output) {
+    if (.is_stale(out_file, qmd, all_objects, cache = cache)) {
+      return(TRUE)
+    }
+  }
+  FALSE
+}
+
 #' Every file a list of pipeline objects declares
 #'
 #' The objects themselves, the files they read and the files they produce, in that order.
@@ -782,14 +823,110 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
   node_names <- vapply(all_objects, function(x) x@name, character(1))
   if (anyDuplicated(node_names)) {
     dups <- unique(node_names[duplicated(node_names)])
+    dup_details <- vapply(dups, function(d) {
+      indices <- which(node_names == d)
+      locs <- vapply(indices, function(idx) {
+        obj <- all_objects[[idx]]
+        cls <- class(obj)[1]
+        pth <- if (length(obj@path) > 0 && !is.na(obj@path[1])) obj@path[1] else "<no path>"
+        sprintf("  - index %d: %s '%s' (path: %s)", idx, cls, d, pth)
+      }, character(1))
+      paste(locs, collapse = "\n")
+    }, character(1))
     stop(
-      paste0("Duplicate pipeline object name(s) detected: ", paste(dups, collapse = ", ")),
+      paste0(
+        "Duplicate pipeline object name(s) detected: ", paste(dups, collapse = ", "), "\n",
+        "Conflicting definitions:\n",
+        paste(dup_details, collapse = "\n"), "\n",
+        "Use `dedupe_pipeline()` or rename objects to resolve duplicates."
+      ),
       call. = FALSE
     )
   }
   .warn_shared_outputs(all_objects)
   .warn_identity_conflicts(all_objects)
   invisible(all_objects)
+}
+
+#' Deduplicate Pipeline Objects by Name
+#'
+#' Resolves duplicate object names in a pipeline object list resulting from
+#' merged lists or overlapping definitions.
+#'
+#' @param all_objects List of `FilePath`, `FileUses`, or `FileOutputs` objects.
+#' @param strategy Conflict resolution strategy:
+#'   \itemize{
+#'     \item \code{"keep_first"} (default): Preserves the first object encountered for each name.
+#'     \item \code{"prefer_outputs"}: Prefers \code{FileOutputs} over \code{FileUses}, and \code{FileUses} over \code{FilePath}.
+#'     \item \code{"keep_last"}: Preserves the last object encountered for each name.
+#'     \item \code{"rename"}: Preserves all objects, appending suffixes \code{"_2"}, \code{"_3"}, etc. to duplicates.
+#'   }
+#' @param verbose Logical. When \code{TRUE}, messages the names and resolution of deduplicated objects.
+#' @return A deduplicated list of pipeline objects.
+#' @export
+dedupe_pipeline <- function(all_objects,
+                            strategy = c("keep_first", "prefer_outputs", "keep_last", "rename"),
+                            verbose = FALSE) {
+  if (!is.list(all_objects) || !all(vapply(all_objects, function(x) is(x, "FilePath"), logical(1)))) {
+    stop("All elements of 'all_objects' must inherit from FilePath.", call. = FALSE)
+  }
+  strategy <- match.arg(strategy)
+  node_names <- vapply(all_objects, function(x) x@name, character(1))
+
+  if (!anyDuplicated(node_names)) {
+    return(all_objects)
+  }
+
+  dups <- unique(node_names[duplicated(node_names)])
+  if (verbose) {
+    message("dedupe_pipeline: resolving duplicates for: ", paste(dups, collapse = ", "))
+  }
+
+  if (strategy == "keep_first") {
+    keep_idx <- which(!duplicated(node_names))
+    return(all_objects[keep_idx])
+  }
+
+  if (strategy == "keep_last") {
+    keep_idx <- which(!duplicated(node_names, fromLast = TRUE))
+    return(all_objects[keep_idx])
+  }
+
+  if (strategy == "prefer_outputs") {
+    # Priority: FileOutputs (3) > FileUses (2) > FilePath (1)
+    class_priority <- function(obj) {
+      if (is(obj, "FileOutputs")) return(3L)
+      if (is(obj, "FileUses")) return(2L)
+      1L
+    }
+    priorities <- vapply(all_objects, class_priority, integer(1))
+    unique_names <- unique(node_names)
+    keep_idx <- vapply(unique_names, function(nm) {
+      match_indices <- which(node_names == nm)
+      if (length(match_indices) == 1L) return(match_indices)
+      sub_prio <- priorities[match_indices]
+      best_prio <- max(sub_prio)
+      match_indices[which(sub_prio == best_prio)[1]]
+    }, integer(1))
+    return(all_objects[sort(keep_idx)])
+  }
+
+  if (strategy == "rename") {
+    res <- all_objects
+    seen_counts <- list()
+    for (i in seq_along(res)) {
+      nm <- res[[i]]@name
+      if (is.null(seen_counts[[nm]])) {
+        seen_counts[[nm]] <- 1L
+      } else {
+        seen_counts[[nm]] <- seen_counts[[nm]] + 1L
+        res[[i]]@name <- paste0(nm, "_", seen_counts[[nm]])
+      }
+    }
+    return(res)
+  }
+
+  all_objects
 }
 
 #' Visualize FilePath dependencies with stage-based coloring and staleness check
@@ -1954,14 +2091,7 @@ get_render_plan <- function(all_objects,
 
     stale_cache <- new.env(parent = emptyenv())
     for (qmd in renderers) {
-      is_qmd_stale <- FALSE
-      for (out_file in qmd@output) {
-        if (.is_stale(out_file, qmd, all_objects, cache = stale_cache)) {
-          is_qmd_stale <- TRUE
-          break
-        }
-      }
-      if (is_qmd_stale) {
+      if (.is_renderer_stale(qmd, all_objects, cache = stale_cache)) {
         initial_stale_qmds <- c(initial_stale_qmds, qmd@name)
       }
     }

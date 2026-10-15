@@ -12,6 +12,7 @@ score_outer(
   censoring_weights = c("ipcw", "none"),
   coefficients = c("all", "nonzero"),
   seed = NULL,
+  checkpoint_dir = NULL,
   progress = FALSE
 )
 }
@@ -38,6 +39,9 @@ column will be preserved as the model identifier; if absent, one will be created
 or `"nonzero"` (filters to non-zero estimates).}
 
 \item{seed}{Optional integer seed for reproducible model fitting across future plans.}
+
+\item{checkpoint_dir}{Optional directory path to save per-task checkpoint files.
+Finished tasks are loaded from disk on rerun, skipping recomputation.}
 
 \item{progress}{Show progress bar (default `FALSE`).}
 }

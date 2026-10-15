@@ -20,6 +20,8 @@
 #'   `coefficients` list column: `"all"` (default, includes predictors shrunk to 0)
 #'   or `"nonzero"` (filters to non-zero estimates).
 #' @param seed Optional integer seed for reproducible model fitting across future plans.
+#' @param checkpoint_dir Optional directory path to save per-task checkpoint files.
+#'   Finished tasks are loaded from disk on rerun, skipping recomputation.
 #' @param progress Show progress bar (default `FALSE`).
 #' @return A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
 #'   `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
@@ -33,6 +35,7 @@ score_outer <- function(object,
                         censoring_weights = c("ipcw", "none"),
                         coefficients = c("all", "nonzero"),
                         seed = NULL,
+                        checkpoint_dir = NULL,
                         progress = FALSE) {
   require_packages(c("glmnet", "survival", "rsample", "yardstick", "recipes"), "score_outer")
   censoring_weights <- match.arg(censoring_weights)
@@ -103,6 +106,10 @@ score_outer <- function(object,
     task_seeds <- vector("list", n_tasks)
   }
 
+  if (!is.null(checkpoint_dir)) {
+    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
   score_one_task <- function(task_idx, s_seed) {
     if (!is.null(s_seed)) {
       local_seed(s_seed)
@@ -111,6 +118,21 @@ score_outer <- function(object,
     r <- grid_df[t_row$row_idx, , drop = FALSE]
     curr_split <- splits[[t_row$split_idx]]
     curr_fold <- fold_names[t_row$split_idx]
+
+    ckpt_file <- if (!is.null(checkpoint_dir)) {
+      safe_fold <- gsub("[^A-Za-z0-9._-]", "_", curr_fold)
+      safe_model <- gsub("[^A-Za-z0-9._-]", "_", r$model[[1]])
+      file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
+    } else {
+      NULL
+    }
+
+    if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+      cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+      if (is.data.frame(cached) && nrow(cached) > 0L) {
+        return(cached)
+      }
+    }
 
     a <- r$alpha[[1]]
     call_args <- c(
@@ -146,7 +168,7 @@ score_outer <- function(object,
       tibble::tibble(term = character(), estimate = numeric())
     }
 
-    tibble::tibble(
+    res_row <- tibble::tibble(
       outer_fold = curr_fold,
       model = r$model[[1]],
       alpha = a,
@@ -155,6 +177,12 @@ score_outer <- function(object,
       lambda = if (nrow(res) > 0) res$lambda[1] else NA_real_,
       coefficients = list(coef_tbl)
     )
+
+    if (!is.null(ckpt_file)) {
+      tryCatch(saveRDS(res_row, ckpt_file), error = function(e) NULL)
+    }
+
+    res_row
   }
 
   can_furrr <- requireNamespace("furrr", quietly = TRUE) &&
@@ -407,4 +435,237 @@ select_candidate_models <- function(tune_results,
     alpha = grid$alpha,
     formula = grid$formula
   )
+}
+
+#' Render Censoring Weight Sensitivity and Rank Agreement Table
+#'
+#' Formats the output of [compare_censoring_weights()] (or evaluates it directly on candidate models)
+#' into a tidy sensitivity table suitable for inclusion in Quarto and R Markdown reports.
+#' Reports integrated Brier scores under unweighted and IPCW weighting alongside model ranks,
+#' rank differences, and rank agreement metrics (Spearman's \eqn{\rho} and Kendall's \eqn{\tau}).
+#'
+#' @param data A data frame returned by [compare_censoring_weights()], or an object
+#'   passed to [compare_censoring_weights()] (such as an `rsplit`, `nested_cv`, or list).
+#' @param grid Optional candidate model grid if `data` is an `rsplit`/resamples object.
+#' @param recipe Optional preprocessing recipe if `data` is an `rsplit`/resamples object.
+#' @param ... Additional arguments passed to [compare_censoring_weights()].
+#' @param format Output format: `"tibble"` (default) or `"gt"` (requires \pkg{gt}).
+#' @param digits Number of decimal places for numeric metrics (default 4).
+#' @return A tibble or \code{gt_tbl} object displaying side-by-side IBS, ranks, rank differences,
+#'   and rank agreement correlation statistics.
+#' @seealso [compare_censoring_weights()], [score_outer()]
+#' @export
+tbl_censoring_comparison <- function(data,
+                                     grid = NULL,
+                                     recipe = NULL,
+                                     ...,
+                                     format = c("tibble", "gt"),
+                                     digits = 4) {
+  format <- match.arg(format)
+
+  comp_df <- if (is.data.frame(data) && all(c("ibs_none", "ibs_ipcw") %in% names(data))) {
+    data
+  } else {
+    compare_censoring_weights(data, grid = grid, recipe = recipe, ...)
+  }
+
+  rank_agr <- attr(comp_df, "rank_agreement")
+  rho <- if (!is.null(rank_agr$spearman)) rank_agr$spearman else NA_real_
+  tau <- if (!is.null(rank_agr$kendall)) rank_agr$kendall else NA_real_
+
+  # Select and order columns
+  id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(comp_df))
+  metric_cols <- c("ibs_none", "ibs_ipcw", "rank_none", "rank_ipcw", "rank_diff")
+  display_df <- dplyr::select(comp_df, dplyr::all_of(c(id_cols, metric_cols)))
+
+  if (format == "gt") {
+    require_packages("gt", "tbl_censoring_comparison(format = 'gt')")
+    agr_note <- sprintf("Rank agreement: Spearman's \u03c1 = %.*f, Kendall's \u03c4 = %.*f",
+                        min(digits, 3), rho, min(digits, 3), tau)
+    gt_tbl <- gt::gt(display_df)
+    gt_tbl <- gt::tab_header(
+      gt_tbl,
+      title = "Censoring Weight Sensitivity Analysis",
+      subtitle = "Comparison of Unweighted vs. IPCW Integrated Brier Scores (IBS)"
+    )
+    gt_tbl <- gt::fmt_number(gt_tbl, columns = dplyr::all_of(c("ibs_none", "ibs_ipcw")), decimals = digits)
+    if ("alpha" %in% names(display_df)) {
+      gt_tbl <- gt::fmt_number(gt_tbl, columns = "alpha", decimals = min(digits, 3))
+    }
+    gt_tbl <- gt::tab_spanner(gt_tbl, label = "Integrated Brier Score", columns = c("ibs_none", "ibs_ipcw"))
+    gt_tbl <- gt::tab_spanner(gt_tbl, label = "Model Rank", columns = c("rank_none", "rank_ipcw", "rank_diff"))
+    gt_tbl <- gt::cols_label(
+      gt_tbl,
+      ibs_none = "Unweighted",
+      ibs_ipcw = "IPCW",
+      rank_none = "Unweighted",
+      rank_ipcw = "IPCW",
+      rank_diff = "\u0394 Rank"
+    )
+    gt_tbl <- gt::tab_source_note(gt_tbl, source_note = agr_note)
+    return(gt_tbl)
+  }
+
+  attr(display_df, "rank_agreement") <- list(spearman = rho, kendall = tau)
+  display_df
+}
+
+#' Compare and Diff Outer-Fold Runs Across Platforms With Tolerance
+#'
+#' Evaluates reproducibility between two sets of model evaluation runs (e.g. from
+#' [score_outer()]), such as runs performed across different operating systems
+#' (Windows, Linux, macOS) or hardware architectures (x86_64 vs ARM64). Compares
+#' integrated Brier scores (IBS), selected penalties (\eqn{\lambda}), and coefficient
+#' estimates within user-specified numeric tolerances.
+#'
+#' @param run1 A data frame returned by [score_outer()] or a character path to an `.rds` file.
+#' @param run2 A second data frame or character path to compare against `run1`.
+#' @param tolerance Numeric tolerance for IBS and \eqn{\lambda} differences (default `1e-6`).
+#' @param coef_tolerance Numeric tolerance for coefficient differences (defaults to `tolerance`).
+#' @param label1 Optional character label for `run1` (default `"run1"`).
+#' @param label2 Optional character label for `run2` (default `"run2"`).
+#' @return An object of class `c("templecbe_run_comparison", "tbl_df", "tbl", "data.frame")`
+#'   containing per-model diffs, with overall reproducibility summary attributes.
+#' @seealso [score_outer()], [tidy_outer_coefficients()]
+#' @export
+compare_runs <- function(run1,
+                         run2,
+                         tolerance = 1e-6,
+                         coef_tolerance = tolerance,
+                         label1 = "run1",
+                         label2 = "run2") {
+  if (is.character(run1) && length(run1) == 1L && file.exists(run1)) {
+    run1 <- readRDS(run1)
+  }
+  if (is.character(run2) && length(run2) == 1L && file.exists(run2)) {
+    run2 <- readRDS(run2)
+  }
+
+  if (!is.data.frame(run1) || !is.data.frame(run2)) {
+    stop("`run1` and `run2` must be data frames or valid paths to RDS files.", call. = FALSE)
+  }
+  if (!all(c("model", "IBS") %in% names(run1)) || !all(c("model", "IBS") %in% names(run2))) {
+    stop("Both runs must contain 'model' and 'IBS' columns.", call. = FALSE)
+  }
+
+  join_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), intersect(names(run1), names(run2)))
+  if (length(join_cols) == 0L) {
+    join_cols <- "model"
+  }
+
+  df1 <- tibble::as_tibble(run1)
+  df2 <- tibble::as_tibble(run2)
+
+  merged <- dplyr::inner_join(
+    df1,
+    df2,
+    by = join_cols,
+    suffix = c(paste0("_", label1), paste0("_", label2))
+  )
+
+  if (nrow(merged) == 0L) {
+    stop("No matching models found between run1 and run2 using keys: ", paste(join_cols, collapse = ", "), call. = FALSE)
+  }
+
+  ibs1_col <- paste0("IBS_", label1)
+  ibs2_col <- paste0("IBS_", label2)
+  diff_ibs <- abs(merged[[ibs1_col]] - merged[[ibs2_col]])
+
+  has_lambda <- paste0("lambda_", label1) %in% names(merged) && paste0("lambda_", label2) %in% names(merged)
+  diff_lambda <- if (has_lambda) {
+    abs(merged[[paste0("lambda_", label1)]] - merged[[paste0("lambda_", label2)]])
+  } else {
+    rep(0, nrow(merged))
+  }
+
+  has_coefs <- paste0("coefficients_", label1) %in% names(merged) && paste0("coefficients_", label2) %in% names(merged)
+
+  max_coef_diffs <- numeric(nrow(merged))
+  terms_matched <- logical(nrow(merged))
+
+  for (i in seq_len(nrow(merged))) {
+    if (has_coefs) {
+      c1 <- merged[[paste0("coefficients_", label1)]][[i]]
+      c2 <- merged[[paste0("coefficients_", label2)]][[i]]
+      if (is.data.frame(c1) && is.data.frame(c2) && nrow(c1) > 0 && nrow(c2) > 0) {
+        nz1 <- sort(c1$term[abs(c1$estimate) > 1e-9])
+        nz2 <- sort(c2$term[abs(c2$estimate) > 1e-9])
+        terms_matched[i] <- identical(nz1, nz2)
+
+        m_c <- merge(c1, c2, by = "term", all = TRUE)
+        m_c$estimate.x[is.na(m_c$estimate.x)] <- 0
+        m_c$estimate.y[is.na(m_c$estimate.y)] <- 0
+        max_coef_diffs[i] <- max(abs(m_c$estimate.x - m_c$estimate.y), na.rm = TRUE)
+      } else {
+        terms_matched[i] <- TRUE
+        max_coef_diffs[i] <- 0
+      }
+    } else {
+      terms_matched[i] <- TRUE
+      max_coef_diffs[i] <- 0
+    }
+  }
+
+  ibs_ok <- is.na(diff_ibs) | (diff_ibs <= tolerance)
+  lambda_ok <- is.na(diff_lambda) | (diff_lambda <= tolerance)
+  coef_ok <- max_coef_diffs <= coef_tolerance
+  reproducible <- ibs_ok & lambda_ok & coef_ok & terms_matched
+
+  out_df <- dplyr::select(merged, dplyr::all_of(join_cols))
+  out_df[[paste0("ibs_", label1)]] <- merged[[ibs1_col]]
+  out_df[[paste0("ibs_", label2)]] <- merged[[ibs2_col]]
+  out_df$diff_ibs <- diff_ibs
+
+  if (has_lambda) {
+    out_df[[paste0("lambda_", label1)]] <- merged[[paste0("lambda_", label1)]]
+    out_df[[paste0("lambda_", label2)]] <- merged[[paste0("lambda_", label2)]]
+    out_df$diff_lambda <- diff_lambda
+  }
+  if (has_coefs) {
+    out_df$max_coef_diff <- max_coef_diffs
+    out_df$terms_match <- terms_matched
+  }
+  out_df$reproducible <- reproducible
+
+  spearman_rho <- if (nrow(out_df) >= 2) stats::cor(out_df[[paste0("ibs_", label1)]], out_df[[paste0("ibs_", label2)]], method = "spearman", use = "complete.obs") else NA_real_
+
+  summary_info <- list(
+    label1 = label1,
+    label2 = label2,
+    tolerance = tolerance,
+    coef_tolerance = coef_tolerance,
+    n_models = nrow(out_df),
+    all_reproducible = all(reproducible),
+    max_ibs_diff = max(diff_ibs, na.rm = TRUE),
+    max_lambda_diff = if (has_lambda) max(diff_lambda, na.rm = TRUE) else 0,
+    max_coef_diff = if (has_coefs) max(max_coef_diffs, na.rm = TRUE) else 0,
+    rank_correlation = spearman_rho
+  )
+
+  attr(out_df, "comparison_summary") <- summary_info
+  class(out_df) <- c("templecbe_run_comparison", class(out_df))
+  out_df
+}
+
+#' @export
+print.templecbe_run_comparison <- function(x, ...) {
+  s <- attr(x, "comparison_summary")
+  cat("====================================================\n")
+  cat("TempleCBE Cross-Platform Run Comparison\n")
+  cat(sprintf("Runs compared: '%s' vs '%s'\n", s$label1, s$label2))
+  cat(sprintf("Models evaluated: %d\n", s$n_models))
+  cat(sprintf("Tolerance: IBS/lambda <= %g, Coefs <= %g\n", s$tolerance, s$coef_tolerance))
+  cat("----------------------------------------------------\n")
+  cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
+  cat(sprintf("Max |IBS diff|:        %g\n", s$max_ibs_diff))
+  cat(sprintf("Max |lambda diff|:     %g\n", s$max_lambda_diff))
+  cat(sprintf("Max |coefficient diff|: %g\n", s$max_coef_diff))
+  cat(sprintf("Spearman Rank Corr:    %.4f\n", s$rank_correlation))
+  cat("====================================================\n")
+  if (!s$all_reproducible) {
+    discrepant <- x[!x$reproducible, , drop = FALSE]
+    cat(sprintf("\n%d model(s) exceeded tolerance:\n", nrow(discrepant)))
+    print(utils::head(discrepant, 10))
+  }
+  invisible(x)
 }

@@ -6,6 +6,15 @@
 * **Quarto & Nested-CV Safety:** Running sequentially by default eliminates race conditions and directory contention over project-level state (`.quarto`, `_freeze`, and shared build directories) across concurrent Quarto renders, and ensures nested cross-validation models within reports retain full access to multisession worker pools.
 * **External Plan Passthrough:** Setting `workers = NULL` respects any pre-configured active `future::plan()` without altering it.
 
+## Pipeline Staleness, Checkpointing & Reproducibility Extensions
+
+* **Never-Rendered Report Staleness Detection (`get_render_plan()`, `render()`):** Documents declared via `FileOutputs(renders = TRUE)` with no declared output files are now correctly recognized as stale when their expected deliverable files (`.pdf`, `.docx`, `.html`) are missing on disk, ensuring dry-run and planning phases include newly added reports.
+* **Checkpoint/Resume for Long Fits (`score_outer()`, `summarize_tune_results()`):** Added `checkpoint_dir` parameter to both functions, persisting individual outer-fold $\times$ model fits and inner-resample tuning results to disk and automatically resuming interrupted runs without recomputing finished tasks.
+* **Actionable Duplicate Name Errors & Pipeline Deduplication (`dedupe_pipeline()`):** Duplicate pipeline object name errors now report the exact file paths, indices, and S4 object classes of all conflicting definitions. Added and exported `dedupe_pipeline()` with flexible conflict resolution strategies (`"keep_first"`, `"prefer_outputs"`, `"keep_last"`, `"rename"`).
+* **Censoring Weight Sensitivity Table (`tbl_censoring_comparison()`):** Renders output from `compare_censoring_weights()` into clean presentation tables with per-model unweighted vs. IPCW IBS, ranks, rank delta, and rank agreement statistics (Spearman's $\rho$ and Kendall's $\tau$). Supports both tibble and publication-ready `gt` output.
+* **Cross-Platform Reproducibility Verification (`compare_runs()`):** Compares and diffs two `score_outer()` runs across operating systems (Windows, Linux, macOS) or architectures within configurable numerical tolerances for IBS, $\lambda$, and coefficient estimates, complete with formatted console reporting.
+* **CI/CD & Package Hygiene:** Declared suggested packages (`DiagrammeRsvg`, `lme4`, `renv`, `rsvg`) in `DESCRIPTION`, resolved duplicate documentation aliases and example parse issues in `check_renv_guard`, and ensured unit test portability across headless CI environments.
+
 # TempleCBE 0.5.4
 
 ## Pipeline Robustness, Outer Resampling & Modeling Extensions

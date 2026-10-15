@@ -12,7 +12,8 @@ summarize_tune_results(
   alphas = NULL,
   formulas = NULL,
   progress = FALSE,
-  seed = NULL
+  seed = NULL,
+  checkpoint_dir = NULL
 )
 }
 \arguments{
@@ -36,6 +37,9 @@ a list of one-sided formulas, each fit as a separate model (see
 \item{progress}{Show a progress bar.}
 
 \item{seed}{Optional integer seed for reproducible random draws across splits.}
+
+\item{checkpoint_dir}{Optional directory path to save per-split checkpoint files.
+Finished splits are loaded from disk on rerun, skipping recomputation.}
 }
 \value{
 A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`

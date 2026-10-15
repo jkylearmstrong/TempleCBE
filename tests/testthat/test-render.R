@@ -378,6 +378,7 @@ test_that("check_renv_guard warns when renv.lock exists but renv is inactive", {
   writeLines(c("{\"Packages\": {}}"), lock_file)
 
   withr::local_envvar(list(RENV_PROJECT = ""))
+  withr::local_options(templecbe_suppress_renv_warning = FALSE)
   expect_warning(
     check_renv_guard(project_root = tmp_dir),
     "renv is inactive"

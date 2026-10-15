@@ -253,6 +253,7 @@ test_that("tune_over_alpha accepts formula objects in formulas", {
 test_that("censoring_weights = 'none' warns once and produces expected numeric results", {
   skip_if_no_ibs_deps()
   fx <- ibs_fixture()
+  rlang::reset_warning_verbosity("TempleCBE_glmnet_IBS_censoring_weights_none")
   set.seed(42)
 
   # Check that it warns with expected frequency id / condition
@@ -270,13 +271,21 @@ test_that("censoring_weights = 'none' warns once and produces expected numeric r
   expect_equal(res_none$alpha[1], 0.5)
 
   # Repeat call in same session does not warn again due to once-per-session frequency
-  expect_silent(
-    res_none2 <- glmnet_IBS(
+  censor_warned <- FALSE
+  set.seed(42)
+  withCallingHandlers(
+    res_none2 <- suppressWarnings(glmnet_IBS(
       fx$split, alpha = 0.5, recipe = fx$recipe, feature_names = fx$features,
       time_data = fx$times, internal_folds = 3, cox.ties = "breslow",
       censoring_weights = "none"
-    )
+    )),
+    warning = function(w) {
+      if (grepl("legacy and does not adjust for censoring", conditionMessage(w))) {
+        censor_warned <<- TRUE
+      }
+    }
   )
+  expect_false(censor_warned)
   expect_equal(res_none$IBS, res_none2$IBS)
 })
 
