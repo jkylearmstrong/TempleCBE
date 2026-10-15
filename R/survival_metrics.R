@@ -192,7 +192,7 @@ glmnet_IBS <- function(object,
     train_raw
   }
   if (!"package:recipes" %in% search() && requireNamespace("recipes", quietly = TRUE)) {
-    suppressPackageStartupMessages(require("recipes", quietly = TRUE, character.only = TRUE))
+    attachNamespace("recipes")
   }
   prepped <- recipes::prep(recipe, training = prep_data)
   train <- recipes::bake(prepped, new_data = train_raw)

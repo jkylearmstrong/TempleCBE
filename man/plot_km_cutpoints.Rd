@@ -15,7 +15,7 @@ plot_km_cutpoints(x, ...)
 A `ggplot2` object.
 }
 \description{
-Displays the profile of log-rank statistics ($-\\log_{10}(p)$) across evaluated
+Displays the profile of log-rank statistics (-log10(p)) across evaluated
 candidate cutpoints, highlighting the optimal threshold.
 }
 \seealso{

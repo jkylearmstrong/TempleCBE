@@ -26,7 +26,7 @@ NULL
 #'   \item{optimal_p}{P-value at the optimal cutpoint}
 #'   \item{optimal_hr}{Hazard ratio of high vs low group at the optimal cutpoint}
 #'   \item{candidates}{A tibble of evaluated candidate cutpoints and statistics}
-#'   \item{data}{The input data frame augmented with a `{var_col}_strata` binary factor column}
+#'   \item{data}{The input data frame augmented with a \code{<var_col>_strata} binary factor column}
 #'   \item{time_col}{Name of time column}
 #'   \item{status_col}{Name of status column}
 #'   \item{var_col}{Name of biomarker column}
@@ -136,7 +136,7 @@ km_cutpoint_search <- function(data,
 
 #' Plot Cutpoint Search Profile
 #'
-#' Displays the profile of log-rank statistics ($-\\log_{10}(p)$) across evaluated
+#' Displays the profile of log-rank statistics (-log10(p)) across evaluated
 #' candidate cutpoints, highlighting the optimal threshold.
 #'
 #' @param x An object of class `"cbe_km_cutpoint"` from [km_cutpoint_search()].
