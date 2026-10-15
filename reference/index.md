@@ -191,6 +191,42 @@ metrics, and helpers for scoring start/stop models correctly.
   : Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
 - [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
   : Tune Over \`alpha\` for Every Split of a Resample
+- [`compare_censoring_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.md)
+  : Compare Model Performance Under Unweighted and IPCW Censoring
+  Weights
+- [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+  : Score Candidate Models on Outer Resampling Split(s)
+- [`select_candidate_models()`](https://jkylearmstrong.github.io/TempleCBE/reference/select_candidate_models.md)
+  : Select Candidate Models From Tuning Results
+- [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
+  [`unnest_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
+  : Tidy Outer Model Coefficients into Long Format
+- [`fit_ibs_mixed_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_ibs_mixed_model.md)
+  : Fit a Mixed-Effects Model for Integrated Brier Score Against Alpha
+- [`fit_lmer_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_lmer_safely.md)
+  : Fit a Linear Mixed-Effects Model With Safe Fallback
+- [`plot_tune_alpha_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_alpha_ibs.md)
+  : Plot Integrated Brier Score Against Alpha With Dynamic Model Fit
+- [`plot_tune_lambda_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_lambda_ibs.md)
+  : Plot Penalty Lambda Versus Integrated Brier Score
+- [`plot_tune_coef_boxplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_coef_boxplot.md)
+  : Plot Coefficient Estimates Distribution Across Tuning Resamples
+- [`plot_tune_ibs_by_resample()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_ibs_by_resample.md)
+  : Plot Integrated Brier Score Distribution Across Resampling Splits
+- [`tbl_tune_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_alpha.md)
+  : Summary Table of Tuning Performance Across Alpha Values
+- [`tbl_tune_coef()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_coef.md)
+  : Summary Table of Coefficient Stability Across Tuning Resamples
+- [`tbl_censoring_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_censoring_comparison.md)
+  : Render Censoring Weight Sensitivity and Rank Agreement Table
+- [`compare_runs()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_runs.md)
+  : Compare and Diff Outer-Fold Runs Across Platforms With Tolerance
+- [`compare_tuning_runs()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_tuning_runs.md)
+  : Compare and Summarize Two Tuning Runs
+- [`tune_diagnostics`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_diagnostics.md)
+  : Tuning Diagnostics and Visualization Family
+- [`workflow_tuning`](https://jkylearmstrong.github.io/TempleCBE/reference/workflow_tuning.md)
+  : Tidymodels Workflow Tuning and Feature Importance Summaries
 - [`racing_workflows`](https://jkylearmstrong.github.io/TempleCBE/reference/racing_workflows.md)
   : Racing Methods and Controls for Survival Workflows
 - [`control_race_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/control_race_survival.md)
@@ -277,6 +313,14 @@ Recipe steps and workflow set helpers.
   : Tuning Parameters of a Ranked Workflow in a Workflow Set
 - [`fit_n_rank()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_n_rank.md)
   : Fit the Configuration Ranked \`.rank\` in a Workflow Set
+- [`tune_best_glmnet_workflow()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_best_glmnet_workflow.md)
+  : Select and Finalize Best Penalized Cox Workflow
+- [`summarize_dalex_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_dalex_importance.md)
+  : Extract and Summarize Permutation Variable Importance
+- [`plot_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_permutation_importance.md)
+  : Plot Permutation Variable Importance
+- [`tbl_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_permutation_importance.md)
+  : Summary Table of Permutation Variable Importance
 
 ## Missing Data Imputation
 
@@ -296,6 +340,18 @@ Per-column mtry sweeps for missForest and missRanger imputation.
   Error
 - [`missranger_max_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_max_mtry.md)
   : Largest \`mtry\` \`missRanger\` Will Accept For a Data Set
+- [`tune_impute_numeric()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_impute_numeric.md)
+  : Benchmark Numeric Imputation Methods Using Relative Squared Error
+  (RSE)
+- [`compare_imputed_ecdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_imputed_ecdf.md)
+  : Compare Original vs Imputed Empirical Cumulative Distribution
+  Functions
+- [`test_imputed_distributions()`](https://jkylearmstrong.github.io/TempleCBE/reference/test_imputed_distributions.md)
+  : Statistical Distribution Comparison of Original vs Imputed Values
+- [`plot_imputed_ridgeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputed_ridgeline.md)
+  : Ridgeline Density Comparison of Original vs Imputed Distributions
+- [`imputation_diagnostics`](https://jkylearmstrong.github.io/TempleCBE/reference/imputation_diagnostics.md)
+  : Imputation Quality Auditing and Method Comparison Toolkit
 
 ## Statistical Testing & EDA
 
@@ -320,6 +376,13 @@ tests.
   : Heatmap of Correlation Differences Between Two Datasets
 - [`find_correlation()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_correlation.md)
   : Find Highly Correlated Columns
+- [`correlated_pairs_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlated_pairs_table.md)
+  : Formatted Table of Highly Correlated Variable Pairs
+- [`plot_corr_scatter()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_corr_scatter.md)
+  : Scatter Plot of Two Correlated Variables With Regression Fit and
+  Statistics
+- [`plot_rank_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_rank_heatmap.md)
+  : Heatmap of Variable or Model Ranks Across Resamples or Metrics
 - [`distribution_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_test.md)
   : Check a Vector or Data Frame's Distribution
 - [`distribution_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_plot.md)
@@ -332,6 +395,20 @@ tests.
   : Is a Vector Composed of Integer-Valued Numbers
 - [`significance_stars()`](https://jkylearmstrong.github.io/TempleCBE/reference/significance_stars.md)
   : P-value Significance Stars
+
+## Composite Clinical & Biomarker Indices
+
+Construct composite indices, center variables, and generate summary
+tables and correlation structures of index components.
+
+- [`compute_composite_index()`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_composite_index.md)
+  : Compute a Composite Clinical or Biomarker Index
+- [`composite_index`](https://jkylearmstrong.github.io/TempleCBE/reference/composite_index.md)
+  : Composite Index Construction and Variable Correlation Table
+- [`center()`](https://jkylearmstrong.github.io/TempleCBE/reference/center.md)
+  : Center a Numeric Vector
+- [`index_variable_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/index_variable_table.md)
+  : Summary Table of Composite Index Component Variables
 
 ## PCA & Dimensionality Reduction
 
@@ -411,10 +488,15 @@ Manhattan/volcano plots, report generation, and document conversions.
   : Rossi Recidivism Dataset
 - [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
   [`render_me()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
-  : Render Quarto and R Markdown Documents to Multiple Formats With
-  Timing
+  : Render Pipeline Documents and Reports
 - [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
   : Package Multiple Already-Rendered Reports Into an Indexed Zip
+- [`write_run_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_run_manifest.md)
+  : Write a Run Manifest JSON Beside Render Outputs
+- [`check_renv_guard()`](https://jkylearmstrong.github.io/TempleCBE/reference/check_renv_guard.md)
+  : Guard Against Inactive renv or Lockfile Disagreements
+- [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
+  : Extract Output Formats From Document YAML Front Matter
 - [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
   : Audit Data File Read/Write Calls Against a Project's Files on Disk
 - [`read_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_search.md)
@@ -471,8 +553,19 @@ biostatistical pipelines.
 - [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
   : Get the topologically sorted list of QMDs that need to be
   re-rendered
+- [`is_stale()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_stale.md)
+  : Check if an Output File is Stale
+- [`save_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
+  [`load_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
+  : Save and Load Computational Pipeline Graph
 - [`join_pipelines()`](https://jkylearmstrong.github.io/TempleCBE/reference/join_pipelines.md)
   : Join two computational pipeline graphs
+- [`dedupe_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/dedupe_pipeline.md)
+  : Deduplicate Pipeline Objects by Name
+- [`refresh_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/refresh_pipeline.md)
+  : Refresh Modification Timestamps Across Pipeline Objects
+- [`export_pipeline_diagram()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_pipeline_diagram.md)
+  : Export Pipeline Diagram to Static Vector or Raster Format
 - [`graph_intersect()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
   [`graph_subtract()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
   [`graph_union()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
@@ -589,6 +682,15 @@ visualizations.
   : Univariable Kaplan-Meier and Cox Screening Engine
 - [`print(`*`<cbe_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_km.md)
   : Print Method for cbe_km Object
+- [`km_cutpoints`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoints.md)
+  : Kaplan-Meier Optimal Cutpoint Search and Visualization
+- [`km_cutpoint_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_search.md)
+  : Search for Optimal Survival Cutpoint via Log-Rank Separation
+- [`km_cutpoint_time_varying()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_time_varying.md)
+  : Optimal Survival Cutpoint Search for Time-Varying Counting Process
+  Data
+- [`plot_km_cutpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_km_cutpoints.md)
+  : Plot Cutpoint Search Profile
 - [`cbe_factor_reference()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.md)
   [`factor_reference()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_factor_reference.md)
   : Relevel a Factor's Reference Level
@@ -732,6 +834,14 @@ Clean column naming, string matching, and vector manipulation.
   : Clean Column Names, Preserving Originals as Labels
 - [`make_excel_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/make_excel_names.md)
   : Generate Excel-Compatible Column Names
+- [`excel_colnames()`](https://jkylearmstrong.github.io/TempleCBE/reference/excel_colnames.md)
+  : Sanitize Column Names for Excel Worksheets
+- [`pretty_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/pretty_name.md)
+  : Convert Raw Variable Names to Human-Readable Display Labels
+- [`copy_var_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_var_labels.md)
+  : Copy Variable Labels and Attributes Across Data Frames
+- [`label_helpers`](https://jkylearmstrong.github.io/TempleCBE/reference/label_helpers.md)
+  : Variable Label and Excel Header Helpers
 - [`keep_only()`](https://jkylearmstrong.github.io/TempleCBE/reference/keep_only.md)
   : Keep Only Specified Objects in an Environment
 - [`delete_nul_files()`](https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.md)

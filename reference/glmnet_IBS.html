@@ -15,7 +15,7 @@ code can call [cv_coxnet()] and [nested_cv_coxnet()] directly."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,7 @@ code can call [cv_coxnet()] and [nested_cv_coxnet()] directly."><meta property="
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Integrated Brier Score of a Penalized Cox Model on Start/Stop Survival Data</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
       <div class="d-none name"><code>glmnet_IBS.Rd</code></div>
     </div>
 
@@ -80,12 +80,15 @@ code can call [cv_coxnet()] and [nested_cv_coxnet()] directly.</p>
 <span>  stop_col <span class="op">=</span> <span class="st">"tstop"</span>,</span>
 <span>  status_col <span class="op">=</span> <span class="st">"status"</span>,</span>
 <span>  censoring_weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ipcw"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>  tune_engine <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"yardstick"</span>, <span class="st">"cv.glmnet"</span><span class="op">)</span>,</span>
 <span>  prep_on <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"baseline"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
 <span>  eval_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  metric <span class="op">=</span> <span class="st">"brier_survival_integrated"</span>,</span>
 <span>  rule <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"min"</span>, <span class="st">"1se"</span><span class="op">)</span>,</span>
 <span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"baseline"</span><span class="op">)</span>,</span>
 <span>  failure_ibs <span class="op">=</span> <span class="cn">NA_real_</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  parallel_over <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"resamples"</span>, <span class="st">"everything"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -136,9 +139,19 @@ identifier, interval start, interval stop, and event indicator (1 = event).</p><
 
 
 <dt id="arg-censoring-weights">censoring_weights<a class="anchor" aria-label="anchor" href="#arg-censoring-weights"></a></dt>
-<dd><p>Only `"ipcw"` is supported. `"none"`, which scored
-interval rows without adjusting for censoring, was removed in TempleCBE
-0.3.0; install TempleCBE 0.2.0 to reproduce results that used it.</p></dd>
+<dd><p>Weighting scheme for Brier score calculation:
+`"ipcw"` (the default) uses inverse probability of censoring weighting via
+Graf weights (a proper scoring rule). `"none"` applies unweighted unit
+weights (1 for events and at-risk subjects, 0 for censored; legacy, emits
+a once-per-session warning; useful for historical reproducibility or
+sensitivity comparisons).</p></dd>
+
+
+<dt id="arg-tune-engine">tune_engine<a class="anchor" aria-label="anchor" href="#arg-tune-engine"></a></dt>
+<dd><p>Cross-validation tuning engine: `"yardstick"` (default, uses
+subject-grouped folds via [cv_coxnet()]) or `"cv.glmnet"` (legacy, splits
+intervals across folds without subject grouping using [glmnet::cv.glmnet()];
+emits a once-per-session warning, useful for historical reproducibility).</p></dd>
 
 
 <dt id="arg-prep-on">prep_on<a class="anchor" aria-label="anchor" href="#arg-prep-on"></a></dt>
@@ -168,6 +181,16 @@ penalty, e.g. `"brier_survival_integrated"` or `"concordance_survival"`.</p></dd
 <dt id="arg-failure-ibs">failure_ibs<a class="anchor" aria-label="anchor" href="#arg-failure-ibs"></a></dt>
 <dd><p>IBS reported when the model cannot be fit (default
 `NA`); a warning gives the reason.</p></dd>
+
+
+<dt id="arg-parallel">parallel<a class="anchor" aria-label="anchor" href="#arg-parallel"></a></dt>
+<dd><p>Logical or character. When <code>TRUE</code> (or <code>"resamples"</code> / <code>"everything"</code>),
+evaluates internal CV folds in parallel using [furrr::future_map2()] for <code>tune_engine = "yardstick"</code>
+or [glmnet::cv.glmnet()]'s parallel mode. When <code>FALSE</code> (default), evaluates sequentially.</p></dd>
+
+
+<dt id="arg-parallel-over">parallel_over<a class="anchor" aria-label="anchor" href="#arg-parallel-over"></a></dt>
+<dd><p>Tidymodels-compatible partition option: <code>"resamples"</code> (default) or <code>"everything"</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

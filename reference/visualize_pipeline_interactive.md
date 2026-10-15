@@ -11,7 +11,9 @@ visualize_pipeline_interactive(
   direction = "LR",
   hierarchical = TRUE,
   title = getOption("pipeline.study_name", "Computational Pipeline"),
-  subtitle = "Computational Pipeline"
+  subtitle = "Computational Pipeline",
+  font_size = 12,
+  node_size = 25
 )
 ```
 
@@ -39,6 +41,14 @@ visualize_pipeline_interactive(
 
   Character, the document-specific name (e.g. "Computational Pipeline",
   or a subgraph's own name from export_subgraph()).
+
+- font_size:
+
+  Numeric font size for node labels (default 12).
+
+- node_size:
+
+  Numeric node size in pixels (default 25).
 
 ## Value
 

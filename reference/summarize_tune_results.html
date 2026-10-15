@@ -11,7 +11,7 @@ successful fits. Fits that errored are dropped. A split draws its own random
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,7 +49,7 @@ successful fits. Fits that errored are dropped. A split draws its own random
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Tune Over `alpha` for Every Split of a Resample</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
       <div class="d-none name"><code>summarize_tune_results.Rd</code></div>
     </div>
 
@@ -68,7 +68,9 @@ successful fits. Fits that errored are dropped. A split draws its own random
 <span>  num_fixed <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  alphas <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  formulas <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  progress <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -108,11 +110,32 @@ a list of one-sided formulas, each fit as a separate model (see
 <dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
 <dd><p>Show a progress bar.</p></dd>
 
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Optional integer seed for reproducible random draws across splits.</p></dd>
+
+
+<dt id="arg-checkpoint-dir">checkpoint_dir<a class="anchor" aria-label="anchor" href="#arg-checkpoint-dir"></a></dt>
+<dd><p>Optional directory path to save per-split checkpoint files.
+Finished splits are loaded from disk on rerun, skipping recomputation.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`
   column giving the split's position in `object$splits`.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="nested-parallelism-amp-benchmarking">Nested Parallelism &amp; Benchmarking<a class="anchor" aria-label="anchor" href="#nested-parallelism-amp-benchmarking"></a></h2>
+
+
+<p>When tuning penalized survival models across nested resampling structures, computation
+scales multiplicatively: \(\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}\).
+Parallelism is managed via <span class="pkg">future</span> and <span class="pkg">furrr</span>.
+For optimal cluster throughput and to prevent socket exhaustion on Windows/macOS,
+set <code>future::plan(multisession, workers = N)</code> at the outer level (e.g. over splits)
+while keeping nested inner model evaluations sequential (<code>parallel = FALSE</code> in <code><a href="glmnet_IBS.html">glmnet_IBS()</a></code>).
+Using <code>checkpoint_dir</code> is strongly recommended for long runs across multiple nodes.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -15,7 +15,9 @@ plot_survival_km(
   color = "#9D2235",
   title = "Kaplan-Meier Survival Estimate",
   caption = NULL,
-  base_size = 13
+  base_size = 13,
+  risk_table = FALSE,
+  p_value = FALSE
 )
 ```
 
@@ -53,6 +55,16 @@ plot_survival_km(
 - base_size:
 
   Base font size (default: 13).
+
+- risk_table:
+
+  Logical. If \`TRUE\`, appends a number-at-risk table below the
+  survival curve. Default \`FALSE\`.
+
+- p_value:
+
+  Logical. If \`TRUE\` and \`group_col\` is specified, displays log-rank
+  test p-value. Default \`FALSE\`.
 
 ## Value
 

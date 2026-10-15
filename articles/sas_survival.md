@@ -860,12 +860,12 @@ macro directory or any individual macro file:
 # Directory containing all bundled SAS macros
 macro_dir <- TempleCBE::cbe_sas_macro_dir()
 macro_dir
-#> [1] "/home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/sas"
+#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas"
 
 # Path to the master loader file
 master_macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
 master_macro_file
-#> [1] "/home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/sas/cbe_macros.sas"
+#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas/cbe_macros.sas"
 ```
 
 Inside SAS (whether running in SAS Enterprise Guide, SAS Studio, or

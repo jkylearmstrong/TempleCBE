@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,7 +45,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Visualize FilePath dependencies with stage-based coloring and staleness check</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/compute_graph.R" class="external-link"><code>R/compute_graph.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/compute_graph.R" class="external-link"><code>R/compute_graph.R</code></a></small>
       <div class="d-none name"><code>visualize_pipeline.Rd</code></div>
     </div>
 
@@ -58,7 +58,12 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">visualize_pipeline</span><span class="op">(</span></span>
 <span>  <span class="va">all_objects</span>,</span>
 <span>  extract_graph_code <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  stage_colors <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  stage_colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  orientation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"TB"</span>, <span class="st">"LR"</span>, <span class="st">"BT"</span>, <span class="st">"RL"</span><span class="op">)</span>,</span>
+<span>  font_size <span class="op">=</span> <span class="fl">12</span>,</span>
+<span>  node_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  node_sep <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  rank_sep <span class="op">=</span> <span class="fl">0.5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -76,6 +81,26 @@
 
 <dt id="arg-stage-colors">stage_colors<a class="anchor" aria-label="anchor" href="#arg-stage-colors"></a></dt>
 <dd><p>Optional named list of stage colors. If NULL, uses pipeline_config() options.</p></dd>
+
+
+<dt id="arg-orientation">orientation<a class="anchor" aria-label="anchor" href="#arg-orientation"></a></dt>
+<dd><p>Layout direction: `"TB"` (Top-to-Bottom, default), `"LR"` (Left-to-Right), `"BT"`, or `"RL"`.</p></dd>
+
+
+<dt id="arg-font-size">font_size<a class="anchor" aria-label="anchor" href="#arg-font-size"></a></dt>
+<dd><p>Font size for node labels (default 12).</p></dd>
+
+
+<dt id="arg-node-size">node_size<a class="anchor" aria-label="anchor" href="#arg-node-size"></a></dt>
+<dd><p>Optional numeric vector specifying node dimensions `c(width, height)`.</p></dd>
+
+
+<dt id="arg-node-sep">node_sep<a class="anchor" aria-label="anchor" href="#arg-node-sep"></a></dt>
+<dd><p>Minimum space between adjacent nodes in inches (default 0.5).</p></dd>
+
+
+<dt id="arg-rank-sep">rank_sep<a class="anchor" aria-label="anchor" href="#arg-rank-sep"></a></dt>
+<dd><p>Separation between successive ranks in inches (default 0.5).</p></dd>
 
 </dl></div>
 

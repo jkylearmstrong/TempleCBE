@@ -9,7 +9,7 @@ marks, confidence ribbons, and percentage-formatted survival axis."><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,7 @@ marks, confidence ribbons, and percentage-formatted survival axis."><meta proper
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Standardized Kaplan-Meier Survival Curve</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/plot_deck.R" class="external-link"><code>R/plot_deck.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/plot_deck.R" class="external-link"><code>R/plot_deck.R</code></a></small>
       <div class="d-none name"><code>plot_survival_km.Rd</code></div>
     </div>
 
@@ -66,7 +66,9 @@ marks, confidence ribbons, and percentage-formatted survival axis.</p>
 <span>  color <span class="op">=</span> <span class="st">"#9D2235"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Kaplan-Meier Survival Estimate"</span>,</span>
 <span>  caption <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  base_size <span class="op">=</span> <span class="fl">13</span></span>
+<span>  base_size <span class="op">=</span> <span class="fl">13</span>,</span>
+<span>  risk_table <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  p_value <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -104,6 +106,14 @@ marks, confidence ribbons, and percentage-formatted survival axis.</p>
 
 <dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
 <dd><p>Base font size (default: 13).</p></dd>
+
+
+<dt id="arg-risk-table">risk_table<a class="anchor" aria-label="anchor" href="#arg-risk-table"></a></dt>
+<dd><p>Logical. If `TRUE`, appends a number-at-risk table below the survival curve. Default `FALSE`.</p></dd>
+
+
+<dt id="arg-p-value">p_value<a class="anchor" aria-label="anchor" href="#arg-p-value"></a></dt>
+<dd><p>Logical. If `TRUE` and `group_col` is specified, displays log-rank test p-value. Default `FALSE`.</p></dd>
 
 </dl></div>
     <div class="section level2">

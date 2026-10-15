@@ -19,5 +19,5 @@ Path to `brand.yml` inside the installed package.
 
 ``` r
 temple_brand_path()
-#> [1] "/home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/brand/brand.yml"
+#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/brand/brand.yml"
 ```

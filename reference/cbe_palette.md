@@ -7,3 +7,7 @@ Official and complementary colors for CBE publications and slide decks.
 ``` r
 cbe_palette
 ```
+
+## Format
+
+An object of class `character` of length 7.

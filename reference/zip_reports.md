@@ -15,7 +15,9 @@ zip_reports(
   data_deliverables = character(0),
   zip_name = NULL,
   output_dir = getwd(),
-  docx_from_pdf = NULL
+  docx_from_pdf = NULL,
+  docx_strict = FALSE,
+  docx_backend = "auto"
 )
 ```
 
@@ -73,7 +75,21 @@ zip_reports(
   a warning says so and no DOCX is shipped for that report. Any other
   return value is taken as success. In the index, the DOCX cell of a
   report whose PDF exists but that has no DOCX to ship reads
-  `"not converted"`.
+
+- docx_strict:
+
+  Logical. When `TRUE`, fails loudly (stops execution with an error) if
+  no PDF-to-DOCX conversion backend is available or if conversion fails
+  to produce a current `.docx` for a requested report. When `FALSE`
+  (default), warns and skips missing/stale DOCXs. Pass
+  `docx_strict = TRUE` explicitly when packaging deliverables that must
+  strictly guarantee current DOCX files.
+
+- docx_backend:
+
+  Conversion backend passed to
+  [`convert_pdf_to_docx`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdf_to_docx.md):
+  `"auto"` (default), `"python"`, `"libreoffice"`, or `"word_com"`.
 
 ## Value
 

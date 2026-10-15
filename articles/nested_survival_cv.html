@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>02. Penalized Cox Models and Nested Cross-Validation for Start/Stop Survival Data</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/vignettes/nested_survival_cv.Rmd" class="external-link"><code>vignettes/nested_survival_cv.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/nested_survival_cv.Rmd" class="external-link"><code>vignettes/nested_survival_cv.Rmd</code></a></small>
       <div class="d-none name"><code>nested_survival_cv.Rmd</code></div>
     </div>
 
@@ -761,23 +761,63 @@ prediction tibbles.</li>
 <p>When searching over a broad grid of elastic net mixing parameters
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>)
 or evaluating competing candidate clinical formulas,
-<code><a href="../reference/tune_over_alpha.html">tune_over_alpha()</a></code> and <code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code>
-orchestrate parallel evaluation using <code>furrr</code>:</p>
+<code><a href="../reference/tune_over_alpha.html">tune_over_alpha()</a></code>, <code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code>,
+and <code><a href="../reference/score_outer.html">score_outer()</a></code> orchestrate parallel evaluation using
+<code>furrr</code>.</p>
+<div class="section level4">
+<h4 id="nested-parallelism-cluster-benchmarking-architecture">Nested Parallelism &amp; Cluster Benchmarking Architecture<a class="anchor" aria-label="anchor" href="#nested-parallelism-cluster-benchmarking-architecture"></a>
+</h4>
+<p>In nested survival cross-validation, total computational workload
+scales multiplicatively:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Total Fits</mtext><mo>=</mo><msub><mi>N</mi><mtext mathvariant="normal">outer folds</mtext></msub><mo>×</mo><msub><mi>N</mi><mtext mathvariant="normal">inner splits</mtext></msub><mo>×</mo><msub><mi>N</mi><mrow><mi>α</mi><mrow><mspace width="0.333em"></mspace><mtext mathvariant="normal"> values</mtext></mrow></mrow></msub><mo>×</mo><msub><mi>N</mi><mtext mathvariant="normal">internal CV folds</mtext></msub></mrow><annotation encoding="application/x-tex">\text{Total Fits} = N_{\text{outer folds}} \times N_{\text{inner splits}} \times N_{\alpha \text{ values}} \times N_{\text{internal CV folds}}</annotation></semantics></math></p>
+<p>For example, a study with 7 outer folds, 7 inner resamples, 10
+candidate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+mixing parameters, and 5 internal penalty selection folds requires
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>7</mn><mo>×</mo><mn>7</mn><mo>×</mo><mn>10</mn><mo>×</mo><mn>5</mn><mo>=</mo><mn>2</mn><mo>,</mo><mn>450</mn></mrow><annotation encoding="application/x-tex">7 \times 7 \times 10 \times 5 = 2,450</annotation></semantics></math>
+penalized Cox model estimations per clinical domain.</p>
+<p><strong>Best Practices for Cluster &amp; Multicore
+Execution:</strong> 1. <strong>Outer/Split Parallelism</strong>: Set
+<code>future::plan(multisession, workers = N)</code> at the session
+level before invoking tuning or scoring. <code>TempleCBE</code>
+functions strictly adhere to the <em>never call plan() inside
+functions</em> fleet rule. 2. <strong>Sequential Inner Fits</strong>:
+Avoid setting <code>parallel = TRUE</code> inside
+<code><a href="../reference/glmnet_IBS.html">glmnet_IBS()</a></code> when <code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code> is
+already running across parallel workers; nested socket clusters lead to
+worker resource contention and OS deadlocks. 3. <strong>Resilience with
+Checkpoints</strong>: Pass
+<code>checkpoint_dir = "checkpoints/tuning_abg"</code> to
+<code><a href="../reference/summarize_tune_results.html">summarize_tune_results()</a></code>, <code><a href="../reference/tune_over_alpha.html">tune_over_alpha()</a></code>,
+and <code><a href="../reference/score_outer.html">score_outer()</a></code>. Completed tasks save atomic
+<code>.rds</code> artifacts per split/fold. If a run is interrupted
+across cluster nodes, rerunning detects cached checkpoints and skips
+recomputation with an informative progress notice. 4.
+<strong>Environment Isolation</strong>: Multisession worker processes
+automatically import required preprocessing namespaces
+(<code>recipes</code>, <code>rsample</code>, <code>yardstick</code>,
+<code>survival</code>, <code>glmnet</code>).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/futureverse/furrr" class="external-link">furrr</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Parallel grid search across alpha values for an rsample split</span></span>
+<span><span class="co"># Parallel grid search across alpha values with checkpointing</span></span>
 <span><span class="va">alpha_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_over_alpha.html">tune_over_alpha</a></span><span class="op">(</span></span>
 <span>  <span class="va">split</span>,</span>
 <span>  recipe <span class="op">=</span> <span class="va">cox_rec</span>,</span>
 <span>  num_alpha_values <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  internal_folds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  progress <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="st">"checkpoints/alpha_grid"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Summarize results across all inner splits of a nested resample</span></span>
-<span><span class="va">nested_alpha_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/summarize_tune_results.html">summarize_tune_results</a></span><span class="op">(</span><span class="va">nested_folds</span><span class="op">$</span><span class="va">inner_resamples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">nested_alpha_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/summarize_tune_results.html">summarize_tune_results</a></span><span class="op">(</span></span>
+<span>  <span class="va">nested_folds</span><span class="op">$</span><span class="va">inner_resamples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="st">"checkpoints/inner_splits"</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level3">
 <h3 id="translating-survival-curves-to-graphpad-prism-with-km_summary_to_prism">4. Translating survival curves to GraphPad Prism with
@@ -886,12 +926,90 @@ generalization using <code><a href="../reference/nested_cv_coxnet.html">nested_c
 <span><span class="fu">collect_metrics</span><span class="op">(</span><span class="va">honest_metrics</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="pattern-4b-honest-generalization-with-inner-bootstrap-resamples-group_bootstraps-vs-random-alpha-exploration">Pattern 4b: Honest generalization with inner bootstrap resamples
+(<code>group_bootstraps</code>) vs Random-Alpha exploration<a class="anchor" aria-label="anchor" href="#pattern-4b-honest-generalization-with-inner-bootstrap-resamples-group_bootstraps-vs-random-alpha-exploration"></a>
+</h3>
+<p>When working with counting-process (start/stop) data where cohort
+size or event counts are modest, inner grouped bootstraps
+(<code>group_bootstraps(group = patient_id)</code>) provide smooth,
+low-variance hyperparameter tuning estimates for choosing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">boot_nested_plan</span> <span class="op">&lt;-</span> <span class="fu">nested_cv</span><span class="op">(</span></span>
+<span>  <span class="va">cohort_data</span>,</span>
+<span>  outside <span class="op">=</span> <span class="fu">group_vfold_cv</span><span class="op">(</span>group <span class="op">=</span> <span class="va">patient_id</span>, v <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  inside  <span class="op">=</span> <span class="fu">group_bootstraps</span><span class="op">(</span>group <span class="op">=</span> <span class="va">patient_id</span>, times <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">honest_boot_metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nested_cv_coxnet.html">nested_cv_coxnet</a></span><span class="op">(</span></span>
+<span>  <span class="va">boot_nested_plan</span>,</span>
+<span>  preprocessor <span class="op">=</span> <span class="va">clinical_rec</span>,</span>
+<span>  subject_id <span class="op">=</span> <span class="st">"patient_id"</span>,</span>
+<span>  mixture <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">collect_metrics</span><span class="op">(</span><span class="va">honest_boot_metrics</span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="choosing-between-nested-cross-validation-and-random-alpha-exploration">Choosing between Nested Cross-Validation and Random-Alpha
+Exploration<a class="anchor" aria-label="anchor" href="#choosing-between-nested-cross-validation-and-random-alpha-exploration"></a>
+</h4>
+<p>It is vital to match your statistical strategy to your project
+question:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Nested Cross-Validation
+(<code>nested_cv_coxnet</code>)</strong>:
+<ul>
+<li>
+<strong>Primary Objective</strong>: Unbiased <em>generalization
+performance estimation</em> of the entire modeling strategy.</li>
+<li>
+<strong>How it works</strong>: In each outer split, hyperparameters
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>,</mo><mi>λ</mi></mrow><annotation encoding="application/x-tex">\alpha, \lambda</annotation></semantics></math>)
+are optimized solely on inner resamples, refit on the outer analysis
+set, and scored on held-out outer subjects.</li>
+<li>
+<strong>When to use</strong>: Auditing models prior to clinical
+presentation, benchmarking expected out-of-sample performance, and
+guarding against optimization bias.</li>
+</ul>
+</li>
+<li>
+<strong>Random-Alpha Hyperparameter Exploration
+(<code>tune_over_alpha</code> /
+<code>summarize_tune_results</code>)</strong>:
+<ul>
+<li>
+<strong>Primary Objective</strong>: <em>Model selection and
+diagnostic characterization</em> across the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\alpha \in [0, 1]</annotation></semantics></math>
+penalty continuum.</li>
+<li>
+<strong>How it works</strong>: Evaluates a dense grid or randomized
+draw of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+values across resampling folds, measuring stability, coefficient
+shrinkage profiles, and Integrated Brier Score sensitivity.</li>
+<li>
+<strong>When to use</strong>: Investigating whether Ridge
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>L</mi><mn>2</mn></msub><annotation encoding="application/x-tex">L_2</annotation></semantics></math>),
+Lasso
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>L</mi><mn>1</mn></msub><annotation encoding="application/x-tex">L_1</annotation></semantics></math>),
+or Elastic Net yields superior feature sparsity and stability, and
+finalizing a single model specification for deployment.</li>
+</ul>
+</li>
+</ol>
+</div>
+</div>
+<div class="section level3">
 <h3 id="pattern-5-translational-laboratory-handoff">Pattern 5: Translational laboratory handoff<a class="anchor" aria-label="anchor" href="#pattern-5-translational-laboratory-handoff"></a>
 </h3>
 <p>Seamlessly bridge biostatistical analysis in R with laboratory
 GraphPad Prism figure creation using
 <code><a href="../reference/km_summary_to_prism.html">km_summary_to_prism()</a></code>:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Deliver Prism-ready survival spreadsheets to clinical collaborators</span></span>
 <span><span class="fu"><a href="../reference/km_summary_to_prism.html">km_summary_to_prism</a></span><span class="op">(</span></span>
 <span>  <span class="va">km_table</span>,</span>

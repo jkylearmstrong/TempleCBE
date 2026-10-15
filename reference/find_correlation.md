@@ -60,6 +60,18 @@ find_correlation(
 
 Character vector (or integer indices) of columns to remove.
 
+## Details
+
+\*\*Note:\*\* \`find_correlation()\` identifies column names or indices
+to \*remove\* to mitigate multicollinearity. To inspect the pairwise
+correlation coefficients themselves in a tidy table, use
+\[correlated_pairs_table()\] or \[corr_test_all()\].
+
+## See also
+
+\[correlated_pairs_table()\], \[corr_test_all()\],
+\[plot_corr_scatter()\]
+
 ## Examples
 
 ``` r

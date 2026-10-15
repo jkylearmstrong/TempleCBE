@@ -159,20 +159,6 @@ if (requireNamespace("FactoMineR", quietly = TRUE)) {
   head(bake(prepped, new_data = NULL))
   tidy(prepped, number = 1, type = "variance")
 }
-#> Loading required package: dplyr
-#> 
-#> Attaching package: ‘dplyr’
-#> The following objects are masked from ‘package:stats’:
-#> 
-#>     filter, lag
-#> The following objects are masked from ‘package:base’:
-#> 
-#>     intersect, setdiff, setequal, union
-#> 
-#> Attaching package: ‘recipes’
-#> The following object is masked from ‘package:stats’:
-#> 
-#>     step
 #> Warning: did not converge--results might be invalid!; try increasing maxit or work
 #> # A tibble: 12 × 4
 #>    terms                        value component id        

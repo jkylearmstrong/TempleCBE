@@ -1,5 +1,281 @@
 # Changelog
 
+## TempleCBE 0.5.5
+
+### Execution Governance & Parallel Plan Safety
+
+- **Sequential-by-Default Execution (`render(workers = 1)`):**
+  [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+  now defaults to `workers = 1` (sequential execution). Adhering to the
+  “never plan() inside functions” fleet rule,
+  [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)
+  never modifies
+  [`future::plan()`](https://future.futureverse.org/reference/plan.html)
+  unless the caller explicitly passes `workers > 1`.
+- **Quarto & Nested-CV Safety:** Running sequentially by default
+  eliminates race conditions and directory contention over project-level
+  state (`.quarto`, `_freeze`, and shared build directories) across
+  concurrent Quarto renders, and ensures nested cross-validation models
+  within reports retain full access to multisession worker pools.
+- **External Plan Passthrough:** Setting `workers = NULL` respects any
+  pre-configured active
+  [`future::plan()`](https://future.futureverse.org/reference/plan.html)
+  without altering it.
+
+### Pipeline Staleness, Checkpointing & Reproducibility Extensions
+
+- **Never-Rendered Report Staleness Detection
+  ([`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md),
+  [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)):**
+  Documents declared via `FileOutputs(renders = TRUE)` with no declared
+  output files are now correctly recognized as stale when their expected
+  deliverable files (`.pdf`, `.docx`, `.html`) are missing on disk,
+  ensuring dry-run and planning phases include newly added reports.
+- **Checkpoint/Resume for Long Fits
+  ([`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md),
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)):**
+  Added `checkpoint_dir` parameter to both functions, persisting
+  individual outer-fold $`\times`$ model fits and inner-resample tuning
+  results to disk and automatically resuming interrupted runs without
+  recomputing finished tasks.
+- **Actionable Duplicate Name Errors & Pipeline Deduplication
+  ([`dedupe_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/dedupe_pipeline.md)):**
+  Duplicate pipeline object name errors now report the exact file paths,
+  indices, and S4 object classes of all conflicting definitions. Added
+  and exported
+  [`dedupe_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/dedupe_pipeline.md)
+  with flexible conflict resolution strategies (`"keep_first"`,
+  `"prefer_outputs"`, `"keep_last"`, `"rename"`).
+- **Censoring Weight Sensitivity Table
+  ([`tbl_censoring_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_censoring_comparison.md)):**
+  Renders output from
+  [`compare_censoring_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.md)
+  into clean presentation tables with per-model unweighted vs. IPCW IBS,
+  ranks, rank delta, and rank agreement statistics (Spearman’s $`\rho`$
+  and Kendall’s $`\tau`$). Supports both tibble and publication-ready
+  `gt` output.
+- **Cross-Platform Reproducibility Verification
+  ([`compare_runs()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_runs.md)):**
+  Compares and diffs two
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+  runs across operating systems (Windows, Linux, macOS) or architectures
+  within configurable numerical tolerances for IBS, $`\lambda`$, and
+  coefficient estimates, complete with formatted console reporting.
+- **CI/CD & Package Hygiene:** Declared suggested packages
+  (`DiagrammeRsvg`, `lme4`, `renv`, `rsvg`) in `DESCRIPTION`, resolved
+  duplicate documentation aliases and example parse issues in
+  `check_renv_guard`, and ensured unit test portability across headless
+  CI environments.
+
+## TempleCBE 0.5.4
+
+### Pipeline Robustness, Outer Resampling & Modeling Extensions
+
+- **Multi-Split Evaluation in
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md):**
+  Accepts `nested_cv`, `rset`, or a list of `rsplit` objects in addition
+  to single `rsplit`s, evaluating outer splits $`\times`$ candidate
+  models from `grid` with an `outer_fold` identifier column.
+- **Full Coefficient Reporting & Unnest Helpers
+  ([`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md),
+  [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)):**
+  Added `coefficients = c("all", "nonzero")` (default `"all"`) to
+  preserve all feature coefficients (including those shrunk to 0). Added
+  and exported
+  [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
+  (and alias
+  [`unnest_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md))
+  to unnest coefficients into long tidy format for variable-importance
+  plots.
+- **Row-Level Candidate Model Selection
+  ([`select_candidate_models()`](https://jkylearmstrong.github.io/TempleCBE/reference/select_candidate_models.md)):**
+  Added `by = c("row", "alpha")` (default `"row"`), selecting
+  top-performing alphas appearing in the lowest quantile of individual
+  rows (e.g. `ntile(IBS, 5) == 1L`) in addition to mean-summarized alpha
+  selection.
+- **Wave-Based Parallel Rendering & Upstream Failure Skipping in
+  [`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md):**
+  Plans are partitioned into topological waves. Independent branches
+  within each wave render concurrently in parallel via `future`/`furrr`
+  multisession workers. When `skip_downstream = TRUE` and an upstream
+  node fails, dependent downstream reports are skipped with status
+  `"skipped_upstream_failure"` while independent branches continue
+  rendering in parallel.
+- **Full Rerun Shorthand (`render(rerun = "full")`):** Added
+  `rerun = c("none", "full")` shorthand; specifying `rerun = "full"`
+  sets `only_stale = FALSE` and `cache = "refresh"`.
+- **Parallel Optimization & Options in
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md):**
+  Re-enabled and extended `parallel = FALSE` and tidymodels-compatible
+  `parallel_over = c("resamples", "everything")` to evaluate internal CV
+  folds concurrently via
+  [`furrr::future_map2()`](https://furrr.futureverse.org/reference/future_map2.html)
+  when enabled.
+- **Clean Parameter Namespace
+  ([`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)):**
+  Removed interception of `tune_method` as an alias for `tune_engine`,
+  avoiding clashes with `nested_cv_coxnet(tune_method = ...)`.
+- **Strict Mode & Backend Selection in
+  [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md):**
+  Added `docx_strict` (default `FALSE`) and `docx_backend` (default
+  `"auto"`). Under `docx_strict = TRUE`, packaging halts with an
+  actionable error if no PDF-to-DOCX conversion backend is available or
+  if conversion fails. Custom `docx_from_pdf` callback errors propagate
+  directly without being swallowed.
+- **Legacy `cv.glmnet` Tuning Reproduction in
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md):**
+  Added `tune_engine = c("yardstick", "cv.glmnet")` (default
+  `"yardstick"`). Allows historical reproduction of pre-0.3 penalty
+  tuning across un-grouped intervals with a once-per-session advisory
+  warning.
+- **Test Coverage:** Added comprehensive unit tests for
+  [`tune_best_glmnet_workflow()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_best_glmnet_workflow.md),
+  [`write_run_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_run_manifest.md),
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+  multi-split evaluation,
+  [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md),
+  `select_candidate_models(by = "row")`, wave-based parallel
+  `render(skip_downstream = TRUE)`, `glmnet_IBS(parallel = ...)`, and
+  `zip_reports(docx_strict = TRUE)`.
+
+## TempleCBE 0.5.3
+
+### Core Modeling & Statistical Features
+
+#### P0 — Computational Graph Rerun & Censoring Weights
+
+- **Restored `censoring_weights = "none"` in
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md):**
+  Restored unweighted Integrated Brier Score computation with a
+  once-per-session advisory warning
+  (`rlang::warn(..., .frequency = "once")`), allowing legacy model
+  reproduction and direct comparison against IPCW.
+- **Dual Censoring Weights Comparison
+  ([`compare_censoring_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.md)):**
+  Evaluates models across identical outer grids under both `"none"` and
+  `"ipcw"`, returning tidy per-model IBS side by side along with rank
+  agreement metrics (Spearman and Kendall rank correlations).
+- **Graph-Driven Full Rerun
+  ([`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md),
+  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)):**
+  Added `only_stale = FALSE` support to force full pipeline reruns;
+  `from` and `to` topological node range filtering; `dry_run = TRUE`
+  execution planning; restriction of
+  [`controls_datasets()`](https://jkylearmstrong.github.io/TempleCBE/reference/controls_datasets.md)
+  to PDF with automatic DOCX derivation
+  ([`convert_pdf_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdf_to_docx.md));
+  fine-grained cache control (`cache = c("keep", "refresh", "stale")`);
+  and failure recovery (`on_error = c("continue", "stop")`,
+  `resume = <previous_result>`). Exported
+  [`is_stale()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_stale.md).
+- **Seeded Draws in Hyperparameter Tuning
+  ([`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md),
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)):**
+  Added `seed` parameter with caller RNG preservation (`local_seed()`)
+  for deterministic random alpha and feature subset draws across
+  distributed `future` worker clusters.
+
+#### P1 — Pipeline Speed, Diagnostics & Outer Fold Helpers
+
+- **Run Manifest & renv Guard
+  ([`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md)):**
+  Emits structured `render_manifest.json` recording TempleCBE version,
+  git commit hash, package versions, seed, and per-document wall times.
+  Automatically validates `renv` status against `renv.lock` when active,
+  with option suppression (`templecbe_suppress_renv_warning`).
+- **Pipeline Graph Serialization
+  ([`save_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md),
+  [`load_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)):**
+  Serializes computational pipeline objects while refreshing file
+  modification times (`update_mtime = TRUE`) to eliminate stale cache
+  artifacts.
+- **Tuning Diagnostics Family (`R/tune_diagnostics.R`):** Added
+  [`fit_ibs_mixed_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_ibs_mixed_model.md)
+  (dynamic mixed model fitting without hard-coded regression equations),
+  [`plot_tune_alpha_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_alpha_ibs.md),
+  [`plot_tune_lambda_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_lambda_ibs.md),
+  [`plot_tune_ibs_by_resample()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_ibs_by_resample.md),
+  [`plot_tune_coef_boxplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_coef_boxplot.md),
+  [`tbl_tune_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_alpha.md),
+  and
+  [`tbl_tune_coef()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_coef.md).
+- **Outer-Fold Workflow Helpers
+  ([`select_candidate_models()`](https://jkylearmstrong.github.io/TempleCBE/reference/select_candidate_models.md),
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)):**
+  Simplifies outer-fold candidate model extraction and automated
+  evaluation via `future_pmap(glmnet_IBS)`.
+- **Diagram Visualization Controls
+  ([`visualize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline.md),
+  [`export_pipeline_diagram()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_pipeline_diagram.md)):**
+  Added controls for font size, node size, orientation (`TB`, `LR`), and
+  node/rank separation. Exported
+  [`export_pipeline_diagram()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_pipeline_diagram.md)
+  to render Word-page-optimized static SVG, PDF, or PNG figures.
+- **Nested CV vs. Random-Alpha Documentation & Verification:** Verified
+  [`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  with `group_bootstraps` inner resamples on start-stop counting process
+  data with `patient_id` clustering, adding comprehensive documentation
+  and vignette guidance distinguishing nested CV generalization auditing
+  from random-alpha model selection.
+
+#### P2 — Duplication Removal & Presentation Helpers
+
+- **Correlation Toolkit (`R/corr_test_all.R`):** Added
+  [`correlated_pairs_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlated_pairs_table.md),
+  [`plot_corr_scatter()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_corr_scatter.md),
+  and
+  [`plot_rank_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_rank_heatmap.md).
+- **Cutpoint Optimization (`R/km_cutpoints.R`):** Added
+  [`km_cutpoint_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_search.md),
+  [`plot_km_cutpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_km_cutpoints.md),
+  and
+  [`km_cutpoint_time_varying()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_time_varying.md)
+  for right-censored and counting process cohorts.
+- **Composite Prognostic Indices (`R/composite_index.R`):** Added
+  [`center()`](https://jkylearmstrong.github.io/TempleCBE/reference/center.md),
+  [`compute_composite_index()`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_composite_index.md),
+  and
+  [`index_variable_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/index_variable_table.md).
+- **Imputation Quality Auditing (`R/imputation_diagnostics.R`):** Added
+  [`compare_imputed_ecdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_imputed_ecdf.md),
+  [`test_imputed_distributions()`](https://jkylearmstrong.github.io/TempleCBE/reference/test_imputed_distributions.md),
+  [`plot_imputed_ridgeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputed_ridgeline.md),
+  and
+  [`tune_impute_numeric()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_impute_numeric.md).
+- **Safe Mixed Model Fitting (`R/lmer_safely.R`):** Added
+  [`fit_lmer_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_lmer_safely.md)
+  with graceful fallback to
+  [`stats::lm()`](https://rdrr.io/r/stats/lm.html) upon convergence or
+  singularity failure.
+- **Presentation & Excel Helpers (`R/label_helpers.R`):** Added
+  [`pretty_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/pretty_name.md),
+  [`excel_colnames()`](https://jkylearmstrong.github.io/TempleCBE/reference/excel_colnames.md),
+  and
+  [`copy_var_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_var_labels.md).
+- **Tidymodels Workflow & Importance (`R/workflow_tuning.R`):** Added
+  [`tune_best_glmnet_workflow()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_best_glmnet_workflow.md),
+  [`summarize_dalex_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_dalex_importance.md),
+  [`plot_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_permutation_importance.md),
+  and
+  [`tbl_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_permutation_importance.md).
+- **Plot Deck Extensions (`R/plot_deck.R`):** Added `risk_table` and
+  `p_value` options to
+  [`plot_survival_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_survival_km.md),
+  and arbitrary color scale support to
+  [`plot_dynamic_trajectory()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_dynamic_trajectory.md).
+- **Parameterized Stage Report Template
+  (`inst/templates/stage_report_template.qmd`):** Added template
+  collapsing duplicate impute/non-impute report pairs.
+- **Naming Trap Clarifications:** Clarified
+  [`find_correlation()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_correlation.md)
+  (drops columns) vs
+  [`correlated_pairs_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlated_pairs_table.md)
+  (preserves pairs), and
+  [`normalize_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/normalize_safely.md)
+  (normalizes paths) vs
+  [`min_max_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/min_max_norm.md)
+  (scales numbers).
+
 ## TempleCBE 0.5.2
 
 ### Security & Privacy Hardening

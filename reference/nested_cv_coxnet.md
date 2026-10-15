@@ -167,6 +167,28 @@ The outer metrics describe the procedure, not one final model: the
 chosen settings can differ between outer splits. To fit a final model,
 run \[cv_coxnet()\] on all the data.
 
+## Nested CV vs Random-Alpha Design
+
+It is essential to select the appropriate validation and tuning workflow
+for your project goal:
+
+- **Nested Cross-Validation (`nested_cv_coxnet`)**: Designed for
+  *unbiased generalization performance estimation* of the end-to-end
+  modeling pipeline. Hyperparameters (`mixture` and `penalty`) are
+  selected on inner resamples (e.g., using \[rsample::group_vfold_cv()\]
+  or \[rsample::group_bootstraps()\]), and the refit model is scored on
+  completely held-out outer assessment subjects. The chosen parameters
+  may differ across outer splits, reflecting pipeline sensitivity and
+  guarding against optimization bias.
+
+- **Random-Alpha Exploration (`tune_over_alpha` /
+  `summarize_tune_results`)**: Designed for *exploratory hyperparameter
+  tuning and model selection* across a continuous spectrum of \\\alpha
+  \in \[0, 1\]\\. This workflow is ideal for comparing penalty
+  properties (Ridge vs Lasso vs Elastic Net), profiling coefficient
+  shrinkage paths across resamples, and choosing a single final model
+  specification for reporting or deployment.
+
 ## See also
 
 \[cv_coxnet()\], \[coxnet()\], \[cbe_loco_mp_coxnet()\],

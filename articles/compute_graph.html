@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>03. Visualizing Computational Pipeline Dependencies</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/vignettes/compute_graph.Rmd" class="external-link"><code>vignettes/compute_graph.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/vignettes/compute_graph.Rmd" class="external-link"><code>vignettes/compute_graph.Rmd</code></a></small>
       <div class="d-none name"><code>compute_graph.Rmd</code></div>
     </div>
 
@@ -490,11 +490,11 @@ case of “this <code>.qmd</code> renders to a PDF of the same name.”</p>
 <span><span class="va">report</span></span>
 <span><span class="co">#&gt; S4 object of class: FileOutputs </span></span>
 <span><span class="co">#&gt;   Name:        t_test_example </span></span>
-<span><span class="co">#&gt;   Path:        /home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/templates/t_test_example.qmd </span></span>
+<span><span class="co">#&gt;   Path:        /tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/templates/t_test_example.qmd </span></span>
 <span><span class="co">#&gt;   Stage:       report </span></span>
 <span><span class="co">#&gt;   Role:        report_source </span></span>
 <span><span class="co">#&gt;   Renders:     TRUE </span></span>
-<span><span class="co">#&gt;   Modified:    2026-10-15 02:54:34 </span></span>
+<span><span class="co">#&gt;   Modified:    2026-10-15 21:53:21.384115 </span></span>
 <span><span class="co">#&gt;   Description: Worked example of a one/two-sample t-test report </span></span>
 <span><span class="co">#&gt;   Dependencies:</span></span>
 <span><span class="co">#&gt;     - t_test_child</span></span>
@@ -515,7 +515,7 @@ interactive look, e.g. in the RStudio Viewer:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/visualize_pipeline.html">visualize_pipeline</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
 <div class="grViz html-widget html-fill-item" id="htmlwidget-ac96cb3ee4656e2e9ec3" style="width:700px;height:432.632880098888px;"></div>
-<script type="application/json" data-for="htmlwidget-ac96cb3ee4656e2e9ec3">{"x":{"diagram":"digraph dependencies {\n  node [shape = box, style = filled];\n  \"t_test_child\" [fillcolor = \"#DDEBF7\", label = \"t_test_child\"];\n  \"t_test_example\" [fillcolor = \"#D4EFDF\", label = \"t_test_example\"];\n  \"t_test_example PDF\" [fillcolor = \"red\", color = \"black\", peripheries = 2, label = \"t_test_example PDF (STALE)\"];\n  \"t_test_child\" -> \"t_test_example\";\n  \"t_test_example\" -> \"t_test_example PDF\";\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script><p>For a document deliverable, <code><a href="../reference/print_pipeline.html">print_pipeline()</a></code> lays the
+<script type="application/json" data-for="htmlwidget-ac96cb3ee4656e2e9ec3">{"x":{"diagram":"digraph dependencies {\n  graph [rankdir = \"TB\", nodesep = 0.5, ranksep = 0.5];\n  node [shape = box, style = filled, fontsize = 12];\n  \"t_test_child\" [fillcolor = \"#DDEBF7\", label = \"t_test_child\"];\n  \"t_test_example\" [fillcolor = \"#D4EFDF\", label = \"t_test_example\"];\n  \"t_test_example PDF\" [fillcolor = \"red\", color = \"black\", peripheries = 2, label = \"t_test_example PDF (STALE)\"];\n  \"t_test_child\" -> \"t_test_example\";\n  \"t_test_example\" -> \"t_test_example PDF\";\n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script><p>For a document deliverable, <code><a href="../reference/print_pipeline.html">print_pipeline()</a></code> lays the
 same graph out with <code>igraph</code>/<code>ggraph</code> and saves it
 as a sized-to-fit PNG:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">

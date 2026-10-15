@@ -46,8 +46,7 @@ A character vector of length \`n\` containing synthetic surnames.
 ``` r
 # Generate 5 random last names
 generate_last_names(5)
-#> [1] "Peninen"       "Nozoun"        "Proakowieberg" "Gaiprais"     
-#> [5] "Freavoland"   
+#> [1] "Docloagrasen" "Hieplair"     "Faivaberg"    "Mohoadriman"  "Steaglosen"  
 
 # Reproducible generation with exclusions
 generate_last_names(3, seed = 1, exclude = c("Madison", "Davison"))

@@ -1,11 +1,9 @@
-# Render Quarto and R Markdown Documents to Multiple Formats With Timing
+# Render Pipeline Documents and Reports
 
-Renders one or more Quarto (`.qmd`) or R Markdown (`.Rmd`) documents to
-multiple output formats (by default both PDF and DOCX, or formats
-defined in YAML or compute graphs) sequentially or in parallel,
-recording execution duration for each document/format combination.
-Useful for workflows where reviewers need a Word (`.docx`) file for
-track changes/edits while publication and archival copies need PDF.
+Dispatches Quarto or R Markdown compilation across single documents,
+directories, or computational pipeline graphs, with support for
+staleness detection, range filtering, cache invalidation, error
+recovery, run manifests, and renv guards.
 
 ## Usage
 
@@ -15,7 +13,19 @@ render(
   formats = getOption("pipeline.default_formats", c("pdf", "docx")),
   pattern = "\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
-  workers = NULL,
+  workers = 1,
+  only_stale = TRUE,
+  from = NULL,
+  to = NULL,
+  dry_run = FALSE,
+  cache = c("keep", "refresh", "stale"),
+  on_error = c("continue", "stop"),
+  resume = NULL,
+  manifest = TRUE,
+  renv_guard = TRUE,
+  seed = NULL,
+  skip_downstream = TRUE,
+  rerun = c("none", "full"),
   ...
 )
 
@@ -24,7 +34,19 @@ render_me(
   formats = getOption("pipeline.default_formats", c("pdf", "docx")),
   pattern = "\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
-  workers = NULL,
+  workers = 1,
+  only_stale = TRUE,
+  from = NULL,
+  to = NULL,
+  dry_run = FALSE,
+  cache = c("keep", "refresh", "stale"),
+  on_error = c("continue", "stop"),
+  resume = NULL,
+  manifest = TRUE,
+  renv_guard = TRUE,
+  seed = NULL,
+  skip_downstream = TRUE,
+  rerun = c("none", "full"),
   ...
 )
 ```
@@ -33,111 +55,94 @@ render_me(
 
 - path:
 
-  Target document(s) to render. Can be:
-
-  - A character string specifying a file path or directory.
-
-  - A character vector of file paths.
-
-  - A list of file paths (e.g. `list("report1.qmd", "report2.Rmd")`).
-
-  - An S4 compute graph object (`FileOutputs` or `FilePath`).
-
-  - A list of compute graph objects, such as a topological render plan
-    returned by
-    [`get_render_plan`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
-    or a pipeline list from
-    [`pipeline_config`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_config.md).
-
-  - A named list or list of lists specifying per-document paths and
-    formats (e.g.
-    `list("report1.qmd" = c("pdf", "docx"), "report2.Rmd" = "html")`).
+  A file path (character), directory, list of files, or list of pipeline
+  objects (\`FilePath\`, \`FileUses\`, \`FileOutputs\`).
 
 - formats:
 
-  Output format(s) to generate. Defaults to
-  `getOption("pipeline.default_formats", c("pdf", "docx"))`. Can be:
-
-  - A character vector of formats (e.g. `c("pdf", "docx")`, `"html"`,
-    `"gfm"`).
-
-  - `"yaml"` or `"auto"` (or `NULL`) to read and render the output
-    formats declared in each document's own YAML frontmatter.
-
-  - Standard shorthand formats (`"pdf"`, `"docx"`, `"html"`, `"gfm"`)
-    are automatically translated to R Markdown equivalents
-    (`"pdf_document"`, `"word_document"`, `"html_document"`,
-    `"github_document"`) when rendering with rmarkdown.
-
-  When a document in a compute graph defines its own deliverable output
-  formats (via
-  [`create_qmd_renderer`](https://jkylearmstrong.github.io/TempleCBE/reference/create_qmd_renderer.md)),
-  those document-level formats override the default `formats`.
+  Character vector of output formats (e.g. \`c("pdf", "docx",
+  "html")\`).
 
 - pattern:
 
-  Optional regular expression to filter files when `path` is a
-  directory. Defaults to `"\.(qmd|Rmd|rmd)$"`.
+  File pattern regex matching documents to render.
 
 - engine:
 
-  Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.
-  When `"auto"`, `.qmd` files are rendered via quarto, and `.Rmd` files
-  are rendered via quarto if available or rmarkdown otherwise.
+  Rendering engine: \`"auto"\` (default), \`"quarto"\`, or
+  \`"rmarkdown"\`.
 
 - workers:
 
-  Integer specifying the number of multisession parallel workers when
-  rendering multiple documents. Defaults to `NULL`, which caps at
-  available cores minus one. Ignored (rendering falls back to
-  sequential) when the future/furrr packages are not installed.
+  Number of parallel workers for concurrent rendering via
+  \`future\`/\`furrr\`. Defaults to \`1\` (sequential). Set to \`\> 1\`
+  to initialize multisession workers, or \`NULL\` to use an existing
+  \`future::plan()\` without altering it.
+
+- only_stale:
+
+  Logical. When \`TRUE\` (default), only out-of-date documents are
+  rendered. When \`FALSE\`, performs a full graph rerun.
+
+- from:
+
+  Optional starting node name or index in the topological plan.
+
+- to:
+
+  Optional ending node name or index in the topological plan.
+
+- dry_run:
+
+  Logical. When \`TRUE\`, prints the ordered render plan without
+  executing.
+
+- cache:
+
+  Cache handling: \`"keep"\` (default), \`"refresh"\` (wipes \`\_cache\`
+  and \`\_files\`), or \`"stale"\`.
+
+- on_error:
+
+  Behavior upon error: \`"continue"\` (default) or \`"stop"\`.
+
+- resume:
+
+  Optional data frame of previous render results to resume from.
+
+- manifest:
+
+  Logical. When `TRUE` (default), writes a `render_manifest.json` beside
+  rendered outputs containing TempleCBE version, git commit hash,
+  package versions, RNG seed, future plan, and per-document wall time.
+
+- renv_guard:
+
+  Logical. When `TRUE` (default), verifies that renv is active if an
+  `renv.lock` exists, and warns of any package version discrepancies.
+
+- seed:
+
+  Optional integer seed for reproducible document execution.
+
+- skip_downstream:
+
+  Logical. When \`TRUE\` (default), if an upstream node fails during
+  pipeline rendering (with \`on_error = "continue"\`), all dependent
+  downstream reports are skipped and marked with status
+  \`"skipped_upstream_failure"\` to prevent compiling on stale data.
+
+- rerun:
+
+  Rerun strategy shorthand: \`"none"\` (default, uses \`only_stale\` and
+  \`cache\` settings) or \`"full"\` (forces full graph execution with
+  fresh caches, setting \`only_stale = FALSE\` and \`cache =
+  "refresh"\`).
 
 - ...:
 
-  Additional options passed directly to the rendering backend
-  ([`quarto::quarto_render`](https://quarto-dev.github.io/quarto-r/reference/quarto_render.html)
-  or
-  [`rmarkdown::render`](https://pkgs.rstudio.com/rmarkdown/reference/render.html)),
-  such as `params`, `execute_params`, `output_dir`, `clean`, or `quiet`.
+  Additional arguments passed to rendering engines.
 
 ## Value
 
-A data frame containing:
-
-- file:
-
-  Base filename of the rendered document
-
-- output:
-
-  Output format (e.g., "pdf", "docx")
-
-- duration:
-
-  Execution time in seconds
-
-- status:
-
-  "success" or error condition message
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-# Render a single Quarto report to both PDF and DOCX
-render(here::here("analysis", "report.qmd"))
-
-# Render a single R Markdown report to both PDF and Word
-render(here::here("analysis", "report.Rmd"))
-
-# Render using formats declared in document's own YAML
-render("analysis/report.qmd", formats = "yaml")
-
-# Render a compute graph render plan
-# plan <- get_render_plan(pipeline)
-# render(plan)
-
-# Render all QMD and Rmd reports in a directory in parallel
-render("analysis/")
-} # }
-```
+A data frame of rendered files, output formats, durations, and status.

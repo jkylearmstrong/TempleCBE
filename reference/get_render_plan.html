@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,7 +45,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Get the topologically sorted list of QMDs that need to be re-rendered</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/compute_graph.R" class="external-link"><code>R/compute_graph.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/compute_graph.R" class="external-link"><code>R/compute_graph.R</code></a></small>
       <div class="d-none name"><code>get_render_plan.Rd</code></div>
     </div>
 
@@ -55,7 +55,13 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_render_plan</span><span class="op">(</span><span class="va">all_objects</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_render_plan</span><span class="op">(</span></span>
+<span>  <span class="va">all_objects</span>,</span>
+<span>  only_stale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  from <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  to <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -64,6 +70,27 @@
 
 <dl><dt id="arg-all-objects">all_objects<a class="anchor" aria-label="anchor" href="#arg-all-objects"></a></dt>
 <dd><p>The full list of FilePath, FileUses, and FileOutputs objects.</p></dd>
+
+
+<dt id="arg-only-stale">only_stale<a class="anchor" aria-label="anchor" href="#arg-only-stale"></a></dt>
+<dd><p>Logical. When `TRUE` (default), plans only documents that are
+out of date or affected by upstream changes. When `FALSE`, plans all renderable
+nodes in topological dependency order (for full pipeline reruns).</p></dd>
+
+
+<dt id="arg-from">from<a class="anchor" aria-label="anchor" href="#arg-from"></a></dt>
+<dd><p>Optional node name or 1-based integer index in the topological plan
+to start execution from.</p></dd>
+
+
+<dt id="arg-to">to<a class="anchor" aria-label="anchor" href="#arg-to"></a></dt>
+<dd><p>Optional node name or 1-based integer index in the topological plan
+to end execution at.</p></dd>
+
+
+<dt id="arg-dry-run">dry_run<a class="anchor" aria-label="anchor" href="#arg-dry-run"></a></dt>
+<dd><p>Logical. When `TRUE`, prints the ordered plan to console without
+executing and returns the planned objects invisibly.</p></dd>
 
 </dl></div>
     <div class="section level2">

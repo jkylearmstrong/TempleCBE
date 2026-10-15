@@ -15,7 +15,9 @@ tune_over_alpha(
   num_fixed = 6,
   alphas = NULL,
   formulas = NULL,
-  progress = FALSE
+  progress = FALSE,
+  seed = NULL,
+  checkpoint_dir = NULL
 )
 ```
 
@@ -52,6 +54,16 @@ tune_over_alpha(
 - progress:
 
   Show a progress bar.
+
+- seed:
+
+  Optional integer seed for reproducible random draws of \`alpha\` and
+  formulas.
+
+- checkpoint_dir:
+
+  Optional directory path to save per-alpha checkpoint files. Finished
+  fits are loaded from disk on rerun, skipping recomputation.
 
 ## Value
 

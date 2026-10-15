@@ -5,8 +5,8 @@ to see their documentation.
 
 - dplyr:
 
-  [`%>%`](https://magrittr.tidyverse.org/reference/pipe.html)
+  [`%>%`](https://dplyr.tidyverse.org/reference/reexports.html)
 
 - writexl:
 
-  [`write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  [`write_xlsx`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)

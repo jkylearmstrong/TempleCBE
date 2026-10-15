@@ -15,7 +15,7 @@ files alongside them, and zips the result."><meta property="og:image" content="h
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,7 @@ files alongside them, and zips the result."><meta property="og:image" content="h
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Package Multiple Already-Rendered Reports Into an Indexed Zip</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/zip_reports.R" class="external-link"><code>R/zip_reports.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/zip_reports.R" class="external-link"><code>R/zip_reports.R</code></a></small>
       <div class="d-none name"><code>zip_reports.Rd</code></div>
     </div>
 
@@ -73,7 +73,9 @@ files alongside them, and zips the result.</p>
 <span>  data_deliverables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  zip_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  docx_from_pdf <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  docx_from_pdf <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  docx_strict <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  docx_backend <span class="op">=</span> <span class="st">"auto"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -132,8 +134,20 @@ The function counts as having failed when it returns <code>FALSE</code> (as
 <code><a href="convert_pdf_to_docx.html">convert_pdf_to_docx</a></code> does) or when no DOCX at least as new as
 the PDF is there afterwards; a warning says so and no DOCX is shipped for
 that report. Any other return value is taken as success. In the index, the
-DOCX cell of a report whose PDF exists but that has no DOCX to ship reads
-<code>"not converted"</code>.</p></dd>
+DOCX cell of a report whose PDF exists but that has no DOCX to ship reads</p></dd>
+
+
+<dt id="arg-docx-strict">docx_strict<a class="anchor" aria-label="anchor" href="#arg-docx-strict"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, fails loudly (stops execution with an error)
+if no PDF-to-DOCX conversion backend is available or if conversion fails to produce a current
+<code>.docx</code> for a requested report. When <code>FALSE</code> (default), warns and skips missing/stale DOCXs.
+Pass <code>docx_strict = TRUE</code> explicitly when packaging deliverables that must strictly guarantee
+current DOCX files.</p></dd>
+
+
+<dt id="arg-docx-backend">docx_backend<a class="anchor" aria-label="anchor" href="#arg-docx-backend"></a></dt>
+<dd><p>Conversion backend passed to <code><a href="convert_pdf_to_docx.html">convert_pdf_to_docx</a></code>:
+<code>"auto"</code> (default), <code>"python"</code>, <code>"libreoffice"</code>, or <code>"word_com"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

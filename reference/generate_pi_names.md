@@ -66,11 +66,11 @@ A character vector of length \`n\` (or a single character string if \`n
 
 ``` r
 generate_pi_names(1)
-#> [1] "Rose"
+#> [1] "Hunter"
 generate_pi_names(3, format = "full_name")
-#> [1] "Bella Medina"  "Kathryn Burns" "Kathryn Henry"
+#> [1] "Jonathan Kennedy" "Mason Patterson"  "Jack Wallace"    
 generate_pi_names(3, format = "token")
-#> [1] "PI_399f71e236e98704" "PI_27f13c84be76704e" "PI_86aa6d6fe584345d"
+#> [1] "PI_c9c1ae1aec103ef5" "PI_8a8c39aa9749b4a2" "PI_5cbba6feb191ceb8"
 generate_pi_names(3, format = "token", n_chars = 8)
-#> [1] "PI_f9265ca3" "PI_b1d92760" "PI_c1f8cfb6"
+#> [1] "PI_528bb4ea" "PI_07dc2e48" "PI_82339b80"
 ```

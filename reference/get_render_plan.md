@@ -5,7 +5,13 @@ Get the topologically sorted list of QMDs that need to be re-rendered
 ## Usage
 
 ``` r
-get_render_plan(all_objects)
+get_render_plan(
+  all_objects,
+  only_stale = TRUE,
+  from = NULL,
+  to = NULL,
+  dry_run = FALSE
+)
 ```
 
 ## Arguments
@@ -13,6 +19,28 @@ get_render_plan(all_objects)
 - all_objects:
 
   The full list of FilePath, FileUses, and FileOutputs objects.
+
+- only_stale:
+
+  Logical. When \`TRUE\` (default), plans only documents that are out of
+  date or affected by upstream changes. When \`FALSE\`, plans all
+  renderable nodes in topological dependency order (for full pipeline
+  reruns).
+
+- from:
+
+  Optional node name or 1-based integer index in the topological plan to
+  start execution from.
+
+- to:
+
+  Optional node name or 1-based integer index in the topological plan to
+  end execution at.
+
+- dry_run:
+
+  Logical. When \`TRUE\`, prints the ordered plan to console without
+  executing and returns the planned objects invisibly.
 
 ## Value
 

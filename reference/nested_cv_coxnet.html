@@ -15,7 +15,7 @@ is scored on the outer assessment set, which played no part in tuning."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,7 @@ is scored on the outer assessment set, which played no part in tuning."><meta pr
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Nested Cross-Validation of a Penalized Cox Model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/nested_cv_coxnet.R" class="external-link"><code>R/nested_cv_coxnet.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/nested_cv_coxnet.R" class="external-link"><code>R/nested_cv_coxnet.R</code></a></small>
       <div class="d-none name"><code>nested_cv_coxnet.Rd</code></div>
     </div>
 
@@ -219,6 +219,20 @@ no subject left is an error.</p>
 settings can differ between outer splits. To fit a final model, run
 [cv_coxnet()] on all the data.</p>
     </div>
+    <div class="section level2">
+    <h2 id="nested-cv-vs-random-alpha-design">Nested CV vs Random-Alpha Design<a class="anchor" aria-label="anchor" href="#nested-cv-vs-random-alpha-design"></a></h2>
+
+
+<p>It is essential to select the appropriate validation and tuning workflow for your project goal:</p><ul><li><p><strong>Nested Cross-Validation (<code>nested_cv_coxnet</code>)</strong>: Designed for <em>unbiased generalization performance estimation</em>
+    of the end-to-end modeling pipeline. Hyperparameters (<code>mixture</code> and <code>penalty</code>) are selected on inner resamples
+    (e.g., using [rsample::group_vfold_cv()] or [rsample::group_bootstraps()]), and the refit model is scored on completely held-out
+    outer assessment subjects. The chosen parameters may differ across outer splits, reflecting pipeline sensitivity and guarding
+    against optimization bias.</p></li>
+<li><p><strong>Random-Alpha Exploration (<code>tune_over_alpha</code> / <code>summarize_tune_results</code>)</strong>: Designed for
+    <em>exploratory hyperparameter tuning and model selection</em> across a continuous spectrum of \(\alpha \in [0, 1]\). This workflow
+    is ideal for comparing penalty properties (Ridge vs Lasso vs Elastic Net), profiling coefficient shrinkage paths across resamples,
+    and choosing a single final model specification for reporting or deployment.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>[cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()], [tune_race_survival()]</p></div>

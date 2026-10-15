@@ -21,9 +21,16 @@ normalize_safely(x)
 
 A character vector of normalized paths, named by the inputs.
 
+## Details
+
+\*\*Note:\*\* \`normalize_safely()\` normalizes \*filesystem paths\*
+using \[normalizePath()\]. It does \*\*not\*\* scale or normalize
+numeric numbers; for min-max scaling of numeric vectors, see
+\[min_max_norm()\].
+
 ## See also
 
-\[scan_data_io()\]
+\[scan_data_io()\], \[min_max_norm()\]
 
 ## Examples
 

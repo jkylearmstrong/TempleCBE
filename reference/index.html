@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -473,6 +473,125 @@
 
         <dt>
 
+          <code><a href="compare_censoring_weights.html">compare_censoring_weights()</a></code>
+
+        </dt>
+        <dd>Compare Model Performance Under Unweighted and IPCW Censoring Weights</dd>
+
+        <dt>
+
+          <code><a href="score_outer.html">score_outer()</a></code>
+
+        </dt>
+        <dd>Score Candidate Models on Outer Resampling Split(s)</dd>
+
+        <dt>
+
+          <code><a href="select_candidate_models.html">select_candidate_models()</a></code>
+
+        </dt>
+        <dd>Select Candidate Models From Tuning Results</dd>
+
+        <dt>
+
+          <code><a href="tidy_outer_coefficients.html">tidy_outer_coefficients()</a></code> <code><a href="tidy_outer_coefficients.html">unnest_outer_coefficients()</a></code>
+
+        </dt>
+        <dd>Tidy Outer Model Coefficients into Long Format</dd>
+
+        <dt>
+
+          <code><a href="fit_ibs_mixed_model.html">fit_ibs_mixed_model()</a></code>
+
+        </dt>
+        <dd>Fit a Mixed-Effects Model for Integrated Brier Score Against Alpha</dd>
+
+        <dt>
+
+          <code><a href="fit_lmer_safely.html">fit_lmer_safely()</a></code>
+
+        </dt>
+        <dd>Fit a Linear Mixed-Effects Model With Safe Fallback</dd>
+
+        <dt>
+
+          <code><a href="plot_tune_alpha_ibs.html">plot_tune_alpha_ibs()</a></code>
+
+        </dt>
+        <dd>Plot Integrated Brier Score Against Alpha With Dynamic Model Fit</dd>
+
+        <dt>
+
+          <code><a href="plot_tune_lambda_ibs.html">plot_tune_lambda_ibs()</a></code>
+
+        </dt>
+        <dd>Plot Penalty Lambda Versus Integrated Brier Score</dd>
+
+        <dt>
+
+          <code><a href="plot_tune_coef_boxplot.html">plot_tune_coef_boxplot()</a></code>
+
+        </dt>
+        <dd>Plot Coefficient Estimates Distribution Across Tuning Resamples</dd>
+
+        <dt>
+
+          <code><a href="plot_tune_ibs_by_resample.html">plot_tune_ibs_by_resample()</a></code>
+
+        </dt>
+        <dd>Plot Integrated Brier Score Distribution Across Resampling Splits</dd>
+
+        <dt>
+
+          <code><a href="tbl_tune_alpha.html">tbl_tune_alpha()</a></code>
+
+        </dt>
+        <dd>Summary Table of Tuning Performance Across Alpha Values</dd>
+
+        <dt>
+
+          <code><a href="tbl_tune_coef.html">tbl_tune_coef()</a></code>
+
+        </dt>
+        <dd>Summary Table of Coefficient Stability Across Tuning Resamples</dd>
+
+        <dt>
+
+          <code><a href="tbl_censoring_comparison.html">tbl_censoring_comparison()</a></code>
+
+        </dt>
+        <dd>Render Censoring Weight Sensitivity and Rank Agreement Table</dd>
+
+        <dt>
+
+          <code><a href="compare_runs.html">compare_runs()</a></code>
+
+        </dt>
+        <dd>Compare and Diff Outer-Fold Runs Across Platforms With Tolerance</dd>
+
+        <dt>
+
+          <code><a href="compare_tuning_runs.html">compare_tuning_runs()</a></code>
+
+        </dt>
+        <dd>Compare and Summarize Two Tuning Runs</dd>
+
+        <dt>
+
+          <code><a href="tune_diagnostics.html">tune_diagnostics</a></code>
+
+        </dt>
+        <dd>Tuning Diagnostics and Visualization Family</dd>
+
+        <dt>
+
+          <code><a href="workflow_tuning.html">workflow_tuning</a></code>
+
+        </dt>
+        <dd>Tidymodels Workflow Tuning and Feature Importance Summaries</dd>
+
+        <dt>
+
           <code><a href="racing_workflows.html">racing_workflows</a></code>
 
         </dt>
@@ -658,6 +777,34 @@
 
         </dt>
         <dd>Fit the Configuration Ranked `.rank` in a Workflow Set</dd>
+
+        <dt>
+
+          <code><a href="tune_best_glmnet_workflow.html">tune_best_glmnet_workflow()</a></code>
+
+        </dt>
+        <dd>Select and Finalize Best Penalized Cox Workflow</dd>
+
+        <dt>
+
+          <code><a href="summarize_dalex_importance.html">summarize_dalex_importance()</a></code>
+
+        </dt>
+        <dd>Extract and Summarize Permutation Variable Importance</dd>
+
+        <dt>
+
+          <code><a href="plot_permutation_importance.html">plot_permutation_importance()</a></code>
+
+        </dt>
+        <dd>Plot Permutation Variable Importance</dd>
+
+        <dt>
+
+          <code><a href="tbl_permutation_importance.html">tbl_permutation_importance()</a></code>
+
+        </dt>
+        <dd>Summary Table of Permutation Variable Importance</dd>
       </dl></div><div class="section level2">
       <h2 id="missing-data-imputation">Missing Data Imputation<a class="anchor" aria-label="anchor" href="#missing-data-imputation"></a></h2>
 
@@ -709,6 +856,41 @@
 
         </dt>
         <dd>Largest `mtry` `missRanger` Will Accept For a Data Set</dd>
+
+        <dt>
+
+          <code><a href="tune_impute_numeric.html">tune_impute_numeric()</a></code>
+
+        </dt>
+        <dd>Benchmark Numeric Imputation Methods Using Relative Squared Error (RSE)</dd>
+
+        <dt>
+
+          <code><a href="compare_imputed_ecdf.html">compare_imputed_ecdf()</a></code>
+
+        </dt>
+        <dd>Compare Original vs Imputed Empirical Cumulative Distribution Functions</dd>
+
+        <dt>
+
+          <code><a href="test_imputed_distributions.html">test_imputed_distributions()</a></code>
+
+        </dt>
+        <dd>Statistical Distribution Comparison of Original vs Imputed Values</dd>
+
+        <dt>
+
+          <code><a href="plot_imputed_ridgeline.html">plot_imputed_ridgeline()</a></code>
+
+        </dt>
+        <dd>Ridgeline Density Comparison of Original vs Imputed Distributions</dd>
+
+        <dt>
+
+          <code><a href="imputation_diagnostics.html">imputation_diagnostics</a></code>
+
+        </dt>
+        <dd>Imputation Quality Auditing and Method Comparison Toolkit</dd>
       </dl></div><div class="section level2">
       <h2 id="statistical-testing-eda">Statistical Testing &amp; EDA<a class="anchor" aria-label="anchor" href="#statistical-testing-eda"></a></h2>
 
@@ -784,6 +966,27 @@
 
         <dt>
 
+          <code><a href="correlated_pairs_table.html">correlated_pairs_table()</a></code>
+
+        </dt>
+        <dd>Formatted Table of Highly Correlated Variable Pairs</dd>
+
+        <dt>
+
+          <code><a href="plot_corr_scatter.html">plot_corr_scatter()</a></code>
+
+        </dt>
+        <dd>Scatter Plot of Two Correlated Variables With Regression Fit and Statistics</dd>
+
+        <dt>
+
+          <code><a href="plot_rank_heatmap.html">plot_rank_heatmap()</a></code>
+
+        </dt>
+        <dd>Heatmap of Variable or Model Ranks Across Resamples or Metrics</dd>
+
+        <dt>
+
           <code><a href="distribution_test.html">distribution_test()</a></code>
 
         </dt>
@@ -823,6 +1026,43 @@
 
         </dt>
         <dd>P-value Significance Stars</dd>
+      </dl></div><div class="section level2">
+      <h2 id="composite-clinical-biomarker-indices">Composite Clinical &amp; Biomarker Indices<a class="anchor" aria-label="anchor" href="#composite-clinical-biomarker-indices"></a></h2>
+
+      <div class="section-desc"><p>Construct composite indices, center variables, and generate summary tables and correlation structures of index components.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="compute_composite_index.html">compute_composite_index()</a></code>
+
+        </dt>
+        <dd>Compute a Composite Clinical or Biomarker Index</dd>
+
+        <dt>
+
+          <code><a href="composite_index.html">composite_index</a></code>
+
+        </dt>
+        <dd>Composite Index Construction and Variable Correlation Table</dd>
+
+        <dt>
+
+          <code><a href="center.html">center()</a></code>
+
+        </dt>
+        <dd>Center a Numeric Vector</dd>
+
+        <dt>
+
+          <code><a href="index_variable_table.html">index_variable_table()</a></code>
+
+        </dt>
+        <dd>Summary Table of Composite Index Component Variables</dd>
       </dl></div><div class="section level2">
       <h2 id="pca-dimensionality-reduction">PCA &amp; Dimensionality Reduction<a class="anchor" aria-label="anchor" href="#pca-dimensionality-reduction"></a></h2>
 
@@ -1057,7 +1297,7 @@
           <code><a href="render.html">render()</a></code> <code><a href="render.html">render_me()</a></code>
 
         </dt>
-        <dd>Render Quarto and R Markdown Documents to Multiple Formats With Timing</dd>
+        <dd>Render Pipeline Documents and Reports</dd>
 
         <dt>
 
@@ -1065,6 +1305,27 @@
 
         </dt>
         <dd>Package Multiple Already-Rendered Reports Into an Indexed Zip</dd>
+
+        <dt>
+
+          <code><a href="write_run_manifest.html">write_run_manifest()</a></code>
+
+        </dt>
+        <dd>Write a Run Manifest JSON Beside Render Outputs</dd>
+
+        <dt>
+
+          <code><a href="check_renv_guard.html">check_renv_guard()</a></code>
+
+        </dt>
+        <dd>Guard Against Inactive renv or Lockfile Disagreements</dd>
+
+        <dt>
+
+          <code><a href="extract_yaml_formats.html">extract_yaml_formats()</a></code>
+
+        </dt>
+        <dd>Extract Output Formats From Document YAML Front Matter</dd>
 
         <dt>
 
@@ -1217,10 +1478,45 @@
 
         <dt>
 
+          <code><a href="is_stale.html">is_stale()</a></code>
+
+        </dt>
+        <dd>Check if an Output File is Stale</dd>
+
+        <dt>
+
+          <code><a href="pipeline_storage.html">save_pipeline()</a></code> <code><a href="pipeline_storage.html">load_pipeline()</a></code>
+
+        </dt>
+        <dd>Save and Load Computational Pipeline Graph</dd>
+
+        <dt>
+
           <code><a href="join_pipelines.html">join_pipelines()</a></code>
 
         </dt>
         <dd>Join two computational pipeline graphs</dd>
+
+        <dt>
+
+          <code><a href="dedupe_pipeline.html">dedupe_pipeline()</a></code>
+
+        </dt>
+        <dd>Deduplicate Pipeline Objects by Name</dd>
+
+        <dt>
+
+          <code><a href="refresh_pipeline.html">refresh_pipeline()</a></code>
+
+        </dt>
+        <dd>Refresh Modification Timestamps Across Pipeline Objects</dd>
+
+        <dt>
+
+          <code><a href="export_pipeline_diagram.html">export_pipeline_diagram()</a></code>
+
+        </dt>
+        <dd>Export Pipeline Diagram to Static Vector or Raster Format</dd>
 
         <dt>
 
@@ -1530,6 +1826,34 @@
 
         </dt>
         <dd>Print Method for cbe_km Object</dd>
+
+        <dt>
+
+          <code><a href="km_cutpoints.html">km_cutpoints</a></code>
+
+        </dt>
+        <dd>Kaplan-Meier Optimal Cutpoint Search and Visualization</dd>
+
+        <dt>
+
+          <code><a href="km_cutpoint_search.html">km_cutpoint_search()</a></code>
+
+        </dt>
+        <dd>Search for Optimal Survival Cutpoint via Log-Rank Separation</dd>
+
+        <dt>
+
+          <code><a href="km_cutpoint_time_varying.html">km_cutpoint_time_varying()</a></code>
+
+        </dt>
+        <dd>Optimal Survival Cutpoint Search for Time-Varying Counting Process Data</dd>
+
+        <dt>
+
+          <code><a href="plot_km_cutpoints.html">plot_km_cutpoints()</a></code>
+
+        </dt>
+        <dd>Plot Cutpoint Search Profile</dd>
 
         <dt>
 
@@ -1899,6 +2223,34 @@
 
         </dt>
         <dd>Generate Excel-Compatible Column Names</dd>
+
+        <dt>
+
+          <code><a href="excel_colnames.html">excel_colnames()</a></code>
+
+        </dt>
+        <dd>Sanitize Column Names for Excel Worksheets</dd>
+
+        <dt>
+
+          <code><a href="pretty_name.html">pretty_name()</a></code>
+
+        </dt>
+        <dd>Convert Raw Variable Names to Human-Readable Display Labels</dd>
+
+        <dt>
+
+          <code><a href="copy_var_labels.html">copy_var_labels()</a></code>
+
+        </dt>
+        <dd>Copy Variable Labels and Attributes Across Data Frames</dd>
+
+        <dt>
+
+          <code><a href="label_helpers.html">label_helpers</a></code>
+
+        </dt>
+        <dd>Variable Label and Excel Header Helpers</dd>
 
         <dt>
 

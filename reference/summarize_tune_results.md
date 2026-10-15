@@ -15,7 +15,9 @@ summarize_tune_results(
   num_fixed = 6,
   alphas = NULL,
   formulas = NULL,
-  progress = FALSE
+  progress = FALSE,
+  seed = NULL,
+  checkpoint_dir = NULL
 )
 ```
 
@@ -54,10 +56,33 @@ summarize_tune_results(
 
   Show a progress bar.
 
+- seed:
+
+  Optional integer seed for reproducible random draws across splits.
+
+- checkpoint_dir:
+
+  Optional directory path to save per-split checkpoint files. Finished
+  splits are loaded from disk on rerun, skipping recomputation.
+
 ## Value
 
 A tibble of \[glmnet_IBS()\] results with an \`inner_resamples_splits\`
 column giving the split's position in \`object\$splits\`.
+
+## Nested Parallelism & Benchmarking
+
+When tuning penalized survival models across nested resampling
+structures, computation scales multiplicatively: \\\text{outer folds}
+\times \text{inner splits} \times \text{alphas} \times \text{internal CV
+folds}\\. Parallelism is managed via future and furrr. For optimal
+cluster throughput and to prevent socket exhaustion on Windows/macOS,
+set `future::plan(multisession, workers = N)` at the outer level (e.g.
+over splits) while keeping nested inner model evaluations sequential
+(`parallel = FALSE` in
+[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)).
+Using `checkpoint_dir` is strongly recommended for long runs across
+multiple nodes.
 
 ## See also
 

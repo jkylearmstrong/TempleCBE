@@ -23,12 +23,15 @@ glmnet_IBS(
   stop_col = "tstop",
   status_col = "status",
   censoring_weights = c("ipcw", "none"),
+  tune_engine = c("yardstick", "cv.glmnet"),
   prep_on = c("baseline", "all"),
   eval_time = NULL,
   metric = "brier_survival_integrated",
   rule = c("min", "1se"),
   covariates = c("path", "baseline"),
   failure_ibs = NA_real_,
+  parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   ...
 )
 ```
@@ -75,9 +78,20 @@ glmnet_IBS(
 
 - censoring_weights:
 
-  Only \`"ipcw"\` is supported. \`"none"\`, which scored interval rows
-  without adjusting for censoring, was removed in TempleCBE 0.3.0;
-  install TempleCBE 0.2.0 to reproduce results that used it.
+  Weighting scheme for Brier score calculation: \`"ipcw"\` (the default)
+  uses inverse probability of censoring weighting via Graf weights (a
+  proper scoring rule). \`"none"\` applies unweighted unit weights (1
+  for events and at-risk subjects, 0 for censored; legacy, emits a
+  once-per-session warning; useful for historical reproducibility or
+  sensitivity comparisons).
+
+- tune_engine:
+
+  Cross-validation tuning engine: \`"yardstick"\` (default, uses
+  subject-grouped folds via \[cv_coxnet()\]) or \`"cv.glmnet"\` (legacy,
+  splits intervals across folds without subject grouping using
+  \[glmnet::cv.glmnet()\]; emits a once-per-session warning, useful for
+  historical reproducibility).
 
 - prep_on:
 
@@ -107,6 +121,18 @@ glmnet_IBS(
 
   IBS reported when the model cannot be fit (default \`NA\`); a warning
   gives the reason.
+
+- parallel:
+
+  Logical or character. When `TRUE` (or `"resamples"` / `"everything"`),
+  evaluates internal CV folds in parallel using \[furrr::future_map2()\]
+  for `tune_engine = "yardstick"` or \[glmnet::cv.glmnet()\]'s parallel
+  mode. When `FALSE` (default), evaluates sequentially.
+
+- parallel_over:
+
+  Tidymodels-compatible partition option: `"resamples"` (default) or
+  `"everything"`.
 
 - ...:
 

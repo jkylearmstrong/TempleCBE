@@ -1102,7 +1102,7 @@ In automated pipelines where R orchestrates SAS batch jobs via
 # Retrieve dynamic absolute path to master macro file
 macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
 macro_file
-#> [1] "/home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/sas/cbe_macros.sas"
+#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas/cbe_macros.sas"
 ```
 
 Inside the SAS program:
@@ -1419,7 +1419,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.2
+#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.5
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] writexl_2.0.1       rlang_1.3.0         magrittr_2.0.5     

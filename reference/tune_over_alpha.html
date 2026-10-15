@@ -13,7 +13,7 @@ this function never sets one."><meta property="og:image" content="https://jkylea
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,7 @@ this function never sets one."><meta property="og:image" content="https://jkylea
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Tune a Penalized Cox Model Over a Grid of `alpha` Values</h1>
-      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/v0.5.2/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/jkylearmstrong/TempleCBE/blob/master/R/survival_metrics.R" class="external-link"><code>R/survival_metrics.R</code></a></small>
       <div class="d-none name"><code>tune_over_alpha.Rd</code></div>
     </div>
 
@@ -71,7 +71,9 @@ this function never sets one.</p>
 <span>  num_fixed <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  alphas <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  formulas <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  progress <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -109,6 +111,16 @@ a list of one-sided formulas, each fit as a separate model (see
 
 <dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
 <dd><p>Show a progress bar.</p></dd>
+
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Optional integer seed for reproducible random draws of `alpha`
+and formulas.</p></dd>
+
+
+<dt id="arg-checkpoint-dir">checkpoint_dir<a class="anchor" aria-label="anchor" href="#arg-checkpoint-dir"></a></dt>
+<dd><p>Optional directory path to save per-alpha checkpoint files.
+Finished fits are loaded from disk on rerun, skipping recomputation.</p></dd>
 
 </dl></div>
     <div class="section level2">

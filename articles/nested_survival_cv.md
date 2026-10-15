@@ -580,27 +580,68 @@ yardstick::brier_survival_integrated(scored_predictions, truth = .truth, .pred)
 
 When searching over a broad grid of elastic net mixing parameters
 ($`\alpha`$) or evaluating competing candidate clinical formulas,
-[`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md)
+[`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md),
+[`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md),
 and
+[`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+orchestrate parallel evaluation using `furrr`.
+
+#### Nested Parallelism & Cluster Benchmarking Architecture
+
+In nested survival cross-validation, total computational workload scales
+multiplicatively:
+``` math
+\text{Total Fits} = N_{\text{outer folds}} \times N_{\text{inner splits}} \times N_{\alpha \text{ values}} \times N_{\text{internal CV folds}}
+```
+
+For example, a study with 7 outer folds, 7 inner resamples, 10 candidate
+$`\alpha`$ mixing parameters, and 5 internal penalty selection folds
+requires $`7 \times 7 \times 10 \times 5 = 2,450`$ penalized Cox model
+estimations per clinical domain.
+
+**Best Practices for Cluster & Multicore Execution:** 1. **Outer/Split
+Parallelism**: Set `future::plan(multisession, workers = N)` at the
+session level before invoking tuning or scoring. `TempleCBE` functions
+strictly adhere to the *never call plan() inside functions* fleet rule.
+2. **Sequential Inner Fits**: Avoid setting `parallel = TRUE` inside
+[`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+when
 [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
-orchestrate parallel evaluation using `furrr`:
+is already running across parallel workers; nested socket clusters lead
+to worker resource contention and OS deadlocks. 3. **Resilience with
+Checkpoints**: Pass `checkpoint_dir = "checkpoints/tuning_abg"` to
+[`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md),
+[`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md),
+and
+[`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md).
+Completed tasks save atomic `.rds` artifacts per split/fold. If a run is
+interrupted across cluster nodes, rerunning detects cached checkpoints
+and skips recomputation with an informative progress notice. 4.
+**Environment Isolation**: Multisession worker processes automatically
+import required preprocessing namespaces (`recipes`, `rsample`,
+`yardstick`, `survival`, `glmnet`).
 
 ``` r
 
 library(furrr)
 plan(multisession, workers = 4)
 
-# Parallel grid search across alpha values for an rsample split
+# Parallel grid search across alpha values with checkpointing
 alpha_results <- tune_over_alpha(
   split,
   recipe = cox_rec,
   num_alpha_values = 10,
   internal_folds = 5,
-  progress = TRUE
+  progress = TRUE,
+  checkpoint_dir = "checkpoints/alpha_grid"
 )
 
 # Summarize results across all inner splits of a nested resample
-nested_alpha_summary <- summarize_tune_results(nested_folds$inner_resamples[[1]])
+nested_alpha_summary <- summarize_tune_results(
+  nested_folds$inner_resamples[[1]],
+  checkpoint_dir = "checkpoints/inner_splits",
+  progress = TRUE
+)
 ```
 
 ### 4. Translating survival curves to GraphPad Prism with `km_summary_to_prism()`
@@ -715,6 +756,58 @@ nested_plan <- nested_cv(
 honest_metrics <- nested_cv_coxnet(nested_plan, clinical_rec, mixture = c(0.5, 1.0))
 collect_metrics(honest_metrics)
 ```
+
+### Pattern 4b: Honest generalization with inner bootstrap resamples (`group_bootstraps`) vs Random-Alpha exploration
+
+When working with counting-process (start/stop) data where cohort size
+or event counts are modest, inner grouped bootstraps
+(`group_bootstraps(group = patient_id)`) provide smooth, low-variance
+hyperparameter tuning estimates for choosing $`\alpha`$ and $`\lambda`$:
+
+``` r
+
+boot_nested_plan <- nested_cv(
+  cohort_data,
+  outside = group_vfold_cv(group = patient_id, v = 5),
+  inside  = group_bootstraps(group = patient_id, times = 25)
+)
+
+honest_boot_metrics <- nested_cv_coxnet(
+  boot_nested_plan,
+  preprocessor = clinical_rec,
+  subject_id = "patient_id",
+  mixture = c(0.2, 0.5, 0.8, 1.0)
+)
+collect_metrics(honest_boot_metrics)
+```
+
+#### Choosing between Nested Cross-Validation and Random-Alpha Exploration
+
+It is vital to match your statistical strategy to your project question:
+
+1.  **Nested Cross-Validation (`nested_cv_coxnet`)**:
+    - **Primary Objective**: Unbiased *generalization performance
+      estimation* of the entire modeling strategy.
+    - **How it works**: In each outer split, hyperparameters
+      ($`\alpha, \lambda`$) are optimized solely on inner resamples,
+      refit on the outer analysis set, and scored on held-out outer
+      subjects.
+    - **When to use**: Auditing models prior to clinical presentation,
+      benchmarking expected out-of-sample performance, and guarding
+      against optimization bias.
+2.  **Random-Alpha Hyperparameter Exploration (`tune_over_alpha` /
+    `summarize_tune_results`)**:
+    - **Primary Objective**: *Model selection and diagnostic
+      characterization* across the $`\alpha \in [0, 1]`$ penalty
+      continuum.
+    - **How it works**: Evaluates a dense grid or randomized draw of
+      $`\alpha`$ values across resampling folds, measuring stability,
+      coefficient shrinkage profiles, and Integrated Brier Score
+      sensitivity.
+    - **When to use**: Investigating whether Ridge ($`L_2`$), Lasso
+      ($`L_1`$), or Elastic Net yields superior feature sparsity and
+      stability, and finalizing a single model specification for
+      deployment.
 
 ### Pattern 5: Translational laboratory handoff
 

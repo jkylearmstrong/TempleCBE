@@ -24,5 +24,5 @@ Absolute path to the SAS macro directory.
 
 ``` r
 try(cbe_sas_macro_dir())
-#> [1] "/home/runner/.cache/R/renv/library/TempleCBE-357df843/linux-ubuntu-noble/R-4.6/x86_64-pc-linux-gnu/TempleCBE/sas"
+#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas"
 ```
