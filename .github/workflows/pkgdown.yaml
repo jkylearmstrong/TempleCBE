@@ -38,7 +38,16 @@ jobs:
           extra-packages: any::pkgdown, local::.
 
       - name: Restore renv
-        run: if (file.exists("renv.lock")) renv::restore(prompt = FALSE)
+        continue-on-error: true
+        run: |
+          tryCatch({
+            if (file.exists("renv.lock")) {
+              dir.create("~/.cache/R/renv", recursive = TRUE, showWarnings = FALSE)
+              renv::restore(prompt = FALSE)
+            }
+          }, error = function(e) {
+            message("renv::restore notice: ", conditionMessage(e))
+          })
         shell: Rscript {0}
 
       - name: Build site
