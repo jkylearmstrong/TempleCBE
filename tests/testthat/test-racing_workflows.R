@@ -338,3 +338,16 @@ test_that("win-loss racing asks for BradleyTerry2 up front", {
     "BradleyTerry2"
   )
 })
+
+test_that("tune_race_survival restores the caller's RNG state", {
+  skip_if_no_racing_deps()
+
+  vet <- stats::na.omit(survival::veteran[1:60, ])
+  set.seed(42)
+  folds <- rsample::vfold_cv(vet, v = 3)
+
+  set.seed(12345)
+  pre_seed <- .Random.seed
+  res <- tune_race_survival(racing_workflow(), resamples = folds, grid = 2)
+  expect_identical(.Random.seed, pre_seed)
+})

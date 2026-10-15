@@ -1,6 +1,6 @@
 # Claude Code Instructions: TempleCBE
 
-Please refer to [AGENTS.md](file:///c:/Users/jkyle/Documents/GitHub/TempleCBE/AGENTS.md) for full architecture and testing details.
+Please refer to [AGENTS.md](AGENTS.md) for full architecture and testing details.
 
 ## Quick Reference
 - **Repository:** Upstream is `https://github.com/jkylearmstrong/TempleCBE.git` (`origin`). Do NOT push to `TempleCBE-private`.
