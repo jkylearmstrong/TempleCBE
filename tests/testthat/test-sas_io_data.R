@@ -5,8 +5,8 @@ test_that("rossi_data loads the Rossi recidivism dataset in CSV and SAS formats"
   expect_equal(nrow(df_csv), 432)
   expect_true(all(c("week", "arrest", "fin", "age", "prio") %in% names(df_csv)))
 
-  # Test SAS format if haven is installed
-  if (requireNamespace("haven", quietly = TRUE)) {
+  # Test SAS format if haven and readr are installed
+  if (requireNamespace("haven", quietly = TRUE) && requireNamespace("readr", quietly = TRUE)) {
     df_sas <- rossi_data(format = "sas")
     expect_s3_class(df_sas, "tbl_df")
     expect_equal(nrow(df_sas), 432)

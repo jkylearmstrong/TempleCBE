@@ -209,7 +209,7 @@ test_that("render forwards dots (...) to backend engines", {
 })
 
 test_that("render renders .Rmd files using rmarkdown or quarto", {
-  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE), "rmarkdown package not available")
+  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE) && requireNamespace("jquerylib", quietly = TRUE), "rmarkdown and jquerylib packages not available")
 
   tmp_dir <- file.path(tempdir(), "test_render_rmd")
   dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
@@ -276,7 +276,7 @@ test_that("render cache = 'refresh' wipes document cache and files directories",
   expect_true(dir.exists(cache_dir)) # dry_run didn't wipe
 
   # Now simulate render_single call by running render on dummy Rmd
-  if (requireNamespace("rmarkdown", quietly = TRUE)) {
+  if (requireNamespace("rmarkdown", quietly = TRUE) && requireNamespace("jquerylib", quietly = TRUE)) {
     rmd_file <- file.path(tmp_dir, "dummy_rmd.Rmd")
     writeLines(c("---", "title: 'Rmd Cache'", "output: html_document", "---"), rmd_file)
     r_cache <- file.path(tmp_dir, "dummy_rmd_cache")
@@ -291,7 +291,7 @@ test_that("render cache = 'refresh' wipes document cache and files directories",
 })
 
 test_that("render resume skips completed targets", {
-  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE))
+  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE) && requireNamespace("jquerylib", quietly = TRUE))
 
   tmp_dir <- file.path(tempdir(), "test_render_resume")
   dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
@@ -347,7 +347,7 @@ test_that("render on_error = 'stop' halts immediately on failure", {
 })
 
 test_that("render writes render_manifest.json beside outputs", {
-  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE))
+  skip_if_not(requireNamespace("rmarkdown", quietly = TRUE) && requireNamespace("jquerylib", quietly = TRUE))
   skip_if_not(requireNamespace("jsonlite", quietly = TRUE))
 
   tmp_dir <- file.path(tempdir(), "test_render_manifest")

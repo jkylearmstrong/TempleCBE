@@ -316,6 +316,7 @@ test_that("render skip_downstream marks dependent nodes as skipped_upstream_fail
 
 test_that("render parallel wave execution renders independent branches even when another branch fails", {
   skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("jquerylib")
   skip_if_not(rmarkdown::pandoc_available())
 
   tmp_dir <- tempfile("render_wave_test_")

@@ -38,7 +38,7 @@ jobs:
             any::xml2
             any::readr
             any::jquerylib
-          needs: coverage
+          needs: check
 
       - name: Test coverage
         run: |
