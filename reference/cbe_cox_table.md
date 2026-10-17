@@ -8,9 +8,29 @@ annotation.
 ## Usage
 
 ``` r
-cbe_cox_table(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE)
+cbe_cox_table(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
 
-cox_table(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE)
+cox_table(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
+
+tbl_cox(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
 ```
 
 ## Arguments
@@ -32,6 +52,14 @@ cox_table(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE)
   Logical; if `TRUE`, appends a `sig` column of significance stars
   (three asterisks for p \< 0.001, two for p \< 0.01, one for p \< 0.05)
   and bolds the `p.value` text of significant rows.
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

@@ -13,7 +13,7 @@ rank differences, and rank agreement metrics (Spearman's \(\rho\) and Kendall's 
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,9 @@ rank differences, and rank agreement metrics (Spearman's \(\rho\) and Kendall's 
 <span>  recipe <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span>,</span>
 <span>  format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tibble"</span>, <span class="st">"gt"</span><span class="op">)</span>,</span>
-<span>  digits <span class="op">=</span> <span class="fl">4</span></span>
+<span>  digits <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  label_map <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,6 +103,14 @@ passed to [compare_censoring_weights()] (such as an `rsplit`, `nested_cv`, or li
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
 <dd><p>Number of decimal places for numeric metrics (default 4).</p></dd>
+
+
+<dt id="arg-label-map">label_map<a class="anchor" aria-label="anchor" href="#arg-label-map"></a></dt>
+<dd><p>Optional label mapping passed to [resolve_cbe_labels()].</p></dd>
+
+
+<dt id="arg-style">style<a class="anchor" aria-label="anchor" href="#arg-style"></a></dt>
+<dd><p>Optional label style (`"short"` or `"full"`) when resolving `label_map`.</p></dd>
 
 </dl></div>
     <div class="section level2">

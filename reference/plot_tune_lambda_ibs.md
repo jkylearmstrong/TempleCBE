@@ -6,7 +6,7 @@ resamples, colored by \`alpha\`.
 ## Usage
 
 ``` r
-plot_tune_lambda_ibs(data)
+plot_tune_lambda_ibs(data, label_map = NULL, style = NULL)
 ```
 
 ## Arguments
@@ -14,6 +14,14 @@ plot_tune_lambda_ibs(data)
 - data:
 
   A data frame from \[summarize_tune_results()\].
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

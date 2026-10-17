@@ -1,9 +1,8 @@
 # Tune Over \`alpha\` for Every Split of a Resample
 
-Calls \[tune_over_alpha()\] on each split of \`object\` and row-binds
-the successful fits. Fits that errored are dropped. A split draws its
-own random \`alpha\` values, reproducibly: the map runs with
-\`furrr_options(seed = TRUE)\`.
+Evaluates candidate \`(split, alpha)\` (or \`(split, formula)\`)
+combinations as a single flat task grid across all available
+\[future::plan()\] workers and row-binds the successful fits.
 
 ## Usage
 
@@ -17,7 +16,9 @@ summarize_tune_results(
   formulas = NULL,
   progress = FALSE,
   seed = NULL,
-  checkpoint_dir = NULL
+  checkpoint_dir = NULL,
+  checkpoint_mismatch = c("recompute", "error"),
+  shard = NULL
 )
 ```
 
@@ -62,28 +63,40 @@ summarize_tune_results(
 
 - checkpoint_dir:
 
-  Optional directory path to save per-split checkpoint files. Finished
-  splits are loaded from disk on rerun, skipping recomputation.
+  Optional directory path to save checkpoint files. Finished
+  splits/tasks are loaded from disk on rerun when their fingerprint
+  matches, skipping recomputation.
+
+- checkpoint_mismatch:
+
+  Action when an existing checkpoint file's fingerprint does not match
+  the current inputs/settings: \`"recompute"\` (default; warns and
+  recomputes) or \`"error"\` (stops immediately).
+
+- shard:
+
+  Optional integer vector \`c(i, n)\` specifying that this call should
+  process shard \`i\` of \`n\` across machines into \`checkpoint_dir\`.
+  Use \[collect_checkpoints()\] to merge all shards once finished.
 
 ## Value
 
 A tibble of \[glmnet_IBS()\] results with an \`inner_resamples_splits\`
-column giving the split's position in \`object\$splits\`.
+column giving the split's identifier.
 
 ## Nested Parallelism & Benchmarking
 
 When tuning penalized survival models across nested resampling
 structures, computation scales multiplicatively: \\\text{outer folds}
 \times \text{inner splits} \times \text{alphas} \times \text{internal CV
-folds}\\. Parallelism is managed via future and furrr. For optimal
-cluster throughput and to prevent socket exhaustion on Windows/macOS,
-set `future::plan(multisession, workers = N)` at the outer level (e.g.
-over splits) while keeping nested inner model evaluations sequential
-(`parallel = FALSE` in
+folds}\\. \`summarize_tune_results()\` flattens \`inner splits x
+alphas\` into a single task pool (e.g. 7 splits x 10 alphas = 70 tasks)
+so all cores on high-core machines are fully utilized. Set
+`future::plan(multisession, workers = N)` before calling while keeping
+inner model evaluations sequential (`parallel = FALSE` in
 [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)).
-Using `checkpoint_dir` is strongly recommended for long runs across
-multiple nodes.
 
 ## See also
 
-\[glmnet_IBS()\], \[tune_over_alpha()\], \[nested_cv_coxnet()\]
+\[glmnet_IBS()\], \[tune_over_alpha()\], \[collect_checkpoints()\],
+\[nested_cv_coxnet()\]

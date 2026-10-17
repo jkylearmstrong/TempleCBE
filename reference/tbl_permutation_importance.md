@@ -6,7 +6,7 @@ losses.
 ## Usage
 
 ``` r
-tbl_permutation_importance(data, top_n = NULL)
+tbl_permutation_importance(data, top_n = NULL, label_map = NULL, style = NULL)
 ```
 
 ## Arguments
@@ -18,6 +18,14 @@ tbl_permutation_importance(data, top_n = NULL)
 - top_n:
 
   Optional integer limit on the number of features to return.
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

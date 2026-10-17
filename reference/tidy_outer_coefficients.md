@@ -27,4 +27,5 @@ A long tibble containing \`outer_fold\` (if present), \`model\`,
 
 ## See also
 
-\[score_outer()\]
+\[score_outer()\], \[summarize_outer_importance()\],
+\[plot_outer_importance()\]

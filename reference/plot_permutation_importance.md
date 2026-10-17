@@ -11,7 +11,9 @@ plot_permutation_importance(
   top_n = 20,
   fill_color = "#9D2235",
   title = "Feature Permutation Importance",
-  base_size = 12
+  base_size = 12,
+  label_map = NULL,
+  style = NULL
 )
 ```
 
@@ -37,6 +39,14 @@ plot_permutation_importance(
 - base_size:
 
   Base font size (default 12).
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

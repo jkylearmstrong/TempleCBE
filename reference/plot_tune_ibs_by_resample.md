@@ -6,7 +6,7 @@ splits.
 ## Usage
 
 ``` r
-plot_tune_ibs_by_resample(data)
+plot_tune_ibs_by_resample(data, label_map = NULL, style = NULL)
 ```
 
 ## Arguments
@@ -14,6 +14,14 @@ plot_tune_ibs_by_resample(data)
 - data:
 
   A data frame from \[summarize_tune_results()\].
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

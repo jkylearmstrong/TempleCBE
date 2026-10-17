@@ -1102,7 +1102,7 @@ In automated pipelines where R orchestrates SAS batch jobs via
 # Retrieve dynamic absolute path to master macro file
 macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
 macro_file
-#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas/cbe_macros.sas"
+#> [1] "/tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/sas/cbe_macros.sas"
 ```
 
 Inside the SAS program:
@@ -1419,7 +1419,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.5
+#> [1] ggplot2_4.0.3   dplyr_1.2.1     survival_3.8-6  TempleCBE_0.5.6
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] writexl_2.0.1       rlang_1.3.0         magrittr_2.0.5     
@@ -1429,20 +1429,20 @@ sessionInfo()
 #> [13] fastmap_1.2.0       backports_1.5.1     labeling_0.4.3     
 #> [16] probably_1.2.0      utf8_1.2.6          rmarkdown_2.32     
 #> [19] prodlim_2026.03.11  tzdb_0.5.0          haven_2.5.5        
-#> [22] ragg_1.5.2          purrr_1.2.2         xfun_0.61          
+#> [22] ragg_1.5.2          purrr_1.2.2         xfun_0.62          
 #> [25] glmnet_5.1          cachem_1.1.0        labelled_2.16.1    
 #> [28] jsonlite_2.0.0      recipes_1.4.0       broom_1.0.13       
 #> [31] parallel_4.6.1      R6_2.6.1            bslib_0.12.0       
 #> [34] stringi_1.8.9       rsample_1.3.2       RColorBrewer_1.1-3 
 #> [37] parallelly_1.48.0   rpart_4.1.27        lubridate_1.9.5    
 #> [40] jquerylib_0.1.4     dials_1.4.4         Rcpp_1.1.2         
-#> [43] iterators_1.0.14    knitr_1.52          future.apply_1.20.2
+#> [43] iterators_1.0.14    knitr_1.52          future.apply_1.21.0
 #> [46] butcher_0.4.0       readr_2.2.0         Matrix_1.7-5       
 #> [49] splines_4.6.1       nnet_7.3-20         timechange_0.4.0   
 #> [52] tidyselect_1.2.1    yaml_2.3.12         timeDate_4052.112  
 #> [55] codetools_0.2-20    listenv_1.1.0       lattice_0.22-9     
 #> [58] tibble_3.3.1        withr_3.0.3         S7_0.2.2           
-#> [61] evaluate_1.0.5      future_1.76.0       desc_1.4.3         
+#> [61] evaluate_1.0.5      future_1.80.0       desc_1.4.3         
 #> [64] pillar_1.11.1       corrplot_0.95       renv_1.2.4         
 #> [67] foreach_1.5.2       stats4_4.6.1        generics_0.1.4     
 #> [70] hms_1.1.4           scales_1.4.0        globals_0.20.0     

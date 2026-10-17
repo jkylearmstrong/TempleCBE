@@ -56,6 +56,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_relationships.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_venn.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_docx_review_extract.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.html</loc></url>
@@ -71,6 +72,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_pairwise_combos.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_palette.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_predict_parts_shap.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_review_tracker.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_sas_macro_dir.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_sas_macro_path.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/cbe_square_plot.html</loc></url>
@@ -85,6 +87,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/clean_names.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/clean_publish.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/collect_checkpoints.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/compare_imputed_ecdf.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/compare_runs.html</loc></url>
@@ -120,8 +123,10 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/demo_cbe_mapping.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/detect_outliers.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/diff_deliverables.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/distribution_plot.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/distribution_test.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/estimate_runtime.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/excel_colnames.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/export_interactive_pipeline.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/export_pipeline_diagram.html</loc></url>
@@ -223,6 +228,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputed_ridgeline.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_km_cutpoints.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_missingness.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_permutation_importance.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/plot_rank_heatmap.html</loc></url>
@@ -253,6 +259,7 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_raw_table.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_search.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/read_workbook.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/record_pipeline_hashes.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/reexports.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/refresh_pipeline.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/render.html</loc></url>
@@ -276,12 +283,14 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_joint_model.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/stop_if_invalid_manifest.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/summarize_dalex_importance.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/summarize_section_by_time.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/summary.tbl_graph.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/surv_subject_truth.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/table_two_by_two.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tbl_censoring_comparison.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tbl_permutation_importance.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_alpha.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_coef.html</loc></url>
@@ -307,6 +316,8 @@
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/validate_column_mapping.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/validate_data_manifest.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/validate_review_tracker.html</loc></url>
+<url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/validate_start_stop.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline_interactive.html</loc></url>
 <url><loc>https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.html</loc></url>

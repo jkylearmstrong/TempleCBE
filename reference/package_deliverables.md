@@ -9,11 +9,12 @@ distribution ZIP file.
 
 ``` r
 package_deliverables(
-  pipeline_objects,
+  pipeline_objects = list(),
   output_formats = c("pdf", "docx"),
   data_deliverables = list(),
   zip_path = NULL,
-  include_pipeline_graph = TRUE
+  include_pipeline_graph = TRUE,
+  stamp = FALSE
 )
 ```
 
@@ -49,6 +50,17 @@ package_deliverables(
   Logical; whether to include static/interactive pipeline DAG graphs
   (default: TRUE).
 
+- stamp:
+
+  Logical, \`Date\`, or character string (default \`FALSE\`). When
+  \`TRUE\`, appends the current date (\`YYYY-MM-DD\`) to the archive
+  name (and records \`attr(path, "stamp")\`). A custom date or version
+  string (e.g. \`"2026-10-17"\`) may also be supplied.
+
 ## Value
 
 Absolute path to the generated zip file.
+
+## See also
+
+\[diff_deliverables()\], \[audit_report_deliverables()\]

@@ -280,11 +280,11 @@ pipeline <- list(helper, report)
 report
 #> S4 object of class: FileOutputs 
 #>   Name:        t_test_example 
-#>   Path:        /tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/templates/t_test_example.qmd 
+#>   Path:        /tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/templates/t_test_example.qmd 
 #>   Stage:       report 
 #>   Role:        report_source 
 #>   Renders:     TRUE 
-#>   Modified:    2026-10-15 21:53:21.384115 
+#>   Modified:    2026-10-17 19:17:53.026939 
 #>   Description: Worked example of a one/two-sample t-test report 
 #>   Dependencies:
 #>     - t_test_child

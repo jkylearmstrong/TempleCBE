@@ -34,5 +34,5 @@ Absolute path to the requested \`.sas\` file.
 
 ``` r
 try(cbe_sas_macro_path("cbe_macros.sas"))
-#> [1] "/tmp/RtmpvdcHLF/temp_libpath1fd43696427e/TempleCBE/sas/cbe_macros.sas"
+#> [1] "/tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/sas/cbe_macros.sas"
 ```

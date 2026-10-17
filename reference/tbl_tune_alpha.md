@@ -6,7 +6,7 @@ Integrated Brier Score for each evaluated \`alpha\` value.
 ## Usage
 
 ``` r
-tbl_tune_alpha(data)
+tbl_tune_alpha(data, label_map = NULL, style = NULL)
 ```
 
 ## Arguments
@@ -14,6 +14,14 @@ tbl_tune_alpha(data)
 - data:
 
   A data frame from \[summarize_tune_results()\].
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

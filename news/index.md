@@ -1,5 +1,148 @@
 # Changelog
 
+## TempleCBE 0.5.6
+
+### Bug Fixes
+
+- **Checkpoint Input Fingerprinting
+  ([`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md),
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md),
+  [`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md)
+  — C1):** Checkpoint `.rds` files now store SHA-256 input fingerprints
+  covering the split row identifiers and outcome/covariate data, recipe
+  specification, feature names, `glmnet` arguments (`cox.ties`,
+  `nlambda`, `internal_folds`, `rule`, `covariates`, `tune_engine`),
+  `censoring_weights`, `seed`, and `TempleCBE` package version.
+  Rerunning with the same `checkpoint_dir` after changing any input or
+  setting now detects the mismatch and either recomputes with a clear
+  warning (`checkpoint_mismatch = "recompute"`, default) or halts
+  immediately (`checkpoint_mismatch = "error"`).
+- **All-Failed Tuning Guard
+  ([`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md),
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  — C2):**
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  now stops immediately if none of the requested `feature_names` exist
+  in the baked dataset, and
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  halts with an informative error when all tuning fits fail or every
+  `IBS` is `NA`, while summarizing partial fit warnings at most once per
+  split.
+- **Clean Search Path in
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  (`R/survival_metrics.R` — C3):** Removed unconditional
+  `attachNamespace("recipes")` in
+  [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md).
+  Unqualified `recipes` step selectors
+  ([`all_numeric_predictors()`](https://recipes.tidymodels.org/reference/has_role.html),
+  etc.) are now resolved via scoped environment binding
+  (`bind_recipes_namespace()`) and an
+  [`on.exit()`](https://rdrr.io/r/base/on.exit.html) search-path guard
+  so `package:recipes` is never left attached to the user’s session.
+
+### New Features
+
+- **Content-Hash Staleness Tracking
+  ([`render()`](https://jkylearmstrong.github.io/TempleCBE/reference/render.md),
+  [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md),
+  [`is_stale()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_stale.md),
+  [`record_pipeline_hashes()`](https://jkylearmstrong.github.io/TempleCBE/reference/record_pipeline_hashes.md)
+  — N1):** Added `stale_by = c("mtime", "hash")` and `hash_file`
+  (`pipeline_hashes.json`). Under `stale_by = "hash"`, SHA-256 digests
+  of declared inputs, scripts, and outputs determine staleness,
+  preventing false rebuilds or missed updates when file modification
+  times shift across Windows, Linux, DGX Spark, or `git checkout`.
+- **Multi-Machine Sharding & Checkpoint Merging
+  ([`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md),
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md),
+  [`collect_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/collect_checkpoints.md)
+  — N2):** Added `shard = c(i, n)` to
+  [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  and
+  [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+  so machine $`i`$ of $`n`$ evaluates its deterministic share of tasks
+  into a shared `checkpoint_dir`. Added and exported
+  [`collect_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/collect_checkpoints.md)
+  to verify matching `checkpoint_run_fingerprint` hashes across shards
+  (preventing accidental mixing of incompatible runs) and assemble the
+  complete result table.
+- **Flat `split × alpha` Parallelism
+  ([`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
+  — N3):** Flattened `inner splits × alphas` (e.g., $`7 \times 10 = 70`$
+  tasks per outer fold) into a single flat
+  [`furrr::future_pmap()`](https://furrr.futureverse.org/reference/future_map2.html)
+  task pool with pre-generated deterministic seeds, utilizing all
+  available CPU cores (e.g., 16+ workers) while preserving identical
+  numerical results for the same `seed`.
+- **Pre-Flight Start/Stop Survival Data Validation
+  ([`validate_start_stop()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_start_stop.md)
+  — N4):** Added and exported
+  `validate_start_stop(data, id, start, stop, status)` reporting
+  subject, interval, event, and censored counts, overlapping or gapped
+  intervals, non-positive interval lengths, events occurring before a
+  subject’s last interval, rows appearing after an event, tied times,
+  and emitting a prominent warning when no subjects are censored
+  (`n_censored == 0`).
+- **Unified Package-Level Variable Label Map
+  ([`cbe_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md),
+  [`tbl_label_map()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  — N5):** Added `cbe_labels(map, style = c("short", "full"))` and
+  appendix table generator
+  [`tbl_label_map()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  (alias
+  [`cbe_label_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)),
+  along with `label_map` and `style` support across `plot_tune_*`,
+  `tbl_tune_*`, `plot_cox_forest*`,
+  [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  (alias
+  [`tbl_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)),
+  [`plot_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_permutation_importance.md),
+  [`tbl_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_permutation_importance.md),
+  [`tbl_censoring_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_censoring_comparison.md),
+  [`summarize_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.md),
+  and
+  [`plot_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.md).
+- **Outer-Fold Importance Summary & Visualization
+  ([`summarize_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.md),
+  [`plot_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.md)
+  — N6):** Added and exported
+  [`summarize_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.md)
+  (computing selection frequency, median, mean, IQR, and min/max
+  coefficient range across outer folds from
+  [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md))
+  and
+  [`plot_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.md)
+  (rendering coefficient boxplots/ranges annotated with selection
+  percentage or selection frequency bar charts).
+- **Pre-Run Wall-Time Estimator
+  ([`estimate_runtime()`](https://jkylearmstrong.github.io/TempleCBE/reference/estimate_runtime.md)
+  — N7):** Added and exported
+  `estimate_runtime(fn, args, n_sample = 3, ...)` to benchmark a small
+  sample of fits and project sequential, single-machine parallel, and
+  multi-machine sharded runtimes across the full grid.
+- **Review Response Tracker & Validator
+  ([`cbe_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_review_tracker.md),
+  [`validate_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_review_tracker.md)
+  — N8):** Added and exported
+  [`cbe_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_review_tracker.md)
+  to construct structured review sheets from
+  [`cbe_docx_review_extract()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_docx_review_extract.md)
+  output, and
+  [`validate_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_review_tracker.md)
+  to reject closed non-trivial items lacking a concrete document
+  location (page, section, table, or figure) or substantive rationale
+  (explicitly rejecting bare `"TRUE"`, `"FALSE"`, `"done"`, `"yes"`,
+  `"no"`, `"ok"`).
+- **Date-Stamped Deliverable Bundles & DOCX Diffing
+  ([`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md),
+  [`diff_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/diff_deliverables.md)
+  — N9):** Added `stamp = TRUE` (or custom date/version string) to
+  [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
+  to date-stamp archives, and exported
+  `diff_deliverables(old_zip, new_zip)` to report added, removed,
+  modified, and unchanged deliverables with paragraph-level text diffs
+  for `.docx` reports.
+
 ## TempleCBE 0.5.5
 
 ### Execution Governance & Parallel Plan Safety
@@ -3218,11 +3361,11 @@ message and the README corrections.
     `dataset_name`, and `dataset_label`.
   - Extended `labelled` variable-level conventions to dataset-level and
     database-level metadata via
-    [`cbe_dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md),
-    [`cbe_database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md),
-    [`cbe_database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md),
+    [`cbe_dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md),
+    [`cbe_database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md),
+    [`cbe_database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md),
     and batch helpers
-    [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+    [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
     /
     [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md).
 - **Excel & Database Multi-Sheet I/O (`write_database_to_excel`,
@@ -3691,7 +3834,7 @@ message and the README corrections.
 - New
   [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
   is a tidymodels counterpart to
-  [`glmnet::cv.glmnet()`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
+  [`glmnet::cv.glmnet()`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
   Folds are grouped by `subject_id` (or a coarser `group`, such as
   site), preprocessing from a recipe is learned inside each fold, and
   every `mixture` and `penalty` is scored with a yardstick metric set:

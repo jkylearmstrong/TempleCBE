@@ -7,7 +7,14 @@ the fitted line from \[fit_ibs_mixed_model()\] and its dynamic equation.
 ## Usage
 
 ``` r
-plot_tune_alpha_ibs(data, log_ibs = TRUE, show_points = TRUE, show_line = TRUE)
+plot_tune_alpha_ibs(
+  data,
+  log_ibs = TRUE,
+  show_points = TRUE,
+  show_line = TRUE,
+  label_map = NULL,
+  style = NULL
+)
 ```
 
 ## Arguments
@@ -27,6 +34,14 @@ plot_tune_alpha_ibs(data, log_ibs = TRUE, show_points = TRUE, show_line = TRUE)
 - show_line:
 
   Logical. Overlay the fitted regression line. Default \`TRUE\`.
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

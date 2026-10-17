@@ -21,7 +21,9 @@ plot_cox_forest(
   x_breaks = NULL,
   title = NULL,
   caption = NULL,
-  base_size = 13
+  base_size = 13,
+  label_map = NULL,
+  style = NULL
 )
 ```
 
@@ -98,6 +100,14 @@ plot_cox_forest(
 - base_size:
 
   Base font size (default: 13).
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

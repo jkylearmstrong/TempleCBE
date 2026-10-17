@@ -31,14 +31,15 @@ Functions for missing data auditing, summary tables, and visualizations.
 Functions for multi-table clinical databases, metadata export/import,
 variable role assignment, and relational linkage analysis.
 
-- [`cbe_dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`` `cbe_dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`cbe_database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`` `cbe_database_name<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`cbe_database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`` `cbe_database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+- [`cbe_dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`` `cbe_dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`cbe_database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`` `cbe_database_name<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`cbe_database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`` `cbe_database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
+  : Get or Set Dataset and Database Labels
+- [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
   [`dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
   [`` `dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
   [`database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
@@ -47,7 +48,8 @@ variable role assignment, and relational linkage analysis.
   [`` `database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
   [`set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
   [`get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
-  : Get or Set Dataset and Database Labels
+  [`cbe_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  : Set or Retrieve the Package-Level Variable Label Map
 - [`write_database_to_excel()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
   [`write_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
   [`cbe_write_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
@@ -177,6 +179,9 @@ metrics, and helpers for scoring start/stop models correctly.
   : Nested Cross-Validation of a Penalized Cox Model
 - [`surv_subject_truth()`](https://jkylearmstrong.github.io/TempleCBE/reference/surv_subject_truth.md)
   : Collapse Survival Outcomes to One Row per Subject
+- [`validate_start_stop()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_start_stop.md)
+  : Pre-Flight Validation for Counting-Process (Start/Stop) Survival
+  Data
 - [`censoring_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
   [`predict(`*`<censoring_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
   : Kaplan-Meier Estimate of the Censoring Distribution
@@ -191,6 +196,10 @@ metrics, and helpers for scoring start/stop models correctly.
   : Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
 - [`summarize_tune_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_tune_results.md)
   : Tune Over \`alpha\` for Every Split of a Resample
+- [`collect_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/collect_checkpoints.md)
+  : Collect and Merge Sharded Checkpoints From \`checkpoint_dir\`
+- [`estimate_runtime()`](https://jkylearmstrong.github.io/TempleCBE/reference/estimate_runtime.md)
+  : Estimate Runtime Before a Long Tuning or Scoring Run
 - [`compare_censoring_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.md)
   : Compare Model Performance Under Unweighted and IPCW Censoring
   Weights
@@ -201,6 +210,11 @@ metrics, and helpers for scoring start/stop models correctly.
 - [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
   [`unnest_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
   : Tidy Outer Model Coefficients into Long Format
+- [`summarize_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.md)
+  : Summarize Predictor Importance and Selection Stability Across Outer
+  Folds
+- [`plot_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.md)
+  : Plot Outer-Fold Coefficient Importance and Selection Frequency
 - [`fit_ibs_mixed_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_ibs_mixed_model.md)
   : Fit a Mixed-Effects Model for Integrated Brier Score Against Alpha
 - [`fit_lmer_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_lmer_safely.md)
@@ -555,6 +569,8 @@ biostatistical pipelines.
   re-rendered
 - [`is_stale()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_stale.md)
   : Check if an Output File is Stale
+- [`record_pipeline_hashes()`](https://jkylearmstrong.github.io/TempleCBE/reference/record_pipeline_hashes.md)
+  : Record or Update Content Hashes in \`pipeline_hashes.json\`
 - [`save_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
   [`load_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
   : Save and Load Computational Pipeline Graph
@@ -676,6 +692,7 @@ visualizations.
   : Print Method for cbe_cox_check Object
 - [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
   [`cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  [`tbl_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
   : Presentation-Ready Cox Coefficient Table
 - [`cbe_km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.md)
   [`km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_km_single.md)
@@ -804,6 +821,8 @@ referenced deliverable tokens, and extract YAML metadata formats.
 
 - [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
   : Package Pipeline Deliverables into a Structured Zip Archive
+- [`diff_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/diff_deliverables.md)
+  : Compare Two Deliverable Bundles and Diff DOCX Reports
 - [`audit_report_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.md)
   : Audit Deliverable File Tokens in Analysis Scripts
 - [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
@@ -811,6 +830,12 @@ referenced deliverable tokens, and extract YAML metadata formats.
 - [`cbe_docx_review_extract()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_docx_review_extract.md)
   [`docx_review_extract()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_docx_review_extract.md)
   : DOCX Review Extractor & Multi-Reviewer Collaborative Tracker
+- [`cbe_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_review_tracker.md)
+  : Build a Structured Review Response Tracker Requiring Location and
+  Rationale
+- [`validate_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_review_tracker.md)
+  : Validate a Review Response Tracker for Required Location and
+  Rationale
 - [`review_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/review_config.md)
   : Get or set global multi-reviewer review-tracking configuration
 
@@ -840,6 +865,20 @@ Clean column naming, string matching, and vector manipulation.
   : Convert Raw Variable Names to Human-Readable Display Labels
 - [`copy_var_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_var_labels.md)
   : Copy Variable Labels and Attributes Across Data Frames
+- [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `database_name<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`` `database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  [`cbe_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  : Set or Retrieve the Package-Level Variable Label Map
+- [`tbl_label_map()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  [`cbe_label_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  : Format a Variable Label Map Table for Report Appendices
 - [`label_helpers`](https://jkylearmstrong.github.io/TempleCBE/reference/label_helpers.md)
   : Variable Label and Excel Header Helpers
 - [`keep_only()`](https://jkylearmstrong.github.io/TempleCBE/reference/keep_only.md)

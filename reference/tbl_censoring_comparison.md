@@ -16,7 +16,9 @@ tbl_censoring_comparison(
   recipe = NULL,
   ...,
   format = c("tibble", "gt"),
-  digits = 4
+  digits = 4,
+  label_map = NULL,
+  style = NULL
 )
 ```
 
@@ -49,6 +51,15 @@ tbl_censoring_comparison(
 - digits:
 
   Number of decimal places for numeric metrics (default 4).
+
+- label_map:
+
+  Optional label mapping passed to \[resolve_cbe_labels()\].
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`) when resolving
+  \`label_map\`.
 
 ## Value
 

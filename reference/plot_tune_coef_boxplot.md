@@ -6,7 +6,7 @@ coefficient estimates for each feature across resamples.
 ## Usage
 
 ``` r
-plot_tune_coef_boxplot(data, top_n = NULL)
+plot_tune_coef_boxplot(data, top_n = NULL, label_map = NULL, style = NULL)
 ```
 
 ## Arguments
@@ -19,6 +19,14 @@ plot_tune_coef_boxplot(data, top_n = NULL)
 
   Optional integer limit on the number of features to plot (ordered by
   median absolute effect size).
+
+- label_map:
+
+  Optional label mapping (see \[cbe_labels()\]).
+
+- style:
+
+  Optional label style (\`"short"\` or \`"full"\`).
 
 ## Value
 

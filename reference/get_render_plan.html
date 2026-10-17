@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">TempleCBE</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,9 @@
 <span>  only_stale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  from <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  to <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  stale_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mtime"</span>, <span class="st">"hash"</span><span class="op">)</span>,</span>
+<span>  hash_file <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -91,6 +93,17 @@ to end execution at.</p></dd>
 <dt id="arg-dry-run">dry_run<a class="anchor" aria-label="anchor" href="#arg-dry-run"></a></dt>
 <dd><p>Logical. When `TRUE`, prints the ordered plan to console without
 executing and returns the planned objects invisibly.</p></dd>
+
+
+<dt id="arg-stale-by">stale_by<a class="anchor" aria-label="anchor" href="#arg-stale-by"></a></dt>
+<dd><p>Staleness strategy: `"mtime"` (default; compares modification
+times) or `"hash"` (compares SHA-256 content hashes stored in
+`pipeline_hashes.json`).</p></dd>
+
+
+<dt id="arg-hash-file">hash_file<a class="anchor" aria-label="anchor" href="#arg-hash-file"></a></dt>
+<dd><p>Optional path to `pipeline_hashes.json` when
+`stale_by = "hash"`.</p></dd>
 
 </dl></div>
     <div class="section level2">
