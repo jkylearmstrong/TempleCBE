@@ -55,7 +55,7 @@ reference:
   - title: Clinical Databases & Multi-Table Management
     desc: Functions for multi-table clinical databases, metadata export/import, variable role assignment, and relational linkage analysis.
     contents:
-      - cbe_labels
+      - cbe_dataset_labels
       - cbe_dataset_label
       - cbe_database_name
       - cbe_database_label
@@ -130,16 +130,21 @@ reference:
       - cv_coxnet-methods
       - nested_cv_coxnet
       - surv_subject_truth
+      - validate_start_stop
       - censoring_km
       - graf_weights
       - add_graf_weights
       - glmnet_IBS
       - tune_over_alpha
       - summarize_tune_results
+      - collect_checkpoints
+      - estimate_runtime
       - compare_censoring_weights
       - score_outer
       - select_candidate_models
       - tidy_outer_coefficients
+      - summarize_outer_importance
+      - plot_outer_importance
       - fit_ibs_mixed_model
       - fit_lmer_safely
       - plot_tune_alpha_ibs
@@ -315,6 +320,7 @@ reference:
       - create_qmd_renderer
       - get_render_plan
       - is_stale
+      - record_pipeline_hashes
       - save_pipeline
       - load_pipeline
       - join_pipelines
@@ -452,9 +458,12 @@ reference:
       YAML metadata formats.
     contents:
       - package_deliverables
+      - diff_deliverables
       - audit_report_deliverables
       - extract_yaml_formats
       - cbe_docx_review_extract
+      - cbe_review_tracker
+      - validate_review_tracker
       - review_config
 
   - title: Example Datasets
@@ -472,6 +481,8 @@ reference:
       - excel_colnames
       - pretty_name
       - copy_var_labels
+      - cbe_labels
+      - tbl_label_map
       - label_helpers
       - keep_only
       - delete_nul_files

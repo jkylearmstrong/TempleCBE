@@ -1,7 +1,7 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.5.5
+Version: 0.5.6
 Authors@R: 
     c(
         person("J Kyle", "Armstrong", email = "j.kyle.armstrong@temple.edu", role = c("aut", "cre"),
@@ -39,6 +39,7 @@ Imports:
     grid,
     igraph,
     janitor,
+    jsonlite,
     labelled,
     methods,
     nortest,
@@ -86,7 +87,6 @@ Suggests:
     gt,
     haven,
     htmlwidgets,
-    jsonlite,
     jquerylib,
     knitr,
     lme4,

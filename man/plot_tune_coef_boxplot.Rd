@@ -4,13 +4,17 @@
 \alias{plot_tune_coef_boxplot}
 \title{Plot Coefficient Estimates Distribution Across Tuning Resamples}
 \usage{
-plot_tune_coef_boxplot(data, top_n = NULL)
+plot_tune_coef_boxplot(data, top_n = NULL, label_map = NULL, style = NULL)
 }
 \arguments{
 \item{data}{A data frame from [summarize_tune_results()].}
 
 \item{top_n}{Optional integer limit on the number of features to plot (ordered
 by median absolute effect size).}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A `ggplot2` object.

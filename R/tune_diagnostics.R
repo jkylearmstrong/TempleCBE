@@ -127,13 +127,17 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
 #' @param log_ibs Logical. When `TRUE` (default), plots `log10(IBS)`.
 #' @param show_points Logical. Plot individual resample points. Default `TRUE`.
 #' @param show_line Logical. Overlay the fitted regression line. Default `TRUE`.
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @seealso [fit_ibs_mixed_model()], [plot_tune_lambda_ibs()], [plot_tune_coef_boxplot()]
 #' @export
 plot_tune_alpha_ibs <- function(data,
                                 log_ibs = TRUE,
                                 show_points = TRUE,
-                                show_line = TRUE) {
+                                show_line = TRUE,
+                                label_map = NULL,
+                                style = NULL) {
   mm <- fit_ibs_mixed_model(data, log_ibs = log_ibs)
   y_col <- if (isTRUE(log_ibs)) "log10(IBS)" else "IBS"
 
@@ -173,9 +177,11 @@ plot_tune_alpha_ibs <- function(data,
 #' colored by `alpha`.
 #'
 #' @param data A data frame from [summarize_tune_results()].
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @export
-plot_tune_lambda_ibs <- function(data) {
+plot_tune_lambda_ibs <- function(data, label_map = NULL, style = NULL) {
   if (!all(c("lambda", "IBS", "alpha") %in% names(data))) {
     stop("`data` must contain 'lambda', 'IBS', and 'alpha' columns.", call. = FALSE)
   }
@@ -201,13 +207,16 @@ plot_tune_lambda_ibs <- function(data) {
 #' Displays the distribution of IBS across cross-validation or bootstrap splits.
 #'
 #' @param data A data frame from [summarize_tune_results()].
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @export
-plot_tune_ibs_by_resample <- function(data) {
+plot_tune_ibs_by_resample <- function(data, label_map = NULL, style = NULL) {
   split_col <- if ("inner_resamples_splits" %in% names(data)) "inner_resamples_splits" else if ("split" %in% names(data)) "split" else stop("`data` must contain a split identifier column.", call. = FALSE)
   keep_cols <- c(split_col, "alpha", "IBS")
   df <- unique(data[, keep_cols, drop = FALSE])
   df <- df[!is.na(df$IBS), , drop = FALSE]
+  df[[split_col]] <- resolve_cbe_labels(df[[split_col]], label_map = label_map, style = style)
 
   ggplot2::ggplot(df, ggplot2::aes(x = factor(.data[[split_col]]), y = .data$IBS)) +
     ggplot2::geom_boxplot(fill = "#D9D9D9", color = "#2B2B2B", outlier.shape = NA) +
@@ -229,9 +238,11 @@ plot_tune_ibs_by_resample <- function(data) {
 #' @param data A data frame from [summarize_tune_results()].
 #' @param top_n Optional integer limit on the number of features to plot (ordered
 #'   by median absolute effect size).
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @export
-plot_tune_coef_boxplot <- function(data, top_n = NULL) {
+plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style = NULL) {
   if (!all(c("term", "estimate") %in% names(data))) {
     stop("`data` must contain 'term' and 'estimate' columns.", call. = FALSE)
   }
@@ -245,12 +256,14 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL) {
   term_order <- dplyr::arrange(term_order, dplyr::desc(.data$median_abs))
 
   if (!is.null(top_n) && top_n < nrow(term_order)) {
-    selected_terms <- head(term_order$term, top_n)
+    selected_terms <- utils::head(term_order$term, top_n)
     df <- df[df$term %in% selected_terms, , drop = FALSE]
     term_order <- term_order[term_order$term %in% selected_terms, , drop = FALSE]
   }
 
-  df$term <- factor(df$term, levels = rev(term_order$term))
+  mapped_levels <- make.unique(resolve_cbe_labels(term_order$term, label_map = label_map, style = style), sep = " ")
+  lookup <- stats::setNames(mapped_levels, term_order$term)
+  df$term <- factor(unname(lookup[df$term]), levels = rev(mapped_levels))
 
   ggplot2::ggplot(df, ggplot2::aes(x = .data$estimate, y = .data$term)) +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
@@ -269,9 +282,11 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL) {
 #' Integrated Brier Score for each evaluated `alpha` value.
 #'
 #' @param data A data frame from [summarize_tune_results()].
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble of per-alpha IBS statistics.
 #' @export
-tbl_tune_alpha <- function(data) {
+tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
   if (!all(c("alpha", "IBS") %in% names(data))) {
     stop("`data` must contain 'alpha' and 'IBS' columns.", call. = FALSE)
   }
@@ -299,9 +314,11 @@ tbl_tune_alpha <- function(data) {
 #' each feature across resamples.
 #'
 #' @param data A data frame from [summarize_tune_results()].
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble of feature coefficient stability statistics.
 #' @export
-tbl_tune_coef <- function(data) {
+tbl_tune_coef <- function(data, label_map = NULL, style = NULL) {
   if (!all(c("term", "estimate") %in% names(data))) {
     stop("`data` must contain 'term' and 'estimate' columns.", call. = FALSE)
   }
@@ -309,7 +326,7 @@ tbl_tune_coef <- function(data) {
   total_splits <- if ("inner_resamples_splits" %in% names(data)) length(unique(data$inner_resamples_splits)) else length(unique(df$inner_resamples_splits))
 
   res <- dplyr::group_by(df, .data$term)
-  dplyr::summarize(
+  out <- dplyr::summarize(
     res,
     n_selected = sum(.data$estimate != 0),
     prop_selected = sum(.data$estimate != 0) / max(1, total_splits),
@@ -320,4 +337,7 @@ tbl_tune_coef <- function(data) {
     q75 = stats::quantile(.data$estimate, 0.75),
     .groups = "drop"
   )
+  out$term <- resolve_cbe_labels(out$term, label_map = label_map, style = style)
+  out
 }
+

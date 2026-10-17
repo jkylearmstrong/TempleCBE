@@ -23,6 +23,8 @@ render(
   seed = NULL,
   skip_downstream = TRUE,
   rerun = c("none", "full"),
+  stale_by = c("mtime", "hash"),
+  hash_file = NULL,
   ...
 )
 
@@ -44,6 +46,8 @@ render_me(
   seed = NULL,
   skip_downstream = TRUE,
   rerun = c("none", "full"),
+  stale_by = c("mtime", "hash"),
+  hash_file = NULL,
   ...
 )
 }
@@ -86,13 +90,15 @@ if an \code{renv.lock} exists, and warns of any package version discrepancies.}
 
 \item{seed}{Optional integer seed for reproducible document execution.}
 
-\item{skip_downstream}{Logical. When `TRUE` (default), if an upstream node fails during
-pipeline rendering (with `on_error = "continue"`), all dependent downstream reports are
-skipped and marked with status `"skipped_upstream_failure"` to prevent compiling on stale data.}
+\item{skip_downstream}{Logical (default `TRUE`). Skip downstream targets when an upstream target fails.}
 
-\item{rerun}{Rerun strategy shorthand: `"none"` (default, uses `only_stale` and `cache` settings)
-or `"full"` (forces full graph execution with fresh caches, setting `only_stale = FALSE`
-and `cache = "refresh"`).}
+\item{rerun}{One of `"none"` (default) or `"full"` (forces `only_stale = FALSE` and `cache = "refresh"`).}
+
+\item{stale_by}{Staleness strategy: `"mtime"` (default; compares file modification
+times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
+outputs stored in `pipeline_hashes.json`).}
+
+\item{hash_file}{Optional path to `pipeline_hashes.json` when `stale_by = "hash"`.}
 
 \item{...}{Additional arguments passed to rendering engines.}
 }

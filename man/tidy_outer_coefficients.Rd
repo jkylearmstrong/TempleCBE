@@ -22,5 +22,5 @@ tibble with one row per term per model and fold. Suitable for plotting variable
 importance, coefficient paths, and term stability across outer folds.
 }
 \seealso{
-[score_outer()]
+[score_outer()], [summarize_outer_importance()], [plot_outer_importance()]
 }

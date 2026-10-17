@@ -4305,3 +4305,345 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
     suggested_changes_csv = rl_csv
   )
 }
+
+#' Build a Structured Review Response Tracker Requiring Location and Rationale
+#'
+#' Constructs a review response tracker table (and optional Excel workbook or
+#' CSV) from the output of [cbe_docx_review_extract()]. Each comment (and
+#' optionally each reconstructed redline) is given explicit `status`,
+#' `location` (page, section, table, or figure where addressed), and `rationale`
+#' (reason if not adopted, or summary of changes made) columns for validation
+#' by [validate_review_tracker()].
+#'
+#' @param extract An object of class `cbe_review_extract` from
+#'   [cbe_docx_review_extract()], a data frame of extracted comments, or a path
+#'   to a `.docx` file or directory of `.docx` files.
+#' @param file Optional output path (`.xlsx` or `.csv`) to write the tracker
+#'   sheet.
+#' @param include_redlines Logical (default `FALSE`). When `TRUE` and `extract`
+#'   is a `cbe_review_extract` object with non-empty `$redlines`, includes
+#'   tracked paragraph redlines in addition to comments.
+#' @param overwrite Logical (default `TRUE`). Overwrite `file` if it already
+#'   exists.
+#' @return A tibble of class `cbe_review_tracker` with columns `item_id`,
+#'   `file`, `item_type`, `comment_id`, `author`, `paragraph`, `selected_text`,
+#'   `comment`, `trivial`, `status`, `location`, and `rationale`.
+#' @seealso [validate_review_tracker()], [cbe_docx_review_extract()]
+#' @export
+cbe_review_tracker <- function(extract,
+                               file = NULL,
+                               include_redlines = FALSE,
+                               overwrite = TRUE) {
+  if (is.character(extract) && length(extract) == 1L) {
+    extract <- cbe_docx_review_extract(extract, verbose = FALSE)
+  }
+
+  rows_list <- list()
+
+  is_trivial_comment <- function(txt) {
+    cleaned <- tolower(gsub("[[:punct:][:space:]]+", " ", trimws(as.character(txt %||% ""))))
+    cleaned <- trimws(cleaned)
+    !nzchar(cleaned) || cleaned %in% c("ok", "okay", "yes", "agreed", "thanks", "thank you", "good", "lgtm", "done", "typo", "ack", "acknowledged")
+  }
+
+  col_or <- function(df, candidates, default) {
+    for (nm in candidates) {
+      if (nm %in% names(df)) {
+        return(df[[nm]])
+      }
+    }
+    default
+  }
+
+  if (inherits(extract, "cbe_review_extract") ||
+      (is.list(extract) && !is.data.frame(extract) && any(c("comments", "redlines") %in% names(extract)))) {
+    cdf <- extract$comments
+    if (is.data.frame(cdf) && nrow(cdf) > 0L) {
+      comm_txt <- as.character(col_or(cdf, c("comment_text", "comment", "text"), rep("", nrow(cdf))))
+      triv_vec <- if ("trivial" %in% names(cdf)) {
+        as.logical(cdf$trivial)
+      } else {
+        vapply(comm_txt, is_trivial_comment, logical(1), USE.NAMES = FALSE)
+      }
+      rows_list[[length(rows_list) + 1L]] <- tibble::tibble(
+        file = as.character(col_or(cdf, c("file", "document"), rep("", nrow(cdf)))),
+        item_type = rep("comment", nrow(cdf)),
+        comment_id = as.character(col_or(cdf, c("comment_id", "id"), seq_len(nrow(cdf)))),
+        author = as.character(col_or(cdf, c("author"), rep("", nrow(cdf)))),
+        paragraph = as.character(col_or(cdf, c("paragraph_num", "paragraph"), rep("", nrow(cdf)))),
+        selected_text = as.character(col_or(cdf, c("selected_text", "anchor_text"), rep("", nrow(cdf)))),
+        comment = comm_txt,
+        trivial = triv_vec,
+        status = as.character(col_or(cdf, c("status"), rep("open", nrow(cdf)))),
+        location = as.character(col_or(cdf, c("location"), rep("", nrow(cdf)))),
+        rationale = as.character(col_or(cdf, c("rationale"), rep("", nrow(cdf))))
+      )
+    }
+    if (isTRUE(include_redlines) && is.data.frame(extract$redlines) && nrow(extract$redlines) > 0L) {
+      rdf <- extract$redlines
+      rows_list[[length(rows_list) + 1L]] <- tibble::tibble(
+        file = as.character(col_or(rdf, c("file", "document"), rep("", nrow(rdf)))),
+        item_type = rep("redline", nrow(rdf)),
+        comment_id = paste0("R", seq_len(nrow(rdf))),
+        author = as.character(col_or(rdf, c("authors", "author"), rep("", nrow(rdf)))),
+        paragraph = as.character(col_or(rdf, c("paragraph_num", "paragraph"), rep("", nrow(rdf)))),
+        selected_text = as.character(col_or(rdf, c("before_text", "original_text"), rep("", nrow(rdf)))),
+        comment = as.character(col_or(rdf, c("after_text", "revised_text", "redline"), rep("", nrow(rdf)))),
+        trivial = rep(FALSE, nrow(rdf)),
+        status = rep("open", nrow(rdf)),
+        location = rep("", nrow(rdf)),
+        rationale = rep("", nrow(rdf))
+      )
+    }
+  } else if (is.data.frame(extract)) {
+    n <- nrow(extract)
+    comm_txt <- if ("comment" %in% names(extract)) as.character(extract$comment) else if ("comment_text" %in% names(extract)) as.character(extract$comment_text) else if ("text" %in% names(extract)) as.character(extract$text) else rep("", n)
+    triv_vec <- if ("trivial" %in% names(extract)) {
+      as.logical(extract$trivial)
+    } else {
+      vapply(comm_txt, is_trivial_comment, logical(1), USE.NAMES = FALSE)
+    }
+    rows_list[[1L]] <- tibble::tibble(
+      file = if ("file" %in% names(extract)) as.character(extract$file) else if ("document" %in% names(extract)) as.character(extract$document) else rep("document.docx", n),
+      item_type = if ("item_type" %in% names(extract)) as.character(extract$item_type) else rep("comment", n),
+      comment_id = if ("comment_id" %in% names(extract)) as.character(extract$comment_id) else if ("id" %in% names(extract)) as.character(extract$id) else as.character(seq_len(n)),
+      author = if ("author" %in% names(extract)) as.character(extract$author) else rep("", n),
+      paragraph = if ("paragraph" %in% names(extract)) as.character(extract$paragraph) else if ("paragraph_num" %in% names(extract)) as.character(extract$paragraph_num) else rep("", n),
+      selected_text = if ("selected_text" %in% names(extract)) as.character(extract$selected_text) else if ("anchor_text" %in% names(extract)) as.character(extract$anchor_text) else rep("", n),
+      comment = comm_txt,
+      trivial = triv_vec,
+      status = if ("status" %in% names(extract)) as.character(extract$status) else rep("open", n),
+      location = if ("location" %in% names(extract)) as.character(extract$location) else rep("", n),
+      rationale = if ("rationale" %in% names(extract)) as.character(extract$rationale) else rep("", n)
+    )
+  } else {
+    stop("`extract` must be a `cbe_review_extract` object, a data frame, or a path to `.docx` file(s).", call. = FALSE)
+  }
+
+  out <- if (length(rows_list) > 0L) {
+    dplyr::bind_rows(rows_list)
+  } else {
+    tibble::tibble(
+      file = character(),
+      item_type = character(),
+      comment_id = character(),
+      author = character(),
+      paragraph = character(),
+      selected_text = character(),
+      comment = character(),
+      trivial = logical(),
+      status = character(),
+      location = character(),
+      rationale = character()
+    )
+  }
+
+  out <- dplyr::bind_cols(
+    tibble::tibble(item_id = seq_len(nrow(out))),
+    out
+  )
+
+  if (!is.null(file) && is.character(file) && length(file) == 1L && nzchar(file)) {
+    if (file.exists(file) && !isTRUE(overwrite)) {
+      stop(sprintf("File '%s' already exists and `overwrite = FALSE`.", file), call. = FALSE)
+    }
+    dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
+    ext <- tolower(tools::file_ext(file))
+    if (ext == "xlsx") {
+      require_packages("openxlsx", "cbe_review_tracker")
+      wb <- openxlsx::createWorkbook()
+      openxlsx::addWorksheet(wb, "Review Tracker")
+      openxlsx::writeDataTable(wb, "Review Tracker", out, withFilter = TRUE)
+      openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
+    } else {
+      write_review_csv(out, file)
+    }
+    attr(out, "file") <- file
+  }
+
+  class(out) <- c("cbe_review_tracker", class(out))
+  out
+}
+
+#' Validate a Review Response Tracker for Required Location and Rationale
+#'
+#' Verifies that every closed (non-trivial) row in a review tracker records a
+#' concrete document location (e.g. page, section, table, or figure) when
+#' adopted/addressed, or a substantive rationale when not adopted. Bare tokens
+#' such as `"TRUE"`, `"FALSE"`, `"done"`, `"yes"`, `"no"`, or `"ok"` are
+#' rejected.
+#'
+#' @param tracker A `cbe_review_tracker` tibble, data frame, or file path to a
+#'   `.xlsx` or `.csv` review tracker.
+#' @param allow_open Logical (default `FALSE`). When `FALSE`, rows with status
+#'   `"open"` (or blank/`NA`) are also flagged as incomplete. When `TRUE`, only
+#'   rows marked closed/resolved are checked for required location and rationale.
+#' @param error_on_invalid Logical (default `TRUE`). When `TRUE`, stops with an
+#'   informative error listing all invalid rows. When `FALSE`, returns a
+#'   validation report object with `$valid = FALSE` and `$issues`.
+#' @return A list of class `cbe_review_tracker_validation` with elements
+#'   `valid` (logical), `n_rows` (integer), `n_invalid` (integer), and
+#'   `issues` (a tibble with columns `row`, `item_id`, `file`, `status`, and
+#'   `reason`).
+#' @seealso [cbe_review_tracker()], [cbe_docx_review_extract()]
+#' @export
+validate_review_tracker <- function(tracker,
+                                    allow_open = FALSE,
+                                    error_on_invalid = TRUE) {
+  if (is.character(tracker) && length(tracker) == 1L) {
+    if (!file.exists(tracker)) {
+      stop(sprintf("Tracker file does not exist: %s", tracker), call. = FALSE)
+    }
+    ext <- tolower(tools::file_ext(tracker))
+    tracker <- if (ext == "xlsx") {
+      require_packages("readxl", "validate_review_tracker")
+      readxl::read_excel(tracker)
+    } else {
+      utils::read.csv(tracker, stringsAsFactors = FALSE)
+    }
+  }
+
+  if (!is.data.frame(tracker)) {
+    stop("`tracker` must be a data frame or a path to a `.xlsx`/`.csv` tracker file.", call. = FALSE)
+  }
+
+  req_cols <- c("status", "location", "rationale")
+  missing_cols <- setdiff(req_cols, names(tracker))
+  if (length(missing_cols) > 0L) {
+    stop("`tracker` is missing required column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  n <- nrow(tracker)
+  if (n == 0L) {
+    res <- list(
+      valid = TRUE,
+      n_rows = 0L,
+      n_invalid = 0L,
+      issues = tibble::tibble(
+        row = integer(),
+        item_id = character(),
+        file = character(),
+        status = character(),
+        reason = character()
+      )
+    )
+    class(res) <- "cbe_review_tracker_validation"
+    return(res)
+  }
+
+  item_ids <- if ("item_id" %in% names(tracker)) as.character(tracker$item_id) else as.character(seq_len(n))
+  files <- if ("file" %in% names(tracker)) as.character(tracker$file) else rep("", n)
+  trivials <- if ("trivial" %in% names(tracker)) as.logical(tracker$trivial) else rep(FALSE, n)
+  trivials[is.na(trivials)] <- FALSE
+
+  bare_forbidden <- c("true", "false", "done", "yes", "no", "ok", "okay", "fixed", "na", "n/a", "tbd", "none", "t", "f", "y", "n")
+  open_states <- c("", "open", "pending", "in_progress", "in progress", "todo", "to do")
+  adopted_states <- c("adopted", "addressed", "accepted", "implemented", "completed", "resolved", "closed")
+  rejected_states <- c("not_adopted", "not adopted", "declined", "rejected", "wont_fix", "won't fix", "deferred", "disagree")
+
+  is_concrete_text <- function(val) {
+    if (is.null(val) || is.na(val)) return(FALSE)
+    v <- tolower(trimws(as.character(val)))
+    nzchar(v) && !(v %in% bare_forbidden)
+  }
+
+  issue_rows <- list()
+  add_issue <- function(r_idx, reason_str) {
+    issue_rows[[length(issue_rows) + 1L]] <<- tibble::tibble(
+      row = as.integer(r_idx),
+      item_id = item_ids[r_idx],
+      file = files[r_idx],
+      status = as.character(tracker$status[r_idx] %||% ""),
+      reason = reason_str
+    )
+  }
+
+  for (i in seq_len(n)) {
+    st_raw <- if (is.na(tracker$status[i])) "" else trimws(as.character(tracker$status[i]))
+    st <- tolower(st_raw)
+    loc_raw <- if (is.na(tracker$location[i])) "" else trimws(as.character(tracker$location[i]))
+    rat_raw <- if (is.na(tracker$rationale[i])) "" else trimws(as.character(tracker$rationale[i]))
+
+    if (st %in% c("true", "false", "done", "yes", "no", "ok")) {
+      add_issue(i, sprintf("Status '%s' is not acceptable ('TRUE/FALSE/done' rejected); use 'adopted'/'addressed' or 'not_adopted'.", st_raw))
+      next
+    }
+
+    if (st %in% open_states) {
+      if (!isTRUE(allow_open)) {
+        add_issue(i, "Row is still open/unresolved.")
+      }
+      next
+    }
+
+    if (trivials[i]) {
+      next
+    }
+
+    has_loc <- is_concrete_text(loc_raw)
+    has_rat <- is_concrete_text(rat_raw)
+
+    if (nzchar(loc_raw) && !has_loc) {
+      add_issue(i, sprintf("Location '%s' is not a valid concrete location (specify page, section, table, or figure).", loc_raw))
+      next
+    }
+    if (nzchar(rat_raw) && !has_rat) {
+      add_issue(i, sprintf("Rationale '%s' is not a substantive explanation ('TRUE/FALSE/done' rejected).", rat_raw))
+      next
+    }
+
+    if (st %in% rejected_states) {
+      if (!has_rat) {
+        add_issue(i, "Row marked as not adopted/declined without a rationale explaining why.")
+      }
+    } else if (st %in% adopted_states) {
+      if (!has_loc) {
+        add_issue(i, "Row closed/adopted without a concrete location (page, section, table, or figure).")
+      }
+    } else {
+      if (!has_loc && !has_rat) {
+        add_issue(i, sprintf("Row with status '%s' is missing both a location and a rationale.", st_raw))
+      } else if (!has_loc) {
+        add_issue(i, sprintf("Row with status '%s' is missing a concrete location.", st_raw))
+      }
+    }
+  }
+
+  issues_tbl <- if (length(issue_rows) > 0L) {
+    dplyr::bind_rows(issue_rows)
+  } else {
+    tibble::tibble(
+      row = integer(),
+      item_id = character(),
+      file = character(),
+      status = character(),
+      reason = character()
+    )
+  }
+
+  is_ok <- nrow(issues_tbl) == 0L
+  if (!is_ok && isTRUE(error_on_invalid)) {
+    bullet_lines <- sprintf(
+      "  - Row %d (item %s%s): %s",
+      issues_tbl$row,
+      issues_tbl$item_id,
+      ifelse(nzchar(issues_tbl$file), paste0(", ", issues_tbl$file), ""),
+      issues_tbl$reason
+    )
+    stop(
+      sprintf("Review tracker validation failed (%d invalid row(s)):\n%s",
+              nrow(issues_tbl), paste(utils::head(bullet_lines, 15), collapse = "\n")),
+      call. = FALSE
+    )
+  }
+
+  res <- list(
+    valid = is_ok,
+    n_rows = as.integer(n),
+    n_invalid = as.integer(nrow(issues_tbl)),
+    issues = issues_tbl
+  )
+  class(res) <- "cbe_review_tracker_validation"
+  res
+}
+

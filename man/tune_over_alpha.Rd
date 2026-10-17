@@ -13,7 +13,8 @@ tune_over_alpha(
   formulas = NULL,
   progress = FALSE,
   seed = NULL,
-  checkpoint_dir = NULL
+  checkpoint_dir = NULL,
+  checkpoint_mismatch = c("recompute", "error")
 )
 }
 \arguments{
@@ -39,7 +40,13 @@ a list of one-sided formulas, each fit as a separate model (see
 and formulas.}
 
 \item{checkpoint_dir}{Optional directory path to save per-alpha checkpoint files.
-Finished fits are loaded from disk on rerun, skipping recomputation.}
+Finished fits are loaded from disk on rerun, skipping recomputation when
+their checkpoint fingerprint matches.}
+
+\item{checkpoint_mismatch}{Action when a checkpoint file exists in
+`checkpoint_dir` but its stored fingerprint does not match the current
+inputs/settings: `"recompute"` (default; warns and recomputes the task) or
+`"error"` (stops immediately).}
 }
 \value{
 A list named by `alpha`, one element per fit, each the output of

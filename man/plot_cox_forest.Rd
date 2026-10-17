@@ -19,7 +19,9 @@ plot_cox_forest(
   x_breaks = NULL,
   title = NULL,
   caption = NULL,
-  base_size = 13
+  base_size = 13,
+  label_map = NULL,
+  style = NULL
 )
 }
 \arguments{
@@ -57,6 +59,10 @@ bars by whether \code{p_col} is below 0.05 and adds a legend.}
 \item{caption}{Optional plot caption.}
 
 \item{base_size}{Base font size (default: 13).}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A ggplot2 object.

@@ -4,10 +4,14 @@
 \alias{tbl_tune_coef}
 \title{Summary Table of Coefficient Stability Across Tuning Resamples}
 \usage{
-tbl_tune_coef(data)
+tbl_tune_coef(data, label_map = NULL, style = NULL)
 }
 \arguments{
 \item{data}{A data frame from [summarize_tune_results()].}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A tibble of feature coefficient stability statistics.

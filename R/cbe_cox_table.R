@@ -13,12 +13,18 @@
 #' @param significance Logical; if \code{TRUE}, appends a \code{sig} column of
 #'   significance stars (three asterisks for p < 0.001, two for p < 0.01, one for
 #'   p < 0.05) and bolds the \code{p.value} text of significant rows.
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble formatted for presentation, with columns \code{Variable}, \code{Level},
 #'   \code{Role}, \code{HR}, \code{log(HR)}, \code{95\% CI}, \code{p.value}, and (if
 #'   \code{significance = TRUE}) \code{sig}.
 #' @seealso [cbe_cox_single()], [cbe_cox_multi()]
 #' @export
-cbe_cox_table <- function(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE) {
+cbe_cox_table <- function(x,
+                          sort = c("none", "magnitude", "pvalue"),
+                          significance = FALSE,
+                          label_map = NULL,
+                          style = NULL) {
   sort <- match.arg(sort)
 
   if (!inherits(x, c("cbe_cox", "cbe_cox_multi"))) {
@@ -26,6 +32,27 @@ cbe_cox_table <- function(x, sort = c("none", "magnitude", "pvalue"), significan
   }
 
   tab <- x$table
+  if ("Variable" %in% names(tab)) {
+    if (inherits(x, "cbe_cox") && !is.null(x$var_name)) {
+      mapped_nm <- resolve_cbe_labels(x$var_name, label_map = label_map, style = style)
+      if (!identical(mapped_nm, x$var_name)) {
+        tab$Variable <- rep(mapped_nm, nrow(tab))
+      } else {
+        tab$Variable <- resolve_cbe_labels(tab$Variable, label_map = label_map, style = style)
+      }
+    } else if (inherits(x, "cbe_cox_multi") && !is.null(x$var_labels)) {
+      inv_map <- stats::setNames(names(x$var_labels), unname(x$var_labels))
+      raw_vars <- ifelse(tab$Variable %in% names(inv_map), unname(inv_map[tab$Variable]), tab$Variable)
+      mapped_vars <- resolve_cbe_labels(raw_vars, label_map = label_map, style = style)
+      tab$Variable <- ifelse(
+        mapped_vars != raw_vars,
+        mapped_vars,
+        resolve_cbe_labels(tab$Variable, label_map = label_map, style = style)
+      )
+    } else {
+      tab$Variable <- resolve_cbe_labels(tab$Variable, label_map = label_map, style = style)
+    }
+  }
   ci_col <- grep("% CI$", names(tab), value = TRUE)[1]
   if (is.na(ci_col)) ci_col <- "95% CI"
 
@@ -66,3 +93,8 @@ cbe_cox_table <- function(x, sort = c("none", "magnitude", "pvalue"), significan
 #' @rdname cbe_cox_table
 #' @export
 cox_table <- cbe_cox_table
+
+#' @rdname cbe_cox_table
+#' @export
+tbl_cox <- cbe_cox_table
+

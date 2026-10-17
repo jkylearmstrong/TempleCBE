@@ -4,7 +4,14 @@
 \alias{plot_tune_alpha_ibs}
 \title{Plot Integrated Brier Score Against Alpha With Dynamic Model Fit}
 \usage{
-plot_tune_alpha_ibs(data, log_ibs = TRUE, show_points = TRUE, show_line = TRUE)
+plot_tune_alpha_ibs(
+  data,
+  log_ibs = TRUE,
+  show_points = TRUE,
+  show_line = TRUE,
+  label_map = NULL,
+  style = NULL
+)
 }
 \arguments{
 \item{data}{A data frame from [summarize_tune_results()].}
@@ -14,6 +21,10 @@ plot_tune_alpha_ibs(data, log_ibs = TRUE, show_points = TRUE, show_line = TRUE)
 \item{show_points}{Logical. Plot individual resample points. Default `TRUE`.}
 
 \item{show_line}{Logical. Overlay the fitted regression line. Default `TRUE`.}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A `ggplot2` object.

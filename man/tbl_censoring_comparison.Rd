@@ -10,7 +10,9 @@ tbl_censoring_comparison(
   recipe = NULL,
   ...,
   format = c("tibble", "gt"),
-  digits = 4
+  digits = 4,
+  label_map = NULL,
+  style = NULL
 )
 }
 \arguments{
@@ -26,6 +28,10 @@ passed to [compare_censoring_weights()] (such as an `rsplit`, `nested_cv`, or li
 \item{format}{Output format: `"tibble"` (default) or `"gt"` (requires \pkg{gt}).}
 
 \item{digits}{Number of decimal places for numeric metrics (default 4).}
+
+\item{label_map}{Optional label mapping passed to [resolve_cbe_labels()].}
+
+\item{style}{Optional label style (`"short"` or `"full"`) when resolving `label_map`.}
 }
 \value{
 A tibble or \code{gt_tbl} object displaying side-by-side IBS, ranks, rank differences,

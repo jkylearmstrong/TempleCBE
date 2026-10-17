@@ -29,7 +29,7 @@ resolve_var_label <- function(x, default = NA_character_) {
 #' @param value A character string specifying the label or name.
 #' @return For getters, the label or name string (or \code{NULL} if unset).
 #'   For setters, the modified object \code{x} with the attribute attached.
-#' @name cbe_labels
+#' @name cbe_dataset_labels
 #' @export
 #' @examples
 #' df <- mtcars
@@ -46,14 +46,14 @@ cbe_dataset_label <- function(x) {
   as.character(lbl)
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `cbe_dataset_label<-` <- function(x, value) {
   attr(x, "dataset_label") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 cbe_database_name <- function(x) {
   nm <- attr(x, "database_name", exact = TRUE)
@@ -63,14 +63,14 @@ cbe_database_name <- function(x) {
   as.character(nm)
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `cbe_database_name<-` <- function(x, value) {
   attr(x, "database_name") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 cbe_database_label <- function(x) {
   lbl <- attr(x, "database_label", exact = TRUE)
@@ -80,14 +80,14 @@ cbe_database_label <- function(x) {
   as.character(lbl)
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `cbe_database_label<-` <- function(x, value) {
   attr(x, "database_label") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @param labels A named character vector or list mapping dataset names to dataset labels.
 #' @export
 cbe_set_dataset_labels <- function(x, labels) {

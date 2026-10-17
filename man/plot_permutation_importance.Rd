@@ -9,7 +9,9 @@ plot_permutation_importance(
   top_n = 20,
   fill_color = "#9D2235",
   title = "Feature Permutation Importance",
-  base_size = 12
+  base_size = 12,
+  label_map = NULL,
+  style = NULL
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ plot_permutation_importance(
 \item{title}{Optional plot title.}
 
 \item{base_size}{Base font size (default 12).}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A `ggplot2` object.

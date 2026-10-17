@@ -5,11 +5,12 @@
 \title{Package Pipeline Deliverables into a Structured Zip Archive}
 \usage{
 package_deliverables(
-  pipeline_objects,
+  pipeline_objects = list(),
   output_formats = c("pdf", "docx"),
   data_deliverables = list(),
   zip_path = NULL,
-  include_pipeline_graph = TRUE
+  include_pipeline_graph = TRUE,
+  stamp = FALSE
 )
 }
 \arguments{
@@ -27,6 +28,11 @@ Deliverables that share a file name within a folder are kept, the later ones wit
 suffix (and a warning), rather than overwriting each other.}
 
 \item{include_pipeline_graph}{Logical; whether to include static/interactive pipeline DAG graphs (default: TRUE).}
+
+\item{stamp}{Logical, `Date`, or character string (default `FALSE`). When
+`TRUE`, appends the current date (`YYYY-MM-DD`) to the archive name (and
+records `attr(path, "stamp")`). A custom date or version string (e.g.
+`"2026-10-17"`) may also be supplied.}
 }
 \value{
 Absolute path to the generated zip file.
@@ -35,4 +41,7 @@ Absolute path to the generated zip file.
 Traverses computational pipeline objects (or explicit file lists), gathers
 all rendered reports and data deliverables, verifies existence on disk,
 organizes them into stage-prefixed folders, and builds a distribution ZIP file.
+}
+\seealso{
+[diff_deliverables()], [audit_report_deliverables()]
 }

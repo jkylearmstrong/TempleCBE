@@ -9,7 +9,10 @@ is_stale(
   producer_script,
   all_objects = NULL,
   seen = character(),
-  cache = NULL
+  cache = NULL,
+  stale_by = c("mtime", "hash"),
+  hash_file = NULL,
+  hash_store = NULL
 )
 }
 \arguments{
@@ -22,6 +25,15 @@ is_stale(
 \item{seen}{Internal character vector of visited node names to prevent cycles.}
 
 \item{cache}{Internal environment caching staleness decisions.}
+
+\item{stale_by}{Staleness strategy: `"mtime"` (default; compares modification
+times) or `"hash"` (compares SHA-256 content hashes against
+`pipeline_hashes.json`).}
+
+\item{hash_file}{Optional path to `pipeline_hashes.json` when
+`stale_by = "hash"`.}
+
+\item{hash_store}{Internal pre-loaded hash store list.}
 }
 \value{
 Logical `TRUE` if stale, `FALSE` otherwise.
@@ -32,4 +44,9 @@ dependencies, or anything those dependencies read (through helper scripts); and,
 `all_objects` is given, when any dependency is itself the output of a stale producer, however
 far up the pipeline and whether or not that producer renders a document. Without
 `all_objects` only the direct sources are compared.
+}
+\details{
+When `stale_by = "hash"`, file modification timestamps are ignored and
+staleness is determined by comparing SHA-256 content hashes of the output,
+producer script, and all declared inputs against `pipeline_hashes.json`.
 }

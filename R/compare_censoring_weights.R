@@ -21,12 +21,21 @@
 #'   or `"nonzero"` (filters to non-zero estimates).
 #' @param seed Optional integer seed for reproducible model fitting across future plans.
 #' @param checkpoint_dir Optional directory path to save per-task checkpoint files.
-#'   Finished tasks are loaded from disk on rerun, skipping recomputation.
+#'   Finished tasks are loaded from disk on rerun when their fingerprint matches,
+#'   skipping recomputation.
+#' @param checkpoint_mismatch Action when a checkpoint file in `checkpoint_dir`
+#'   has a mismatched fingerprint: `"recompute"` (default; warns and recomputes)
+#'   or `"error"` (stops immediately).
+#' @param shard Optional integer vector `c(i, n)` specifying that this machine
+#'   should evaluate shard `i` of `n` into `checkpoint_dir`. Use
+#'   [collect_checkpoints()] to merge all shards once finished.
 #' @param progress Show progress bar (default `FALSE`).
 #' @return A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
 #'   `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
 #'   coefficient estimates).
-#' @seealso [glmnet_IBS()], [tidy_outer_coefficients()], [compare_censoring_weights()], [select_candidate_models()]
+#' @seealso [glmnet_IBS()], [tidy_outer_coefficients()], [summarize_outer_importance()],
+#'   [plot_outer_importance()], [collect_checkpoints()], [compare_censoring_weights()],
+#'   [select_candidate_models()]
 #' @export
 score_outer <- function(object,
                         grid,
@@ -36,10 +45,14 @@ score_outer <- function(object,
                         coefficients = c("all", "nonzero"),
                         seed = NULL,
                         checkpoint_dir = NULL,
+                        checkpoint_mismatch = c("recompute", "error"),
+                        shard = NULL,
                         progress = FALSE) {
   require_packages(c("glmnet", "survival", "rsample", "yardstick", "recipes"), "score_outer")
   censoring_weights <- match.arg(censoring_weights)
   coefficients <- match.arg(coefficients)
+  checkpoint_mismatch <- match.arg(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
   dots <- list(...)
 
   # Resolve splits and fold identifiers
@@ -116,30 +129,24 @@ score_outer <- function(object,
     }
   }
 
-  score_one_task <- function(task_idx, s_seed) {
-    if (!is.null(s_seed)) {
-      local_seed(s_seed)
-    }
+  base_dots <- c(list(recipe = recipe, censoring_weights = censoring_weights), dots)
+  splits_canon <- lapply(splits, canonicalize_split_for_hash)
+  run_fp <- compute_checkpoint_fingerprint(
+    split = NULL,
+    dots = base_dots,
+    seed = seed,
+    extra = list(
+      fn = "score_outer",
+      splits = splits_canon,
+      grid = as.data.frame(grid_df),
+      coefficients = coefficients
+    )
+  )
+
+  resolve_task_call_args <- function(task_idx) {
     t_row <- tasks[task_idx, ]
     r <- grid_df[t_row$row_idx, , drop = FALSE]
     curr_split <- splits[[t_row$split_idx]]
-    curr_fold <- fold_names[t_row$split_idx]
-
-    ckpt_file <- if (!is.null(checkpoint_dir)) {
-      safe_fold <- gsub("[^A-Za-z0-9._-]", "_", curr_fold)
-      safe_model <- gsub("[^A-Za-z0-9._-]", "_", r$model[[1]])
-      file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
-    } else {
-      NULL
-    }
-
-    if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
-      cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
-      if (is.data.frame(cached) && nrow(cached) > 0L) {
-        return(cached)
-      }
-    }
-
     a <- r$alpha[[1]]
     call_args <- c(
       list(object = curr_split, alpha = a, recipe = recipe, censoring_weights = censoring_weights),
@@ -160,6 +167,107 @@ score_outer <- function(object,
         call_args$feature_names <- recipe$var_info$variable[!roles %in% c("id variable", "outcome")]
       }
     }
+    call_args
+  }
+
+  task_fps <- lapply(seq_len(n_tasks), function(task_idx) {
+    t_row <- tasks[task_idx, ]
+    r <- grid_df[t_row$row_idx, , drop = FALSE]
+    curr_split <- splits[[t_row$split_idx]]
+    curr_fold <- fold_names[t_row$split_idx]
+    c_args <- resolve_task_call_args(task_idx)
+    c_dots <- c_args[setdiff(names(c_args), c("object", "alpha"))]
+    compute_checkpoint_fingerprint(
+      split = curr_split,
+      dots = c_dots,
+      alpha = r$alpha[[1]],
+      formula = c_args$formula,
+      seed = task_seeds[[task_idx]],
+      extra = list(
+        fn = "score_outer_task",
+        outer_fold = curr_fold,
+        model = r$model[[1]],
+        coefficients = coefficients
+      )
+    )
+  })
+
+  ckpt_files <- lapply(seq_len(n_tasks), function(task_idx) {
+    if (is.null(checkpoint_dir)) return(NULL)
+    t_row <- tasks[task_idx, ]
+    r <- grid_df[t_row$row_idx, , drop = FALSE]
+    curr_fold <- fold_names[t_row$split_idx]
+    safe_fold <- gsub("[^A-Za-z0-9._-]", "_", curr_fold)
+    safe_model <- gsub("[^A-Za-z0-9._-]", "_", r$model[[1]])
+    file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
+  })
+
+  if (!is.null(shard)) {
+    active_indices <- which(((seq_len(n_tasks) - 1L) %% shard[2]) + 1L == shard[1])
+  } else {
+    active_indices <- seq_len(n_tasks)
+  }
+
+  if (!is.null(checkpoint_dir) && length(active_indices) > 0L) {
+    mismatch_msgs <- character()
+    for (k in active_indices) {
+      f_k <- ckpt_files[[k]]
+      if (!is.null(f_k) && file.exists(f_k)) {
+        chk <- read_verified_checkpoint(f_k, task_fps[[k]], checkpoint_mismatch = checkpoint_mismatch)
+        if (identical(chk$status, "mismatch")) {
+          mismatch_msgs <- c(mismatch_msgs, chk$message)
+          unlink(f_k)
+        }
+      }
+    }
+    if (is.null(shard)) {
+      all_existing <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
+      other_files <- setdiff(all_existing, unlist(ckpt_files))
+      for (of in other_files) {
+        if (file.exists(of)) {
+          cached_of <- tryCatch(readRDS(of), error = function(e) NULL)
+          found_run_fp <- if (!is.null(cached_of)) attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) else NULL
+          if (!identical(found_run_fp, run_fp)) {
+            msg <- sprintf(
+              "Checkpoint '%s' has a mismatched fingerprint (inputs, recipe, features, censoring_weights, or settings changed).",
+              basename(of)
+            )
+            if (checkpoint_mismatch == "error") {
+              stop(msg, call. = FALSE)
+            }
+            mismatch_msgs <- c(mismatch_msgs, msg)
+            unlink(of)
+          }
+        }
+      }
+    }
+    if (length(mismatch_msgs) > 0L) {
+      warning(sprintf(
+        "%d checkpoint file(s) in '%s' had mismatched fingerprints and will be recomputed. First mismatch: %s",
+        length(mismatch_msgs), checkpoint_dir, mismatch_msgs[1]
+      ), call. = FALSE)
+    }
+  }
+
+  score_one_task <- function(task_idx, s_seed) {
+    if (!is.null(s_seed)) {
+      local_seed(s_seed)
+    }
+    t_row <- tasks[task_idx, ]
+    r <- grid_df[t_row$row_idx, , drop = FALSE]
+    curr_fold <- fold_names[t_row$split_idx]
+    ckpt_file <- ckpt_files[[task_idx]]
+    t_fp <- task_fps[[task_idx]]
+
+    if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+      chk <- read_verified_checkpoint(ckpt_file, t_fp, checkpoint_mismatch = "recompute")
+      if (identical(chk$status, "hit")) {
+        return(chk$value)
+      }
+    }
+
+    a <- r$alpha[[1]]
+    call_args <- resolve_task_call_args(task_idx)
 
     res <- tryCatch(
       do.call(glmnet_IBS, call_args),
@@ -190,9 +298,21 @@ score_outer <- function(object,
       coefficients = list(coef_tbl)
     )
 
-    if (!is.null(ckpt_file)) {
-      tryCatch(saveRDS(res_row, ckpt_file), error = function(e) NULL)
-    }
+    res_row <- write_verified_checkpoint(
+      res_row,
+      ckpt_file = ckpt_file,
+      fingerprint = t_fp,
+      run_fingerprint = run_fp,
+      meta = list(
+        fn = "score_outer",
+        task_idx = task_idx,
+        n_tasks = n_tasks,
+        outer_fold = curr_fold,
+        model = r$model[[1]],
+        alpha = a,
+        shard = shard
+      )
+    )
 
     res_row
   }
@@ -204,16 +324,16 @@ score_outer <- function(object,
 
   if (can_furrr) {
     res_list <- furrr::future_map2(
-      seq_len(n_tasks),
-      task_seeds,
+      active_indices,
+      task_seeds[active_indices],
       score_one_task,
       .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
       .progress = progress
     )
   } else {
     res_list <- purrr::map2(
-      seq_len(n_tasks),
-      task_seeds,
+      active_indices,
+      task_seeds[active_indices],
       score_one_task
     )
   }
@@ -226,6 +346,7 @@ score_outer <- function(object,
   if (n_failed > 0L) {
     warning(sprintf("%d candidate model fit(s) failed in score_outer().", n_failed), call. = FALSE)
   }
+  attr(res_tbl, "checkpoint_run_fingerprint") <- run_fp
   res_tbl
 }
 
@@ -238,7 +359,7 @@ score_outer <- function(object,
 #' @param x A tibble returned by [score_outer()].
 #' @return A long tibble containing `outer_fold` (if present), `model`, `alpha`,
 #'   `formula` (if present), `IBS`, `lambda`, `term`, and `estimate`.
-#' @seealso [score_outer()]
+#' @seealso [score_outer()], [summarize_outer_importance()], [plot_outer_importance()]
 #' @export
 tidy_outer_coefficients <- function(x) {
   if (!is.data.frame(x)) {
@@ -266,6 +387,237 @@ tidy_outer_coefficients <- function(x) {
 #' @rdname tidy_outer_coefficients
 #' @export
 unnest_outer_coefficients <- tidy_outer_coefficients
+
+#' Summarize Predictor Importance and Selection Stability Across Outer Folds
+#'
+#' Computes selection frequency (\eqn{\hat{\beta} \neq 0}), median, range, and
+#' interquartile summary statistics of model coefficients across outer folds and
+#' candidate models. Accepts either the long tibble returned by
+#' [tidy_outer_coefficients()] or the nested tibble returned by [score_outer()].
+#'
+#' @param x A tibble returned by [tidy_outer_coefficients()] (with `term` and
+#'   `estimate` columns) or [score_outer()] (with a `coefficients` list column).
+#' @param nonzero_only Logical (default `FALSE`). When `TRUE`, `median_estimate`,
+#'   `min_estimate`, `max_estimate`, and quantiles are computed over non-zero
+#'   estimates only (with `0` when never selected). When `FALSE`, they are
+#'   computed across all evaluated models/folds.
+#' @param label_map Optional label mapping (named character vector, data frame
+#'   with `term`/`short`/`full`, or `cbe_label_map` object). Defaults to the
+#'   active package label map from [cbe_labels()].
+#' @param style Label style to use when applying `label_map`: `"short"` or
+#'   `"full"`.
+#' @return A tibble with one row per predictor and columns `term`, `label`,
+#'   `n_models`, `n_selected`, `selection_freq`, `median_estimate`,
+#'   `mean_estimate`, `min_estimate`, `max_estimate`, `range_estimate`,
+#'   `q25_estimate`, `q75_estimate`, and `iqr_estimate`, ordered by descending
+#'   `selection_freq` and `abs(median_estimate)`.
+#' @seealso [tidy_outer_coefficients()], [plot_outer_importance()], [score_outer()]
+#' @export
+summarize_outer_importance <- function(x,
+                                       nonzero_only = FALSE,
+                                       label_map = NULL,
+                                       style = NULL) {
+  if (!is.data.frame(x)) {
+    stop("`x` must be a data frame from `tidy_outer_coefficients()` or `score_outer()`.", call. = FALSE)
+  }
+  total_models_override <- NULL
+  if ("coefficients" %in% names(x) && !"term" %in% names(x)) {
+    total_models_override <- nrow(x)
+    x <- tidy_outer_coefficients(x)
+  }
+  req <- c("term", "estimate")
+  missing_cols <- setdiff(req, names(x))
+  if (length(missing_cols) > 0L) {
+    stop("`x` is missing required column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  if (nrow(x) == 0L) {
+    return(tibble::tibble(
+      term = character(),
+      label = character(),
+      n_models = integer(),
+      n_selected = integer(),
+      selection_freq = numeric(),
+      median_estimate = numeric(),
+      mean_estimate = numeric(),
+      min_estimate = numeric(),
+      max_estimate = numeric(),
+      range_estimate = numeric(),
+      q25_estimate = numeric(),
+      q75_estimate = numeric(),
+      iqr_estimate = numeric()
+    ))
+  }
+
+  # Determine total models evaluated if x came from coefficients = "nonzero"
+  id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(x))
+  n_distinct_models <- if (!is.null(total_models_override)) {
+    as.integer(total_models_override)
+  } else if (length(id_cols) > 0L) {
+    nrow(dplyr::distinct(x[, id_cols, drop = FALSE]))
+  } else {
+    NA_integer_
+  }
+
+  terms_u <- unique(as.character(x$term))
+  rows <- lapply(terms_u, function(tm) {
+    sub_df <- x[x$term == tm & !is.na(x$estimate), , drop = FALSE]
+    n_obs <- nrow(sub_df)
+    n_mod <- if (!is.na(n_distinct_models) && n_distinct_models > n_obs) n_distinct_models else n_obs
+    est_all <- if (n_mod > n_obs) c(sub_df$estimate, rep(0, n_mod - n_obs)) else sub_df$estimate
+    nz_mask <- est_all != 0
+    n_sel <- sum(nz_mask)
+    freq <- if (n_mod > 0L) n_sel / n_mod else NA_real_
+
+    vals <- if (isTRUE(nonzero_only)) {
+      if (n_sel > 0L) est_all[nz_mask] else 0
+    } else {
+      if (length(est_all) > 0L) est_all else NA_real_
+    }
+
+    med_v <- stats::median(vals, na.rm = TRUE)
+    mean_v <- mean(vals, na.rm = TRUE)
+    min_v <- min(vals, na.rm = TRUE)
+    max_v <- max(vals, na.rm = TRUE)
+    q25_v <- unname(stats::quantile(vals, probs = 0.25, na.rm = TRUE))
+    q75_v <- unname(stats::quantile(vals, probs = 0.75, na.rm = TRUE))
+
+    tibble::tibble(
+      term = tm,
+      label = resolve_cbe_labels(tm, label_map = label_map, style = style),
+      n_models = as.integer(n_mod),
+      n_selected = as.integer(n_sel),
+      selection_freq = as.numeric(freq),
+      median_estimate = as.numeric(med_v),
+      mean_estimate = as.numeric(mean_v),
+      min_estimate = as.numeric(min_v),
+      max_estimate = as.numeric(max_v),
+      range_estimate = as.numeric(max_v - min_v),
+      q25_estimate = as.numeric(q25_v),
+      q75_estimate = as.numeric(q75_v),
+      iqr_estimate = as.numeric(q75_v - q25_v)
+    )
+  })
+
+  out <- dplyr::bind_rows(rows)
+  ord <- order(-out$selection_freq, -abs(out$median_estimate), out$term)
+  out[ord, , drop = FALSE]
+}
+
+#' Plot Outer-Fold Coefficient Importance and Selection Frequency
+#'
+#' Visualizes predictor coefficient distributions and selection frequencies
+#' across outer resampling folds. Accepts output from [tidy_outer_coefficients()],
+#' [score_outer()], or [summarize_outer_importance()].
+#'
+#' @param x A tibble from [tidy_outer_coefficients()], [score_outer()], or
+#'   [summarize_outer_importance()].
+#' @param top_n Optional integer restricting the plot to the top `top_n`
+#'   predictors ranked by selection frequency and absolute median coefficient.
+#' @param nonzero_only Logical (default `FALSE`). When `TRUE`, drops zero
+#'   coefficient estimates before drawing boxplots.
+#' @param type Plot type: `"boxplot"` (default; horizontal boxplot or range
+#'   intervals of coefficients annotated with selection percentage) or
+#'   `"frequency"` (bar/lollipop chart of selection frequency).
+#' @param label_map Optional label mapping passed to [resolve_cbe_labels()].
+#' @param style Label style (`"short"` or `"full"`) when resolving `label_map`.
+#' @return A `ggplot` object.
+#' @seealso [summarize_outer_importance()], [tidy_outer_coefficients()], [score_outer()]
+#' @export
+plot_outer_importance <- function(x,
+                                  top_n = NULL,
+                                  nonzero_only = FALSE,
+                                  type = c("boxplot", "frequency"),
+                                  label_map = NULL,
+                                  style = NULL) {
+  require_packages("ggplot2", "plot_outer_importance")
+  type <- match.arg(type)
+  if (!is.data.frame(x)) {
+    stop("`x` must be a data frame.", call. = FALSE)
+  }
+
+  is_summary <- all(c("term", "selection_freq", "median_estimate", "min_estimate", "max_estimate") %in% names(x)) &&
+    !"estimate" %in% names(x)
+
+  if (is_summary) {
+    sum_df <- x
+    sum_df$label <- resolve_cbe_labels(sum_df$term, label_map = label_map, style = style)
+    raw_df <- NULL
+  } else {
+    if ("coefficients" %in% names(x) && !"term" %in% names(x)) {
+      raw_df <- tidy_outer_coefficients(x)
+    } else {
+      raw_df <- x
+    }
+    sum_df <- summarize_outer_importance(raw_df, nonzero_only = nonzero_only, label_map = label_map, style = style)
+  }
+
+  if (nrow(sum_df) == 0L) {
+    stop("No terms available to plot in `plot_outer_importance()`.", call. = FALSE)
+  }
+
+  if (!is.null(top_n) && is.numeric(top_n) && top_n > 0 && nrow(sum_df) > top_n) {
+    sum_df <- sum_df[seq_len(as.integer(top_n)), , drop = FALSE]
+  }
+
+  # Create display label with selection frequency for boxplot axis
+  sum_df$axis_label <- sprintf("%s (%d%%)", sum_df$label, round(100 * sum_df$selection_freq))
+  # Make unique in case two terms map to the same display label
+  sum_df$axis_label <- make.unique(sum_df$axis_label, sep = " ")
+  level_order <- rev(sum_df$axis_label)
+
+  if (type == "frequency") {
+    sum_df$label_f <- factor(make.unique(sum_df$label, sep = " "), levels = rev(make.unique(sum_df$label, sep = " ")))
+    p <- ggplot2::ggplot(sum_df, ggplot2::aes(x = .data$label_f, y = .data$selection_freq)) +
+      ggplot2::geom_col(fill = "#0072B2", alpha = 0.85, width = 0.65) +
+      ggplot2::coord_flip() +
+      ggplot2::scale_y_continuous(labels = function(v) paste0(round(100 * v), "%"), limits = c(0, 1)) +
+      ggplot2::labs(
+        title = "Outer-Fold Predictor Selection Frequency",
+        subtitle = "Proportion of outer models with non-zero coefficient",
+        x = "Predictor",
+        y = "Selection Frequency"
+      ) +
+      ggplot2::theme_minimal()
+    return(p)
+  }
+
+  if (!is.null(raw_df)) {
+    plot_df <- raw_df[raw_df$term %in% sum_df$term & !is.na(raw_df$estimate), , drop = FALSE]
+    if (isTRUE(nonzero_only)) {
+      plot_df <- plot_df[plot_df$estimate != 0, , drop = FALSE]
+    }
+    label_lookup <- stats::setNames(sum_df$axis_label, sum_df$term)
+    plot_df$axis_label <- factor(unname(label_lookup[plot_df$term]), levels = level_order)
+
+    p <- ggplot2::ggplot(plot_df, ggplot2::aes(x = .data$axis_label, y = .data$estimate)) +
+      ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+      ggplot2::geom_boxplot(fill = "#56B4E9", alpha = 0.6, outlier.shape = 16, outlier.size = 1.5) +
+      ggplot2::coord_flip() +
+      ggplot2::labs(
+        title = "Outer-Fold Coefficient Importance",
+        subtitle = "Coefficient distribution across outer folds (with selection frequency %)",
+        x = "Predictor (Selection %)",
+        y = "Coefficient Estimate (log-hazard)"
+      ) +
+      ggplot2::theme_minimal()
+    return(p)
+  }
+
+  sum_df$axis_label <- factor(sum_df$axis_label, levels = level_order)
+  ggplot2::ggplot(sum_df, ggplot2::aes(x = .data$axis_label, y = .data$median_estimate)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+    ggplot2::geom_linerange(ggplot2::aes(ymin = .data$min_estimate, ymax = .data$max_estimate), color = "#0072B2", linewidth = 0.8) +
+    ggplot2::geom_point(size = 2.5, color = "#D55E00") +
+    ggplot2::coord_flip() +
+    ggplot2::labs(
+      title = "Outer-Fold Coefficient Importance",
+      subtitle = "Median and [min, max] range across outer folds (with selection frequency %)",
+      x = "Predictor (Selection %)",
+      y = "Coefficient Estimate (log-hazard)"
+    ) +
+    ggplot2::theme_minimal()
+}
+
 
 #' Compare Model Performance Under Unweighted and IPCW Censoring Weights
 #'
@@ -491,6 +843,8 @@ select_candidate_models <- function(tune_results,
 #' @param ... Additional arguments passed to [compare_censoring_weights()].
 #' @param format Output format: `"tibble"` (default) or `"gt"` (requires \pkg{gt}).
 #' @param digits Number of decimal places for numeric metrics (default 4).
+#' @param label_map Optional label mapping passed to [resolve_cbe_labels()].
+#' @param style Optional label style (`"short"` or `"full"`) when resolving `label_map`.
 #' @return A tibble or \code{gt_tbl} object displaying side-by-side IBS, ranks, rank differences,
 #'   and rank agreement correlation statistics.
 #' @seealso [compare_censoring_weights()], [score_outer()]
@@ -500,7 +854,9 @@ tbl_censoring_comparison <- function(data,
                                      recipe = NULL,
                                      ...,
                                      format = c("tibble", "gt"),
-                                     digits = 4) {
+                                     digits = 4,
+                                     label_map = NULL,
+                                     style = NULL) {
   format <- match.arg(format)
 
   comp_df <- if (is.data.frame(data) && all(c("ibs_none", "ibs_ipcw") %in% names(data))) {
@@ -517,6 +873,12 @@ tbl_censoring_comparison <- function(data,
   id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(comp_df))
   metric_cols <- c("ibs_none", "ibs_ipcw", "rank_none", "rank_ipcw", "rank_diff")
   display_df <- dplyr::select(comp_df, dplyr::all_of(c(id_cols, metric_cols)))
+  if ("model" %in% names(display_df)) {
+    display_df$model <- resolve_cbe_labels(display_df$model, label_map = label_map, style = style)
+  }
+  if ("formula" %in% names(display_df)) {
+    display_df$formula <- resolve_cbe_formula_labels(display_df$formula, label_map = label_map, style = style)
+  }
 
   if (format == "gt") {
     require_packages("gt", "tbl_censoring_comparison(format = 'gt')")

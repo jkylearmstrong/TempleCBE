@@ -586,12 +586,184 @@ create_qmd_renderer <- function(
   if (length(times) == 0L) NA_real_ else max(times)
 }
 
+#' Collect all direct and transitive FileUses source files for a producer
+#' @noRd
+.collect_source_files <- function(f, seen = character()) {
+  if (f@name %in% seen) {
+    return(list())
+  }
+  seen <- c(seen, f@name)
+  out <- list(f)
+  if (is(f, "FileUses") && length(f@dependencies) > 0L) {
+    for (dep in f@dependencies) {
+      out <- c(out, .collect_source_files(dep, seen = seen))
+    }
+  }
+  out
+}
+
+#' Compute SHA-256 content hash of a file on disk
+#' @noRd
+.file_content_hash <- function(path) {
+  if (is.null(path) || length(path) != 1L || is.na(path) || !nzchar(path) ||
+      !file.exists(path) || dir.exists(path)) {
+    return(NA_character_)
+  }
+  tryCatch({
+    con <- file(path, "rb")
+    on.exit(close(con), add = TRUE)
+    paste0(as.character(openssl::sha256(con)), collapse = "")
+  }, error = function(e) NA_character_)
+}
+
+#' Canonical key for a pipeline FilePath object or path string
+#' @noRd
+.hash_node_key <- function(x) {
+  if (is(x, "FilePath")) {
+    p <- x@path
+    if (!is.null(p) && nzchar(p)) {
+      return(gsub("\\\\", "/", p))
+    }
+    return(x@name)
+  }
+  gsub("\\\\", "/", as.character(x)[1])
+}
+
+#' Resolve path to pipeline_hashes.json
+#' @noRd
+.resolve_hash_file <- function(all_objects = NULL, hash_file = NULL, default_dir = NULL) {
+  if (!is.null(hash_file) && is.character(hash_file) && length(hash_file) == 1L && nzchar(hash_file)) {
+    return(hash_file)
+  }
+  opt_hf <- getOption("templecbe.pipeline_hashes")
+  if (!is.null(opt_hf) && is.character(opt_hf) && length(opt_hf) == 1L && nzchar(opt_hf)) {
+    return(opt_hf)
+  }
+  if (!is.null(default_dir) && is.character(default_dir) && length(default_dir) == 1L && dir.exists(default_dir)) {
+    return(file.path(default_dir, "pipeline_hashes.json"))
+  }
+  if (!is.null(all_objects) && is.list(all_objects) && length(all_objects) > 0L) {
+    decls <- .declared_files(all_objects)
+    paths <- vapply(decls, function(d) if (is(d, "FilePath")) d@path else "", character(1))
+    paths <- paths[nzchar(paths)]
+    if (length(paths) > 0L) {
+      dirs <- unique(dirname(paths))
+      existing_dirs <- dirs[dir.exists(dirs)]
+      if (length(existing_dirs) > 0L) {
+        return(file.path(existing_dirs[1], "pipeline_hashes.json"))
+      }
+    }
+  }
+  file.path(getwd(), "pipeline_hashes.json")
+}
+
+#' Read pipeline_hashes.json into a list
+#' @noRd
+.read_pipeline_hashes <- function(hash_file) {
+  if (is.null(hash_file) || !file.exists(hash_file)) {
+    return(list(version = "1.0", files = list(), outputs = list()))
+  }
+  tryCatch({
+    res <- jsonlite::fromJSON(hash_file, simplifyVector = FALSE)
+    if (!is.list(res)) return(list(version = "1.0", files = list(), outputs = list()))
+    if (is.null(res$files)) res$files <- list()
+    if (is.null(res$outputs)) res$outputs <- list()
+    res
+  }, error = function(e) list(version = "1.0", files = list(), outputs = list()))
+}
+
+#' Record or Update Content Hashes in `pipeline_hashes.json`
+#'
+#' Computes SHA-256 content hashes for all declared input files, producer
+#' scripts, and existing output deliverables in a pipeline and writes them to
+#' `pipeline_hashes.json`. Used by `render(stale_by = "hash")` and
+#' `is_stale(stale_by = "hash")` so reruns across machines or git checkouts
+#' only re-render reports whose inputs or scripts genuinely changed in content.
+#'
+#' @param all_objects A list of [FilePath], [FileUses], and [FileOutputs]
+#'   objects (or a single pipeline object).
+#' @param hash_file Optional file path for the JSON hash store. Defaults to
+#'   `"pipeline_hashes.json"` in the pipeline directory.
+#' @return The path to the written `pipeline_hashes.json` file (invisibly).
+#' @seealso [is_stale()], [get_render_plan()], [render()]
+#' @export
+record_pipeline_hashes <- function(all_objects, hash_file = NULL) {
+  if (is(all_objects, "FilePath")) {
+    all_objects <- list(all_objects)
+  }
+  hash_file <- .resolve_hash_file(all_objects = all_objects, hash_file = hash_file)
+  store <- .read_pipeline_hashes(hash_file)
+
+  decls <- .declared_files(all_objects)
+  for (d in decls) {
+    if (is(d, "FilePath") && file.exists(d@path) && !dir.exists(d@path)) {
+      h <- .file_content_hash(d@path)
+      if (!is.na(h)) {
+        store$files[[.hash_node_key(d)]] <- h
+        store$files[[d@name]] <- h
+      }
+    }
+  }
+
+  producers <- Filter(function(x) is(x, "FileOutputs"), all_objects)
+  for (prod in producers) {
+    src_objs <- .collect_source_files(prod)
+    src_hashes <- list()
+    for (s in src_objs) {
+      sh <- .file_content_hash(s@path)
+      src_hashes[[.hash_node_key(s)]] <- if (is.na(sh)) NULL else sh
+      src_hashes[[s@name]] <- if (is.na(sh)) NULL else sh
+    }
+
+    out_objs <- prod@output
+    if (length(out_objs) == 0L && isTRUE(prod@renders)) {
+      base_path <- sub("\\.(qmd|Rmd|rmd)$", "", prod@path, ignore.case = TRUE)
+      yaml_fmts <- extract_yaml_formats(prod@path)
+      expected_fmts <- if (length(yaml_fmts) > 0) yaml_fmts else c("pdf", "docx", "html")
+      exts <- unique(stats::na.omit(c("pdf", "docx", "html", .format_extension(expected_fmts))))
+      cand <- paste0(base_path, ".", exts)
+      existing <- cand[file.exists(cand)]
+      out_objs <- lapply(existing, function(f) FilePath(name = basename(f), path = f))
+    }
+
+    for (o in out_objs) {
+      if (file.exists(o@path) && !dir.exists(o@path)) {
+        oh <- .file_content_hash(o@path)
+        if (!is.na(oh)) {
+          entry <- list(
+            output_hash = oh,
+            producer = prod@name,
+            source_hashes = src_hashes
+          )
+          store$outputs[[.hash_node_key(o)]] <- entry
+          store$outputs[[o@name]] <- entry
+          store$files[[.hash_node_key(o)]] <- oh
+          store$files[[o@name]] <- oh
+        }
+      }
+    }
+  }
+
+  store$version <- "1.0"
+  store$updated_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  dir.create(dirname(hash_file), recursive = TRUE, showWarnings = FALSE)
+  jsonlite::write_json(store, hash_file, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  invisible(hash_file)
+}
+
 #' Is something a file reads, directly or further up the pipeline, out of date?
 #'
 #' A file with a producer is out of date when [.is_stale()] says so; a helper script
 #' is out of date when anything it reads is. Plain input files never are.
 #' @noRd
-.upstream_stale <- function(node, all_objects, seen = character(), cache = NULL) {
+.upstream_stale <- function(node,
+                            all_objects,
+                            seen = character(),
+                            cache = NULL,
+                            stale_by = c("mtime", "hash"),
+                            hash_file = NULL,
+                            hash_store = NULL) {
+  stale_by <- match.arg(stale_by)
   if (node@name %in% seen) {
     return(FALSE)
   }
@@ -601,11 +773,15 @@ create_qmd_renderer <- function(
   seen <- c(seen, node@name)
   producer <- .find_producer(node, all_objects)
   result <- if (!is.null(producer)) {
-    .is_stale(node, producer, all_objects, seen, cache)
+    .is_stale(
+      node, producer, all_objects, seen, cache,
+      stale_by = stale_by, hash_file = hash_file, hash_store = hash_store
+    )
   } else if (is(node, "FileUses") && length(node@dependencies) > 0L) {
     any(vapply(
       node@dependencies, .upstream_stale, logical(1),
-      all_objects = all_objects, seen = seen, cache = cache
+      all_objects = all_objects, seen = seen, cache = cache,
+      stale_by = stale_by, hash_file = hash_file, hash_store = hash_store
     ))
   } else {
     FALSE
@@ -622,14 +798,109 @@ create_qmd_renderer <- function(
 #' far up the pipeline and whether or not that producer renders a document. Without
 #' `all_objects` only the direct sources are compared.
 #'
+#' When `stale_by = "hash"`, file modification timestamps are ignored and
+#' staleness is determined by comparing SHA-256 content hashes of the output,
+#' producer script, and all declared inputs against `pipeline_hashes.json`.
+#'
 #' @param output_file A [FilePath] object representing the output file to check.
 #' @param producer_script A [FileOutputs] object representing the producer.
 #' @param all_objects Optional list of pipeline objects to check upstream staleness.
 #' @param seen Internal character vector of visited node names to prevent cycles.
 #' @param cache Internal environment caching staleness decisions.
+#' @param stale_by Staleness strategy: `"mtime"` (default; compares modification
+#'   times) or `"hash"` (compares SHA-256 content hashes against
+#'   `pipeline_hashes.json`).
+#' @param hash_file Optional path to `pipeline_hashes.json` when
+#'   `stale_by = "hash"`.
+#' @param hash_store Internal pre-loaded hash store list.
 #' @return Logical `TRUE` if stale, `FALSE` otherwise.
 #' @export
-is_stale <- function(output_file, producer_script, all_objects = NULL, seen = character(), cache = NULL) {
+is_stale <- function(output_file,
+                     producer_script,
+                     all_objects = NULL,
+                     seen = character(),
+                     cache = NULL,
+                     stale_by = c("mtime", "hash"),
+                     hash_file = NULL,
+                     hash_store = NULL) {
+  stale_by <- match.arg(stale_by)
+
+  if (is(output_file, "FileOutputs") && missing(producer_script)) {
+    if (length(output_file@output) == 0L) {
+      return(FALSE)
+    }
+    return(any(vapply(
+      output_file@output, is_stale, logical(1),
+      producer_script = output_file,
+      all_objects = all_objects,
+      seen = seen,
+      cache = cache,
+      stale_by = stale_by,
+      hash_file = hash_file,
+      hash_store = hash_store
+    )))
+  }
+
+  if (stale_by == "hash") {
+    if (!file.exists(output_file@path) || dir.exists(output_file@path)) {
+      return(TRUE)
+    }
+    if (is.null(hash_store)) {
+      hf <- .resolve_hash_file(all_objects = all_objects, hash_file = hash_file, default_dir = dirname(output_file@path))
+      hash_store <- .read_pipeline_hashes(hf)
+    }
+    out_key <- .hash_node_key(output_file)
+    rec <- hash_store$outputs[[out_key]] %||% hash_store$outputs[[output_file@name]]
+    curr_out_hash <- .file_content_hash(output_file@path)
+    if (is.na(curr_out_hash)) {
+      return(TRUE)
+    }
+    if (!is.null(rec)) {
+      if (!identical(rec$output_hash, curr_out_hash)) {
+        return(TRUE)
+      }
+      src_objs <- .collect_source_files(producer_script)
+      for (s in src_objs) {
+        if (!file.exists(s@path) || dir.exists(s@path)) next
+        curr_s_hash <- .file_content_hash(s@path)
+        s_key <- .hash_node_key(s)
+        rec_s_hash <- rec$source_hashes[[s_key]] %||%
+          rec$source_hashes[[s@name]] %||%
+          hash_store$files[[s_key]] %||%
+          hash_store$files[[s@name]]
+        if (is.null(rec_s_hash) || !identical(as.character(rec_s_hash), curr_s_hash)) {
+          return(TRUE)
+        }
+      }
+    } else {
+      # Fallback to flat `files` map if user supplied a simple {file: sha256} JSON
+      rec_out <- hash_store$files[[out_key]] %||% hash_store$files[[output_file@name]]
+      if (is.null(rec_out) || !identical(as.character(rec_out), curr_out_hash)) {
+        return(TRUE)
+      }
+      src_objs <- .collect_source_files(producer_script)
+      for (s in src_objs) {
+        if (!file.exists(s@path) || dir.exists(s@path)) next
+        curr_s_hash <- .file_content_hash(s@path)
+        s_key <- .hash_node_key(s)
+        rec_s_hash <- hash_store$files[[s_key]] %||% hash_store$files[[s@name]]
+        if (is.null(rec_s_hash) || !identical(as.character(rec_s_hash), curr_s_hash)) {
+          return(TRUE)
+        }
+      }
+    }
+
+    if (!is.null(all_objects) && length(producer_script@dependencies) > 0L) {
+      upstream <- vapply(
+        producer_script@dependencies, .upstream_stale, logical(1),
+        all_objects = all_objects, seen = c(seen, output_file@name), cache = cache,
+        stale_by = stale_by, hash_file = hash_file, hash_store = hash_store
+      )
+      return(any(upstream))
+    }
+    return(FALSE)
+  }
+
   out_mtime <- output_file@mtime
   if (is.na(out_mtime)) {
     return(TRUE)
@@ -645,7 +916,8 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
   if (!is.null(all_objects) && length(producer_script@dependencies) > 0L) {
     upstream <- vapply(
       producer_script@dependencies, .upstream_stale, logical(1),
-      all_objects = all_objects, seen = c(seen, output_file@name), cache = cache
+      all_objects = all_objects, seen = c(seen, output_file@name), cache = cache,
+      stale_by = stale_by, hash_file = hash_file, hash_store = hash_store
     )
     return(any(upstream))
   }
@@ -664,7 +936,13 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
 #' @param cache Internal environment caching staleness decisions.
 #' @return Logical TRUE if stale, FALSE otherwise.
 #' @noRd
-.is_renderer_stale <- function(qmd, all_objects = NULL, cache = NULL) {
+.is_renderer_stale <- function(qmd,
+                               all_objects = NULL,
+                               cache = NULL,
+                               stale_by = c("mtime", "hash"),
+                               hash_file = NULL,
+                               hash_store = NULL) {
+  stale_by <- match.arg(stale_by)
   if (length(qmd@output) == 0L) {
     # Node has no declared outputs: check deliverables beside the qmd/Rmd
     base_path <- sub("\\.(qmd|Rmd|rmd)$", "", qmd@path, ignore.case = TRUE)
@@ -680,7 +958,7 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
     # If one or more deliverables exist, check whether any of them is stale relative to qmd or dependencies
     for (f in existing) {
       fp <- FilePath(name = basename(f), path = f)
-      if (.is_stale(fp, qmd, all_objects, cache = cache)) {
+      if (.is_stale(fp, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
         return(TRUE)
       }
     }
@@ -688,7 +966,7 @@ is_stale <- function(output_file, producer_script, all_objects = NULL, seen = ch
   }
 
   for (out_file in qmd@output) {
-    if (.is_stale(out_file, qmd, all_objects, cache = cache)) {
+    if (.is_stale(out_file, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
       return(TRUE)
     }
   }
@@ -2028,13 +2306,21 @@ export_subgraph <- function(
 #'   to end execution at.
 #' @param dry_run Logical. When `TRUE`, prints the ordered plan to console without
 #'   executing and returns the planned objects invisibly.
+#' @param stale_by Staleness strategy: `"mtime"` (default; compares modification
+#'   times) or `"hash"` (compares SHA-256 content hashes stored in
+#'   `pipeline_hashes.json`).
+#' @param hash_file Optional path to `pipeline_hashes.json` when
+#'   `stale_by = "hash"`.
 #' @return A list of FileOutputs objects (the QMDs) in the correct render order.
 #' @export
 get_render_plan <- function(all_objects,
                             only_stale = TRUE,
                             from = NULL,
                             to = NULL,
-                            dry_run = FALSE) {
+                            dry_run = FALSE,
+                            stale_by = c("mtime", "hash"),
+                            hash_file = NULL) {
+  stale_by <- match.arg(stale_by)
   if (is(all_objects, "FilePath")) {
     all_objects <- list(all_objects) # a single object, not wrapped in a list
   }
@@ -2120,8 +2406,14 @@ get_render_plan <- function(all_objects,
     initial_stale_qmds <- c()
 
     stale_cache <- new.env(parent = emptyenv())
+    hash_store <- if (stale_by == "hash") {
+      hf <- .resolve_hash_file(all_objects = all_objects, hash_file = hash_file)
+      .read_pipeline_hashes(hf)
+    } else {
+      NULL
+    }
     for (qmd in renderers) {
-      if (.is_renderer_stale(qmd, all_objects, cache = stale_cache)) {
+      if (.is_renderer_stale(qmd, all_objects, cache = stale_cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
         initial_stale_qmds <- c(initial_stale_qmds, qmd@name)
       }
     }
@@ -2131,7 +2423,7 @@ get_render_plan <- function(all_objects,
     stale_helpers <- Filter(
       function(x) {
         is(x, "FileOutputs") && !x@renders &&
-          any(vapply(x@output, function(o) .is_stale(o, x, all_objects, cache = stale_cache), logical(1)))
+          any(vapply(x@output, function(o) .is_stale(o, x, all_objects, cache = stale_cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store), logical(1)))
       },
       all_objects
     )

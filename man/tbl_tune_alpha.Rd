@@ -4,10 +4,14 @@
 \alias{tbl_tune_alpha}
 \title{Summary Table of Tuning Performance Across Alpha Values}
 \usage{
-tbl_tune_alpha(data)
+tbl_tune_alpha(data, label_map = NULL, style = NULL)
 }
 \arguments{
 \item{data}{A data frame from [summarize_tune_results()].}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A tibble of per-alpha IBS statistics.

@@ -228,6 +228,12 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
 #' @param renv_guard Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
 #'   if an \code{renv.lock} exists, and warns of any package version discrepancies.
 #' @param seed Optional integer seed for reproducible document execution.
+#' @param skip_downstream Logical (default `TRUE`). Skip downstream targets when an upstream target fails.
+#' @param rerun One of `"none"` (default) or `"full"` (forces `only_stale = FALSE` and `cache = "refresh"`).
+#' @param stale_by Staleness strategy: `"mtime"` (default; compares file modification
+#'   times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
+#'   outputs stored in `pipeline_hashes.json`).
+#' @param hash_file Optional path to `pipeline_hashes.json` when `stale_by = "hash"`.
 #' @param ... Additional arguments passed to rendering engines.
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
@@ -248,8 +254,11 @@ render <- function(path,
                    seed = NULL,
                    skip_downstream = TRUE,
                    rerun = c("none", "full"),
+                   stale_by = c("mtime", "hash"),
+                   hash_file = NULL,
                    ...) {
   rerun <- match.arg(rerun)
+  stale_by <- match.arg(stale_by)
   if (rerun == "full") {
     only_stale <- FALSE
     cache <- "refresh"
@@ -269,11 +278,35 @@ render <- function(path,
   # 1. Resolve pipeline graph if path is a list of pipeline objects or a single FileOutputs/FilePath
   is_pipeline_obj <- function(x) is(x, "FilePath") || is(x, "FileOutputs") || is(x, "FileUses")
   pipeline_graph <- NULL
+  orig_pipeline_objects <- NULL
   if (is.list(path) && length(path) > 0L && all(vapply(path, is_pipeline_obj, logical(1)))) {
     path <- refresh_pipeline(path)
+    orig_pipeline_objects <- path
     pipeline_graph <- tryCatch(as_igraph(path), error = function(e) NULL)
-    plan <- get_render_plan(path, only_stale = only_stale, from = from, to = to, dry_run = FALSE)
+    plan <- get_render_plan(
+      path,
+      only_stale = only_stale,
+      from = from,
+      to = to,
+      dry_run = FALSE,
+      stale_by = stale_by,
+      hash_file = hash_file
+    )
     path <- plan
+  } else if (is_pipeline_obj(path)) {
+    orig_pipeline_objects <- refresh_pipeline(list(path))
+    if (stale_by == "hash" && isTRUE(only_stale)) {
+      plan <- get_render_plan(
+        orig_pipeline_objects,
+        only_stale = only_stale,
+        from = from,
+        to = to,
+        dry_run = FALSE,
+        stale_by = stale_by,
+        hash_file = hash_file
+      )
+      path <- plan
+    }
   } else if (!is.null(from) || !is.null(to)) {
     if (is.list(path) && length(path) > 0L) {
       names_vec <- if (!is.null(names(path)) && any(nzchar(names(path)))) {
@@ -792,6 +825,24 @@ render <- function(path,
   }
 
   times <- dplyr::bind_rows(times_list)
+
+  if ((stale_by == "hash" || !is.null(hash_file)) && !isTRUE(dry_run)) {
+    objs_for_hash <- orig_pipeline_objects
+    if (is.null(objs_for_hash) && length(targets) > 0L) {
+      objs_for_hash <- lapply(targets, function(t) {
+        FileOutputs(name = t$name, path = t$path, renders = TRUE)
+      })
+    }
+    if (!is.null(objs_for_hash) && length(objs_for_hash) > 0L) {
+      hf_written <- tryCatch(
+        record_pipeline_hashes(refresh_pipeline(objs_for_hash), hash_file = hash_file),
+        error = function(e) NULL
+      )
+      if (!is.null(hf_written)) {
+        attr(times, "hash_file") <- hf_written
+      }
+    }
+  }
 
   if (isTRUE(manifest) && length(targets) > 0 && !isTRUE(dry_run)) {
     out_dirs <- unique(vapply(targets, function(t) dirname(t$path), character(1)))

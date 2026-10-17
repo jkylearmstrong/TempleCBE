@@ -4,12 +4,16 @@
 \alias{tbl_permutation_importance}
 \title{Summary Table of Permutation Variable Importance}
 \usage{
-tbl_permutation_importance(data, top_n = NULL)
+tbl_permutation_importance(data, top_n = NULL, label_map = NULL, style = NULL)
 }
 \arguments{
 \item{data}{A data frame from [summarize_dalex_importance()].}
 
 \item{top_n}{Optional integer limit on the number of features to return.}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A tibble with `rank`, `variable`, `importance`, and `dropout_loss`.

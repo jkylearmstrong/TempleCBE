@@ -119,6 +119,8 @@ summarize_dalex_importance <- function(explainer, data = NULL, y = NULL, B = 10,
 #' @param fill_color Bar fill color (default Temple Cherry `"#9D2235"`).
 #' @param title Optional plot title.
 #' @param base_size Base font size (default 12).
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @seealso [summarize_dalex_importance()], [tbl_permutation_importance()]
 #' @export
@@ -126,7 +128,9 @@ plot_permutation_importance <- function(data,
                                         top_n = 20,
                                         fill_color = "#9D2235",
                                         title = "Feature Permutation Importance",
-                                        base_size = 12) {
+                                        base_size = 12,
+                                        label_map = NULL,
+                                        style = NULL) {
   if (!all(c("variable", "importance") %in% names(data))) {
     stop("`data` must contain 'variable' and 'importance' columns.", call. = FALSE)
   }
@@ -136,7 +140,8 @@ plot_permutation_importance <- function(data,
     df <- utils::head(df, top_n)
   }
 
-  df$variable <- factor(df$variable, levels = rev(df$variable))
+  mapped_vars <- make.unique(resolve_cbe_labels(df$variable, label_map = label_map, style = style), sep = " ")
+  df$variable <- factor(mapped_vars, levels = rev(mapped_vars))
 
   ggplot2::ggplot(df, ggplot2::aes(x = .data$importance, y = .data$variable)) +
     ggplot2::geom_col(fill = fill_color, width = 0.7) +
@@ -154,9 +159,11 @@ plot_permutation_importance <- function(data,
 #'
 #' @param data A data frame from [summarize_dalex_importance()].
 #' @param top_n Optional integer limit on the number of features to return.
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble with `rank`, `variable`, `importance`, and `dropout_loss`.
 #' @export
-tbl_permutation_importance <- function(data, top_n = NULL) {
+tbl_permutation_importance <- function(data, top_n = NULL, label_map = NULL, style = NULL) {
   if (!all(c("variable", "importance") %in% names(data))) {
     stop("`data` must contain 'variable' and 'importance' columns.", call. = FALSE)
   }
@@ -167,5 +174,7 @@ tbl_permutation_importance <- function(data, top_n = NULL) {
   if (!is.null(top_n) && top_n < nrow(df)) {
     df <- utils::head(df, top_n)
   }
+  df$variable <- resolve_cbe_labels(df$variable, label_map = label_map, style = style)
   tibble::as_tibble(df[, c("rank", "variable", "importance", intersect(c("dropout_loss"), names(df)))])
 }
+

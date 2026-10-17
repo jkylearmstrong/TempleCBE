@@ -460,3 +460,266 @@ format_ids <- function(ids, max = 10) {
   ids <- unique(ids)
   paste0(paste(utils::head(ids, max), collapse = ", "), if (length(ids) > max) ", ..." else "")
 }
+
+#' Pre-Flight Validation for Counting-Process (Start/Stop) Survival Data
+#'
+#' Inspects counting-process survival data before model tuning and reports
+#' subject, interval, event, and censored counts alongside structural checks for
+#' overlapping or gapped intervals, non-positive interval lengths (`stop <= start`),
+#' events occurring before a subject's last interval, rows appearing after an
+#' event, and tied stop/event times. Emits a prominent warning when no subjects
+#' are censored (e.g. 100% event rate).
+#'
+#' @param data A data frame containing counting-process survival intervals.
+#' @param id,start,stop,status Column names (as strings or bare symbols) for the
+#'   subject identifier, interval start time, interval stop time, and event
+#'   status indicator (`0` = censored, `1` = event). Defaults to `"id"`,
+#'   `"tstart"`, `"tstop"`, and `"status"`.
+#' @param warn_no_censoring Logical (default `TRUE`). Emit a warning when every
+#'   subject experiences an event (`n_censored == 0`).
+#' @param error_on_invalid Logical (default `FALSE`). When `TRUE`, stops with an
+#'   error if any structural issue (missing values, `stop <= start`, overlapping
+#'   intervals, events before the last interval, or rows after an event) is
+#'   detected.
+#' @return A 1-row tibble of class `cbe_start_stop_validation` with columns:
+#'   `n_subjects`, `n_intervals`, `n_events`, `n_subjects_with_event`,
+#'   `n_censored`, `censoring_rate`, `n_overlapping`, `n_gaps`,
+#'   `n_events_before_last`, `n_rows_after_event`, `n_nonpositive_length`,
+#'   `n_tied_stop_times`, `n_tied_event_times`, `n_missing`, `has_censoring`,
+#'   and `valid`. Detailed vectors of affected subject IDs are stored in
+#'   `attr(x, "details")`.
+#' @seealso [surv_subject_truth()], [glmnet_IBS()]
+#' @export
+#' @examples
+#' df <- data.frame(
+#'   id = c(1, 1, 2, 3),
+#'   tstart = c(0, 5, 0, 0),
+#'   tstop = c(5, 10, 8, 12),
+#'   status = c(0, 1, 0, 1)
+#' )
+#' validate_start_stop(df, id = "id", start = "tstart", stop = "tstop", status = "status")
+validate_start_stop <- function(data,
+                                id = "id",
+                                start = "tstart",
+                                stop = "tstop",
+                                status = "status",
+                                warn_no_censoring = TRUE,
+                                error_on_invalid = FALSE) {
+  if (!is.data.frame(data)) {
+    stop("`data` must be a data frame.", call. = FALSE)
+  }
+
+  resolve_col <- function(quo_arg, default_nm) {
+    if (rlang::quo_is_missing(quo_arg)) {
+      return(default_nm)
+    }
+    expr <- rlang::quo_get_expr(quo_arg)
+    if (is.symbol(expr)) {
+      nm <- as.character(expr)
+      if (nm %in% names(data)) {
+        return(nm)
+      }
+    }
+    val <- rlang::eval_tidy(quo_arg)
+    if (is.character(val) && length(val) == 1L) {
+      return(val)
+    }
+    stop("Column specification must be a single column name or symbol.", call. = FALSE)
+  }
+
+  id_col <- resolve_col(rlang::enquo(id), "id")
+  start_col <- resolve_col(rlang::enquo(start), "tstart")
+  stop_col <- resolve_col(rlang::enquo(stop), "tstop")
+  status_col <- resolve_col(rlang::enquo(status), "status")
+
+  req_cols <- c(id_col, start_col, stop_col, status_col)
+  missing_cols <- setdiff(req_cols, names(data))
+  if (length(missing_cols) > 0L) {
+    stop("`data` is missing required column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  sid_raw <- data[[id_col]]
+  t0_raw <- as.numeric(data[[start_col]])
+  t1_raw <- as.numeric(data[[stop_col]])
+  st_raw <- data[[status_col]]
+  if (is.logical(st_raw)) {
+    st_raw <- as.integer(st_raw)
+  } else if (is.factor(st_raw)) {
+    st_raw <- as.numeric(as.character(st_raw))
+  } else {
+    st_raw <- as.numeric(st_raw)
+  }
+
+  na_row <- is.na(sid_raw) | is.na(t0_raw) | is.na(t1_raw) | is.na(st_raw)
+  n_missing <- sum(na_row)
+
+  keep <- !na_row
+  sid <- sid_raw[keep]
+  t0 <- t0_raw[keep]
+  t1 <- t1_raw[keep]
+  st <- st_raw[keep]
+
+  n_intervals <- nrow(data)
+  if (length(sid) == 0L) {
+    out <- tibble::tibble(
+      n_subjects = 0L,
+      n_intervals = as.integer(n_intervals),
+      n_events = 0L,
+      n_subjects_with_event = 0L,
+      n_censored = 0L,
+      censoring_rate = NA_real_,
+      n_overlapping = 0L,
+      n_gaps = 0L,
+      n_events_before_last = 0L,
+      n_rows_after_event = 0L,
+      n_nonpositive_length = 0L,
+      n_tied_stop_times = 0L,
+      n_tied_event_times = 0L,
+      n_missing = as.integer(n_missing),
+      has_censoring = FALSE,
+      valid = n_missing == 0L
+    )
+    attr(out, "details") <- list(
+      overlapping_ids = character(),
+      gapped_ids = character(),
+      events_before_last_ids = character(),
+      rows_after_event_ids = character(),
+      nonpositive_length_ids = character(),
+      issues = if (n_missing > 0L) sprintf("%d row(s) with missing values", n_missing) else character()
+    )
+    class(out) <- c("cbe_start_stop_validation", class(out))
+    return(out)
+  }
+
+  # Sort within subject by start, stop, while preserving original order for "rows after event" check
+  ord <- order(sid, t0, t1)
+  sid_s <- sid[ord]
+  t0_s <- t0[ord]
+  t1_s <- t1[ord]
+  st_s <- st[ord]
+
+  first <- !duplicated(sid_s)
+  last <- !duplicated(sid_s, fromLast = TRUE)
+  prev_stop <- c(NA_real_, t1_s[-length(t1_s)])
+  prev_stop[first] <- NA_real_
+
+  nonpos <- t1_s <= t0_s
+  overlap <- !first & (t0_s < prev_stop)
+  gap <- !first & (t0_s > prev_stop)
+  early_event <- (st_s == 1) & !last
+
+  # Rows appearing after an event within the same subject
+  prior_events <- stats::ave(st_s == 1, sid_s, FUN = function(v) {
+    if (length(v) <= 1L) return(rep(FALSE, length(v)))
+    c(FALSE, cumsum(v[-length(v)]) > 0)
+  })
+  after_event <- as.logical(prior_events)
+
+  u_subjects <- unique(sid_s)
+  n_subjects <- length(u_subjects)
+  subj_has_event <- tapply(st_s == 1, sid_s, any)
+  n_subj_event <- sum(subj_has_event, na.rm = TRUE)
+  n_censored <- as.integer(n_subjects - n_subj_event)
+  n_events <- sum(st_s == 1, na.rm = TRUE)
+
+  # Tied times
+  n_tied_stop <- as.integer(sum(duplicated(t1_s)))
+  ev_times <- t1_s[st_s == 1]
+  n_tied_event <- as.integer(sum(duplicated(ev_times)))
+
+  nonpos_ids <- unique(sid_s[nonpos])
+  overlap_ids <- unique(sid_s[overlap])
+  gap_ids <- unique(sid_s[gap])
+  early_ids <- unique(sid_s[early_event])
+  after_ids <- unique(sid_s[after_event])
+
+  issues <- character()
+  if (n_missing > 0L) {
+    issues <- c(issues, sprintf("%d row(s) contain missing values in id/start/stop/status", n_missing))
+  }
+  if (sum(nonpos) > 0L) {
+    issues <- c(issues, sprintf("%d interval(s) have stop <= start (subjects: %s)", sum(nonpos), format_ids(nonpos_ids)))
+  }
+  if (sum(overlap) > 0L) {
+    issues <- c(issues, sprintf("%d overlapping interval(s) detected (subjects: %s)", sum(overlap), format_ids(overlap_ids)))
+  }
+  if (sum(early_event) > 0L) {
+    issues <- c(issues, sprintf("%d event(s) occurred before the last interval (subjects: %s)", sum(early_event), format_ids(early_ids)))
+  }
+  if (sum(after_event) > 0L) {
+    issues <- c(issues, sprintf("%d row(s) appear after an event (subjects: %s)", sum(after_event), format_ids(after_ids)))
+  }
+
+  is_valid <- length(issues) == 0L
+  has_cens <- n_censored > 0L
+
+  if (!has_cens && n_subjects > 0L && isTRUE(warn_no_censoring)) {
+    warning(sprintf(
+      "No censoring detected in start/stop data: all %d of %d subject(s) experienced an event (0 censored subjects). Verify `%s` before model tuning.",
+      n_subj_event, n_subjects, status_col
+    ), call. = FALSE)
+  }
+
+  if (!is_valid && isTRUE(error_on_invalid)) {
+    stop("Invalid start/stop survival data:\n  - ", paste(issues, collapse = "\n  - "), call. = FALSE)
+  }
+
+  out <- tibble::tibble(
+    n_subjects = as.integer(n_subjects),
+    n_intervals = as.integer(n_intervals),
+    n_events = as.integer(n_events),
+    n_subjects_with_event = as.integer(n_subj_event),
+    n_censored = as.integer(n_censored),
+    censoring_rate = as.numeric(n_censored / n_subjects),
+    n_overlapping = as.integer(sum(overlap)),
+    n_gaps = as.integer(sum(gap)),
+    n_events_before_last = as.integer(sum(early_event)),
+    n_rows_after_event = as.integer(sum(after_event)),
+    n_nonpositive_length = as.integer(sum(nonpos)),
+    n_tied_stop_times = n_tied_stop,
+    n_tied_event_times = n_tied_event,
+    n_missing = as.integer(n_missing),
+    has_censoring = has_cens,
+    valid = is_valid
+  )
+
+  attr(out, "details") <- list(
+    overlapping_ids = overlap_ids,
+    gapped_ids = gap_ids,
+    events_before_last_ids = early_ids,
+    rows_after_event_ids = after_ids,
+    nonpositive_length_ids = nonpos_ids,
+    issues = issues
+  )
+  class(out) <- c("cbe_start_stop_validation", class(out))
+  out
+}
+
+#' @export
+print.cbe_start_stop_validation <- function(x, ...) {
+  cat("TempleCBE Start/Stop Survival Data Check\n")
+  cat("----------------------------------------\n")
+  cat(sprintf("Subjects:               %d (%d with event, %d censored [%.1f%%])\n",
+              x$n_subjects[1], x$n_subjects_with_event[1], x$n_censored[1], 100 * x$n_censored[1] / max(1L, x$n_subjects[1])))
+  cat(sprintf("Intervals (rows):       %d (events: %d, missing: %d)\n",
+              x$n_intervals[1], x$n_events[1], x$n_missing[1]))
+  cat(sprintf("Overlapping intervals:  %d\n", x$n_overlapping[1]))
+  cat(sprintf("Gapped intervals:       %d\n", x$n_gaps[1]))
+  cat(sprintf("Events before last row: %d\n", x$n_events_before_last[1]))
+  cat(sprintf("Rows after an event:    %d\n", x$n_rows_after_event[1]))
+  cat(sprintf("Non-positive intervals: %d\n", x$n_nonpositive_length[1]))
+  cat(sprintf("Tied times:             %d stop time(s), %d event time(s)\n",
+              x$n_tied_stop_times[1], x$n_tied_event_times[1]))
+  cat(sprintf("Status:                 %s%s\n",
+              if (isTRUE(x$valid[1])) "VALID" else "INVALID",
+              if (!isTRUE(x$has_censoring[1])) " (WARNING: NO CENSORING)" else ""))
+  details <- attr(x, "details")
+  if (!is.null(details$issues) && length(details$issues) > 0L) {
+    cat("Issues:\n")
+    for (iss in details$issues) {
+      cat(sprintf("  * %s\n", iss))
+    }
+  }
+  invisible(x)
+}
+

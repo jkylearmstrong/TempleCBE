@@ -4,10 +4,14 @@
 \alias{plot_tune_lambda_ibs}
 \title{Plot Penalty Lambda Versus Integrated Brier Score}
 \usage{
-plot_tune_lambda_ibs(data)
+plot_tune_lambda_ibs(data, label_map = NULL, style = NULL)
 }
 \arguments{
 \item{data}{A data frame from [summarize_tune_results()].}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A `ggplot2` object.

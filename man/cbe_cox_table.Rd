@@ -3,11 +3,32 @@
 \name{cbe_cox_table}
 \alias{cbe_cox_table}
 \alias{cox_table}
+\alias{tbl_cox}
 \title{Presentation-Ready Cox Coefficient Table}
 \usage{
-cbe_cox_table(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE)
+cbe_cox_table(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
 
-cox_table(x, sort = c("none", "magnitude", "pvalue"), significance = FALSE)
+cox_table(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
+
+tbl_cox(
+  x,
+  sort = c("none", "magnitude", "pvalue"),
+  significance = FALSE,
+  label_map = NULL,
+  style = NULL
+)
 }
 \arguments{
 \item{x}{A \code{cbe_cox} (from [cbe_cox_single()]) or \code{cbe_cox_multi}
@@ -21,6 +42,10 @@ have no p-value, sort last).}
 \item{significance}{Logical; if \code{TRUE}, appends a \code{sig} column of
 significance stars (three asterisks for p < 0.001, two for p < 0.01, one for
 p < 0.05) and bolds the \code{p.value} text of significant rows.}
+
+\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+
+\item{style}{Optional label style (`"short"` or `"full"`).}
 }
 \value{
 A tibble formatted for presentation, with columns \code{Variable}, \code{Level},

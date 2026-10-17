@@ -32,6 +32,8 @@ NULL
 #' @param title Optional plot title.
 #' @param caption Optional plot caption.
 #' @param base_size Base font size (default: 13).
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A ggplot2 object.
 #' @seealso [plot_cox_forest_multi()]
 #' @export
@@ -49,7 +51,9 @@ plot_cox_forest <- function(data,
                             x_breaks = NULL,
                             title = NULL,
                             caption = NULL,
-                            base_size = 13) {
+                            base_size = 13,
+                            label_map = NULL,
+                            style = NULL) {
   scale <- match.arg(scale)
   color_by <- match.arg(color_by)
   order_by <- match.arg(order_by)
@@ -57,16 +61,22 @@ plot_cox_forest <- function(data,
   if (inherits(data, "cbe_cox")) {
     conf_level <- data$conf_level %||% 0.95
     td <- broom::tidy(data$model, exponentiate = TRUE, conf.int = TRUE, conf.level = conf_level)
+    var_lbl <- resolve_cbe_labels(data$var_name %||% data$var_label, label_map = label_map, style = style)
+    if (identical(var_lbl, data$var_name)) {
+      var_lbl <- resolve_cbe_labels(data$var_label, label_map = label_map, style = style)
+    }
     if (nrow(td) == 1) {
-      td$index_label <- data$var_label
+      td$index_label <- var_lbl
     } else {
       lvl <- stringr::str_remove(td$term, stringr::fixed(data$var_name))
-      td$index_label <- paste0(data$var_label, ": ", lvl)
+      td$index_label <- paste0(var_lbl, ": ", lvl)
     }
     if (conf_level != 0.95) {
       attr(td, "ci_label") <- sprintf("%d%% CI", round(conf_level * 100))
     }
     data <- td
+  } else if (is.data.frame(data) && label_col %in% names(data)) {
+    data[[label_col]] <- resolve_cbe_labels(data[[label_col]], label_map = label_map, style = style)
   }
 
   forest_plot_engine(
@@ -94,6 +104,8 @@ plot_cox_forest <- function(data,
 #' @param title Optional plot title.
 #' @param caption Optional plot caption.
 #' @param base_size Base font size (default: 13).
+#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param style Optional label style (`"short"` or `"full"`).
 #' @return A ggplot2 object.
 #' @seealso [cbe_cox_multi()], [plot_cox_forest()]
 #' @export
@@ -106,7 +118,9 @@ plot_cox_forest_multi <- function(x,
                                   x_breaks = NULL,
                                   title = NULL,
                                   caption = NULL,
-                                  base_size = 13) {
+                                  base_size = 13,
+                                  label_map = NULL,
+                                  style = NULL) {
   if (!inherits(x, "cbe_cox_multi")) {
     stop("`x` must be a `cbe_cox_multi` object (see `cbe_cox_multi()`).", call. = FALSE)
   }
@@ -114,7 +128,7 @@ plot_cox_forest_multi <- function(x,
   color_by <- match.arg(color_by)
   order_by <- match.arg(order_by)
 
-  df <- cox_multi_plot_frame(x)
+  df <- cox_multi_plot_frame(x, label_map = label_map, style = style)
 
   forest_plot_engine(
     df = df, label_col = "Level", hr_col = "estimate", low_col = "conf.low", high_col = "conf.high",
@@ -128,7 +142,7 @@ plot_cox_forest_multi <- function(x,
 # model's non-reference terms, for forest plotting. `x$table` is presentation-
 # formatted (rounded HR, CI as a single string), so this re-derives estimate/
 # conf.low/conf.high straight from broom::tidy(x$model).
-cox_multi_plot_frame <- function(x) {
+cox_multi_plot_frame <- function(x, label_map = NULL, style = NULL) {
   td <- broom::tidy(x$model, conf.int = TRUE, exponentiate = TRUE)
 
   feat_by_length <- x$features[order(-nchar(x$features))]
@@ -137,7 +151,13 @@ cox_multi_plot_frame <- function(x) {
     if (length(hit) == 0) NA_character_ else hit[1]
   }, character(1))
 
-  td$Variable <- unname(x$var_labels[matched_feature])
+  raw_var_lbls <- unname(x$var_labels[matched_feature])
+  mapped_from_feat <- resolve_cbe_labels(matched_feature, label_map = label_map, style = style)
+  td$Variable <- ifelse(
+    mapped_from_feat != matched_feature,
+    mapped_from_feat,
+    resolve_cbe_labels(raw_var_lbls, label_map = label_map, style = style)
+  )
   td$Level <- ifelse(
     td$term == matched_feature,
     "1-unit increase",

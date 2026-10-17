@@ -9,7 +9,9 @@ get_render_plan(
   only_stale = TRUE,
   from = NULL,
   to = NULL,
-  dry_run = FALSE
+  dry_run = FALSE,
+  stale_by = c("mtime", "hash"),
+  hash_file = NULL
 )
 }
 \arguments{
@@ -27,6 +29,13 @@ to end execution at.}
 
 \item{dry_run}{Logical. When `TRUE`, prints the ordered plan to console without
 executing and returns the planned objects invisibly.}
+
+\item{stale_by}{Staleness strategy: `"mtime"` (default; compares modification
+times) or `"hash"` (compares SHA-256 content hashes stored in
+`pipeline_hashes.json`).}
+
+\item{hash_file}{Optional path to `pipeline_hashes.json` when
+`stale_by = "hash"`.}
 }
 \value{
 A list of FileOutputs objects (the QMDs) in the correct render order.

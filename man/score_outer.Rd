@@ -13,6 +13,8 @@ score_outer(
   coefficients = c("all", "nonzero"),
   seed = NULL,
   checkpoint_dir = NULL,
+  checkpoint_mismatch = c("recompute", "error"),
+  shard = NULL,
   progress = FALSE
 )
 }
@@ -41,7 +43,16 @@ or `"nonzero"` (filters to non-zero estimates).}
 \item{seed}{Optional integer seed for reproducible model fitting across future plans.}
 
 \item{checkpoint_dir}{Optional directory path to save per-task checkpoint files.
-Finished tasks are loaded from disk on rerun, skipping recomputation.}
+Finished tasks are loaded from disk on rerun when their fingerprint matches,
+skipping recomputation.}
+
+\item{checkpoint_mismatch}{Action when a checkpoint file in `checkpoint_dir`
+has a mismatched fingerprint: `"recompute"` (default; warns and recomputes)
+or `"error"` (stops immediately).}
+
+\item{shard}{Optional integer vector `c(i, n)` specifying that this machine
+should evaluate shard `i` of `n` into `checkpoint_dir`. Use
+[collect_checkpoints()] to merge all shards once finished.}
 
 \item{progress}{Show progress bar (default `FALSE`).}
 }
@@ -56,5 +67,7 @@ A tidy wrapper around [glmnet_IBS()] using [furrr::future_map()] (or sequential
 resampling splits.
 }
 \seealso{
-[glmnet_IBS()], [tidy_outer_coefficients()], [compare_censoring_weights()], [select_candidate_models()]
+[glmnet_IBS()], [tidy_outer_coefficients()], [summarize_outer_importance()],
+  [plot_outer_importance()], [collect_checkpoints()], [compare_censoring_weights()],
+  [select_candidate_models()]
 }
