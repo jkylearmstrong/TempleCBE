@@ -320,7 +320,7 @@ score_outer <- function(object,
   can_furrr <- requireNamespace("furrr", quietly = TRUE) &&
     requireNamespace("future", quietly = TRUE)
 
-  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
+  furrr_pkgs <- furrr_worker_packages()
 
   if (can_furrr) {
     res_list <- furrr::future_map2(

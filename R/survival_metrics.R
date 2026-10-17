@@ -544,6 +544,14 @@ validate_shard_spec <- function(shard) {
   as.integer(shard)
 }
 
+#' @noRd
+furrr_worker_packages <- function(pkgs = c("rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")) {
+  if (!requireNamespace("future", quietly = TRUE) || inherits(future::plan(), "sequential")) {
+    return(character(0))
+  }
+  Filter(function(p) nzchar(system.file(package = p)), pkgs)
+}
+
 #' Tune a Penalized Cox Model Over a Grid of `alpha` Values
 #'
 #' Runs [glmnet_IBS()] on one resampling split for each value in an `alpha`
@@ -613,7 +621,7 @@ tune_over_alpha <- function(object,
     dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
+  furrr_pkgs <- furrr_worker_packages()
 
   if (!is.null(formulas)) {
     if ("formula" %in% names(dots)) {
@@ -944,7 +952,7 @@ summarize_tune_results <- function(object,
     }
   }
 
-  furrr_pkgs <- c("recipes", "rsample", "yardstick", "survival", "glmnet", "dplyr", "TempleCBE")
+  furrr_pkgs <- furrr_worker_packages()
 
   run_one_flat_task <- function(k) {
     row <- tasks[k, ]

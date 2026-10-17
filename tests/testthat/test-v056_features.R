@@ -234,7 +234,10 @@ test_that("C3: glmnet_IBS() does not leave package:recipes attached on search()"
     try(detach("package:recipes", unload = FALSE, character.only = TRUE), silent = TRUE)
     on.exit({
       if (was_attached && !("package:recipes" %in% search())) {
-        suppressPackageStartupMessages(library(recipes))
+        tryCatch(
+          suppressPackageStartupMessages(attachNamespace("recipes")),
+          error = function(e) try(suppressPackageStartupMessages(library(recipes)), silent = TRUE)
+        )
       }
     }, add = TRUE)
   }

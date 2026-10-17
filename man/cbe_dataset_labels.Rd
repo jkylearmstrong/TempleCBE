@@ -9,6 +9,15 @@
 \alias{cbe_database_label}
 \alias{cbe_database_label<-}
 \alias{cbe_set_dataset_labels}
+\alias{cbe_get_dataset_labels}
+\alias{dataset_label}
+\alias{dataset_label<-}
+\alias{database_name}
+\alias{database_name<-}
+\alias{database_label}
+\alias{database_label<-}
+\alias{set_dataset_labels}
+\alias{get_dataset_labels}
 \title{Get or Set Dataset and Database Labels}
 \usage{
 cbe_dataset_label(x)
@@ -24,6 +33,24 @@ cbe_database_label(x)
 cbe_database_label(x) <- value
 
 cbe_set_dataset_labels(x, labels)
+
+cbe_get_dataset_labels(x)
+
+dataset_label(x)
+
+dataset_label(x) <- value
+
+database_name(x)
+
+database_name(x) <- value
+
+database_label(x)
+
+database_label(x) <- value
+
+set_dataset_labels(x, labels)
+
+get_dataset_labels(x)
 }
 \arguments{
 \item{x}{A data frame (for dataset functions) or a named list of data frames (for database functions).}

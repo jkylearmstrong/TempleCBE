@@ -1,10 +1,10 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 on:
   push:
-    branches: [master]
+    branches: [master, dev]
     tags: ['v*']
   pull_request:
-    branches: [master]
+    branches: [master, dev]
   workflow_dispatch:
     inputs:
       full_matrix:

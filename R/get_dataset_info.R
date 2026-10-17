@@ -102,7 +102,7 @@ cbe_set_dataset_labels <- function(x, labels) {
   x
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 cbe_get_dataset_labels <- function(x) {
   if (!is.list(x) || is.data.frame(x)) {
@@ -111,35 +111,35 @@ cbe_get_dataset_labels <- function(x) {
   vapply(x, function(df) cbe_dataset_label(df) %||% NA_character_, character(1))
 }
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 dataset_label <- cbe_dataset_label
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `dataset_label<-` <- `cbe_dataset_label<-`
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 database_name <- cbe_database_name
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `database_name<-` <- `cbe_database_name<-`
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 database_label <- cbe_database_label
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 `database_label<-` <- `cbe_database_label<-`
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 set_dataset_labels <- cbe_set_dataset_labels
 
-#' @rdname cbe_labels
+#' @rdname cbe_dataset_labels
 #' @export
 get_dataset_labels <- cbe_get_dataset_labels
 
