@@ -83,17 +83,17 @@ g2 <- igraph::graph_from_data_frame(
   vertices = data.frame(name = c("a", "b"))
 )
 graph_intersect(g1, g2)
-#> IGRAPH 5b8272b DN-- 2 1 -- 
+#> IGRAPH 54e30c4 DN-- 2 1 -- 
 #> + attr: name (v/c)
-#> + edge from 5b8272b (vertex names):
+#> + edge from 54e30c4 (vertex names):
 #> [1] a->b
 graph_subtract(g1, g2)
-#> IGRAPH 7fb9bb6 DN-- 1 0 -- 
+#> IGRAPH 8ac6e58 DN-- 1 0 -- 
 #> + attr: name (v/c)
-#> + edges from 7fb9bb6 (vertex names):
+#> + edges from 8ac6e58 (vertex names):
 graph_union(g1, g2)
-#> IGRAPH 9d21f97 DN-- 3 2 -- 
+#> IGRAPH e2d238c DN-- 3 2 -- 
 #> + attr: name (v/c)
-#> + edges from 9d21f97 (vertex names):
+#> + edges from e2d238c (vertex names):
 #> [1] a->b b->c
 ```

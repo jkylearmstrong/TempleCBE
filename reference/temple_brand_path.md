@@ -19,5 +19,5 @@ Path to `brand.yml` inside the installed package.
 
 ``` r
 temple_brand_path()
-#> [1] "/tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/brand/brand.yml"
+#> [1] "/tmp/RtmpwxXfVo/temp_libpath1fba7eea8e36/TempleCBE/brand/brand.yml"
 ```

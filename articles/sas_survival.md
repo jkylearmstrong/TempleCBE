@@ -860,12 +860,12 @@ macro directory or any individual macro file:
 # Directory containing all bundled SAS macros
 macro_dir <- TempleCBE::cbe_sas_macro_dir()
 macro_dir
-#> [1] "/tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/sas"
+#> [1] "/tmp/RtmpwxXfVo/temp_libpath1fba7eea8e36/TempleCBE/sas"
 
 # Path to the master loader file
 master_macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
 master_macro_file
-#> [1] "/tmp/RtmpMnFWuu/temp_libpath1fcd108ed8a0/TempleCBE/sas/cbe_macros.sas"
+#> [1] "/tmp/RtmpwxXfVo/temp_libpath1fba7eea8e36/TempleCBE/sas/cbe_macros.sas"
 ```
 
 Inside SAS (whether running in SAS Enterprise Guide, SAS Studio, or

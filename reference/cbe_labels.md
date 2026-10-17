@@ -13,24 +13,6 @@ appendices). Plot and table helpers across TempleCBE (\`plot_tune\_\*\`,
 ## Usage
 
 ``` r
-cbe_get_dataset_labels(x)
-
-dataset_label(x)
-
-dataset_label(x) <- value
-
-database_name(x)
-
-database_name(x) <- value
-
-database_label(x)
-
-database_label(x) <- value
-
-set_dataset_labels(x, labels)
-
-get_dataset_labels(x)
-
 cbe_labels(map = NULL, style = c("short", "full"), reset = FALSE)
 ```
 

@@ -70,7 +70,7 @@ generate_pi_names(1)
 generate_pi_names(3, format = "full_name")
 #> [1] "Jonathan Kennedy" "Mason Patterson"  "Jack Wallace"    
 generate_pi_names(3, format = "token")
-#> [1] "PI_eb0f5d1fefd01e3d" "PI_2ee134beb92fa07f" "PI_886aabe71de43368"
+#> [1] "PI_1f4e014885707ce3" "PI_37f31482005a191f" "PI_0afa6748196d9518"
 generate_pi_names(3, format = "token", n_chars = 8)
-#> [1] "PI_afff1238" "PI_bde6ec47" "PI_622ed5a9"
+#> [1] "PI_dc81d134" "PI_444f40c5" "PI_62ac604f"
 ```

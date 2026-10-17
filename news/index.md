@@ -3367,7 +3367,7 @@ message and the README corrections.
     and batch helpers
     [`cbe_set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md)
     /
-    [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md).
+    [`cbe_get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_dataset_labels.md).
 - **Excel & Database Multi-Sheet I/O (`write_database_to_excel`,
   `read_database_from_excel`, `write_workbook`)**:
   - New
