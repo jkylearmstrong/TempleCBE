@@ -1,6 +1,6 @@
 ---
 title: "Pipeline Stage Analysis Report"
-subtitle: "`r params$stage_name`"
+subtitle: "Biomarker Stage Analysis"
 date: today
 format:
   pdf:
@@ -32,14 +32,15 @@ library(ggplot2)
 library(dplyr)
 ```
 
-# Stage Overview: `r params$stage_name`
+# Stage Overview: `r if (exists("params") && !is.null(params$stage_name)) params$stage_name else "Biomarker Stage Analysis"`
 
-**Execution Mode:** `r if (isTRUE(params$imputed)) "Imputed Cohort Pipeline" else "Complete-Case / Raw Cohort Pipeline"`  
-**Data Source:** `r params$data_path`  
+**Execution Mode:** `r if (exists("params") && isTRUE(params$imputed)) "Imputed Cohort Pipeline" else "Complete-Case / Raw Cohort Pipeline"`  
+**Data Source:** `r if (exists("params") && !is.null(params$data_path)) params$data_path else "data/analysis_data.rds"`  
 
 ```{r load_data}
-if (file.exists(params$data_path)) {
-  cohort <- readRDS(params$data_path)
+stage_data_path <- if (exists("params") && !is.null(params$data_path)) params$data_path else "data/analysis_data.rds"
+if (file.exists(stage_data_path)) {
+  cohort <- readRDS(stage_data_path)
 } else {
   # Synthetic placeholder for document compilation checks
   cohort <- data.frame(
@@ -53,13 +54,15 @@ if (file.exists(params$data_path)) {
 }
 ```
 
-This report summarizes statistical findings for **`r params$stage_name`** (`r nrow(cohort)` subjects).
+This report summarizes statistical findings for **`r if (exists("params") && !is.null(params$stage_name)) params$stage_name else "Biomarker Stage Analysis"`** (`r nrow(cohort)` subjects).
 
 # Correlation & Collinearity Structure
 
 ```{r correlation_summary}
+p_time <- if (exists("params") && !is.null(params$time_col)) params$time_col else "time"
+p_status <- if (exists("params") && !is.null(params$status_col)) params$status_col else "status"
 num_vars <- names(cohort)[vapply(cohort, is.numeric, logical(1))]
-num_vars <- setdiff(num_vars, c("patient_id", params$time_col, params$status_col))
+num_vars <- setdiff(num_vars, c("patient_id", p_time, p_status))
 
 if (length(num_vars) >= 2) {
   pairs_tbl <- correlated_pairs_table(cohort[, num_vars, drop = FALSE], cutoff = 0.4)
@@ -69,7 +72,7 @@ if (length(num_vars) >= 2) {
 
 # Survival & Stratification Diagnostics
 
-```{r survival_diagnostics, eval = !is.null(params$time_col) && params$time_col %in% names(cohort)}
+```{r survival_diagnostics, eval = exists("params") && !is.null(params$time_col) && params$time_col %in% names(cohort)}
 plot_survival_km(
   cohort,
   time_col = params$time_col,
@@ -81,4 +84,5 @@ plot_survival_km(
 )
 ```
 
-`r if (isTRUE(params$imputed)) "## Imputation Quality Note\nThis cohort underwent numeric imputation. Distributions were benchmarked against raw values."`
+`r if (exists("params") && isTRUE(params$imputed)) "## Imputation Quality Note\nThis cohort underwent numeric imputation. Distributions were benchmarked against raw values."`
+
