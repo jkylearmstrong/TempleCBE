@@ -61,7 +61,7 @@
 #' # 2x2 table without zero cells: standard Central Fisher's exact test
 #' tab_nonzero <- matrix(c(12, 8, 5, 15), nrow = 2)
 #' cbe_exact2x2(tab_nonzero)
-cbe_exact2x2 <- function(x, y = NULL, data = NULL, variable = NULL, by = NULL,
+exact2x2 <- function(x, y = NULL, data = NULL, variable = NULL, by = NULL,
                          midp = NULL, conf.level = 0.95,
                          alternative = "two.sided", tsmethod = "central",
                          group = NULL, type = NULL, test.args = NULL,
@@ -284,7 +284,7 @@ cbe_pformat <- pformat
 #'
 #' # Formula interface:
 #' cbe_test_categorical(trial, response ~ trt)
-cbe_test_categorical <- function(data,
+test_categorical <- function(data,
                                  variable = NULL,
                                  by = NULL,
                                  test = c("auto", "exact", "chisq", "fisher"),
@@ -513,15 +513,21 @@ cbe_test_categorical <- function(data,
   }
 }
 
-#' @rdname cbe_exact2x2
+#' @rdname exact2x2
 #' @export
-exact2x2 <- cbe_exact2x2
+cbe_exact2x2 <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_exact2x2()", "exact2x2()")
+  exact2x2(...)
+}
 
 #' @rdname cbe_exact2x2_ci
 #' @export
 exact2x2_ci <- cbe_exact2x2_ci
 
-#' @rdname cbe_test_categorical
+#' @rdname test_categorical
 #' @export
-test_categorical <- cbe_test_categorical
+cbe_test_categorical <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_test_categorical()", "test_categorical()")
+  test_categorical(...)
+}
 

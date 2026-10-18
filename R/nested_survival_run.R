@@ -122,41 +122,41 @@
 #'   [select_candidate_models()], [score_outer()], [summarize_outer_importance()],
 #'   [compare_censoring_weights()], [collect_checkpoints()], [repro_appendix()]
 #' @export
-cbe_nested_survival_run <- function(data,
-                                    recipe = NULL,
-                                    id = "id",
-                                    start = "tstart",
-                                    stop = "tstop",
-                                    status = "status",
-                                    domain = "default",
-                                    run_dir = NULL,
-                                    shard = NULL,
-                                    collect = FALSE,
-                                    feature_names = NULL,
-                                    formulas = NULL,
-                                    outer_v = 5L,
-                                    inner_v = 5L,
-                                    inner_bootstraps = NULL,
-                                    nested_folds = NULL,
-                                    alphas = NULL,
-                                    num_alpha_values = 6L,
-                                    num_fixed = min(6L, as.integer(num_alpha_values)),
-                                    ntile = 0.25,
-                                    top_n = NULL,
-                                    select_by = c("row", "alpha"),
-                                    internal_folds = 5L,
-                                    censoring_weights = c("ipcw", "none"),
-                                    coefficients = c("all", "nonzero"),
-                                    compare_censoring = TRUE,
-                                    no_censoring_action = c("warn", "stop", "ignore"),
-                                    error_on_invalid = TRUE,
-                                    checkpoint_mismatch = c("recompute", "overwrite", "error"),
-                                    chunk_size = NULL,
-                                    seed = 42L,
-                                    on_complete = getOption("templecbe.on_complete", NULL),
-                                    progress = FALSE,
-                                    ...) {
-  require_packages(c("glmnet", "survival", "rsample", "yardstick", "recipes"), "cbe_nested_survival_run")
+nested_survival_run <- function(data,
+                                recipe = NULL,
+                                id = "id",
+                                start = "tstart",
+                                stop = "tstop",
+                                status = "status",
+                                domain = "default",
+                                run_dir = NULL,
+                                shard = NULL,
+                                collect = FALSE,
+                                feature_names = NULL,
+                                formulas = NULL,
+                                outer_v = 5L,
+                                inner_v = 5L,
+                                inner_bootstraps = NULL,
+                                nested_folds = NULL,
+                                alphas = NULL,
+                                num_alpha_values = 6L,
+                                num_fixed = min(6L, as.integer(num_alpha_values)),
+                                ntile = 0.25,
+                                top_n = NULL,
+                                select_by = c("row", "alpha"),
+                                internal_folds = 5L,
+                                censoring_weights = c("ipcw", "none"),
+                                coefficients = c("all", "nonzero"),
+                                compare_censoring = TRUE,
+                                no_censoring_action = c("warn", "stop", "ignore"),
+                                error_on_invalid = TRUE,
+                                checkpoint_mismatch = c("recompute", "overwrite", "error"),
+                                chunk_size = NULL,
+                                seed = 42L,
+                                on_complete = getOption("templecbe.on_complete", NULL),
+                                progress = FALSE,
+                                ...) {
+  require_packages(c("glmnet", "survival", "rsample", "yardstick", "recipes"), "nested_survival_run")
 
   id_col <- if (is.character(id)) id[1] else rlang::as_name(rlang::ensym(id))
   start_col <- if (is.character(start)) start[1] else rlang::as_name(rlang::ensym(start))
@@ -179,7 +179,7 @@ cbe_nested_survival_run <- function(data,
   }
 
   run_with_on_complete(
-    fn_name = "cbe_nested_survival_run",
+    fn_name = "nested_survival_run",
     on_complete = on_complete,
     meta = list(domain = domain, run_dir = run_dir, shard = shard, seed = seed),
     expr = {
@@ -195,13 +195,20 @@ cbe_nested_survival_run <- function(data,
         warn_no_censoring = (no_censoring_action == "warn"),
         error_on_invalid = error_on_invalid
       )
-      if (!isTRUE(val$has_censoring) && no_censoring_action == "stop") {
-        stop(
-          sprintf(
-            "Domain '%s': `validate_start_stop()` detected 0 censored subjects (%d/%d subjects experienced an event) and `no_censoring_action = \"stop\"`.",
-            domain, val$n_subjects_with_event, val$n_subjects
-          ),
-          call. = FALSE
+      if (!isTRUE(val$has_censoring)) {
+        if (no_censoring_action == "stop") {
+          stop(
+            sprintf(
+              "Domain '%s': `validate_start_stop()` detected 0 censored subjects (%d/%d subjects experienced an event) and `no_censoring_action = \"stop\"`.",
+              domain, val$n_subjects_with_event, val$n_subjects
+            ),
+            call. = FALSE
+          )
+        }
+        rlang::inform(
+          "Training data contains no censored subjects; 'none' and 'ipcw' censoring weights produce identical scores.",
+          .frequency = "once",
+          .frequency_id = "TempleCBE_no_censored_subjects_notice"
         )
       }
 
@@ -325,6 +332,11 @@ cbe_nested_survival_run <- function(data,
       for (i in seq_len(n_outer)) {
         fold_id <- outer_ids[i]
         safe_fold <- gsub("[^A-Za-z0-9._-]", "_", fold_id)
+        outer_ckpt_file <- if (!is.null(norm_run_dir)) {
+          file.path(norm_run_dir, "checkpoints", sprintf("tune_outer_%s.rds", safe_fold))
+        } else {
+          NULL
+        }
         fold_ckpt_dir <- if (!is.null(norm_run_dir)) {
           file.path(norm_run_dir, "checkpoints", paste0("tune_", safe_fold))
         } else {
@@ -333,37 +345,74 @@ cbe_nested_survival_run <- function(data,
         fold_seed <- if (!is.null(seed)) as.integer(seed) + i * 1000L else NULL
         inner_rset <- nested_folds$inner_resamples[[i]]
 
-        if (isTRUE(collect) && is.null(shard) && !is.null(fold_ckpt_dir) && dir.exists(fold_ckpt_dir)) {
-          t_df <- collect_checkpoints(fold_ckpt_dir, type = "tune")
-        } else {
-          t_args <- c(
-            list(
-              object = inner_rset,
-              recipe = recipe,
-              feature_names = feature_names,
+        fold_fp <- if (!is.null(norm_run_dir)) {
+          compute_checkpoint_fingerprint(
+            split = NULL,
+            dots = dots_clean,
+            seed = fold_seed,
+            extra = list(
+              fn = "nested_survival_run_outer_fold",
+              fold = fold_id,
               alphas = alphas,
               num_alpha_values = num_alpha_values,
-              num_fixed = num_fixed,
-              time_data = time_data,
-              internal_folds = internal_folds,
-              censoring_weights = censoring_weights,
-              id_col = id_col,
-              start_col = start_col,
-              stop_col = stop_col,
-              status_col = status_col,
-              seed = fold_seed,
-              checkpoint_dir = fold_ckpt_dir,
-              checkpoint_mismatch = checkpoint_mismatch,
-              shard = shard,
-              chunk_size = chunk_size,
-              on_complete = NULL,
-              progress = progress
-            ),
-            dots_clean
+              formulas = formulas,
+              run_fp = run_fp
+            )
           )
-          t_df <- do.call(summarize_tune_results, t_args)
-          if (is.null(shard) && isTRUE(collect) && !is.null(fold_ckpt_dir)) {
+        } else {
+          NULL
+        }
+
+        t_df <- NULL
+        if (!is.null(outer_ckpt_file) && file.exists(outer_ckpt_file) && is.null(shard)) {
+          chk <- read_verified_checkpoint(outer_ckpt_file, fold_fp, checkpoint_mismatch = checkpoint_mismatch)
+          if (identical(chk$status, "hit")) {
+            t_df <- chk$value
+          }
+        }
+
+        if (is.null(t_df)) {
+          if (isTRUE(collect) && is.null(shard) && !is.null(fold_ckpt_dir) && dir.exists(fold_ckpt_dir)) {
             t_df <- collect_checkpoints(fold_ckpt_dir, type = "tune")
+          } else {
+            t_args <- c(
+              list(
+                object = inner_rset,
+                recipe = recipe,
+                feature_names = feature_names,
+                alphas = alphas,
+                num_alpha_values = num_alpha_values,
+                num_fixed = num_fixed,
+                time_data = time_data,
+                internal_folds = internal_folds,
+                censoring_weights = censoring_weights,
+                id_col = id_col,
+                start_col = start_col,
+                stop_col = stop_col,
+                status_col = status_col,
+                seed = fold_seed,
+                checkpoint_dir = fold_ckpt_dir,
+                checkpoint_mismatch = checkpoint_mismatch,
+                shard = shard,
+                chunk_size = chunk_size,
+                on_complete = NULL,
+                progress = progress
+              ),
+              dots_clean
+            )
+            t_df <- do.call(tune_alpha_by_split, t_args)
+            if (is.null(shard) && isTRUE(collect) && !is.null(fold_ckpt_dir)) {
+              t_df <- collect_checkpoints(fold_ckpt_dir, type = "tune")
+            }
+          }
+          if (!is.null(outer_ckpt_file) && is.null(shard) && is.data.frame(t_df)) {
+            write_verified_checkpoint(
+              t_df, outer_ckpt_file, fingerprint = fold_fp, run_fingerprint = run_fp,
+              meta = list(fn = "nested_survival_run_outer_fold", fold = fold_id)
+            )
+            if (!is.null(fold_ckpt_dir) && dir.exists(fold_ckpt_dir)) {
+              unlink(fold_ckpt_dir, recursive = TRUE)
+            }
           }
         }
         t_df$outer_fold <- fold_id
@@ -418,16 +467,72 @@ cbe_nested_survival_run <- function(data,
       } else {
         NULL
       }
+      score_consolidated_file <- if (!is.null(norm_run_dir)) {
+        file.path(norm_run_dir, "checkpoints", paste0("score_outer_", censoring_weights, ".rds"))
+      } else {
+        NULL
+      }
       score_seed <- if (!is.null(seed)) as.integer(seed) + 50000L else NULL
-
-      if (isTRUE(collect) && is.null(shard) && !is.null(score_ckpt_dir) && dir.exists(score_ckpt_dir)) {
-        # Ensure any missing outer tasks are scored and then collect all checkpoints
-        outer_scores <- tryCatch(
-          collect_checkpoints(score_ckpt_dir, type = "score_outer"),
-          error = function(e) NULL
+      score_fp <- if (!is.null(norm_run_dir)) {
+        compute_checkpoint_fingerprint(
+          split = NULL,
+          dots = dots_clean,
+          seed = score_seed,
+          extra = list(
+            fn = "nested_survival_run_score_outer",
+            weights = censoring_weights,
+            candidates = candidates,
+            run_fp = run_fp
+          )
         )
-        expected_outer_rows <- n_outer * nrow(candidates)
-        if (is.null(outer_scores) || nrow(outer_scores) < expected_outer_rows) {
+      } else {
+        NULL
+      }
+
+      outer_scores <- NULL
+      if (!is.null(score_consolidated_file) && file.exists(score_consolidated_file) && is.null(shard)) {
+        chk_score <- read_verified_checkpoint(score_consolidated_file, score_fp, checkpoint_mismatch = checkpoint_mismatch)
+        if (identical(chk_score$status, "hit")) {
+          outer_scores <- chk_score$value
+        }
+      }
+
+      if (is.null(outer_scores)) {
+        if (isTRUE(collect) && is.null(shard) && !is.null(score_ckpt_dir) && dir.exists(score_ckpt_dir)) {
+          # Ensure any missing outer tasks are scored and then collect all checkpoints
+          outer_scores <- tryCatch(
+            collect_checkpoints(score_ckpt_dir, type = "score_outer"),
+            error = function(e) NULL
+          )
+          expected_outer_rows <- n_outer * nrow(candidates)
+          if (is.null(outer_scores) || nrow(outer_scores) < expected_outer_rows) {
+            s_args <- c(
+              list(
+                object = nested_folds,
+                grid = candidates,
+                recipe = recipe,
+                feature_names = feature_names,
+                time_data = time_data,
+                internal_folds = internal_folds,
+                censoring_weights = censoring_weights,
+                coefficients = coefficients,
+                id_col = id_col,
+                start_col = start_col,
+                stop_col = stop_col,
+                status_col = status_col,
+                seed = score_seed,
+                checkpoint_dir = score_ckpt_dir,
+                checkpoint_mismatch = checkpoint_mismatch,
+                shard = NULL,
+                chunk_size = chunk_size,
+                on_complete = NULL,
+                progress = progress
+              ),
+              dots_clean
+            )
+            outer_scores <- do.call(score_outer, s_args)
+          }
+        } else {
           s_args <- c(
             list(
               object = nested_folds,
@@ -445,7 +550,7 @@ cbe_nested_survival_run <- function(data,
               seed = score_seed,
               checkpoint_dir = score_ckpt_dir,
               checkpoint_mismatch = checkpoint_mismatch,
-              shard = NULL,
+              shard = shard,
               chunk_size = chunk_size,
               on_complete = NULL,
               progress = progress
@@ -454,32 +559,16 @@ cbe_nested_survival_run <- function(data,
           )
           outer_scores <- do.call(score_outer, s_args)
         }
-      } else {
-        s_args <- c(
-          list(
-            object = nested_folds,
-            grid = candidates,
-            recipe = recipe,
-            feature_names = feature_names,
-            time_data = time_data,
-            internal_folds = internal_folds,
-            censoring_weights = censoring_weights,
-            coefficients = coefficients,
-            id_col = id_col,
-            start_col = start_col,
-            stop_col = stop_col,
-            status_col = status_col,
-            seed = score_seed,
-            checkpoint_dir = score_ckpt_dir,
-            checkpoint_mismatch = checkpoint_mismatch,
-            shard = shard,
-            chunk_size = chunk_size,
-            on_complete = NULL,
-            progress = progress
-          ),
-          dots_clean
-        )
-        outer_scores <- do.call(score_outer, s_args)
+        if (!is.null(score_consolidated_file) && is.null(shard) && is.data.frame(outer_scores)) {
+          write_verified_checkpoint(
+            outer_scores, score_consolidated_file,
+            fingerprint = score_fp, run_fingerprint = run_fp,
+            meta = list(fn = "nested_survival_run_score_outer", weights = censoring_weights)
+          )
+          if (!is.null(score_ckpt_dir) && dir.exists(score_ckpt_dir)) {
+            unlink(score_ckpt_dir, recursive = TRUE)
+          }
+        }
       }
 
       # 6. Outer coefficients and predictor importance
@@ -506,33 +595,74 @@ cbe_nested_survival_run <- function(data,
           } else {
             NULL
           }
-          alt_args <- c(
-            list(
-              object = nested_folds,
-              grid = candidates,
-              recipe = recipe,
-              feature_names = feature_names,
-              time_data = time_data,
-              internal_folds = internal_folds,
-              censoring_weights = alt_weights,
-              coefficients = coefficients,
-              id_col = id_col,
-              start_col = start_col,
-              stop_col = stop_col,
-              status_col = status_col,
+          alt_consolidated_file <- if (!is.null(norm_run_dir)) {
+            file.path(norm_run_dir, "checkpoints", paste0("score_outer_", alt_weights, ".rds"))
+          } else {
+            NULL
+          }
+          alt_fp <- if (!is.null(norm_run_dir)) {
+            compute_checkpoint_fingerprint(
+              split = NULL,
+              dots = dots_clean,
               seed = score_seed,
-              checkpoint_dir = alt_ckpt_dir,
-              checkpoint_mismatch = checkpoint_mismatch,
-              shard = shard,
-              chunk_size = chunk_size,
-              on_complete = NULL,
-              progress = progress
-            ),
-            dots_clean
-          )
-          alt_scores <- do.call(score_outer, alt_args)
-          if (isTRUE(collect) && is.null(shard) && !is.null(alt_ckpt_dir) && dir.exists(alt_ckpt_dir)) {
-            alt_scores <- tryCatch(collect_checkpoints(alt_ckpt_dir, type = "score_outer"), error = function(e) alt_scores)
+              extra = list(
+                fn = "nested_survival_run_score_outer",
+                weights = alt_weights,
+                candidates = candidates,
+                run_fp = run_fp
+              )
+            )
+          } else {
+            NULL
+          }
+
+          alt_scores <- NULL
+          if (!is.null(alt_consolidated_file) && file.exists(alt_consolidated_file) && is.null(shard)) {
+            chk_alt <- read_verified_checkpoint(alt_consolidated_file, alt_fp, checkpoint_mismatch = checkpoint_mismatch)
+            if (identical(chk_alt$status, "hit")) {
+              alt_scores <- chk_alt$value
+            }
+          }
+
+          if (is.null(alt_scores)) {
+            alt_args <- c(
+              list(
+                object = nested_folds,
+                grid = candidates,
+                recipe = recipe,
+                feature_names = feature_names,
+                time_data = time_data,
+                internal_folds = internal_folds,
+                censoring_weights = alt_weights,
+                coefficients = coefficients,
+                id_col = id_col,
+                start_col = start_col,
+                stop_col = stop_col,
+                status_col = status_col,
+                seed = score_seed,
+                checkpoint_dir = alt_ckpt_dir,
+                checkpoint_mismatch = checkpoint_mismatch,
+                shard = shard,
+                chunk_size = chunk_size,
+                on_complete = NULL,
+                progress = progress
+              ),
+              dots_clean
+            )
+            alt_scores <- do.call(score_outer, alt_args)
+            if (isTRUE(collect) && is.null(shard) && !is.null(alt_ckpt_dir) && dir.exists(alt_ckpt_dir)) {
+              alt_scores <- tryCatch(collect_checkpoints(alt_ckpt_dir, type = "score_outer"), error = function(e) alt_scores)
+            }
+            if (!is.null(alt_consolidated_file) && is.null(shard) && is.data.frame(alt_scores)) {
+              write_verified_checkpoint(
+                alt_scores, alt_consolidated_file,
+                fingerprint = alt_fp, run_fingerprint = run_fp,
+                meta = list(fn = "nested_survival_run_score_outer", weights = alt_weights)
+              )
+              if (!is.null(alt_ckpt_dir) && dir.exists(alt_ckpt_dir)) {
+                unlink(alt_ckpt_dir, recursive = TRUE)
+              }
+            }
           }
           tbl_none <- if (censoring_weights == "none") outer_scores else alt_scores
           tbl_ipcw <- if (censoring_weights == "ipcw") outer_scores else alt_scores
@@ -589,7 +719,7 @@ cbe_nested_survival_run <- function(data,
             feature_names = feature_names
           )
         ),
-        class = "cbe_nested_survival_run"
+        class = c("nested_survival_run", "cbe_nested_survival_run")
       )
 
       if (!is.null(norm_run_dir) && is.null(shard)) {
@@ -604,9 +734,17 @@ cbe_nested_survival_run <- function(data,
   )
 }
 
-#' @rdname cbe_nested_survival_run
+#' @rdname nested_survival_run
 #' @export
-nested_survival_run <- cbe_nested_survival_run
+cbe_nested_survival_run <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_nested_survival_run()", "nested_survival_run()")
+  nested_survival_run(...)
+}
+
+#' @export
+print.nested_survival_run <- function(x, ...) {
+  print.cbe_nested_survival_run(x, ...)
+}
 
 #' @export
 print.cbe_nested_survival_run <- function(x, ...) {
@@ -1349,13 +1487,13 @@ print.cbe_repro_appendix <- function(x, ...) {
 #'   }
 #' @seealso [repro_appendix()], [cbe_nested_survival_run()], [render()]
 #' @export
-cbe_domain_children <- function(domains,
-                                child,
-                                ...,
-                                envir = parent.frame(),
-                                on_error = c("continue", "stop"),
-                                quiet = TRUE) {
-  require_packages("knitr", "cbe_domain_children")
+domain_children <- function(domains,
+                            child,
+                            ...,
+                            envir = parent.frame(),
+                            on_error = c("continue", "stop"),
+                            quiet = TRUE) {
+  require_packages("knitr", "domain_children")
   on_error <- match.arg(on_error)
   dots <- list(...)
 
@@ -1483,17 +1621,31 @@ cbe_domain_children <- function(domains,
   attr(combined, "status") <- status_tbl
   attr(combined, "failed_domains") <- failed_domains
   attr(combined, "succeeded_domains") <- succeeded_domains
-  class(combined) <- c("cbe_domain_children", "knit_asis", "character")
+  class(combined) <- c("domain_children", "cbe_domain_children", "knit_asis", "character")
   combined
 }
 
-#' @rdname cbe_domain_children
+#' @rdname domain_children
 #' @export
-domain_children <- cbe_domain_children
+cbe_domain_children <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_domain_children()", "domain_children()")
+  domain_children(...)
+}
+
+#' @export
+`$.domain_children` <- function(x, name) {
+  attr(x, name, exact = TRUE)
+}
 
 #' @export
 `$.cbe_domain_children` <- function(x, name) {
   attr(x, name, exact = TRUE)
+}
+
+#' @export
+print.domain_children <- function(x, ...) {
+  cat(as.character(x), "\n", sep = "")
+  invisible(x)
 }
 
 #' @export
@@ -1503,11 +1655,42 @@ print.cbe_domain_children <- function(x, ...) {
 }
 
 #' @export
+summary.domain_children <- function(object, ...) {
+  attr(object, "status", exact = TRUE)
+}
+
+#' @export
 summary.cbe_domain_children <- function(object, ...) {
   attr(object, "status", exact = TRUE)
+}
+
+#' @exportS3Method generics::tidy
+tidy.domain_children <- function(x, ...) {
+  attr(x, "status", exact = TRUE)
 }
 
 #' @exportS3Method generics::tidy
 tidy.cbe_domain_children <- function(x, ...) {
   attr(x, "status", exact = TRUE)
 }
+
+#' Packaged Nested Survival Report Quarto Child Template
+#'
+#' Locates and returns the file path to the packaged Quarto child report template
+#' (`nested_survival_report.qmd`) used by [cbe_domain_children()] to render a
+#' complete nested survival analysis report for a domain run object.
+#'
+#' @return File path character string.
+#' @seealso [cbe_domain_children()], [cbe_nested_survival_run()]
+#' @export
+nested_survival_report_template <- function() {
+  path <- system.file("templates", "nested_survival_report.qmd", package = "TempleCBE")
+  if (!nzchar(path) || !file.exists(path)) {
+    path <- file.path("inst", "templates", "nested_survival_report.qmd")
+  }
+  if (!file.exists(path)) {
+    stop("`nested_survival_report.qmd` template not found.", call. = FALSE)
+  }
+  path
+}
+

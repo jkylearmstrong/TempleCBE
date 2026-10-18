@@ -304,7 +304,11 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
                            v = 10, metrics = NULL, eval_time = NULL, metric = NULL,
                            covariates = c("path", "baseline"), trunc = 0.05, parallel = FALSE,
                            parallel_over = c("resamples", "everything"),
-                           check_subject_overlap = TRUE, ...) {
+                           check_subject_overlap = TRUE,
+                           checkpoint_dir = NULL,
+                           shard = NULL,
+                           checkpoint_mismatch = c("recompute", "overwrite", "error"), ...) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   rlang::check_installed(
     c("glmnet", "survival", "rsample", "yardstick"),
     reason = "to cross-validate `coxnet()` models."
@@ -402,11 +406,76 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
     (!missing(parallel_over) && isTRUE(match.arg(parallel_over) %in% c("resamples", "everything")) && !identical(parallel, FALSE))
 
   fold_ids <- resample_ids(resamples)
-  results <- if (isTRUE(is_parallel)) {
-    rlang::check_installed(c("furrr", "future"), reason = "to fit folds in parallel.")
-    furrr::future_map2(resamples$splits, fold_ids, score_split, .options = furrr::furrr_options(seed = TRUE))
+  n_splits <- length(resamples$splits)
+
+  if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) {
+      dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    split_fps <- vapply(seq_len(n_splits), function(i) {
+      sp <- resamples$splits[[i]]
+      payload <- list(
+        version = pkg_ver,
+        seed_scheme = current_seed_scheme(),
+        split_in = sp$in_id,
+        mixture = mixture,
+        paths = paths,
+        eval_time = eval_time,
+        metrics = names(metrics),
+        covariates = covariates,
+        trunc = trunc
+      )
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    }, character(1))
+
+    run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = fold_ids), NULL))), collapse = "")
+
+    active_mask <- if (!is.null(shard)) {
+      ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+    } else {
+      rep(TRUE, n_splits)
+    }
+
+    eval_split_ckpt <- function(i) {
+      sp_id <- fold_ids[i]
+      safe_id <- gsub("[^A-Za-z0-9._-]", "_", sp_id)
+      cf <- file.path(checkpoint_dir, sprintf("cv_coxnet_%s.rds", safe_id))
+      exp_fp <- split_fps[i]
+
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) {
+          return(chk$value)
+        }
+      }
+      if (!active_mask[i]) {
+        return(NULL)
+      }
+
+      val <- score_split(resamples$splits[[i]], sp_id)
+      if (!is.null(val)) {
+        write_verified_checkpoint(
+          val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
+          meta = list(fn = "cv_coxnet", fold_id = sp_id, index = i)
+        )
+      }
+      val
+    }
+
+    results <- if (isTRUE(is_parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "to fit folds in parallel.")
+      furrr::future_map(seq_len(n_splits), eval_split_ckpt, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map(seq_len(n_splits), eval_split_ckpt)
+    }
   } else {
-    purrr::map2(resamples$splits, fold_ids, score_split)
+    results <- if (isTRUE(is_parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "to fit folds in parallel.")
+      furrr::future_map2(resamples$splits, fold_ids, score_split, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map2(resamples$splits, fold_ids, score_split)
+    }
   }
 
   fold_metrics <- purrr::list_rbind(Map(function(res, id) {

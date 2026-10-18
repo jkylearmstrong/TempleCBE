@@ -778,9 +778,13 @@ cv_joint_model <- function(data,
                            parallel = FALSE,
                            covariates = c("path", "baseline"),
                            check_subject_overlap = TRUE,
+                           checkpoint_dir = NULL,
+                           shard = NULL,
+                           checkpoint_mismatch = c("recompute", "overwrite", "error"),
                            ...) {
   engine <- match.arg(engine)
   covariates <- match.arg(covariates)
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   rlang::check_installed(c("rsample", "yardstick", "survival", "glmnet"),
                          reason = "for cross-validation of joint_model.")
   check_true_false(check_subject_overlap, "check_subject_overlap")
@@ -819,14 +823,75 @@ cv_joint_model <- function(data,
   }
 
   fold_ids <- seq_along(resamples$splits)
-  rows <- if (isTRUE(parallel)) {
-    rlang::check_installed(c("furrr", "future"), reason = "for parallel joint cross-validation.")
-    furrr::future_map(fold_ids, run_fold, .options = furrr::furrr_options(seed = TRUE))
+  n_splits <- length(fold_ids)
+
+  if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) {
+      dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    split_fps <- vapply(seq_len(n_splits), function(i) {
+      payload <- list(
+        version = pkg_ver,
+        seed_scheme = current_seed_scheme(),
+        split_in = resamples$splits[[i]]$in_id,
+        engine = engine,
+        calibration = calibration,
+        covariates = covariates
+      )
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    }, character(1))
+
+    run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = resamples$id), NULL))), collapse = "")
+
+    active_mask <- if (!is.null(shard)) {
+      ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+    } else {
+      rep(TRUE, n_splits)
+    }
+
+    eval_fold_ckpt <- function(i) {
+      sp_id <- resamples$id[i]
+      safe_id <- gsub("[^A-Za-z0-9._-]", "_", sp_id)
+      cf <- file.path(checkpoint_dir, sprintf("cv_joint_%s.rds", safe_id))
+      exp_fp <- split_fps[i]
+
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) {
+          return(chk$value)
+        }
+      }
+      if (!active_mask[i]) {
+        return(NULL)
+      }
+
+      val <- run_fold(i)
+      if (!is.null(val)) {
+        write_verified_checkpoint(
+          val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
+          meta = list(fn = "cv_joint_model", fold_id = sp_id, index = i)
+        )
+      }
+      val
+    }
+
+    rows <- if (isTRUE(parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "for parallel joint cross-validation.")
+      furrr::future_map(fold_ids, eval_fold_ckpt, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map(fold_ids, eval_fold_ckpt)
+    }
   } else {
-    purrr::map(fold_ids, run_fold)
+    rows <- if (isTRUE(parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "for parallel joint cross-validation.")
+      furrr::future_map(fold_ids, run_fold, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map(fold_ids, run_fold)
+    }
   }
 
-  res_tbl <- purrr::list_rbind(rows)
+  res_tbl <- purrr::list_rbind(Filter(Negate(is.null), rows))
   if (!nrow(res_tbl)) {
     stop("No resample could be scored; see the warnings.", call. = FALSE)
   }
@@ -884,7 +949,11 @@ nested_cv_joint_model <- function(object,
                                   covariates = c("path", "baseline"),
                                   check_subject_overlap = TRUE,
                                   tune_method = c("none", "race_anova", "race_win_loss"),
+                                  checkpoint_dir = NULL,
+                                  shard = NULL,
+                                  checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                   ...) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   if (!inherits(object, "nested_cv")) {
     stop("`object` must be an rsample::nested_cv() object.", call. = FALSE)
   }
@@ -966,14 +1035,76 @@ nested_cv_joint_model <- function(object,
   }
 
   outer_ids <- seq_along(object$splits)
-  rows <- if (isTRUE(parallel)) {
-    rlang::check_installed(c("furrr", "future"), reason = "for parallel nested cross-validation.")
-    furrr::future_map(outer_ids, run_outer, .options = furrr::furrr_options(seed = TRUE))
+  n_outer <- length(outer_ids)
+
+  if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) {
+      dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    split_fps <- vapply(seq_len(n_outer), function(i) {
+      payload <- list(
+        version = pkg_ver,
+        seed_scheme = current_seed_scheme(),
+        outer_split = object$splits[[i]]$in_id,
+        engine = engine,
+        calibration = calibration,
+        covariates = covariates,
+        tune_method = tune_method
+      )
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    }, character(1))
+
+    run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = object$id), NULL))), collapse = "")
+
+    active_mask <- if (!is.null(shard)) {
+      ((seq_len(n_outer) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+    } else {
+      rep(TRUE, n_outer)
+    }
+
+    eval_outer_ckpt <- function(i) {
+      sp_id <- object$id[i]
+      safe_id <- gsub("[^A-Za-z0-9._-]", "_", sp_id)
+      cf <- file.path(checkpoint_dir, sprintf("nested_joint_%s.rds", safe_id))
+      exp_fp <- split_fps[i]
+
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) {
+          return(chk$value)
+        }
+      }
+      if (!active_mask[i]) {
+        return(NULL)
+      }
+
+      val <- run_outer(i)
+      if (!is.null(val)) {
+        write_verified_checkpoint(
+          val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
+          meta = list(fn = "nested_cv_joint_model", fold_id = sp_id, index = i)
+        )
+      }
+      val
+    }
+
+    rows <- if (isTRUE(parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "for parallel nested cross-validation.")
+      furrr::future_map(outer_ids, eval_outer_ckpt, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map(outer_ids, eval_outer_ckpt)
+    }
   } else {
-    purrr::map(outer_ids, run_outer)
+    rows <- if (isTRUE(parallel)) {
+      rlang::check_installed(c("furrr", "future"), reason = "for parallel nested cross-validation.")
+      furrr::future_map(outer_ids, run_outer, .options = furrr::furrr_options(seed = TRUE))
+    } else {
+      purrr::map(outer_ids, run_outer)
+    }
   }
 
-  out <- purrr::list_rbind(rows)
+  out <- purrr::list_rbind(Filter(Negate(is.null), rows))
   class(out) <- c("nested_cv_joint_model", class(out))
   out
 }

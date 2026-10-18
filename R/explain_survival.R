@@ -37,17 +37,17 @@
 #'   mp <- survex::model_parts(expl)
 #' }
 #' }
-cbe_explain_survival <- function(model,
-                                 data = NULL,
-                                 y = NULL,
-                                 predict_survival_function = NULL,
-                                 predict_risk_function = NULL,
-                                 times = NULL,
-                                 label = NULL,
-                                 verbose = FALSE,
-                                 ...) {
+explain_survival <- function(model,
+                             data = NULL,
+                             y = NULL,
+                             predict_survival_function = NULL,
+                             predict_risk_function = NULL,
+                             times = NULL,
+                             label = NULL,
+                             verbose = FALSE,
+                             ...) {
   if (!requireNamespace("survex", quietly = TRUE)) {
-    stop("Package 'survex' is required for cbe_explain_survival(). Please install it.", call. = FALSE)
+    stop("Package 'survex' is required for explain_survival(). Please install it.", call. = FALSE)
   }
 
   # 1. Resolve model object, data, and y
@@ -239,6 +239,13 @@ explain_predict_risk <- function(m, new_data) {
   NULL
 }
 
+#' @rdname explain_survival
+#' @export
+cbe_explain_survival <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_explain_survival()", "explain_survival()")
+  explain_survival(...)
+}
+
 #' TempleCBE Custom Loss Functions for survex
 #'
 #' Provides survival loss functions implementing TempleCBE's inverse-probability-of-censoring
@@ -258,11 +265,11 @@ explain_predict_risk <- function(m, new_data) {
 #' @examples
 #' \dontrun{
 #' if (requireNamespace("survex", quietly = TRUE)) {
-#'   loss_ibs <- cbe_survex_loss_ibs()
+#'   loss_ibs <- survex_loss_ibs()
 #'   # mp <- survex::model_parts(explainer, loss_function = loss_ibs)
 #' }
 #' }
-cbe_survex_loss_ibs <- function(normalization = c("none", "t_max", "survival"), max_quantile = 1, trunc = 0.05) {
+survex_loss_ibs <- function(normalization = c("none", "t_max", "survival"), max_quantile = 1, trunc = 0.05) {
   if (is.null(normalization)) normalization <- "none"
   normalization <- match.arg(normalization)
 
@@ -331,9 +338,9 @@ cbe_survex_loss_ibs <- function(normalization = c("none", "t_max", "survival"), 
   loss_fn
 }
 
-#' @rdname cbe_survex_loss_ibs
+#' @rdname survex_loss_ibs
 #' @export
-cbe_survex_loss_brier <- function(trunc = 0.05) {
+survex_loss_brier <- function(trunc = 0.05) {
   loss_fn <- function(y_true = NULL, risk = NULL, surv = NULL, times = NULL) {
     if (is.null(times)) {
       times <- sort(unique(y_true[, 1]))
@@ -364,6 +371,20 @@ cbe_survex_loss_brier <- function(trunc = 0.05) {
   loss_fn
 }
 
+#' @rdname survex_loss_ibs
+#' @export
+cbe_survex_loss_ibs <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_ibs()", "survex_loss_ibs()")
+  survex_loss_ibs(...)
+}
+
+#' @rdname survex_loss_ibs
+#' @export
+cbe_survex_loss_brier <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_brier()", "survex_loss_brier()")
+  survex_loss_brier(...)
+}
+
 #' Explain Joint Model Components via DALEX and survex
 #'
 #' Extracts and creates explainers for all components of a \code{joint_model}:
@@ -386,14 +407,15 @@ cbe_survex_loss_brier <- function(trunc = 0.05) {
 #' @return If \code{type = "all"}, a list of class \code{"cbe_joint_explainer"} containing
 #'   \code{$survival}, \code{$status}, \code{$time}, and (if present) \code{$stack} explainers.
 #'   Otherwise, the individual requested explainer.
+#' @name explain_joint
 #' @export
-cbe_explain <- function(model,
-                        data = NULL,
-                        type = c("all", "survival", "status", "time", "stack"),
-                        times = NULL,
-                        label = NULL,
-                        verbose = FALSE,
-                        ...) {
+explain_joint <- function(model,
+                          data = NULL,
+                          type = c("all", "survival", "status", "time", "stack"),
+                          times = NULL,
+                          label = NULL,
+                          verbose = FALSE,
+                          ...) {
   type <- match.arg(type)
   if (!inherits(model, "joint_model")) {
     stop("`model` must be a `joint_model` object.", call. = FALSE)
@@ -410,7 +432,7 @@ cbe_explain <- function(model,
   # 1. Survival Explainer
   expl_surv <- NULL
   if (type %in% c("all", "survival")) {
-    expl_surv <- cbe_explain_survival(
+    expl_surv <- explain_survival(
       model = model,
       data = eval_data,
       times = times,
@@ -496,51 +518,55 @@ cbe_explain <- function(model,
   res
 }
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-cbe_explain_status <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
-  cbe_explain(model = model, data = data, type = "status", label = label, verbose = verbose, ...)
+explain_model <- explain_joint
+
+#' @rdname explain_joint
+#' @export
+cbe_explain <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_explain()", "explain_joint()")
+  explain_joint(...)
 }
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-cbe_explain_time <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
-  cbe_explain(model = model, data = data, type = "time", label = label, verbose = verbose, ...)
+explain_status <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
+  explain_joint(model = model, data = data, type = "status", label = label, verbose = verbose, ...)
 }
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-cbe_explain_stack <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
-  cbe_explain(model = model, data = data, type = "stack", label = label, verbose = verbose, ...)
+cbe_explain_status <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_explain_status()", "explain_status()")
+  explain_status(...)
 }
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-explain_joint <- cbe_explain
+explain_time <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
+  explain_joint(model = model, data = data, type = "time", label = label, verbose = verbose, ...)
+}
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-explain_status <- cbe_explain_status
+cbe_explain_time <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_explain_time()", "explain_time()")
+  explain_time(...)
+}
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-explain_time <- cbe_explain_time
+explain_stack <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
+  explain_joint(model = model, data = data, type = "stack", label = label, verbose = verbose, ...)
+}
 
-#' @rdname cbe_explain
+#' @rdname explain_joint
 #' @export
-explain_stack <- cbe_explain_stack
-
-#' @rdname cbe_explain_survival
-#' @export
-explain_survival <- cbe_explain_survival
-
-#' @rdname cbe_survex_loss_ibs
-#' @export
-survex_loss_ibs <- cbe_survex_loss_ibs
-
-#' @rdname cbe_survex_loss_ibs
-#' @export
-survex_loss_brier <- cbe_survex_loss_brier
+cbe_explain_stack <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_explain_stack()", "explain_stack()")
+  explain_stack(...)
+}
 
 #' SHAP Variable Attributions across Survival and Joint Models
 #'
@@ -558,23 +584,24 @@ survex_loss_brier <- cbe_survex_loss_brier
 #'   \code{DALEX::predict_parts()}.
 #'
 #' @return A \code{predict_parts} attribution object, printable and plottable with \code{plot()}.
+#' @name predict_parts_shap
 #' @export
-cbe_predict_parts_shap <- function(explainer,
-                                   new_observation,
-                                   type = c("auto", "shap", "survshap"),
-                                   ...) {
+predict_parts_shap <- function(explainer,
+                               new_observation,
+                               type = c("auto", "shap", "survshap"),
+                               ...) {
   type <- match.arg(type)
 
   if (inherits(explainer, "cbe_joint_explainer")) {
     # Compute attributions across all components
     res <- list(
-      survival = cbe_predict_parts_shap(explainer$survival, new_observation, type = "survshap", ...),
-      status = cbe_predict_parts_shap(explainer$status, new_observation, type = "shap", ...),
-      time = cbe_predict_parts_shap(explainer$time, new_observation, type = "shap", ...)
+      survival = predict_parts_shap(explainer$survival, new_observation, type = "survshap", ...),
+      status = predict_parts_shap(explainer$status, new_observation, type = "shap", ...),
+      time = predict_parts_shap(explainer$time, new_observation, type = "shap", ...)
     )
     if (!is.null(explainer$stack)) {
       res$stack <- tryCatch(
-        cbe_predict_parts_shap(explainer$stack, new_observation, type = "survshap", ...),
+        predict_parts_shap(explainer$stack, new_observation, type = "survshap", ...),
         error = function(e) NULL
       )
     }
@@ -612,6 +639,9 @@ cbe_predict_parts_shap <- function(explainer,
   stop("`explainer` must be a `survex_explainer`, `cbe_joint_explainer`, or `DALEX` explainer.", call. = FALSE)
 }
 
-#' @rdname cbe_predict_parts_shap
+#' @rdname predict_parts_shap
 #' @export
-predict_parts_shap <- cbe_predict_parts_shap
+cbe_predict_parts_shap <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_predict_parts_shap()", "predict_parts_shap()")
+  predict_parts_shap(...)
+}

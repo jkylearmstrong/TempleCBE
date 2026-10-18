@@ -9,6 +9,9 @@ compare_censoring_weights(
   grid,
   recipe = NULL,
   ...,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   seed = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   progress = FALSE
@@ -26,12 +29,20 @@ is already a scored data frame.}
 
 \item{...}{Additional arguments passed to [glmnet_IBS()] through [score_outer()].}
 
+\item{checkpoint_dir}{Optional directory to save fingerprinted checkpoints
+for outer scoring passes.}
+
+\item{shard}{Optional integer vector `c(i, n)` for sharded execution.}
+
+\item{checkpoint_mismatch}{Action when a checkpoint fingerprint mismatches:
+`"recompute"` (default), `"overwrite"`, or `"error"`.}
+
 \item{seed}{Optional integer seed for reproducible draws and fitting.}
 
 \item{on_complete}{Optional callback `function(result)` invoked when the run
 finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 
-\item{progress}{Show progress bar (default `FALSE`).}
+\item{progress}{Logical (default `FALSE`). Display progress indication.}
 }
 \value{
 A tibble with columns:
@@ -46,8 +57,12 @@ A tibble with columns:
   \item{rank_diff}{`rank_ipcw - rank_none`}
 
 The returned object has attributes `"rank_agreement"` (containing `spearman`
-and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
-skipped), and `"n_score_outer_runs"`.
+
+A tibble with columns `outer_fold` (if grouped), `model`, `alpha`,
+  `formula`, `ibs_none`, and `ibs_ipcw`, plus attributes `"rank_agreement"`
+  (a list with rank correlation metrics across candidates, `spearman`
+  and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
+  skipped), and `"n_score_outer_runs"`.
 }
 \description{
 Evaluates candidate models on an outer resampling split under both `"none"`

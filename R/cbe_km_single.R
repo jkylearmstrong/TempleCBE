@@ -4,7 +4,7 @@
 #' matching Kaplan-Meier stratified survival curve for the same predictor, so both
 #' are produced from a single call without refitting the Cox model twice.
 #'
-#' @name cbe_km_single
+#' @name km_single
 NULL
 
 #' Analyze a Single Predictor with Kaplan-Meier and Cox Proportional Hazards
@@ -31,8 +31,8 @@ NULL
 #'   }
 #' @seealso [cbe_cox_single()], [plot_cox_survival()]
 #' @export
-cbe_km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
-  cox <- cbe_cox_single(data, outcome = outcome, feature = feature, conf_level = conf_level)
+km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
+  cox <- cox_single(data, outcome = outcome, feature = feature, conf_level = conf_level)
 
   col_vals <- data[[feature]]
   if (cox$is_numeric) {
@@ -122,6 +122,9 @@ print.cbe_km <- function(x, ...) {
 
 utils::globalVariables(c(".cbe_km_strata"))
 
-#' @rdname cbe_km_single
+#' @rdname km_single
 #' @export
-km_single <- cbe_km_single
+cbe_km_single <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_km_single()", "km_single()")
+  km_single(...)
+}

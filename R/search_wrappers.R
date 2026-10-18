@@ -19,9 +19,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' read_search(here::here("analysis"))
+#' find_read_calls(here::here("analysis"))
 #' }
-read_search <- function(path, include_comments = TRUE, workers = NULL) {
+find_read_calls <- function(path, include_comments = TRUE, workers = NULL) {
   string_codes <- c(
     "readRDS", "read.csv",
     "read_csv", "readr::read_csv",
@@ -36,6 +36,13 @@ read_search <- function(path, include_comments = TRUE, workers = NULL) {
     include_comments = include_comments, lines_after = 0,
     workers = workers
   )
+}
+
+#' @rdname find_read_calls
+#' @export
+read_search <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "read_search()", "find_read_calls()")
+  find_read_calls(...)
 }
 
 #' Search a Directory Tree for File-Write Calls
@@ -58,9 +65,9 @@ read_search <- function(path, include_comments = TRUE, workers = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' write_search(here::here("analysis"))
+#' find_write_calls(here::here("analysis"))
 #' }
-write_search <- function(path, include_comments = FALSE, workers = NULL) {
+find_write_calls <- function(path, include_comments = FALSE, workers = NULL) {
   string_codes <- c(
     "write_xlsx",
     "openxlsx::write.xlsx",
@@ -75,6 +82,13 @@ write_search <- function(path, include_comments = FALSE, workers = NULL) {
     include_comments = include_comments, lines_after = 2,
     workers = workers
   )
+}
+
+#' @rdname find_write_calls
+#' @export
+write_search <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "write_search()", "find_write_calls()")
+  find_write_calls(...)
 }
 
 #' @keywords internal

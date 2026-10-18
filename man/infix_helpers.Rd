@@ -2,6 +2,7 @@
 % Please edit documentation in R/infix_helpers.R
 \name{infix_helpers}
 \alias{infix_helpers}
+\alias{match_like}
 \alias{like}
 \alias{\%like\%}
 \alias{ilike}
@@ -15,7 +16,9 @@
 \alias{\%notin\%}
 \title{Pattern Matching and Logical-Negation Infix Operators}
 \usage{
-like(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE)
+match_like(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE)
+
+like(...)
 
 vector \%like\% pattern
 

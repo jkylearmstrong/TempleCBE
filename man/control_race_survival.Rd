@@ -16,16 +16,7 @@ control_race_survival(
   ...
 )
 
-cbe_control_race(
-  save_pred = TRUE,
-  parallel_over = c("everything", "resamples", "across"),
-  save_workflow = TRUE,
-  burn_in = 3,
-  num_ties = 10,
-  alpha = 0.05,
-  randomize = TRUE,
-  ...
-)
+cbe_control_race(...)
 }
 \arguments{
 \item{save_pred}{Logical; whether to save out-of-fold assessment predictions (default \code{TRUE}).}

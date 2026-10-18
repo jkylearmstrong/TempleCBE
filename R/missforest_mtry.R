@@ -250,7 +250,11 @@ missforest_sweep_mtry <- function(data,
                                   maxiter = 10,
                                   seed = TRUE,
                                   max_pct_missing = NULL,
-                                  parallel = TRUE) {
+                                  parallel = TRUE,
+                                  checkpoint_dir = NULL,
+                                  shard = NULL,
+                                  checkpoint_mismatch = c("recompute", "overwrite", "error")) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame or tibble.", call. = FALSE)
   }
@@ -306,7 +310,50 @@ missforest_sweep_mtry <- function(data,
     missforest_oob_by_mtry(dt, mtry = m, ntree = ntree, maxiter = maxiter)
   }
 
-  if (parallel) {
+  if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    data_fp <- paste0(as.character(openssl::sha256(serialize(dt, NULL))), collapse = "")
+    fps <- vapply(mtry_values, function(m) {
+      payload <- list(version = pkg_ver, data_fp = data_fp, mtry = m, ntree = ntree, maxiter = maxiter, seed = seed)
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    }, character(1))
+    run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = fps, mtry = mtry_values), NULL))), collapse = "")
+
+    active_mask <- if (!is.null(shard)) {
+      ((seq_along(mtry_values) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+    } else {
+      rep(TRUE, length(mtry_values))
+    }
+
+    eval_one_ckpt <- function(idx) {
+      m <- mtry_values[[idx]]
+      cf <- file.path(checkpoint_dir, sprintf("missforest_mtry_%03d.rds", as.integer(m)))
+      exp_fp <- fps[[idx]]
+
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) return(chk$value)
+      }
+      if (!active_mask[idx]) return(NULL)
+
+      val <- fit_one(m)
+      write_verified_checkpoint(
+        val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
+        meta = list(fn = "missforest_sweep_mtry", mtry = m)
+      )
+      val
+    }
+
+    indices <- seq_along(mtry_values)
+    sweep <- if (parallel) {
+      rlang::check_installed(c("furrr", "future"), reason = "to run the `mtry` sweep in parallel.")
+      furrr::future_map(indices, eval_one_ckpt, .options = furrr::furrr_options(seed = seed))
+    } else {
+      purrr::map(indices, eval_one_ckpt)
+    }
+    names(sweep) <- names(mtry_values)
+  } else if (parallel) {
     rlang::check_installed(
       c("furrr", "future"),
       reason = "to run the `mtry` sweep in parallel (or set `parallel = FALSE`)."

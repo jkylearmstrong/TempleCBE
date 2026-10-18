@@ -15,6 +15,9 @@ cv_joint_model(
   parallel = FALSE,
   covariates = c("path", "baseline"),
   check_subject_overlap = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   ...
 )
 }

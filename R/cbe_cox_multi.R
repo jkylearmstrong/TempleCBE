@@ -5,7 +5,7 @@
 #' formats coefficients with explicit reference levels grouped by variable, and
 #' gathers model fit and convergence metrics.
 #'
-#' @name cbe_cox_multi
+#' @name cox_multi
 NULL
 
 #' Analyze Multiple Predictors in a Cox Proportional Hazards Model
@@ -35,7 +35,7 @@ NULL
 #'   }
 #' @seealso [cbe_cox_single()], [cbe_cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 #' @export
-cbe_cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL, conf_level = 0.95, ...) {
+cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL, conf_level = 0.95, ...) {
   if (is.null(formula) && is.null(features)) {
     stop("Must supply either `formula` or `features`.", call. = FALSE)
   }
@@ -208,6 +208,9 @@ utils::globalVariables(c(
   "Variable", "Level", "Role", "HR", "log(HR)", "95% CI"
 ))
 
-#' @rdname cbe_cox_multi
+#' @rdname cox_multi
 #' @export
-cox_multi <- cbe_cox_multi
+cbe_cox_multi <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_cox_multi()", "cox_multi()")
+  cox_multi(...)
+}

@@ -16,20 +16,20 @@
 #' @param roles Optional named character vector or list mapping column names to role names.
 #' @return A tibble with columns \code{columns}, \code{role}, \code{X_var}, \code{Y_var},
 #'   \code{ID_var}, \code{Time_var}, and \code{dataset_name} (when multi-table).
-#' @name cbe_variable_roles
+#' @name variable_roles
 #' @export
 #' @examples
 #' df <- data.frame(id = 1:5, time = 1:5, sbp = c(120, 130, 115, 140, 125), death = c(0, 0, 1, 0, 1))
 #' roles <- cbe_variable_roles(df, id = "id", time = "time", outcome = "death", predictors = "sbp")
-cbe_variable_roles <- function(data,
-                               id = NULL,
-                               outcome = NULL,
-                               time = NULL,
-                               predictors = NULL,
-                               strata = NULL,
-                               weight = NULL,
-                               ignore = NULL,
-                               roles = NULL) {
+variable_roles <- function(data,
+                           id = NULL,
+                           outcome = NULL,
+                           time = NULL,
+                           predictors = NULL,
+                           strata = NULL,
+                           weight = NULL,
+                           ignore = NULL,
+                           roles = NULL) {
   is_list_db <- is.list(data) && !is.data.frame(data)
 
   if (is_list_db) {
@@ -50,7 +50,7 @@ cbe_variable_roles <- function(data,
         }
       }
 
-      cur_res <- cbe_variable_roles(
+      cur_res <- variable_roles(
         data = df,
         id = pick_role(id),
         outcome = pick_role(outcome),
@@ -130,77 +130,98 @@ cbe_variable_roles <- function(data,
   )
 }
 
-#' @rdname cbe_variable_roles
-#' @param ... Additional arguments passed to \code{\link{cbe_variable_roles}}.
+#' @rdname variable_roles
 #' @export
-cbe_set_roles <- function(data, ...) {
-  role_tbl <- cbe_variable_roles(data, ...)
+cbe_variable_roles <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_variable_roles()", "variable_roles()")
+  variable_roles(...)
+}
+
+#' @rdname variable_roles
+#' @param ... Additional arguments passed to \code{\link{variable_roles}}.
+#' @export
+set_roles <- function(data, ...) {
+  role_tbl <- variable_roles(data, ...)
   apply_database_metadata(data, role_tbl)
 }
 
-#' @rdname cbe_variable_roles
+#' @rdname variable_roles
 #' @export
-cbe_get_roles <- function(data) {
+cbe_set_roles <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_set_roles()", "set_roles()")
+  set_roles(...)
+}
+
+#' @rdname variable_roles
+#' @export
+get_roles <- function(data) {
   if (is.list(data) && !is.data.frame(data)) {
-    cbe_variable_roles(data)
+    variable_roles(data)
   } else {
-    attr(data, "variable_roles", exact = TRUE) %||% cbe_variable_roles(data)
+    attr(data, "variable_roles", exact = TRUE) %||% variable_roles(data)
   }
 }
 
-#' @rdname cbe_variable_roles
-#' @param roles Role table (e.g. from \code{\link{cbe_variable_roles}}) or data object.
+#' @rdname variable_roles
 #' @export
-cbe_get_predictors <- function(roles) {
-  if (!is.data.frame(roles)) roles <- cbe_get_roles(roles)
+cbe_get_roles <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_roles()", "get_roles()")
+  get_roles(...)
+}
+
+#' @rdname variable_roles
+#' @param roles Role table (e.g. from \code{\link{variable_roles}}) or data object.
+#' @export
+get_predictors <- function(roles) {
+  if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$X_var | roles$role == "predictor"]
 }
 
-#' @rdname cbe_variable_roles
+#' @rdname variable_roles
 #' @export
-cbe_get_outcomes <- function(roles) {
-  if (!is.data.frame(roles)) roles <- cbe_get_roles(roles)
+cbe_get_predictors <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_predictors()", "get_predictors()")
+  get_predictors(...)
+}
+
+#' @rdname variable_roles
+#' @export
+get_outcomes <- function(roles) {
+  if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$Y_var | roles$role == "outcome"]
 }
 
-#' @rdname cbe_variable_roles
+#' @rdname variable_roles
 #' @export
-cbe_get_id_cols <- function(roles) {
-  if (!is.data.frame(roles)) roles <- cbe_get_roles(roles)
+cbe_get_outcomes <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_outcomes()", "get_outcomes()")
+  get_outcomes(...)
+}
+
+#' @rdname variable_roles
+#' @export
+get_id_cols <- function(roles) {
+  if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$ID_var | roles$role == "id"]
 }
 
-#' @rdname cbe_variable_roles
+#' @rdname variable_roles
 #' @export
-cbe_get_time_cols <- function(roles) {
-  if (!is.data.frame(roles)) roles <- cbe_get_roles(roles)
+cbe_get_id_cols <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_id_cols()", "get_id_cols()")
+  get_id_cols(...)
+}
+
+#' @rdname variable_roles
+#' @export
+get_time_cols <- function(roles) {
+  if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$Time_var | roles$role == "time"]
 }
 
-#' @rdname cbe_variable_roles
+#' @rdname variable_roles
 #' @export
-variable_roles <- cbe_variable_roles
-
-#' @rdname cbe_variable_roles
-#' @export
-set_roles <- cbe_set_roles
-
-#' @rdname cbe_variable_roles
-#' @export
-get_roles <- cbe_get_roles
-
-#' @rdname cbe_variable_roles
-#' @export
-get_predictors <- cbe_get_predictors
-
-#' @rdname cbe_variable_roles
-#' @export
-get_outcomes <- cbe_get_outcomes
-
-#' @rdname cbe_variable_roles
-#' @export
-get_id_cols <- cbe_get_id_cols
-
-#' @rdname cbe_variable_roles
-#' @export
-get_time_cols <- cbe_get_time_cols
+cbe_get_time_cols <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_time_cols()", "get_time_cols()")
+  get_time_cols(...)
+}

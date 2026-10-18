@@ -6,15 +6,22 @@
 #' @return numeric value representing standard error
 #'
 #' @examples
-#' sd.error(mtcars$mpg)
+#' std_error(mtcars$mpg)
 #'
 #' @importFrom dplyr if_else
 #' @importFrom stats sd
 #'
 #' @export
-sd.error <- function(x, na.rm=FALSE){
+std_error <- function(x, na.rm = FALSE) {
   dplyr::if_else(na.rm,
-                 stats::sd(x, na.rm=TRUE)/sqrt(sum(!is.na(x))),
-                 stats::sd(x, na.rm=FALSE)/sqrt(length(x))
+                 stats::sd(x, na.rm = TRUE) / sqrt(sum(!is.na(x))),
+                 stats::sd(x, na.rm = FALSE) / sqrt(length(x))
   )
+}
+
+#' @rdname std_error
+#' @export
+sd.error <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "sd.error()", "std_error()")
+  std_error(...)
 }

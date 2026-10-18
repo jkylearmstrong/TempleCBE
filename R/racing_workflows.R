@@ -62,7 +62,10 @@ control_race_survival <- function(save_pred = TRUE,
 
 #' @rdname control_race_survival
 #' @export
-cbe_control_race <- control_race_survival
+cbe_control_race <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_control_race()", "control_race_survival()")
+  control_race_survival(...)
+}
 
 #' Adaptive Racing Tuning for Survival Workflows and Workflow Sets
 #'
@@ -129,7 +132,11 @@ tune_race_survival <- function(object,
                                eval_time = NULL,
                                control = NULL,
                                seed = 1503,
+                               checkpoint_dir = NULL,
+                               shard = NULL,
+                               checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                ...) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   rlang::check_installed(c("finetune", "tune", "yardstick"), reason = "for tune_race_survival().")
   fn <- match.arg(fn)
   if (fn == "tune_race_win_loss") {
@@ -178,7 +185,29 @@ tune_race_survival <- function(object,
     local_seed(seed)
   }
 
-  if (call_fn == "tune_race_anova") {
+  ckpt_file <- if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    file.path(checkpoint_dir, "tune_race_result.rds")
+  } else {
+    NULL
+  }
+
+  fp <- if (!is.null(ckpt_file)) {
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    payload <- list(version = pkg_ver, fn = call_fn, grid = grid, metrics = names(metrics), eval_time = eval_time, seed = seed)
+    paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+  } else {
+    NULL
+  }
+
+  if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+    chk <- read_verified_checkpoint(ckpt_file, fp, checkpoint_mismatch = checkpoint_mismatch)
+    if (identical(chk$status, "hit")) {
+      return(chk$value)
+    }
+  }
+
+  res <- if (call_fn == "tune_race_anova") {
     finetune::tune_race_anova(
       object,
       resamples = resamples,
@@ -199,11 +228,22 @@ tune_race_survival <- function(object,
       ...
     )
   }
+
+  if (!is.null(ckpt_file)) {
+    write_verified_checkpoint(
+      res, ckpt_file, fingerprint = fp,
+      meta = list(fn = "tune_race_survival", call_fn = call_fn)
+    )
+  }
+  res
 }
 
 #' @rdname tune_race_survival
 #' @export
-cbe_tune_race_survival <- tune_race_survival
+cbe_tune_race_survival <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_tune_race_survival()", "tune_race_survival()")
+  tune_race_survival(...)
+}
 
 #' Default Evaluation Times for Racing, Read From a Workflow's Outcome
 #'

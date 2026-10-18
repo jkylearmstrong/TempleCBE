@@ -9,15 +9,15 @@
 #'   shared keys are automatically detected across datasets.
 #' @return A tibble summarizing dataset pairs, shared key columns, record counts,
 #'   overlap counts, coverage percentages, and cardinality.
-#' @name cbe_database_relationships
+#' @name database_relationships
 #' @export
 #' @examples
 #' db <- list(
 #'   patients = data.frame(id = 1:5, age = c(20, 30, 40, 50, 60)),
 #'   vitals = data.frame(id = c(1, 1, 2, 2, 3, 6), bp = c(120, 122, 130, 132, 110, 115))
 #' )
-#' cbe_database_relationships(db)
-cbe_database_relationships <- function(db, id_cols = NULL) {
+#' database_relationships(db)
+database_relationships <- function(db, id_cols = NULL) {
   if (!is.list(db) || is.data.frame(db)) {
     stop("`db` must be a named list of data frames (an R database).", call. = FALSE)
   }
@@ -122,7 +122,7 @@ cbe_database_relationships <- function(db, id_cols = NULL) {
   out
 }
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @param x A \code{cbe_database_relationships} object.
 #' @param ... Additional arguments passed to methods.
 #' @exportS3Method tidygraph::as_tbl_graph
@@ -290,9 +290,9 @@ autoplot.cbe_key_integrity <- function(object, ...) {
   p
 }
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @export
-cbe_find_shared_keys <- function(db) {
+find_shared_keys <- function(db) {
   if (!is.list(db) || is.data.frame(db)) {
     stop("`db` must be a named list of data frames (an R database).", call. = FALSE)
   }
@@ -323,7 +323,7 @@ cbe_find_shared_keys <- function(db) {
     dplyr::arrange(dplyr::desc(.data$n_tables), .data$column)
 }
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @param id_col Character string specifying the identifier column to check.
 #' @param master_dataset Character string naming the primary cohort table. If provided,
 #'   checks which IDs in other tables are absent from the master cohort table.
@@ -333,7 +333,7 @@ cbe_find_shared_keys <- function(db) {
 #' @param tolerance Numeric comparison tolerance passed to \code{\link{cbe_compare_df}}.
 #' @param ... Additional arguments passed to \code{\link{cbe_compare_df}}.
 #' @export
-cbe_check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FALSE, tolerance = 1e-7, ...) {
+check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FALSE, tolerance = 1e-7, ...) {
   if (!is.list(db) || is.data.frame(db)) {
     stop("`db` must be a named list of data frames (an R database).", call. = FALSE)
   }
@@ -454,18 +454,27 @@ print.cbe_key_integrity <- function(x, ...) {
   invisible(x)
 }
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @export
-database_relationships <- cbe_database_relationships
+cbe_database_relationships <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_relationships()", "database_relationships()")
+  database_relationships(...)
+}
 
 #' @rdname cbe_database_venn
 #' @export
 database_venn <- cbe_database_venn
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @export
-find_shared_keys <- cbe_find_shared_keys
+cbe_find_shared_keys <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_find_shared_keys()", "find_shared_keys()")
+  find_shared_keys(...)
+}
 
-#' @rdname cbe_database_relationships
+#' @rdname database_relationships
 #' @export
-check_key_integrity <- cbe_check_key_integrity
+cbe_check_key_integrity <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_check_key_integrity()", "check_key_integrity()")
+  check_key_integrity(...)
+}

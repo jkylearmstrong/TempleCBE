@@ -9,7 +9,10 @@ tune_impute_numeric(
   target_cols,
   methods = c("mean", "median", "knn"),
   prop_mask = 0.15,
-  seed = 123
+  seed = 123,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error")
 )
 }
 \arguments{

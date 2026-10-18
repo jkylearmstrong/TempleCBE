@@ -385,7 +385,7 @@ test_that("E4: cbe_domain_children() expands domains, isolates failing domains, 
   )
 
   expect_warning(
-    res <- cbe_domain_children(
+    res <- domain_children(
       domains = c("Cardio", "BadDomain", "Renal"),
       child = child_tpl,
       bonus_val = list(Cardio = 10L, BadDomain = 20L, Renal = 30L),

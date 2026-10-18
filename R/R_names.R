@@ -14,10 +14,17 @@
 #'   `name with spaces` = 1:10,
 #'   `special * characters` = LETTERS[1:10]
 #' )
-#' R_names(df)
-R_names <- function(df) {
+#' clean_names_keep_labels(df)
+clean_names_keep_labels <- function(df) {
   old_names <- colnames(df)
   df <- janitor::clean_names(df)
   labelled::var_label(df) <- old_names
   df
+}
+
+#' @rdname clean_names_keep_labels
+#' @export
+R_names <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "R_names()", "clean_names_keep_labels()")
+  clean_names_keep_labels(...)
 }

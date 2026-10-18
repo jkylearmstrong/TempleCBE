@@ -24,8 +24,12 @@ tune_best_glmnet_workflow <- function(formula_or_recipe,
                                       resamples = NULL,
                                       mixture = c(0.2, 0.5, 0.8, 1.0),
                                       rule = c("min", "1se"),
+                                      checkpoint_dir = NULL,
+                                      shard = NULL,
+                                      checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                       ...) {
   rule <- match.arg(rule)
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
 
   if (is.null(resamples)) {
     if (!requireNamespace("rsample", quietly = TRUE)) {
@@ -39,6 +43,9 @@ tune_best_glmnet_workflow <- function(formula_or_recipe,
     data = data,
     mixture = mixture,
     resamples = resamples,
+    checkpoint_dir = checkpoint_dir,
+    shard = shard,
+    checkpoint_mismatch = checkpoint_mismatch,
     ...
   )
 

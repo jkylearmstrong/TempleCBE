@@ -2540,12 +2540,12 @@ get_render_plan <- function(all_objects,
 }
 
 
-#' Check if a FileOutputs object controls datasets (outputs an rds, xlsx, etc. file)
+#' Check if a FileOutputs object produces datasets (outputs an rds, xlsx, etc. file)
 #'
 #' @param obj A FileOutputs object.
 #' @return Logical.
 #' @export
-controls_datasets <- function(obj) {
+produces_data <- function(obj) {
   if (!is(obj, "FileOutputs")) {
     return(FALSE)
   }
@@ -2565,6 +2565,13 @@ controls_datasets <- function(obj) {
 
   # Check if any extension is a dataset type (rds, xlsx, csv, etc.)
   any(exts %in% c("rds", "xlsx", "csv", "rdata"))
+}
+
+#' @rdname produces_data
+#' @export
+controls_datasets <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "controls_datasets()", "produces_data()")
+  produces_data(...)
 }
 
 

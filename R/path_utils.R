@@ -41,8 +41,8 @@ locate_package_path <- function(subdir, file = NULL) {
 #' @seealso [scan_data_io()], [min_max_norm()]
 #' @export
 #' @examples
-#' normalize_safely(c("data/../data/file.csv", "", NA))
-normalize_safely <- function(x) {
+#' normalize_path_safely(c("data/../data/file.csv", "", NA))
+normalize_path_safely <- function(x) {
   x <- ifelse(is.na(x) | trimws(x) == "", NA_character_, x)
   suppressWarnings(
     vapply(x, function(xx) {
@@ -51,6 +51,13 @@ normalize_safely <- function(x) {
                error = function(e) xx)
     }, FUN.VALUE = character(1))
   )
+}
+
+#' @rdname normalize_path_safely
+#' @export
+normalize_safely <- function(x) {
+  lifecycle::deprecate_warn("0.5.8", "normalize_safely()", "normalize_path_safely()")
+  normalize_path_safely(x)
 }
 
 #' Do Two Paths Name the Same File?
@@ -192,8 +199,8 @@ xlsx_name_re <- paste0(
 #' @seealso [extract_all_xlsx_tokens()]
 #' @export
 #' @examples
-#' extract_win_posix_paths(c("C:\\data\\table_1.xlsx", "/home/me/out/table-2.xlsx", "none"))
-extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
+#' extract_xlsx_paths(c("C:\\data\\table_1.xlsx", "/home/me/out/table-2.xlsx", "none"))
+extract_xlsx_paths <- function(x, xlsx_token_re = xlsx_name_re) {
   # The file name follows a separator in the full-path pattern, so drop any
   # "not after a separator" lookbehind a caller's token pattern carries.
   token_re <- stringr::str_remove(xlsx_token_re, "^\\(\\?<!\\[/\\\\\\\\\\]\\)")
@@ -210,6 +217,13 @@ extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
   file <- m[, 3]
   full <- dplyr::if_else(!is.na(dir) & !is.na(file), as.character(fs::path(dir, file)), NA_character_)
   tibble::tibble(dir = dir, file = file, full_path = full)
+}
+
+#' @rdname extract_xlsx_paths
+#' @export
+extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
+  lifecycle::deprecate_warn("0.5.8", "extract_win_posix_paths()", "extract_xlsx_paths()")
+  extract_xlsx_paths(x, xlsx_token_re = xlsx_token_re)
 }
 
 #' Extract Every `.xlsx` File Name From Text

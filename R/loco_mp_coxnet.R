@@ -70,7 +70,7 @@
 #'   \code{\link[glmnet]{glmnet}}, such as \code{cox.ties}, \code{standardize}, or
 #'   \code{penalty.factor}. Not \code{weights} or \code{offset}.
 #'
-#' @return An S3 object of class \code{"cbe_loco_mp_coxnet"} containing:
+#' @return An S3 object of class \code{"loco_mp_coxnet"} (and \code{"cbe_loco_mp_coxnet"}) containing:
 #'   \item{results}{A tibble with columns \code{term}, \code{importance}, \code{std_error},
 #'     \code{statistic}, \code{p_value} (one-sided, for \code{importance > 0}),
 #'     \code{p_adjusted}, \code{conf_low}, \code{conf_high} (a two-sided interval at
@@ -82,6 +82,7 @@
 #'   \item{p_adjust}{Multiple testing adjustment method.}
 #'   \item{covariates}{How start/stop covariates were used; see \code{covariates}.}
 #' @seealso [nested_cv_coxnet()], [cv_coxnet()], [coxnet()]
+#' @name loco_mp_coxnet
 #' @export
 #'
 #' @examples
@@ -96,13 +97,13 @@
 #'     x2 = stats::rnorm(n),
 #'     x3 = stats::rnorm(n)
 #'   )
-#'   fit <- cbe_loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2 + x3, data = df, B = 20)
+#'   fit <- loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2 + x3, data = df, B = 20)
 #'   fit
 #'   generics::tidy(fit)
 #' }
 #' }
-cbe_loco_mp_coxnet <- function(formula = NULL,
-                               data = NULL,
+loco_mp_coxnet <- function(formula = NULL,
+                           data = NULL,
                                x = NULL,
                                y = NULL,
                                B = 100,
@@ -353,8 +354,15 @@ cbe_loco_mp_coxnet <- function(formula = NULL,
       p_adjust = p_adjust,
       covariates = covariates
     ),
-    class = "cbe_loco_mp_coxnet"
+    class = c("loco_mp_coxnet", "cbe_loco_mp_coxnet")
   )
+}
+
+#' @rdname loco_mp_coxnet
+#' @export
+cbe_loco_mp_coxnet <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_loco_mp_coxnet()", "loco_mp_coxnet()")
+  loco_mp_coxnet(...)
 }
 
 #' A Minipatch That Failed, With Its Error Message
@@ -402,8 +410,8 @@ loco_subject_deltas <- function(with, without, surv_flat, oob, weights, alive, d
 }
 
 #' @export
-print.cbe_loco_mp_coxnet <- function(x, ...) {
-  cat("<cbe_loco_mp_coxnet> Leave-One-Covariate-Out MiniPatch Feature Inference\n")
+print.loco_mp_coxnet <- function(x, ...) {
+  cat("<loco_mp_coxnet> Leave-One-Covariate-Out MiniPatch Feature Inference\n")
   cat("  Patches (B):", x$B, "  n_ratio:", x$n_ratio, "  m_ratio:", x$m_ratio, "\n")
   cat("  Multiple testing adjustment:", x$p_adjust, " (alpha = ", x$alpha, ")\n\n", sep = "")
 
@@ -417,21 +425,27 @@ print.cbe_loco_mp_coxnet <- function(x, ...) {
   invisible(x)
 }
 
+#' @export
+print.cbe_loco_mp_coxnet <- print.loco_mp_coxnet
+
 #' Tidy a LOCO-MP Cox Model Object
 #'
 #' Extracts feature importance and inference metrics into a clean tibble.
 #'
-#' @param x A \code{cbe_loco_mp_coxnet} object.
+#' @param x A \code{loco_mp_coxnet} object.
 #' @param ... Not used.
 #' @return A tibble with \code{term}, \code{importance}, \code{std_error},
 #'   \code{statistic}, \code{p_value}, \code{p_adjusted}, \code{conf_low}, \code{conf_high}.
 #'   \code{p_value} and \code{p_adjusted} are one-sided (for \code{importance > 0});
 #'   \code{conf_low} and \code{conf_high} are a two-sided interval at level
-#'   \code{1 - alpha}. See \code{\link{cbe_loco_mp_coxnet}}.
+#'   \code{1 - alpha}. See \code{\link{loco_mp_coxnet}}.
 #' @exportS3Method generics::tidy
-tidy.cbe_loco_mp_coxnet <- function(x, ...) {
+tidy.loco_mp_coxnet <- function(x, ...) {
   x$results
 }
+
+#' @exportS3Method generics::tidy
+tidy.cbe_loco_mp_coxnet <- tidy.loco_mp_coxnet
 
 #' Autoplot Method for LOCO-MP Feature Importance
 #'
@@ -446,12 +460,12 @@ tidy.cbe_loco_mp_coxnet <- function(x, ...) {
 #' \code{alpha / 2} and \code{alpha} has a bar that still crosses 0, and after a
 #' correction such as Bonferroni a bar that excludes 0 can be "Not Significant".
 #'
-#' @param object A \code{cbe_loco_mp_coxnet} object.
+#' @param object A \code{loco_mp_coxnet} object.
 #' @param ... Additional arguments.
 #' @return A ggplot2 plot object.
 #' @exportS3Method ggplot2::autoplot
-autoplot.cbe_loco_mp_coxnet <- function(object, ...) {
-  rlang::check_installed("ggplot2", reason = "for autoplot.cbe_loco_mp_coxnet().")
+autoplot.loco_mp_coxnet <- function(object, ...) {
+  rlang::check_installed("ggplot2", reason = "for autoplot.loco_mp_coxnet().")
 
   df <- object$results
   df <- df[!is.na(df$importance), ]
@@ -489,7 +503,6 @@ autoplot.cbe_loco_mp_coxnet <- function(object, ...) {
   p
 }
 
-#' @rdname cbe_loco_mp_coxnet
-#' @export
-loco_mp_coxnet <- cbe_loco_mp_coxnet
+#' @exportS3Method ggplot2::autoplot
+autoplot.cbe_loco_mp_coxnet <- autoplot.loco_mp_coxnet
 

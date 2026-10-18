@@ -190,16 +190,24 @@ sas_args <- function(path, log_dir, list_dir) {
 #' `cbe_counting_process.sas`, and `cbe_macros.sas`).
 #'
 #' @return Absolute path to the SAS macro directory.
-#' @seealso [cbe_sas_macro_path()], [run_sas_script()], [find_sas()]
+#' @seealso [sas_macro_path()], [run_sas_script()], [find_sas()]
+#' @name sas_macro_dir
 #' @export
 #' @examples
-#' try(cbe_sas_macro_dir())
-cbe_sas_macro_dir <- function() {
+#' try(sas_macro_dir())
+sas_macro_dir <- function() {
   dir <- locate_package_path("sas")
   if (is.null(dir)) {
     stop("Could not locate TempleCBE SAS macro directory.", call. = FALSE)
   }
   dir
+}
+
+#' @rdname sas_macro_dir
+#' @export
+cbe_sas_macro_dir <- function() {
+  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_dir()", "sas_macro_dir()")
+  sas_macro_dir()
 }
 
 #' Path to a TempleCBE SAS Macro File
@@ -212,18 +220,19 @@ cbe_sas_macro_dir <- function() {
 #'   `"cpdata.sas"`, `"benchmark_brier_lung.sas"`, `"benchmark_brier_lung_full.sas"`,
 #'   and `"example_85_7.sas"`.
 #' @return Absolute path to the requested `.sas` file.
-#' @seealso [cbe_sas_macro_dir()], [run_sas_script()], [find_sas()]
+#' @seealso [sas_macro_dir()], [run_sas_script()], [find_sas()]
+#' @name sas_macro_path
 #' @export
 #' @examples
-#' try(cbe_sas_macro_path("cbe_macros.sas"))
-cbe_sas_macro_path <- function(macro = "cbe_macros.sas") {
+#' try(sas_macro_path("cbe_macros.sas"))
+sas_macro_path <- function(macro = "cbe_macros.sas") {
   if (!is.character(macro) || length(macro) != 1 || !nzchar(macro)) {
     stop("`macro` must be a single non-empty character string.", call. = FALSE)
   }
   if (!grepl("\\.sas$", macro, ignore.case = TRUE)) {
     macro <- paste0(macro, ".sas")
   }
-  dir <- cbe_sas_macro_dir()
+  dir <- sas_macro_dir()
   target <- file.path(dir, macro)
   if (!file.exists(target)) {
     available <- list.files(dir, pattern = "\\.sas$", ignore.case = TRUE)
@@ -236,10 +245,9 @@ cbe_sas_macro_path <- function(macro = "cbe_macros.sas") {
   normalizePath(target, winslash = "/", mustWork = TRUE)
 }
 
-#' @rdname cbe_sas_macro_dir
+#' @rdname sas_macro_path
 #' @export
-sas_macro_dir <- cbe_sas_macro_dir
-
-#' @rdname cbe_sas_macro_path
-#' @export
-sas_macro_path <- cbe_sas_macro_path
+cbe_sas_macro_path <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_path()", "sas_macro_path()")
+  sas_macro_path(...)
+}

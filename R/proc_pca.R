@@ -14,11 +14,11 @@
 #'   `difference`, `proportion`, `variance_pct`, `cum_variance_pct`.
 #' @export
 #' @examples
-#' proc_pca(prcomp(mtcars[, 1:4], scale. = TRUE))
+#' run_pca(prcomp(mtcars[, 1:4], scale. = TRUE))
 #'
 #' # Or fit the PCA in one step
-#' proc_pca(mtcars[, 1:4], scale = TRUE)
-proc_pca <- function(data, center = TRUE, scale = TRUE, ...) {
+#' run_pca(mtcars[, 1:4], scale = TRUE)
+run_pca <- function(data, center = TRUE, scale = TRUE, ...) {
   dots <- list(...)
   if ("scale." %in% names(dots)) {
     scale <- dots[["scale."]]
@@ -60,4 +60,11 @@ proc_pca <- function(data, center = TRUE, scale = TRUE, ...) {
   attr(res, "prcomp") <- pca_obj
   class(res) <- c("cbe_pca", class(res))
   res
+}
+
+#' @rdname run_pca
+#' @export
+proc_pca <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "proc_pca()", "run_pca()")
+  run_pca(...)
 }

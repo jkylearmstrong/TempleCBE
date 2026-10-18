@@ -24,12 +24,11 @@
 #' @export
 #' @examples
 #' e <- new.env()
-#' local({a <- 1; b <- 2; keep_only("a", .dontask = TRUE)}, envir = e)
+#' local({a <- 1; b <- 2; rm_all_except("a", .dontask = TRUE)}, envir = e)
 #' ls(e)
-keep_only <- function(vector, .dontask = FALSE) {
-  env <- parent.frame()
+rm_all_except <- function(vector, .dontask = FALSE, env = parent.frame()) {
   if (!is.character(vector) || anyNA(vector)) {
-    stop("`vector` must be a character vector of object names to keep, such as keep_only(c(\"a\", \"b\")); ",
+    stop("`vector` must be a character vector of object names to keep, such as rm_all_except(c(\"a\", \"b\")); ",
          "the names have to be quoted. Nothing was removed.", call. = FALSE)
   }
   not_found <- vector[!vapply(vector, exists, logical(1), envir = env, inherits = FALSE, USE.NAMES = FALSE)]
@@ -54,6 +53,13 @@ keep_only <- function(vector, .dontask = FALSE) {
   }
   rm(list = rm_vector, envir = env)
   invisible(NULL)
+}
+
+#' @rdname rm_all_except
+#' @export
+keep_only <- function(vector, .dontask = FALSE, env = parent.frame()) {
+  lifecycle::deprecate_warn("0.5.8", "keep_only()", "rm_all_except()")
+  rm_all_except(vector = vector, .dontask = .dontask, env = env)
 }
 
 #' Delete Stray 'nul' Files

@@ -22,6 +22,9 @@ nested_cv_coxnet(
   importance = c("none", "loco_mp"),
   check_subject_overlap = TRUE,
   tune_method = c("grid", "race_anova", "race_win_loss"),
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )

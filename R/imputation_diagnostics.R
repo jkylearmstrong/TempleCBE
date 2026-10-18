@@ -190,7 +190,11 @@ tune_impute_numeric <- function(data,
                                 target_cols,
                                 methods = c("mean", "median", "knn"),
                                 prop_mask = 0.15,
-                                seed = 123) {
+                                seed = 123,
+                                checkpoint_dir = NULL,
+                                shard = NULL,
+                                checkpoint_mismatch = c("recompute", "overwrite", "error")) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   if (!is.null(seed)) {
     set.seed(seed)
   }
@@ -207,9 +211,37 @@ tune_impute_numeric <- function(data,
     stop("At least 10 complete cases are required for imputation benchmarking.", call. = FALSE)
   }
 
+  if (!is.null(checkpoint_dir) && !dir.exists(checkpoint_dir)) {
+    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+  active_mask <- if (!is.null(shard)) {
+    ((seq_along(target_cols) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+  } else {
+    rep(TRUE, length(target_cols))
+  }
+
   results <- list()
 
-  for (col in target_cols) {
+  for (col_idx in seq_along(target_cols)) {
+    col <- target_cols[col_idx]
+    safe_col <- gsub("[^A-Za-z0-9._-]", "_", col)
+    cf <- if (!is.null(checkpoint_dir)) file.path(checkpoint_dir, sprintf("impute_%s.rds", safe_col)) else NULL
+    exp_fp <- if (!is.null(cf)) {
+      payload <- list(version = pkg_ver, col = col, methods = methods, prop_mask = prop_mask, seed = seed, dim = dim(complete_df))
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    } else NULL
+
+    if (!is.null(cf) && file.exists(cf)) {
+      chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+      if (identical(chk$status, "hit")) {
+        results[[length(results) + 1]] <- chk$value
+        next
+      }
+    }
+    if (!active_mask[col_idx]) next
+
     true_vals <- complete_df[[col]]
     n <- length(true_vals)
     n_mask <- max(1L, round(prop_mask * n))
@@ -222,21 +254,19 @@ tune_impute_numeric <- function(data,
     ss_tot <- sum((true_vals[mask_idx] - mean(true_vals[-mask_idx]))^2)
     if (ss_tot == 0) ss_tot <- 1e-6
 
+    col_res <- list()
     for (m in methods) {
       pred_vals <- if (m == "mean") {
         rep(mean(masked_col, na.rm = TRUE), n_mask)
       } else if (m == "median") {
         rep(stats::median(masked_col, na.rm = TRUE), n_mask)
       } else if (m == "knn") {
-        # Simple 5-NN imputation using other columns if available
         other_cols <- setdiff(target_cols, col)
         if (length(other_cols) > 0) {
           ref_mat <- as.matrix(complete_df[, other_cols, drop = FALSE])
-          # Scale
           ref_scaled <- scale(ref_mat)
           dists <- as.matrix(stats::dist(ref_scaled))
           vapply(mask_idx, function(i) {
-            # Find closest 5 neighbors among non-masked
             non_masked <- setdiff(seq_len(n), mask_idx)
             closest <- non_masked[order(dists[i, non_masked])[1:min(5, length(non_masked))]]
             mean(true_vals[closest], na.rm = TRUE)
@@ -252,7 +282,7 @@ tune_impute_numeric <- function(data,
       rse <- ss_res / ss_tot
       mae <- mean(abs(true_vals[mask_idx] - pred_vals))
 
-      results[[length(results) + 1]] <- tibble::tibble(
+      col_res[[length(col_res) + 1]] <- tibble::tibble(
         variable = col,
         method = m,
         rse = rse,
@@ -260,6 +290,11 @@ tune_impute_numeric <- function(data,
         n_masked = n_mask
       )
     }
+    col_tbl <- dplyr::bind_rows(col_res)
+    if (!is.null(cf)) {
+      write_verified_checkpoint(col_tbl, cf, fingerprint = exp_fp, meta = list(fn = "tune_impute_numeric", col = col))
+    }
+    results[[length(results) + 1]] <- col_tbl
   }
 
   res_df <- dplyr::bind_rows(results)

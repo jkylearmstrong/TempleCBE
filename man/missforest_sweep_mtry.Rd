@@ -12,7 +12,10 @@ missforest_sweep_mtry(
   maxiter = 10,
   seed = TRUE,
   max_pct_missing = NULL,
-  parallel = TRUE
+  parallel = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error")
 )
 }
 \arguments{

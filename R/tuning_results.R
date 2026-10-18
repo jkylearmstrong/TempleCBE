@@ -12,16 +12,16 @@
 #' @param .rank Position to return; 1 (default) is the best workflow.
 #' @return A one-row tibble with `wflow_id`, `preproc`, `model`, and one column
 #'   per tuning parameter.
-#' @seealso [fit_n_rank()] to also fit the chosen configuration.
+#' @seealso [workflow_set_rank_fit()] to also fit the chosen configuration.
 #' @export
 #' @examples
 #' \dontrun{
 #' results <- workflowsets::workflow_map(wset, "tune_grid", resamples = folds, grid = 5)
-#' get_model_parameters(results, "rmse")
-#' get_model_parameters(results, "rmse", .rank = 2)
+#' workflow_set_params(results, "rmse")
+#' workflow_set_params(results, "rmse", .rank = 2)
 #' }
-get_model_parameters <- function(workflowset_results, rank_metric, .rank = 1) {
-  require_packages(c("workflowsets", "tune"), "get_model_parameters")
+workflow_set_params <- function(workflowset_results, rank_metric, .rank = 1) {
+  require_packages(c("workflowsets", "tune"), "workflow_set_params")
   ranked <- workflowsets::rank_results(workflowset_results, rank_metric = rank_metric, select_best = TRUE)
   ranked <- dplyr::filter(ranked, .data$.metric == rank_metric, .data$rank == .rank)
   if (nrow(ranked) == 0) {
@@ -32,6 +32,13 @@ get_model_parameters <- function(workflowset_results, rank_metric, .rank = 1) {
   tune_res <- workflowsets::extract_workflow_set_result(workflowset_results, id = wflow_id)
   best <- tune::select_best(tune_res, metric = rank_metric)
   dplyr::bind_cols(workflow_info(workflowset_results, wflow_id), dplyr::select(best, -".config"))
+}
+
+#' @rdname workflow_set_params
+#' @export
+get_model_parameters <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "get_model_parameters()", "workflow_set_params()")
+  workflow_set_params(...)
 }
 
 #' Fit the Configuration Ranked `.rank` in a Workflow Set
@@ -70,13 +77,13 @@ get_model_parameters <- function(workflowset_results, rank_metric, .rank = 1) {
 #' best$tuned_parameters
 #' predict(best$model, new_data)
 #' }
-fit_n_rank <- function(grid_results,
-                       rank_metric,
-                       .rank = 1,
-                       group_wflow = TRUE,
-                       select_best = FALSE,
-                       ...) {
-  require_packages(c("workflowsets", "tune"), "fit_n_rank")
+workflow_set_rank_fit <- function(grid_results,
+                                  rank_metric,
+                                  .rank = 1,
+                                  group_wflow = TRUE,
+                                  select_best = FALSE,
+                                  ...) {
+  require_packages(c("workflowsets", "tune"), "workflow_set_rank_fit")
   rankings <- workflowsets::rank_results(grid_results, rank_metric = rank_metric, select_best = select_best)
   rankings <- dplyr::filter(rankings, .data$.metric == rank_metric)
 
@@ -110,6 +117,13 @@ fit_n_rank <- function(grid_results,
   }
 
   list(model = model, tuned_parameters = tuned_parameters)
+}
+
+#' @rdname workflow_set_rank_fit
+#' @export
+fit_n_rank <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "fit_n_rank()", "workflow_set_rank_fit()")
+  workflow_set_rank_fit(...)
 }
 
 #' The `wflow_id`, `preproc` and `model` of One Workflow in a Set

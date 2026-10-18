@@ -21,11 +21,18 @@ significance_stars <- function(p_value) {
 #' @return A single logical.
 #' @export
 #' @examples
-#' is.int(sample(-100:100, size = 500, replace = TRUE))
-#' is.int(runif(500))
-is.int <- function(col) {
+#' is_integer_valued(sample(-100:100, size = 500, replace = TRUE))
+#' is_integer_valued(runif(500))
+is_integer_valued <- function(col) {
   temp_col <- stats::na.omit(col)
   all(temp_col == floor(temp_col))
+}
+
+#' @rdname is_integer_valued
+#' @export
+is.int <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "is.int()", "is_integer_valued()")
+  is_integer_valued(...)
 }
 
 #' Test Whether a Vector Looks Normally Distributed
@@ -157,7 +164,7 @@ poisson_gof_chisq <- function(x, mu) {
 #' is_poisson(rpois(n = 1000, lambda = 2))
 #' is_poisson(runif(1000, min = 2, max = 4))
 is_poisson <- function(col) {
-  is_int_col <- is.int(col)
+  is_int_col <- is_integer_valued(col)
   temp_col <- stats::na.omit(col)
   n <- length(temp_col)
 

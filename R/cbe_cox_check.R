@@ -20,7 +20,7 @@
 #'   }
 #' @seealso [cbe_cox_single()], [cbe_cox_multi()]
 #' @export
-cbe_cox_check <- function(fit) {
+cox_check <- function(fit) {
   if (inherits(fit, "cbe_cox") || inherits(fit, "cbe_cox_multi")) {
     fit <- fit$model
   }
@@ -100,6 +100,9 @@ print.cbe_cox_check <- function(x, ...) {
   invisible(x)
 }
 
-#' @rdname cbe_cox_check
+#' @rdname cox_check
 #' @export
-cox_check <- cbe_cox_check
+cbe_cox_check <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_cox_check()", "cox_check()")
+  cox_check(...)
+}

@@ -4,7 +4,7 @@
 #' hazards assumption, formats coefficients with explicit reference levels,
 #' generates plain-language clinical interpretations, and gathers model fit metrics.
 #'
-#' @name cbe_cox_single
+#' @name cox_single
 NULL
 
 #' Analyze a Single Predictor in a Cox Proportional Hazards Model
@@ -32,7 +32,7 @@ NULL
 #' @seealso [cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
 #'   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 #' @export
-cbe_cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ...) {
+cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ...) {
   if (!feature %in% names(data)) {
     stop(sprintf("Feature '%s' not found in provided data.", feature))
   }
@@ -192,7 +192,10 @@ utils::globalVariables(c(
   "txt", "Value"
 ))
 
-#' @rdname cbe_cox_single
+#' @rdname cox_single
 #' @export
-cox_single <- cbe_cox_single
+cbe_cox_single <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_cox_single()", "cox_single()")
+  cox_single(...)
+}
 

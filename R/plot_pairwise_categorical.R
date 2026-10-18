@@ -1073,6 +1073,7 @@ plot_categorical_associations <- function(data, cols = NULL,
 #'
 #' @return A tibble with columns \code{id}, \code{var1}, \code{var2}, \code{label1}, \code{label2},
 #'   and \code{comparison_label}.
+#' @name pairwise_combos
 #' @export
 #' @examples
 #' df <- data.frame(
@@ -1080,8 +1081,8 @@ plot_categorical_associations <- function(data, cols = NULL,
 #'   B = factor(c("1", "2")),
 #'   C = factor(c("M", "N"))
 #' )
-#' cbe_pairwise_combos(df)
-cbe_pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
+#' pairwise_combos(df)
+pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
   if (is.null(cols)) {
     cat_cols <- colnames(dplyr::select(data, dplyr::where(is.character) | dplyr::where(is.factor)))
   } else {
@@ -1126,6 +1127,13 @@ cbe_pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
   dplyr::bind_rows(res_list)
 }
 
+#' @rdname pairwise_combos
+#' @export
+cbe_pairwise_combos <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_pairwise_combos()", "pairwise_combos()")
+  pairwise_combos(...)
+}
+
 #' @rdname cbe_contingency_plot
 #' @export
 contingency_plot <- cbe_contingency_plot
@@ -1153,7 +1161,3 @@ four_quadrant_report <- cbe_four_quadrant_report
 #' @rdname cbe_contingency_plot
 #' @export
 square_plot <- cbe_square_plot
-
-#' @rdname cbe_pairwise_combos
-#' @export
-pairwise_combos <- cbe_pairwise_combos

@@ -114,21 +114,43 @@ corr_test_all <- function(data,
 #' @export
 #' @examples
 #' if (requireNamespace("caret", quietly = TRUE)) {
-#'   find_correlation(mtcars, cutoff = 0.8)
+#'   drop_correlated_columns(mtcars, cutoff = 0.8)
 #' }
-find_correlation <- function(data,
-                              use = "pairwise.complete.obs",
-                              method = "pearson",
-                              cutoff = 0.9,
-                              verbose = FALSE,
-                              names = TRUE,
-                              exact = ncol(data) < 100) {
+drop_correlated_columns <- function(data,
+                                    use = "pairwise.complete.obs",
+                                    method = "pearson",
+                                    cutoff = 0.9,
+                                    verbose = FALSE,
+                                    names = TRUE,
+                                    exact = ncol(data) < 100) {
   if (!requireNamespace("caret", quietly = TRUE)) {
-    stop("Package 'caret' is required for find_correlation().")
+    stop("Package 'caret' is required for drop_correlated_columns().")
   }
-  num_data <- dplyr::select(data, dplyr::where(is.numeric))
-  cor_matrix <- stats::cor(num_data, use = use, method = method)
+  if (is.matrix(data)) {
+    # If already a square correlation matrix, pass directly
+    if (nrow(data) == ncol(data) && !is.null(colnames(data)) && isTRUE(all.equal(unname(diag(data)), rep(1, nrow(data))))) {
+      cor_matrix <- data
+      if (is.null(rownames(cor_matrix))) {
+        rownames(cor_matrix) <- colnames(cor_matrix)
+      }
+    } else {
+      cor_matrix <- stats::cor(data, use = use, method = method)
+    }
+  } else {
+    num_data <- dplyr::select(as.data.frame(data), dplyr::where(is.numeric))
+    cor_matrix <- stats::cor(num_data, use = use, method = method)
+  }
+  if (!is.null(colnames(cor_matrix)) && is.null(rownames(cor_matrix))) {
+    rownames(cor_matrix) <- colnames(cor_matrix)
+  }
   caret::findCorrelation(cor_matrix, cutoff = cutoff, verbose = verbose, names = names, exact = exact)
+}
+
+#' @rdname drop_correlated_columns
+#' @export
+find_correlation <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "find_correlation()", "drop_correlated_columns()")
+  drop_correlated_columns(...)
 }
 
 #' Formatted Table of Highly Correlated Variable Pairs

@@ -14,7 +14,7 @@ NULL
 
 #' @rdname infix_helpers
 #' @export
-like <- function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE) {
+match_like <- function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE) {
   if (is.factor(vector)) {
     ret <- grepl(pattern, levels(vector), ignore.case = ignore.case, fixed = fixed, perl = perl)[vector]
     ret[is.na(ret)] <- FALSE
@@ -26,31 +26,38 @@ like <- function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FAL
 
 #' @rdname infix_helpers
 #' @export
-`%like%` <- function(vector, pattern) like(vector, pattern)
+like <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "like()", "match_like()")
+  match_like(...)
+}
 
 #' @rdname infix_helpers
 #' @export
-ilike <- function(vector, pattern) like(vector, pattern, ignore.case = TRUE)
+`%like%` <- function(vector, pattern) match_like(vector, pattern)
 
 #' @rdname infix_helpers
 #' @export
-`%ilike%` <- function(vector, pattern) like(vector, pattern, ignore.case = TRUE)
+ilike <- function(vector, pattern) match_like(vector, pattern, ignore.case = TRUE)
 
 #' @rdname infix_helpers
 #' @export
-flike <- function(vector, pattern) like(vector, pattern, fixed = TRUE)
+`%ilike%` <- function(vector, pattern) match_like(vector, pattern, ignore.case = TRUE)
 
 #' @rdname infix_helpers
 #' @export
-`%flike%` <- function(vector, pattern) like(vector, pattern, fixed = TRUE)
+flike <- function(vector, pattern) match_like(vector, pattern, fixed = TRUE)
 
 #' @rdname infix_helpers
 #' @export
-plike <- function(vector, pattern) like(vector, pattern, perl = TRUE)
+`%flike%` <- function(vector, pattern) match_like(vector, pattern, fixed = TRUE)
 
 #' @rdname infix_helpers
 #' @export
-`%plike%` <- function(vector, pattern) like(vector, pattern, perl = TRUE)
+plike <- function(vector, pattern) match_like(vector, pattern, perl = TRUE)
+
+#' @rdname infix_helpers
+#' @export
+`%plike%` <- function(vector, pattern) match_like(vector, pattern, perl = TRUE)
 
 #' @rdname infix_helpers
 #' @export

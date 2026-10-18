@@ -17,7 +17,7 @@
 #'   the chosen reference level.
 #' @seealso [cbe_cox_single()], [cbe_cox_multi()]
 #' @export
-cbe_factor_reference <- function(x, ref_level = NULL) {
+relevel_factor <- function(x, ref_level = NULL) {
   f <- if (is.factor(x)) x else as.factor(x)
 
   if (is.null(ref_level)) {
@@ -28,10 +28,20 @@ cbe_factor_reference <- function(x, ref_level = NULL) {
 
   f_releveled <- stats::relevel(f, ref = ref_level)
   attr(f_releveled, "cbe_reference_level") <- ref_level
-  message(sprintf("cbe_factor_reference(): reference level set to '%s'.", ref_level))
+  message(sprintf("relevel_factor(): reference level set to '%s'.", ref_level))
   f_releveled
 }
 
-#' @rdname cbe_factor_reference
+#' @rdname relevel_factor
 #' @export
-factor_reference <- cbe_factor_reference
+factor_reference <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "factor_reference()", "relevel_factor()")
+  relevel_factor(...)
+}
+
+#' @rdname relevel_factor
+#' @export
+cbe_factor_reference <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_factor_reference()", "relevel_factor()")
+  relevel_factor(...)
+}

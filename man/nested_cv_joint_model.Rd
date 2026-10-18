@@ -14,6 +14,9 @@ nested_cv_joint_model(
   covariates = c("path", "baseline"),
   check_subject_overlap = TRUE,
   tune_method = c("none", "race_anova", "race_win_loss"),
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   ...
 )
 }

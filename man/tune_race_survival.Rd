@@ -14,20 +14,13 @@ tune_race_survival(
   eval_time = NULL,
   control = NULL,
   seed = 1503,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   ...
 )
 
-cbe_tune_race_survival(
-  object,
-  resamples,
-  fn = c("tune_race_anova", "tune_race_win_loss"),
-  grid = 20,
-  metrics = NULL,
-  eval_time = NULL,
-  control = NULL,
-  seed = 1503,
-  ...
-)
+cbe_tune_race_survival(...)
 }
 \arguments{
 \item{object}{A \code{\link[workflows]{workflow}} or \code{\link[workflowsets]{workflow_set}}

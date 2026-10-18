@@ -237,12 +237,12 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #'   times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
 #'   outputs stored in `pipeline_hashes.json`).
 #' @param hash_file Optional path to `pipeline_hashes.json` when `stale_by = "hash"`.
-#' @param on_complete Optional callback `function(result)` invoked when `render()`
+#' @param on_complete Optional callback `function(result)` invoked when `render_pipeline()`
 #'   finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param ... Additional arguments passed to rendering engines.
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
-render <- function(path,
+render_pipeline <- function(path,
                    formats = getOption("pipeline.default_formats", c("pdf", "docx")),
                    pattern = "\\.(qmd|Rmd|rmd)$",
                    engine = c("auto", "quarto", "rmarkdown"),
@@ -376,7 +376,7 @@ render <- function(path,
     if (is(item, "FileOutputs")) {
       if (.hasSlot(item, "renders") && !isTRUE(item@renders)) return()
 
-      ctrls_data <- controls_datasets(item)
+      ctrls_data <- produces_data(item)
 
       # Extract deliverable report formats from item@output
       report_outs <- Filter(function(o) {
@@ -874,6 +874,16 @@ render <- function(path,
   )
 }
 
-#' @rdname render
+#' @rdname render_pipeline
 #' @export
-render_me <- render
+render <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()")
+  render_pipeline(...)
+}
+
+#' @rdname render_pipeline
+#' @export
+render_me <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()")
+  render_pipeline(...)
+}

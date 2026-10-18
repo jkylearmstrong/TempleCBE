@@ -10,6 +10,9 @@ tune_best_glmnet_workflow(
   resamples = NULL,
   mixture = c(0.2, 0.5, 0.8, 1),
   rule = c("min", "1se"),
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   ...
 )
 }

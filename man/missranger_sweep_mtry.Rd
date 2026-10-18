@@ -14,7 +14,10 @@ missranger_sweep_mtry(
   seed = NULL,
   num.threads = 1,
   max_pct_missing = NULL,
-  parallel = TRUE
+  parallel = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error")
 )
 }
 \arguments{

@@ -2,6 +2,7 @@
 % Please edit documentation in R/write_workbook.R
 \name{read_database_from_excel}
 \alias{read_database_from_excel}
+\alias{read_database}
 \alias{cbe_read_database}
 \title{Read an R Database from an Excel Workbook}
 \usage{
@@ -12,12 +13,9 @@ read_database_from_excel(
   ...
 )
 
-cbe_read_database(
-  path,
-  include_metadata = TRUE,
-  metadata_sheet = "METADATA",
-  ...
-)
+read_database(path, include_metadata = TRUE, metadata_sheet = "METADATA", ...)
+
+cbe_read_database(...)
 }
 \arguments{
 \item{path}{Path to the \code{.xls}/\code{.xlsx} file.}

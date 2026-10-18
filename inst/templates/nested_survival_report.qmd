@@ -1,0 +1,199 @@
+```{r setup_{{domain}}, include = FALSE}
+# Setup chunk for nested survival report child
+suppressPackageStartupMessages({
+  library(TempleCBE)
+  library(ggplot2)
+  library(dplyr)
+})
+
+current_dom <- "{{domain}}"
+
+# Resolve run object from environment
+run_target <- NULL
+if (exists("run", inherits = TRUE)) {
+  val <- get("run", inherits = TRUE)
+  if (inherits(val, "cbe_nested_survival_run") || inherits(val, "nested_survival_run")) {
+    run_target <- val
+  } else if (is.list(val) && current_dom %in% names(val)) {
+    run_target <- val[[current_dom]]
+  } else if (is.list(val) && length(val) > 0 && (inherits(val[[1]], "cbe_nested_survival_run") || inherits(val[[1]], "nested_survival_run"))) {
+    run_target <- val[[1]]
+  }
+}
+
+if (is.null(run_target) && exists("params") && !is.null(params$run)) {
+  val <- params$run
+  if (inherits(val, "cbe_nested_survival_run") || inherits(val, "nested_survival_run")) {
+    run_target <- val
+  } else if (is.list(val) && current_dom %in% names(val)) {
+    run_target <- val[[current_dom]]
+  }
+}
+
+# Resolve labels
+labels_target <- NULL
+if (exists("labels", inherits = TRUE)) {
+  labels_target <- get("labels", inherits = TRUE)
+} else if (exists("params") && !is.null(params$labels)) {
+  labels_target <- params$labels
+} else {
+  labels_target <- tryCatch(cbe_labels(), error = function(e) NULL)
+}
+```
+
+# Domain: Executive Summary (`r current_dom`)
+
+```{r overview_{{domain}}, echo = FALSE, results = 'asis'}
+if (!is.null(run_target) && !is.null(run_target$validation)) {
+  v <- run_target$validation
+  cat(sprintf(
+    "- **Subjects:** %d (%d events, %d censored; censoring rate: %.1f%%)\n- **Outer CV Folds:** %d\n- **Candidate Models:** %d\n- **Status:** %s (Elapsed: %.1f s)\n\n",
+    v$n_subjects, v$n_subjects_with_event, v$n_censored, 100 * v$censoring_rate,
+    nrow(run_target$nested_folds), nrow(run_target$candidates),
+    run_target$status, run_target$elapsed_sec %||% 0
+  ))
+} else {
+  cat("*No run validation data available for this domain.*\n\n")
+}
+```
+
+## Hyperparameter Tuning & Elastic-Net Paths
+
+The figure below shows the distribution of Integrated Brier Scores (IBS) across candidate elastic net mixing parameters ($\alpha$) on the inner cross-validation / bootstrap resamples.
+
+```{r plot_tuning_{{domain}}, echo = FALSE, fig.width = 7, fig.height = 4}
+if (!is.null(run_target) && !is.null(run_target$tune_results) && nrow(run_target$tune_results) > 0) {
+  tryCatch({
+    plot(run_target, type = "tuning")
+  }, error = function(e) {
+    ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::labs(title = "Tuning plot unavailable")
+  })
+}
+```
+
+## Candidate Model Selection
+
+Candidate models evaluated on the outer validation folds:
+
+```{r table_candidates_{{domain}}, echo = FALSE}
+if (!is.null(run_target) && !is.null(run_target$candidates) && nrow(run_target$candidates) > 0) {
+  cands <- run_target$candidates
+  cands_display <- cands[, intersect(c("model", "alpha", "formula", "mean_ibs", "median_ibs", "rank"), names(cands)), drop = FALSE]
+  knitr::kable(cands_display, digits = 4, caption = "Selected Candidate Hyperparameter Configurations")
+}
+```
+
+## Outer-Fold Linear Predictor & Mixed Model
+
+Outer-fold generalization performance across held-out subjects:
+
+```{r plot_outer_ibs_{{domain}}, echo = FALSE, fig.width = 7, fig.height = 3.8}
+if (!is.null(run_target) && !is.null(run_target$outer_scores) && nrow(run_target$outer_scores) > 0) {
+  tryCatch({
+    plot(run_target, type = "outer_ibs")
+  }, error = function(e) {
+    ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::labs(title = "Outer IBS plot unavailable")
+  })
+}
+```
+
+```{r summary_outer_{{domain}}, echo = FALSE}
+if (!is.null(run_target) && !is.null(run_target$outer_scores) && nrow(run_target$outer_scores) > 0) {
+  sc <- run_target$outer_scores
+  sum_tbl <- sc |>
+    dplyr::group_by(.data$model) |>
+    dplyr::summarise(
+      Folds = dplyr::n(),
+      Median_IBS = stats::median(.data$IBS, na.rm = TRUE),
+      IQR_IBS = stats::IQR(.data$IBS, na.rm = TRUE),
+      Mean_IBS = mean(.data$IBS, na.rm = TRUE),
+      SD_IBS = stats::sd(.data$IBS, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(.data$Median_IBS)
+  knitr::kable(sum_tbl, digits = 4, caption = "Outer Cross-Validation IBS Performance Summary")
+}
+```
+
+## Standardized Cox Model Coefficients
+
+Estimated penalized Cox proportional hazards coefficients across resampling folds:
+
+```{r plot_coefficients_{{domain}}, echo = FALSE, fig.width = 7.5, fig.height = 4.5}
+if (!is.null(run_target) && !is.null(run_target$outer_coefficients) && nrow(run_target$outer_coefficients) > 0) {
+  tryCatch({
+    plot(run_target, type = "importance", top_n = 15)
+  }, error = function(e) {
+    ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::labs(title = "Coefficients plot unavailable")
+  })
+}
+```
+
+## Outer-Fold Feature Importance
+
+Predictor selection frequency and coefficient shrinkage across outer folds:
+
+```{r plot_frequency_{{domain}}, echo = FALSE, fig.width = 7.5, fig.height = 4.2}
+if (!is.null(run_target) && !is.null(run_target$importance) && nrow(run_target$importance) > 0) {
+  tryCatch({
+    plot(run_target, type = "frequency", top_n = 15)
+  }, error = function(e) {
+    ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::labs(title = "Frequency plot unavailable")
+  })
+}
+```
+
+```{r table_importance_{{domain}}, echo = FALSE}
+if (!is.null(run_target) && !is.null(run_target$importance) && nrow(run_target$importance) > 0) {
+  imp_tbl <- run_target$importance
+  show_cols <- intersect(c("term", "label", "selection_freq", "mean_estimate", "median_estimate", "iqr_estimate"), names(imp_tbl))
+  knitr::kable(utils::head(imp_tbl[, show_cols, drop = FALSE], 15), digits = 4, caption = "Top Predictors by Outer-Fold Selection Frequency")
+}
+```
+
+## Censoring Weight Sensitivity Comparison
+
+Comparison of outer-fold Integrated Brier Scores under IPCW (Inverse Probability of Censoring Weighting) versus unweighted scoring:
+
+```{r censoring_{{domain}}, echo = FALSE, fig.width = 6, fig.height = 4}
+if (!is.null(run_target) && !is.null(run_target$censoring_comparison)) {
+  rank_agr <- attr(run_target$censoring_comparison, "rank_agreement")
+  if (!is.null(rank_agr)) {
+    cat(sprintf(
+      "**Rank Correlation (IPCW vs Unweighted):** Spearman $\\rho$ = %.3f, Kendall $\\tau$ = %.3f\n\n",
+      rank_agr$spearman %||% NA_real_, rank_agr$kendall %||% NA_real_
+    ))
+  }
+  tryCatch({
+    plot(run_target, type = "censoring")
+  }, error = function(e) {
+    ggplot2::ggplot() + ggplot2::theme_void() + ggplot2::labs(title = "Censoring comparison plot unavailable")
+  })
+} else {
+  cat("*Censoring comparison was not requested or no censored subjects were present in this domain.*\n\n")
+}
+```
+
+## Correlation & Multicollinearity Assessment
+
+Assessment of pairwise collinearity among predictors in the domain feature space:
+
+```{r correlation_{{domain}}, echo = FALSE}
+if (!is.null(run_target) && !is.null(run_target$validation) && !is.null(run_target$columns$feature_names)) {
+  feats <- run_target$columns$feature_names
+  cat(sprintf("- **Features evaluated:** %d\n", length(feats)))
+}
+```
+
+## Reproducibility Appendix
+
+```{r repro_{{domain}}, echo = FALSE, results = 'asis'}
+if (!is.null(run_target)) {
+  tryCatch({
+    app <- repro_appendix(run = run_target)
+    cat(as.character(app))
+  }, error = function(e) {
+    cat("*Reproducibility appendix generation skipped or unavailable.*\n")
+  })
+}
+```

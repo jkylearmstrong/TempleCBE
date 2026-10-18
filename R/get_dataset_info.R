@@ -29,13 +29,13 @@ resolve_var_label <- function(x, default = NA_character_) {
 #' @param value A character string specifying the label or name.
 #' @return For getters, the label or name string (or \code{NULL} if unset).
 #'   For setters, the modified object \code{x} with the attribute attached.
-#' @name cbe_dataset_labels
+#' @name dataset_labels
 #' @export
 #' @examples
 #' df <- mtcars
-#' cbe_dataset_label(df) <- "1974 Motor Trend Car Road Tests"
-#' cbe_dataset_label(df)
-cbe_dataset_label <- function(x) {
+#' dataset_label(df) <- "1974 Motor Trend Car Road Tests"
+#' dataset_label(df)
+dataset_label <- function(x) {
   lbl <- attr(x, "dataset_label", exact = TRUE)
   if (is.null(lbl) || !nzchar(as.character(lbl))) {
     lbl <- attr(x, "label", exact = TRUE)
@@ -46,16 +46,16 @@ cbe_dataset_label <- function(x) {
   as.character(lbl)
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`cbe_dataset_label<-` <- function(x, value) {
+`dataset_label<-` <- function(x, value) {
   attr(x, "dataset_label") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-cbe_database_name <- function(x) {
+database_name <- function(x) {
   nm <- attr(x, "database_name", exact = TRUE)
   if (is.null(nm) || !nzchar(as.character(nm))) {
     return(NULL)
@@ -63,16 +63,16 @@ cbe_database_name <- function(x) {
   as.character(nm)
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`cbe_database_name<-` <- function(x, value) {
+`database_name<-` <- function(x, value) {
   attr(x, "database_name") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-cbe_database_label <- function(x) {
+database_label <- function(x) {
   lbl <- attr(x, "database_label", exact = TRUE)
   if (is.null(lbl) || !nzchar(as.character(lbl))) {
     return(NULL)
@@ -80,68 +80,92 @@ cbe_database_label <- function(x) {
   as.character(lbl)
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`cbe_database_label<-` <- function(x, value) {
+`database_label<-` <- function(x, value) {
   attr(x, "database_label") <- if (!is.null(value)) as.character(value) else NULL
   x
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @param labels A named character vector or list mapping dataset names to dataset labels.
 #' @export
-cbe_set_dataset_labels <- function(x, labels) {
+set_dataset_labels <- function(x, labels) {
   if (!is.list(x) || is.data.frame(x)) {
     stop("`x` must be a named list of data frames (an R database).", call. = FALSE)
   }
   for (nm in names(labels)) {
     if (nm %in% names(x)) {
-      cbe_dataset_label(x[[nm]]) <- labels[[nm]]
+      dataset_label(x[[nm]]) <- labels[[nm]]
     }
   }
   x
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-cbe_get_dataset_labels <- function(x) {
+get_dataset_labels <- function(x) {
   if (!is.list(x) || is.data.frame(x)) {
-    return(cbe_dataset_label(x))
+    return(dataset_label(x))
   }
-  vapply(x, function(df) cbe_dataset_label(df) %||% NA_character_, character(1))
+  vapply(x, function(df) dataset_label(df) %||% NA_character_, character(1))
 }
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-dataset_label <- cbe_dataset_label
+cbe_dataset_label <- function(x) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label()", "dataset_label()")
+  dataset_label(x)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`dataset_label<-` <- `cbe_dataset_label<-`
+`cbe_dataset_label<-` <- function(x, value) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label<-()", "dataset_label<-()")
+  `dataset_label<-`(x, value)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-database_name <- cbe_database_name
+cbe_database_name <- function(x) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_name()", "database_name()")
+  database_name(x)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`database_name<-` <- `cbe_database_name<-`
+`cbe_database_name<-` <- function(x, value) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_name<-()", "database_name<-()")
+  `database_name<-`(x, value)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-database_label <- cbe_database_label
+cbe_database_label <- function(x) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_label()", "database_label()")
+  database_label(x)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-`database_label<-` <- `cbe_database_label<-`
+`cbe_database_label<-` <- function(x, value) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_label<-()", "database_label<-()")
+  `database_label<-`(x, value)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-set_dataset_labels <- cbe_set_dataset_labels
+cbe_set_dataset_labels <- function(x, labels) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_set_dataset_labels()", "set_dataset_labels()")
+  set_dataset_labels(x, labels)
+}
 
-#' @rdname cbe_dataset_labels
+#' @rdname dataset_labels
 #' @export
-get_dataset_labels <- cbe_get_dataset_labels
+cbe_get_dataset_labels <- function(x) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_get_dataset_labels()", "get_dataset_labels()")
+  get_dataset_labels(x)
+}
 
 #' Summarize a Data Frame or Joint Model's Columns and Components
 #'
@@ -422,4 +446,11 @@ get_dataset_info.joint_model <- function(x, ...) {
 
 #' @rdname get_dataset_info
 #' @export
-proc_contents <- get_dataset_info
+describe_columns <- get_dataset_info
+
+#' @rdname get_dataset_info
+#' @export
+proc_contents <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "proc_contents()", "describe_columns()")
+  describe_columns(...)
+}

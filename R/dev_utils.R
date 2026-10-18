@@ -5,8 +5,15 @@
 #' @export
 #' @examples
 #' \dontrun{
-#' install.packages.no_lock("dplyr")
+#' install_package_no_lock("dplyr")
 #' }
-install.packages.no_lock <- function(packages) {
+install_package_no_lock <- function(packages) {
   utils::install.packages(packages, INSTALL_opts = "--no-lock")
+}
+
+#' @rdname install_package_no_lock
+#' @export
+install.packages.no_lock <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "install.packages.no_lock()", "install_package_no_lock()")
+  install_package_no_lock(...)
 }

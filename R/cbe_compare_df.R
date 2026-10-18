@@ -83,16 +83,17 @@
 #' cmp <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-3)
 #' print(cmp)
 #' generics::tidy(cmp)
-cbe_compare_df <- function(base, compare, ...) {
-  UseMethod("cbe_compare_df")
+#' @export
+compare_df <- function(base, compare, ...) {
+  UseMethod("compare_df")
 }
 
-#' @rdname cbe_compare_df
+#' @rdname compare_df
 #' @export
-cbe_compare_df.default <- function(base,
-                           compare,
-                           by = NULL,
-                           tolerance = 1e-7,
+compare_df.default <- function(base,
+                               compare,
+                               by = NULL,
+                               tolerance = 1e-7,
                            base_name = NULL,
                            compare_name = NULL,
                            max_diffs = 100,
@@ -334,11 +335,14 @@ cbe_compare_df.default <- function(base,
     diffs = all_diffs,
     is_concordant = is_concordant
   )
-  class(res) <- "cbe_compare_df"
+  class(res) <- c("compare_df", "cbe_compare_df")
   res
 }
 
-#' @rdname cbe_compare_df
+#' @export
+cbe_compare_df.default <- compare_df.default
+
+#' @rdname compare_df
 #' @export
 #' @examples
 #' g1 <- igraph::graph_from_data_frame(
@@ -349,42 +353,51 @@ cbe_compare_df.default <- function(base,
 #'   data.frame(from = c("a", "b"), to = c("b", "c")),
 #'   vertices = data.frame(name = c("a", "b", "c"), stage = c("eda", "analysis", "report"))
 #' )
-#' cbe_compare_df(g1, g2, by = "name")
-cbe_compare_df.cbe_database <- function(base,
-                                        compare,
-                                        by = NULL,
-                                        edge_by = c("from", "to"),
-                                        ...,
-                                        base_name = NULL,
-                                        compare_name = NULL) {
+#' compare_df(g1, g2, by = "name")
+compare_df.cbe_database <- function(base,
+                                    compare,
+                                    by = NULL,
+                                    edge_by = c("from", "to"),
+                                    ...,
+                                    base_name = NULL,
+                                    compare_name = NULL) {
   base_name <- base_name %||% deparse(substitute(base))[1]
   compare_name <- compare_name %||% deparse(substitute(compare))[1]
 
   res <- list(
-    nodes = cbe_compare_df.default(
+    nodes = compare_df.default(
       base$nodes, compare$nodes, by = by, ...,
       base_name = paste0(base_name, "$nodes"), compare_name = paste0(compare_name, "$nodes")
     ),
-    edges = cbe_compare_df.default(
+    edges = compare_df.default(
       base$edges, compare$edges, by = edge_by, ...,
       base_name = paste0(base_name, "$edges"), compare_name = paste0(compare_name, "$edges")
     )
   )
-  class(res) <- "cbe_compare_database"
+  class(res) <- c("compare_database", "cbe_compare_database")
   res
 }
 
-#' @rdname cbe_compare_df
 #' @export
-cbe_compare_df.igraph <- function(base, compare, ...) {
-  cbe_compare_df(as_database(base), as_database(compare), ...)
+cbe_compare_df.cbe_database <- compare_df.cbe_database
+
+#' @rdname compare_df
+#' @export
+compare_df.igraph <- function(base, compare, ...) {
+  compare_df(as_database(base), as_database(compare), ...)
 }
 
-#' @rdname cbe_compare_df
 #' @export
-cbe_compare_df.visNetwork <- function(base, compare, ...) {
-  cbe_compare_df(as_database(base), as_database(compare), ...)
+cbe_compare_df.igraph <- compare_df.igraph
+
+#' @rdname compare_df
+#' @export
+compare_df.visNetwork <- function(base, compare, ...) {
+  compare_df(as_database(base), as_database(compare), ...)
 }
+
+#' @export
+cbe_compare_df.visNetwork <- compare_df.visNetwork
 
 #' @export
 print.cbe_compare_database <- function(x, ...) {
@@ -595,6 +608,9 @@ autoplot.cbe_compare_df <- function(object, type = c("observations", "variables"
   p
 }
 
-#' @rdname cbe_compare_df
+#' @rdname compare_df
 #' @export
-compare_df <- cbe_compare_df
+cbe_compare_df <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_compare_df()", "compare_df()")
+  compare_df(...)
+}

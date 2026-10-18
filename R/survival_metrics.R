@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.7")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -882,7 +882,7 @@ read_verified_checkpoint <- function(ckpt_file,
     return(list(status = "missing", value = NULL))
   }
   cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
-  if (!is.data.frame(cached) || nrow(cached) == 0L) {
+  if (is.null(cached) || (is.data.frame(cached) && nrow(cached) == 0L)) {
     return(list(status = "invalid", value = NULL))
   }
   found_fp <- attr(cached, "checkpoint_fingerprint", exact = TRUE)
@@ -920,7 +920,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- fingerprint
   meta$run_fingerprint <- run_fingerprint
   meta$seed_scheme <- seed_scheme
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.7")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
@@ -936,9 +936,12 @@ validate_shard_spec <- function(shard) {
   if (is.null(shard)) {
     return(NULL)
   }
+  if (is.character(shard) && length(shard) == 1L && grepl("^\\s*\\d+\\s*/\\s*\\d+\\s*$", shard)) {
+    shard <- as.integer(trimws(strsplit(shard, "/")[[1]]))
+  }
   if (!is.numeric(shard) || length(shard) != 2L || any(is.na(shard)) ||
       any(shard != round(shard)) || shard[2] < 1 || shard[1] < 1 || shard[1] > shard[2]) {
-    stop("`shard` must be an integer vector `c(i, n)` with `1 <= i <= n`.", call. = FALSE)
+    stop("`shard` must be an integer vector `c(i, n)` or string 'i/n' with `1 <= i <= n`.", call. = FALSE)
   }
   as.integer(shard)
 }
@@ -1212,21 +1215,22 @@ tune_over_alpha <- function(object,
 #' @seealso [glmnet_IBS()], [tune_over_alpha()], [collect_checkpoints()],
 #'   [clean_checkpoints()], [nested_cv_coxnet()]
 #' @export
-summarize_tune_results <- function(object,
-                                   ...,
-                                   num_alpha_values = 10,
-                                   num_fixed = 6,
-                                   alphas = NULL,
-                                   formulas = NULL,
-                                   progress = FALSE,
-                                   seed = NULL,
-                                   checkpoint_dir = NULL,
-                                   checkpoint_mismatch = c("recompute", "overwrite", "error"),
-                                   shard = NULL,
-                                   chunk_size = NULL,
-                                   on_complete = getOption("templecbe.on_complete", NULL)) {
-  run_with_on_complete(on_complete = on_complete, fn = "summarize_tune_results", expr = {
-    require_packages("furrr", "summarize_tune_results")
+tune_alpha_by_split <- function(object,
+                                ...,
+                                num_alpha_values = 10,
+                                num_fixed = 6,
+                                alphas = NULL,
+                                formulas = NULL,
+                                progress = FALSE,
+                                seed = NULL,
+                                checkpoint_dir = NULL,
+                                checkpoint_mismatch = c("recompute", "overwrite", "error"),
+                                shard = NULL,
+                                chunk_size = NULL,
+                                on_complete = getOption("templecbe.on_complete", NULL),
+                                .fn_name = "tune_alpha_by_split") {
+  run_with_on_complete(on_complete = on_complete, fn = .fn_name, expr = {
+    require_packages("furrr", "tune_alpha_by_split")
     checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
     shard <- validate_shard_spec(shard)
     if (!is.null(chunk_size)) {
@@ -1424,14 +1428,9 @@ summarize_tune_results <- function(object,
     worker_env$is_parallel_plan <- is_parallel_plan
 
     run_one_flat_task <- function(k) {
-      if (is_parallel_plan) {
-        old_blas <- Sys.getenv(c("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"), unset = NA_character_)
+      if (is_parallel_plan && !isTRUE(getOption("templecbe_worker_blas_configured", FALSE))) {
         Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", MKL_NUM_THREADS = "1")
-        on.exit({
-          for (nm in names(old_blas)) {
-            if (is.na(old_blas[[nm]])) Sys.unsetenv(nm) else do.call(Sys.setenv, stats::setNames(list(old_blas[[nm]]), nm))
-          }
-        }, add = TRUE)
+        options(templecbe_worker_blas_configured = TRUE)
       }
 
       row <- tasks[k, ]
@@ -1503,6 +1502,11 @@ summarize_tune_results <- function(object,
               fit_warns <<- c(fit_warns, msg)
               invokeRestart("muffleWarning")
             }
+          },
+          message = function(m) {
+            if (grepl("no censored subjects", conditionMessage(m))) {
+              invokeRestart("muffleMessage")
+            }
           }
         ),
         error = function(e) {
@@ -1552,12 +1556,21 @@ summarize_tune_results <- function(object,
       furrr::furrr_options(seed = TRUE, packages = furrr_pkgs)
     }
 
+    t_start <- proc.time()["elapsed"]
     task_outcomes <- furrr::future_map(
       active_indices,
       run_one_flat_task,
       .options = f_opts,
       .progress = progress
     )
+    t_elapsed <- as.numeric(proc.time()["elapsed"] - t_start)
+    if (isTRUE(progress)) {
+      message(sprintf(
+        "tune_alpha_by_split(): completed %d task(s) across %d split(s) in %.2f s (avg %.3f s/task).",
+        length(active_indices), length(active_splits), t_elapsed,
+        t_elapsed / max(1L, length(active_indices))
+      ))
+    }
 
     # Group outcomes by split to check failures, emit at most 1 warning per split, and write split checkpoints
     res_by_split <- lapply(active_splits, function(sp_idx) {
@@ -1592,7 +1605,7 @@ summarize_tune_results <- function(object,
         write_verified_checkpoint(
           res_split, sp_file, fingerprint = split_fps[[sp_idx]], run_fingerprint = run_fp,
           meta = list(
-            fn = "summarize_tune_results_split",
+            fn = "tune_alpha_by_split",
             split_idx = sp_idx, split_id = s_id,
             n_splits = n_splits, n_tasks = n_tasks
           )
@@ -1611,13 +1624,21 @@ summarize_tune_results <- function(object,
 
     res_all <- dplyr::bind_rows(res_by_split)
     if (!is.data.frame(res_all) || nrow(res_all) == 0L || all(is.na(res_all$IBS))) {
-      stop("All model fits across all splits failed in summarize_tune_results().", call. = FALSE)
+      stop("All model fits across all splits failed in tune_alpha_by_split().", call. = FALSE)
     }
 
     attr(res_all, "checkpoint_run_fingerprint") <- run_fp
     attr(res_all, "seed_scheme") <- current_seed_scheme()
+    attr(res_all, "elapsed_seconds") <- t_elapsed
     res_all
   })
+}
+
+#' @rdname tune_alpha_by_split
+#' @export
+summarize_tune_results <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "summarize_tune_results()", "tune_alpha_by_split()")
+  tune_alpha_by_split(..., .fn_name = "summarize_tune_results")
 }
 
 #' Run an Expression With a Temporary Random Seed
@@ -1666,26 +1687,46 @@ collect_checkpoints <- function(checkpoint_dir,
     stop("`checkpoint_dir` must be an existing directory path.", call. = FALSE)
   }
 
+  all_rds_files <- sort(list.files(checkpoint_dir, pattern = "\\.rds$", full.names = TRUE))
   task_tune_files <- sort(list.files(checkpoint_dir, pattern = "^tune_task_split_.*\\.rds$", full.names = TRUE))
   split_tune_files <- sort(list.files(checkpoint_dir, pattern = "^tune_split_.*\\.rds$", full.names = TRUE))
-  score_files <- sort(list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE))
+  outer_tune_files <- sort(list.files(checkpoint_dir, pattern = "^tune_outer_.*\\.rds$", full.names = TRUE))
+  score_files <- sort(list.files(checkpoint_dir, pattern = "^score_(fold|outer).*\\.rds$", full.names = TRUE))
 
   if (type == "auto") {
-    has_tune <- (length(task_tune_files) + length(split_tune_files)) > 0L
+    has_tune <- (length(task_tune_files) + length(split_tune_files) + length(outer_tune_files)) > 0L
     has_score <- length(score_files) > 0L
     if (has_tune && has_score) {
       stop("`checkpoint_dir` contains both tuning and `score_outer` checkpoints; specify `type = \"tune\"` or `type = \"score_outer\"`.", call. = FALSE)
     }
     if (!has_tune && !has_score) {
-      stop(sprintf("No checkpoint files found in '%s'.", checkpoint_dir), call. = FALSE)
+      if (length(all_rds_files) == 0L) {
+        stop(sprintf("No checkpoint files found in '%s'.", checkpoint_dir), call. = FALSE)
+      }
+      files <- all_rds_files
+    } else {
+      files <- if (has_tune) {
+        if (length(outer_tune_files) > 0L) {
+          outer_tune_files
+        } else if (length(task_tune_files) > 0L) {
+          task_tune_files
+        } else {
+          split_tune_files
+        }
+      } else {
+        score_files
+      }
     }
-    type <- if (has_tune) "tune" else "score_outer"
-  }
-
-  files <- if (type == "tune") {
-    if (length(task_tune_files) > 0L) task_tune_files else split_tune_files
+  } else if (type == "tune") {
+    files <- if (length(outer_tune_files) > 0L) {
+      outer_tune_files
+    } else if (length(task_tune_files) > 0L) {
+      task_tune_files
+    } else {
+      split_tune_files
+    }
   } else {
-    score_files
+    files <- score_files
   }
 
   if (length(files) == 0L) {
@@ -1696,9 +1737,6 @@ collect_checkpoints <- function(checkpoint_dir,
     obj <- tryCatch(readRDS(f), error = function(e) {
       stop(sprintf("Failed to read checkpoint file '%s': %s", basename(f), conditionMessage(e)), call. = FALSE)
     })
-    if (!is.data.frame(obj)) {
-      stop(sprintf("Checkpoint file '%s' does not contain a data frame.", basename(f)), call. = FALSE)
-    }
     obj
   })
 
@@ -1774,7 +1812,13 @@ collect_checkpoints <- function(checkpoint_dir,
     }, objs, metas)
   }
 
-  merged <- dplyr::bind_rows(objs)
+  all_df <- all(vapply(objs, is.data.frame, logical(1)))
+  merged <- if (all_df) {
+    dplyr::bind_rows(objs)
+  } else {
+    names(objs) <- basename(files)
+    objs
+  }
   attr(merged, "checkpoint_run_fingerprint") <- unique_fps[1]
   attr(merged, "seed_scheme") <- if (unique_schemes[1] == "<missing>") current_seed_scheme() else unique_schemes[1]
   merged
@@ -1823,7 +1867,7 @@ clean_checkpoints <- function(dir,
     stop("Specify `run_fingerprint` and/or `seed_scheme` when `keep = \"matching\"`.", call. = FALSE)
   }
 
-  ckpt_pattern <- "^(tune_alpha_|tune_split_|tune_task_split_|score_fold_).*\\.rds$"
+  ckpt_pattern <- "^(tune_alpha_|tune_split_|tune_task_split_|tune_outer_|score_fold_|score_outer|ckpt_|fit_|cv_|nested_|impute_|missforest_|missranger_).*\\.rds$"
   all_rds <- list.files(dir, pattern = "\\.rds$", full.names = TRUE, recursive = recursive)
   if (length(all_rds) == 0L) {
     empty_tbl <- tibble::tibble(

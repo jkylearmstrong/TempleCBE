@@ -84,7 +84,14 @@ write_workbook <- write_database_to_excel
 
 #' @rdname write_database_to_excel
 #' @export
-cbe_write_database <- write_database_to_excel
+write_database <- write_database_to_excel
+
+#' @rdname write_database_to_excel
+#' @export
+cbe_write_database <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_write_database()", "write_database_to_excel()")
+  write_database_to_excel(...)
+}
 
 #' Read an R Database from an Excel Workbook
 #'
@@ -128,7 +135,14 @@ read_database_from_excel <- function(path,
 
 #' @rdname read_database_from_excel
 #' @export
-cbe_read_database <- read_database_from_excel
+read_database <- read_database_from_excel
+
+#' @rdname read_database_from_excel
+#' @export
+cbe_read_database <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_read_database()", "read_database_from_excel()")
+  read_database_from_excel(...)
+}
 
 #' Export or Import Dataset Metadata
 #'
@@ -200,7 +214,7 @@ apply_database_metadata <- function(db, metadata) {
   if ("database_name" %in% names(metadata)) {
     db_nm <- stats::na.omit(metadata$database_name)
     if (length(db_nm) > 0 && nzchar(as.character(db_nm[1]))) {
-      cbe_database_name(db_list) <- as.character(db_nm[1])
+      database_name(db_list) <- as.character(db_nm[1])
     }
   }
 
@@ -217,7 +231,7 @@ apply_database_metadata <- function(db, metadata) {
     if ("dataset_label" %in% names(tbl_meta)) {
       ds_lbl <- stats::na.omit(tbl_meta$dataset_label)
       if (length(ds_lbl) > 0 && nzchar(as.character(ds_lbl[1]))) {
-        cbe_dataset_label(db_list[[tbl_name]]) <- as.character(ds_lbl[1])
+        dataset_label(db_list[[tbl_name]]) <- as.character(ds_lbl[1])
       }
     }
 

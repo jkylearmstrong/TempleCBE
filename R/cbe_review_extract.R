@@ -106,6 +106,7 @@
 #'     \item{errors}{A tibble of any processing errors encountered.}
 #'     \item{paths}{A named list of generated file paths.}
 #'   }
+#' @name docx_review_extract
 #' @export
 #'
 #' @examples
@@ -119,21 +120,21 @@
 #'   list(stem = "overview", heading = 1, name = "Overview"),
 #'   list(stem = "model_fit", heading = 2, name = "Model fitting")
 #' ))
-#' res <- cbe_docx_review_extract("path/to/reviewed_docx", verbose = TRUE)
+#' res <- docx_review_extract("path/to/reviewed_docx", verbose = TRUE)
 #' print(res)
 #' }
-cbe_docx_review_extract <- function(input_dir = NULL,
-                                   output_dir = NULL,
-                                   tracker = "review_tracker.xlsx",
-                                   min_revision_length = 2,
-                                   fork_reviewers = NULL,
-                                   signoff_reviewers = NULL,
-                                   documents_sheet_mode = NULL,
-                                   manifest_path = NULL,
-                                   verbose = FALSE,
-                                   docx_limits = NULL) {
+docx_review_extract <- function(input_dir = NULL,
+                                output_dir = NULL,
+                                tracker = "review_tracker.xlsx",
+                                min_revision_length = 2,
+                                fork_reviewers = NULL,
+                                signoff_reviewers = NULL,
+                                documents_sheet_mode = NULL,
+                                manifest_path = NULL,
+                                verbose = FALSE,
+                                docx_limits = NULL) {
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
-    stop("Package 'openxlsx' is required for cbe_docx_review_extract(). Please install it.", call. = FALSE)
+    stop("Package 'openxlsx' is required for docx_review_extract(). Please install it.", call. = FALSE)
   }
   docx_limits <- resolve_docx_limits(docx_limits)
 
@@ -194,7 +195,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
         errors = tibble::tibble(),
         paths = list(master = master_tracker_path)
       ),
-      class = "cbe_review_extract"
+      class = c("docx_review_extract", "cbe_review_extract")
     ))
   }
 
@@ -233,7 +234,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
         errors = invalid_errors,
         paths = list(master = master_tracker_path)
       ),
-      class = "cbe_review_extract"
+      class = c("docx_review_extract", "cbe_review_extract")
     ))
   }
 
@@ -527,7 +528,7 @@ cbe_docx_review_extract <- function(input_dir = NULL,
         csv_paths
       )
     ),
-    class = "cbe_review_extract"
+    class = c("docx_review_extract", "cbe_review_extract")
   )
 
   if (verbose) {
@@ -537,12 +538,15 @@ cbe_docx_review_extract <- function(input_dir = NULL,
   invisible(out)
 }
 
-#' @rdname cbe_docx_review_extract
+#' @rdname docx_review_extract
 #' @export
-docx_review_extract <- cbe_docx_review_extract
+cbe_docx_review_extract <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_docx_review_extract()", "docx_review_extract()")
+  docx_review_extract(...)
+}
 
 #' @export
-print.cbe_review_extract <- function(x, ...) {
+print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
   cat("REVIEW EXTRACTION & WORKFLOW TRACKER UPDATE COMPLETE\n")
   cat(strrep("=", 70), "\n", sep = "")
@@ -580,6 +584,9 @@ print.cbe_review_extract <- function(x, ...) {
   cat(strrep("=", 70), "\n\n", sep = "")
   invisible(x)
 }
+
+#' @export
+print.cbe_review_extract <- print.docx_review_extract
 
 # =============================================================================
 # REVIEWER CONFIGURATION
@@ -4329,13 +4336,14 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #'   `file`, `item_type`, `comment_id`, `author`, `paragraph`, `selected_text`,
 #'   `comment`, `trivial`, `status`, `location`, and `rationale`.
 #' @seealso [validate_review_tracker()], [cbe_docx_review_extract()]
+#' @name review_tracker
 #' @export
-cbe_review_tracker <- function(extract,
-                               file = NULL,
-                               include_redlines = FALSE,
-                               overwrite = TRUE) {
+review_tracker <- function(extract,
+                           file = NULL,
+                           include_redlines = FALSE,
+                           overwrite = TRUE) {
   if (is.character(extract) && length(extract) == 1L) {
-    extract <- cbe_docx_review_extract(extract, verbose = FALSE)
+    extract <- docx_review_extract(extract, verbose = FALSE)
   }
 
   rows_list <- list()
@@ -4355,7 +4363,7 @@ cbe_review_tracker <- function(extract,
     default
   }
 
-  if (inherits(extract, "cbe_review_extract") ||
+  if (inherits(extract, c("docx_review_extract", "cbe_review_extract")) ||
       (is.list(extract) && !is.data.frame(extract) && any(c("comments", "redlines") %in% names(extract)))) {
     cdf <- extract$comments
     if (is.data.frame(cdf) && nrow(cdf) > 0L) {
@@ -4461,8 +4469,15 @@ cbe_review_tracker <- function(extract,
     attr(out, "file") <- file
   }
 
-  class(out) <- c("cbe_review_tracker", class(out))
+  class(out) <- c("review_tracker", "cbe_review_tracker", class(out))
   out
+}
+
+#' @rdname review_tracker
+#' @export
+cbe_review_tracker <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "cbe_review_tracker()", "review_tracker()")
+  review_tracker(...)
 }
 
 #' Validate a Review Response Tracker for Required Location and Rationale

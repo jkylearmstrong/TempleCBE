@@ -374,7 +374,14 @@ score_outer <- function(object,
           }
 
           res <- tryCatch(
-            do.call(glmnet_IBS, call_args),
+            withCallingHandlers(
+              do.call(glmnet_IBS, call_args),
+              message = function(m) {
+                if (grepl("Training data contains no censored subjects", conditionMessage(m))) {
+                  invokeRestart("muffleMessage")
+                }
+              }
+            ),
             error = function(e) {
               warning("score_outer() task failed: ", conditionMessage(e), call. = FALSE)
               tibble::tibble(IBS = NA_real_, lambda = NA_real_, term = character(), estimate = numeric())
@@ -817,17 +824,30 @@ has_censored_subjects_in_splits <- function(object, recipe = NULL, dots = list()
 #'   \item{rank_diff}{`rank_ipcw - rank_none`}
 #'
 #' The returned object has attributes `"rank_agreement"` (containing `spearman`
-#' and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
-#' skipped), and `"n_score_outer_runs"`.
+#' @param checkpoint_dir Optional directory to save fingerprinted checkpoints
+#'   for outer scoring passes.
+#' @param shard Optional integer vector `c(i, n)` for sharded execution.
+#' @param checkpoint_mismatch Action when a checkpoint fingerprint mismatches:
+#'   `"recompute"` (default), `"overwrite"`, or `"error"`.
+#' @param progress Logical (default `FALSE`). Display progress indication.
+#' @return A tibble with columns `outer_fold` (if grouped), `model`, `alpha`,
+#'   `formula`, `ibs_none`, and `ibs_ipcw`, plus attributes `"rank_agreement"`
+#'   (a list with rank correlation metrics across candidates, `spearman`
+#'   and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
+#'   skipped), and `"n_score_outer_runs"`.
 #' @seealso [score_outer()], [glmnet_IBS()], [select_candidate_models()]
 #' @export
 compare_censoring_weights <- function(object,
                                       grid,
                                       recipe = NULL,
                                       ...,
+                                      checkpoint_dir = NULL,
+                                      shard = NULL,
+                                      checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                       seed = NULL,
                                       on_complete = getOption("templecbe.on_complete", NULL),
                                       progress = FALSE) {
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   shared_seed <- if (!is.null(seed)) seed else sample.int(1e9, 1L)
   dots <- list(...)
 
@@ -866,6 +886,9 @@ compare_censoring_weights <- function(object,
           stop("`recipe` is required when scoring on an rsplit `object`.", call. = FALSE)
         }
         has_cens <- has_censored_subjects_in_splits(object, recipe = recipe, dots = dots)
+        ckpt_none <- if (!is.null(checkpoint_dir)) file.path(checkpoint_dir, "score_none") else NULL
+        ckpt_ipcw <- if (!is.null(checkpoint_dir)) file.path(checkpoint_dir, "score_ipcw") else NULL
+
         if (!has_cens) {
           single_fit_no_censoring <- TRUE
           n_score_outer_runs <- 1L
@@ -878,6 +901,9 @@ compare_censoring_weights <- function(object,
           scored_once <- score_outer(
             object, grid, recipe = recipe, ...,
             censoring_weights = "none", seed = shared_seed,
+            checkpoint_dir = ckpt_none,
+            shard = shard,
+            checkpoint_mismatch = checkpoint_mismatch,
             on_complete = NULL, progress = progress
           )
           id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(scored_once))
@@ -890,11 +916,17 @@ compare_censoring_weights <- function(object,
           scored_none <- score_outer(
             object, grid, recipe = recipe, ...,
             censoring_weights = "none", seed = shared_seed,
+            checkpoint_dir = ckpt_none,
+            shard = shard,
+            checkpoint_mismatch = checkpoint_mismatch,
             on_complete = NULL, progress = progress
           )
           scored_ipcw <- score_outer(
             object, grid, recipe = recipe, ...,
             censoring_weights = "ipcw", seed = shared_seed,
+            checkpoint_dir = ckpt_ipcw,
+            shard = shard,
+            checkpoint_mismatch = checkpoint_mismatch,
             on_complete = NULL, progress = progress
           )
 
@@ -953,6 +985,7 @@ compare_censoring_weights <- function(object,
         kendall = kendall_tau
       )
 
+      class(out) <- unique(c("cbe_censoring_weights_comparison", class(out)))
       out
     }
   )
@@ -1305,19 +1338,8 @@ compare_tuning_runs <- function(tune1,
                                 tolerance = 1e-4,
                                 label1 = "run1",
                                 label2 = "run2") {
-  if (is.character(tune1) && length(tune1) == 1L && file.exists(tune1)) {
-    tune1 <- readRDS(tune1)
-  }
-  if (is.character(tune2) && length(tune2) == 1L && file.exists(tune2)) {
-    tune2 <- readRDS(tune2)
-  }
-
-  if (!is.data.frame(tune1) || !is.data.frame(tune2)) {
-    stop("`tune1` and `tune2` must be data frames or valid paths to RDS files.", call. = FALSE)
-  }
-  if (!all(c("alpha", "IBS") %in% names(tune1)) || !all(c("alpha", "IBS") %in% names(tune2))) {
-    stop("Both tuning runs must contain 'alpha' and 'IBS' columns.", call. = FALSE)
-  }
+  tune1 <- as_tuning_results(tune1)
+  tune2 <- as_tuning_results(tune2)
 
   group_cols <- "alpha"
   if ("formula" %in% names(tune1) && "formula" %in% names(tune2)) {

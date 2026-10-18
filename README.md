@@ -44,6 +44,15 @@ areas:
 
 ------------------------------------------------------------------------
 
+## 🏷️ Function Naming Convention (`cbe_*`)
+
+TempleCBE follows a clear and consistent functional naming rule:
+- **`cbe_*`** is reserved for **Temple CBE presentation and formatting only** (themes, palettes, scales, plots, report tables, and number formatters such as `cbe_theme_survival()`, `cbe_palette()`, `cbe_contingency_plot()`, `cbe_cox_table()`, `cbe_pformat()`).
+- **All other functions** are plain verb-noun identifiers that directly describe their computational action (e.g. `nested_survival_run()`, `cox_single()`, `checkpoint_map()`, `describe_columns()`, `drop_correlated_columns()`, `tune_alpha_by_split()`, `docx_review_extract()`).
+- All legacy non-formatting `cbe_*` names remain available as deprecated wrappers emitting `lifecycle::deprecate_warn("0.5.8", ...)` for backwards compatibility.
+
+------------------------------------------------------------------------
+
 ## 📦 Installation
 
 Install the development version directly from GitHub:

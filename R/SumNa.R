@@ -10,10 +10,10 @@
 #' @return An integer representing the total count of missing values.
 #' @export
 #' @examples
-#' SumNa(c(1, 2, NA, 4, NA))
-#' SumNa(data.frame(a = c(1, NA), b = c(NA, 2)))
-#' SumNa(c(1, NA, "NA", 4), na_list = "NA")
-SumNa <- function(x, na_list = NULL) {
+#' count_na(c(1, 2, NA, 4, NA))
+#' count_na(data.frame(a = c(1, NA), b = c(NA, 2)))
+#' count_na(c(1, NA, "NA", 4), na_list = "NA")
+count_na <- function(x, na_list = NULL) {
   if (is.null(na_list)) {
     return(sum(is.na(x)))
   }
@@ -22,4 +22,11 @@ SumNa <- function(x, na_list = NULL) {
   } else {
     sum(is.na(x) | x %in% na_list)
   }
+}
+
+#' @rdname count_na
+#' @export
+SumNa <- function(...) {
+  lifecycle::deprecate_warn("0.5.8", "SumNa()", "count_na()")
+  count_na(...)
 }

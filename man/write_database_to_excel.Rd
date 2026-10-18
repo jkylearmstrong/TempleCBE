@@ -3,6 +3,7 @@
 \name{write_database_to_excel}
 \alias{write_database_to_excel}
 \alias{write_workbook}
+\alias{write_database}
 \alias{cbe_write_database}
 \title{Write an R Database or Data Frames to an Excel Workbook}
 \usage{
@@ -24,7 +25,7 @@ write_workbook(
   ...
 )
 
-cbe_write_database(
+write_database(
   x,
   path,
   include_metadata = TRUE,
@@ -32,6 +33,8 @@ cbe_write_database(
   metadata_sheet = "METADATA",
   ...
 )
+
+cbe_write_database(...)
 }
 \arguments{
 \item{x}{A named list of data frames (an R database) or a single data frame/tibble.}
