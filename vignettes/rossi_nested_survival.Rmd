@@ -1,0 +1,258 @@
+---
+title: "08. End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{08. End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup_knitr, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  dev = "png"
+)
+required <- c("glmnet", "survival", "rsample", "yardstick", "recipes", "ggplot2")
+knitr::opts_chunk$set(eval = all(vapply(required, requireNamespace, logical(1), quietly = TRUE)))
+```
+
+## Overview
+
+In multi-domain clinical survival pipelines, each domain report traditionally strings together ~150 lines of boilerplate:
+
+1. **Validate counting-process intervals** (`validate_start_stop()`)
+2. **Construct subject-grouped nested folds** (`rsample::nested_cv()` + `rsample::group_vfold_cv()`)
+3. **Inner hyperparameter tuning** (`summarize_tune_results()`)
+4. **Candidate model selection** (`select_candidate_models()`)
+5. **Outer-fold scoring** (`score_outer()`)
+6. **Predictor importance & selection stability** (`summarize_outer_importance()`)
+7. **Censoring weight sensitivity comparison** (`compare_censoring_weights()`)
+
+This vignette demonstrates how to run the entire nested survival workflow on the packaged `rossi_data()` recidivism cohort:
+
+- **One-call execution** with `cbe_nested_survival_run()` (including `summary()`, `plot()`, and `tidy()` methods)
+- **Sharding across machines** with `shard = c(1, 2)` and `shard = c(2, 2)`, merging completed shards with `collect_checkpoints()`, and pruning stale checkpoints with `clean_checkpoints()`
+- **Self-rendering reproducibility appendix** via `repro_appendix()`
+
+```{r setup}
+library(TempleCBE)
+library(recipes)
+library(rsample)
+library(survival)
+library(dplyr)
+```
+
+---
+
+## 1. Preparing `rossi_data()` in Start/Stop Format
+
+The packaged `rossi_data()` dataset tracks 432 individuals over a 52-week follow-up window with baseline covariates (`fin`, `age`, `race`, `wexp`, `mar`, `paro`, `prio`, `educ`) and weekly employment indicators (`emp1`–`emp52`).
+
+For a fast, self-contained demonstration, we convert a 90-subject subset of `rossi_data()` into counting-process `(tstart, tstop, status)` intervals and run `validate_start_stop()` to verify interval integrity and censoring rate:
+
+```{r prepare_rossi}
+raw_rossi <- rossi_data()
+
+# Construct counting-process (tstart, tstop, status) intervals per subject
+rossi_cohort <- raw_rossi |>
+  slice(1:90) |>
+  mutate(
+    id = row_number(),
+    tstart = 0,
+    tstop = as.numeric(week),
+    status = as.integer(arrest)
+  ) |>
+  select(id, tstart, tstop, status, fin, age, race, wexp, mar, paro, prio, educ)
+
+val <- validate_start_stop(
+  rossi_cohort,
+  id = "id",
+  start = "tstart",
+  stop = "tstop",
+  status = "status"
+)
+val
+```
+
+---
+
+## 2. One-Call Nested Survival Run (`cbe_nested_survival_run()`)
+
+`cbe_nested_survival_run()` executes all seven stages in order, writes fingerprinted checkpoints and `render_manifest.json` into `run_dir`, and resumes automatically if rerun with identical data and settings:
+
+```{r one_call_run}
+run_dir <- file.path(tempdir(), "rossi_e1_run")
+
+rec <- recipe(~ ., data = rossi_cohort) |>
+  update_role(id, tstart, tstop, status, new_role = "id variable")
+
+features <- c("fin", "age", "race", "wexp", "mar", "paro", "prio", "educ")
+candidate_formulas <- c(
+  "fin + age + prio",
+  "fin + age + race + wexp + mar + paro + prio + educ"
+)
+
+rossi_run <- cbe_nested_survival_run(
+  data = rossi_cohort,
+  recipe = rec,
+  id = "id",
+  start = "tstart",
+  stop = "tstop",
+  status = "status",
+  domain = "Recidivism",
+  run_dir = run_dir,
+  feature_names = features,
+  formulas = candidate_formulas,
+  outer_v = 3,
+  inner_v = 3,
+  alphas = c(0.2, 0.5, 0.8),
+  top_n = 2,
+  internal_folds = 3,
+  cox.ties = "breslow",
+  seed = 67025
+)
+
+rossi_run
+```
+
+### Inspecting Results with `summary()`, `tidy()`, and `plot()`
+
+```{r inspect_methods, fig.width = 7, fig.height = 4}
+summary(rossi_run)
+
+# Tidy extractor supports "importance", "outer_scores", "candidates", "tuning", "censoring", "validation"
+ generics::tidy(rossi_run, component = "importance")
+ generics::tidy(rossi_run, component = "censoring")
+
+plot(rossi_run, type = "importance")
+```
+
+---
+
+## 3. Sharding Across Machines and Merging with `collect_checkpoints()`
+
+When a tuning or outer-scoring grid spans multiple outer folds and domains, work can be split across `n` machines sharing a network drive (or synced checkpoint directory) using `shard = c(i, n)`:
+
+- **Machine 1** runs `shard = c(1, 2)`
+- **Machine 2** runs `shard = c(2, 2)`
+- Once all shards finish, `collect_checkpoints()` verifies that every checkpoint file shares the same `checkpoint_run_fingerprint` and `seed_scheme` (`"v0.5.6"`) and binds them into a single table identical to a single-machine run.
+
+### Step-by-Step Sharded Tuning & Outer Scoring
+
+```{r sharded_workflow}
+shard_dir <- file.path(tempdir(), "rossi_sharded_checkpoints")
+tune_ckpt_dir <- file.path(shard_dir, "tune_fold1")
+score_ckpt_dir <- file.path(shard_dir, "score_outer")
+
+nested_splits <- nested_cv(
+  rossi_cohort,
+  outside = group_vfold_cv(group = id, v = 2),
+  inside = group_vfold_cv(group = id, v = 2)
+)
+times_df <- unique(rossi_cohort[, c("tstart", "tstop")])
+
+# --- Machine 1 evaluates Shard 1 of 2 ---
+tune_shard_1 <- summarize_tune_results(
+  object = nested_splits$inner_resamples[[1]],
+  recipe = rec,
+  feature_names = features,
+  alphas = c(0.25, 0.75),
+  time_data = times_df,
+  internal_folds = 3,
+  cox.ties = "breslow",
+  checkpoint_dir = tune_ckpt_dir,
+  shard = c(1, 2),
+  seed = 67025
+)
+
+# --- Machine 2 evaluates Shard 2 of 2 ---
+tune_shard_2 <- summarize_tune_results(
+  object = nested_splits$inner_resamples[[1]],
+  recipe = rec,
+  feature_names = features,
+  alphas = c(0.25, 0.75),
+  time_data = times_df,
+  internal_folds = 3,
+  cox.ties = "breslow",
+  checkpoint_dir = tune_ckpt_dir,
+  shard = c(2, 2),
+  seed = 67025
+)
+
+# --- Merge shards with collect_checkpoints() ---
+merged_tune <- collect_checkpoints(tune_ckpt_dir, type = "tune")
+merged_tune
+
+# Select candidate models from merged tuning results
+cand_grid <- select_candidate_models(
+  merged_tune,
+  formulas = candidate_formulas,
+  top_n = 2
+)
+cand_grid
+```
+
+Now we shard outer-fold evaluation (`score_outer()`) across two machines and merge the results:
+
+```{r sharded_outer_scoring}
+# Machine 1: Shard 1 of 2
+score_outer(
+  object = nested_splits,
+  grid = cand_grid,
+  recipe = rec,
+  feature_names = features,
+  time_data = times_df,
+  internal_folds = 3,
+  cox.ties = "breslow",
+  checkpoint_dir = score_ckpt_dir,
+  shard = c(1, 2),
+  seed = 67025
+)
+
+# Machine 2: Shard 2 of 2
+score_outer(
+  object = nested_splits,
+  grid = cand_grid,
+  recipe = rec,
+  feature_names = features,
+  time_data = times_df,
+  internal_folds = 3,
+  cox.ties = "breslow",
+  checkpoint_dir = score_ckpt_dir,
+  shard = c(2, 2),
+  seed = 67025
+)
+
+# Merge outer-fold checkpoints
+merged_outer <- collect_checkpoints(score_ckpt_dir, type = "score_outer")
+merged_outer
+
+# Summarize predictor importance across outer folds
+summarize_outer_importance(merged_outer)
+```
+
+### Cleaning Up Old Checkpoints (`clean_checkpoints()`)
+
+If inputs or settings change in a subsequent run, `clean_checkpoints(dir, keep = "current")` inspects all checkpoint `.rds` files and removes superseded or mismatched files while preserving the active run's checkpoints:
+
+```{r clean_checkpoints_demo}
+clean_checkpoints(score_ckpt_dir, keep = "current", dry_run = TRUE)
+```
+
+---
+
+## 4. Self-Rendering Reproducibility Appendix (`repro_appendix()`)
+
+Every report can end with `repro_appendix()`, which records package versions, git commit, RNG seed, `seed_scheme`, active `future::plan()`, dataset SHA-256 hashes, `validate_start_stop()` results, checkpoint fingerprints, and the render manifest:
+
+```{r repro_appendix_demo, results = "asis"}
+repro_appendix(run = rossi_run, heading_level = 3)
+```
+
+```{r cleanup, include = FALSE}
+unlink(run_dir, recursive = TRUE)
+unlink(shard_dir, recursive = TRUE)
+```

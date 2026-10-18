@@ -142,9 +142,11 @@ check_renv_guard <- function(project_root = NULL) {
 #' @param output_dir Directory to write `render_manifest.json` into.
 #' @param targets_result Data frame of render timing and status from [render()].
 #' @param seed Optional integer RNG seed used for the run.
+#' @param seed_scheme Task seed generation scheme identifier (defaults to
+#'   `current_seed_scheme()`, `"v0.5.6"`).
 #' @return The absolute path to the written `render_manifest.json` file.
 #' @export
-write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
+write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_scheme = current_seed_scheme()) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     warning("Package 'jsonlite' is required to write run manifest. Install it with install.packages(\"jsonlite\").", call. = FALSE)
     return(invisible(NULL))
@@ -184,6 +186,7 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
     git_sha = git_sha,
     future_plan = plan_name,
     seed = if (!is.null(seed)) seed else if (exists(".Random.seed", envir = .GlobalEnv)) .GlobalEnv$.Random.seed[1:min(2, length(.GlobalEnv$.Random.seed))] else NA,
+    seed_scheme = as.character(seed_scheme),
     package_versions = pkg_versions,
     per_node_wall_time = clean_timing
   )
@@ -224,7 +227,7 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
 #' @param resume Optional data frame of previous render results to resume from.
 #' @param manifest Logical. When \code{TRUE} (default), writes a \code{render_manifest.json}
 #'   beside rendered outputs containing TempleCBE version, git commit hash, package versions,
-#'   RNG seed, future plan, and per-document wall time.
+#'   RNG seed, `seed_scheme`, future plan, and per-document wall time.
 #' @param renv_guard Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
 #'   if an \code{renv.lock} exists, and warns of any package version discrepancies.
 #' @param seed Optional integer seed for reproducible document execution.
@@ -234,6 +237,8 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL) {
 #'   times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
 #'   outputs stored in `pipeline_hashes.json`).
 #' @param hash_file Optional path to `pipeline_hashes.json` when `stale_by = "hash"`.
+#' @param on_complete Optional callback `function(result)` invoked when `render()`
+#'   finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param ... Additional arguments passed to rendering engines.
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
@@ -256,7 +261,15 @@ render <- function(path,
                    rerun = c("none", "full"),
                    stale_by = c("mtime", "hash"),
                    hash_file = NULL,
+                   on_complete = getOption("templecbe.on_complete", NULL),
                    ...) {
+  formats_explicit <- !missing(formats)
+  dots <- list(...)
+  run_with_on_complete(
+    fn_name = "render",
+    on_complete = on_complete,
+    meta = list(seed = seed, dry_run = dry_run),
+    expr = {
   rerun <- match.arg(rerun)
   stale_by <- match.arg(stale_by)
   if (rerun == "full") {
@@ -272,8 +285,6 @@ render <- function(path,
   engine <- match.arg(engine)
   cache <- match.arg(cache)
   on_error <- match.arg(on_error)
-  formats_explicit <- !missing(formats)
-  dots <- list(...)
 
   # 1. Resolve pipeline graph if path is a list of pipeline objects or a single FileOutputs/FilePath
   is_pipeline_obj <- function(x) is(x, "FilePath") || is(x, "FileOutputs") || is(x, "FileUses")
@@ -859,6 +870,8 @@ render <- function(path,
   }
 
   times
+    }
+  )
 }
 
 #' @rdname render

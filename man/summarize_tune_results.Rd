@@ -14,8 +14,10 @@ summarize_tune_results(
   progress = FALSE,
   seed = NULL,
   checkpoint_dir = NULL,
-  checkpoint_mismatch = c("recompute", "error"),
-  shard = NULL
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  shard = NULL,
+  chunk_size = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL)
 )
 }
 \arguments{
@@ -46,11 +48,21 @@ matches, skipping recomputation.}
 
 \item{checkpoint_mismatch}{Action when an existing checkpoint file's
 fingerprint does not match the current inputs/settings: `"recompute"`
-(default; warns and recomputes) or `"error"` (stops immediately).}
+(default; warns and recomputes), `"overwrite"` (overwrites mismatched files
+in place and removes stale checkpoints from previous runs), or `"error"`
+(stops immediately).}
 
 \item{shard}{Optional integer vector `c(i, n)` specifying that this call
 should process shard `i` of `n` across machines into `checkpoint_dir`.
 Use [collect_checkpoints()] to merge all shards once finished.}
+
+\item{chunk_size}{Optional positive integer passed to
+[furrr::furrr_options()] controlling the number of tasks batched per worker
+invocation. Defaults to `NULL` (one chunk per worker so each worker
+receives all of its assigned tasks in a single batch).}
+
+\item{on_complete}{Optional callback `function(result)` (or option
+`templecbe.on_complete`) invoked when the run finishes or errors.}
 }
 \value{
 A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`
@@ -66,12 +78,22 @@ row-binds the successful fits.
 When tuning penalized survival models across nested resampling structures, computation
 scales multiplicatively: \eqn{\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}}.
 `summarize_tune_results()` flattens `inner splits x alphas` into a single task
-pool (e.g. 7 splits x 10 alphas = 70 tasks) so all cores on high-core machines
-are fully utilized. Set \code{future::plan(multisession, workers = N)} before
-calling while keeping inner model evaluations sequential (\code{parallel = FALSE}
-in \code{glmnet_IBS()}).
+pool (e.g. 7 splits x 10 alphas = 70 tasks), sends the shared dataset, recipe,
+and split definitions once per worker, and pre-preps/bakes each split once per
+worker rather than repeating recipe preprocessing for every `alpha`.
+
+**Recommended worker count:** On a 16-core / 16-thread workstation, `7` to `8`
+multisession workers (matching the number of inner splits or physical CPU cores,
+leaving 1--2 cores for the coordinator process and OS I/O) yields the best
+wall-clock speedup (~3x+ faster than sequential). Scaling past physical core
+count (e.g., 14+ workers on 16 logical threads) can suffer from L3 cache and
+memory-bandwidth contention during `glmnet` and Breslow cumulative hazard loops.
+Set \code{future::plan(multisession, workers = 7)} before calling while keeping
+inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
+Use `chunk_size` to control how many tasks are batched per worker message.
 }
 
 \seealso{
-[glmnet_IBS()], [tune_over_alpha()], [collect_checkpoints()], [nested_cv_coxnet()]
+[glmnet_IBS()], [tune_over_alpha()], [collect_checkpoints()],
+  [clean_checkpoints()], [nested_cv_coxnet()]
 }

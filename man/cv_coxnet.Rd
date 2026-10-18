@@ -29,6 +29,7 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 
@@ -48,6 +49,7 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 
@@ -67,6 +69,7 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 
@@ -86,6 +89,7 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 }
@@ -142,6 +146,10 @@ in `metrics` by default.}
 in both the analysis and the assessment set of a split; see Details. `FALSE`
 skips the check. Folds that `cv_coxnet()` builds itself are never checked,
 as they are grouped by subject already.}
+
+\item{on_complete}{Optional callback `function(result)` invoked when
+`cv_coxnet()` finishes or errors (defaults to
+`getOption("templecbe.on_complete", NULL)`).}
 
 \item{formula}{A formula with a `Surv()` outcome, as in [coxnet()].}
 

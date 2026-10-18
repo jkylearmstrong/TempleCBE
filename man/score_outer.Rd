@@ -13,8 +13,10 @@ score_outer(
   coefficients = c("all", "nonzero"),
   seed = NULL,
   checkpoint_dir = NULL,
-  checkpoint_mismatch = c("recompute", "error"),
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   shard = NULL,
+  chunk_size = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL),
   progress = FALSE
 )
 }
@@ -47,12 +49,23 @@ Finished tasks are loaded from disk on rerun when their fingerprint matches,
 skipping recomputation.}
 
 \item{checkpoint_mismatch}{Action when a checkpoint file in `checkpoint_dir`
-has a mismatched fingerprint: `"recompute"` (default; warns and recomputes)
-or `"error"` (stops immediately).}
+has a mismatched fingerprint: `"recompute"` (default; warns and recomputes),
+`"overwrite"` (recomputes and overwrites mismatched checkpoint files in
+place without warning; can also be enabled via
+`options(templecbe.checkpoint_mismatch = "overwrite")` or
+`options(templecbe.checkpoint_overwrite = TRUE)`), or `"error"` (stops
+immediately).}
 
 \item{shard}{Optional integer vector `c(i, n)` specifying that this machine
 should evaluate shard `i` of `n` into `checkpoint_dir`. Use
 [collect_checkpoints()] to merge all shards once finished.}
+
+\item{chunk_size}{Optional integer number of tasks per worker chunk passed to
+[furrr::furrr_options()] (default `NULL`, which lets \pkg{furrr} divide
+tasks evenly into one chunk per worker).}
+
+\item{on_complete}{Optional callback `function(result)` invoked when the run
+finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 
 \item{progress}{Show progress bar (default `FALSE`).}
 }
@@ -68,6 +81,6 @@ resampling splits.
 }
 \seealso{
 [glmnet_IBS()], [tidy_outer_coefficients()], [summarize_outer_importance()],
-  [plot_outer_importance()], [collect_checkpoints()], [compare_censoring_weights()],
-  [select_candidate_models()]
+  [plot_outer_importance()], [collect_checkpoints()], [clean_checkpoints()],
+  [compare_censoring_weights()], [select_candidate_models()]
 }

@@ -25,6 +25,7 @@ render(
   rerun = c("none", "full"),
   stale_by = c("mtime", "hash"),
   hash_file = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 
@@ -48,6 +49,7 @@ render_me(
   rerun = c("none", "full"),
   stale_by = c("mtime", "hash"),
   hash_file = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 }
@@ -83,7 +85,7 @@ or `"stale"`.}
 
 \item{manifest}{Logical. When \code{TRUE} (default), writes a \code{render_manifest.json}
 beside rendered outputs containing TempleCBE version, git commit hash, package versions,
-RNG seed, future plan, and per-document wall time.}
+RNG seed, `seed_scheme`, future plan, and per-document wall time.}
 
 \item{renv_guard}{Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
 if an \code{renv.lock} exists, and warns of any package version discrepancies.}
@@ -99,6 +101,9 @@ times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
 outputs stored in `pipeline_hashes.json`).}
 
 \item{hash_file}{Optional path to `pipeline_hashes.json` when `stale_by = "hash"`.}
+
+\item{on_complete}{Optional callback `function(result)` invoked when `render()`
+finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 
 \item{...}{Additional arguments passed to rendering engines.}
 }

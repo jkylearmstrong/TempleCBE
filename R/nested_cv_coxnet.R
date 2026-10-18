@@ -110,7 +110,9 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
                              eval_time = NULL, metric = NULL, covariates = c("path", "baseline"),
                              trunc = 0.05, parallel = FALSE, importance = c("none", "loco_mp"),
                              check_subject_overlap = TRUE,
-                              tune_method = c("grid", "race_anova", "race_win_loss"), ...) {
+                             tune_method = c("grid", "race_anova", "race_win_loss"),
+                             on_complete = getOption("templecbe.on_complete", NULL), ...) {
+  run_with_on_complete("nested_cv_coxnet", on_complete, meta = list(mixture = mixture), expr = {
   rlang::check_installed(
     c("glmnet", "survival", "rsample", "yardstick"),
     reason = "for nested cross-validation of `coxnet()` models."
@@ -282,6 +284,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   out <- purrr::list_rbind(rows)
   class(out) <- c("nested_cv_coxnet", class(out))
   out
+  })
 }
 
 # The named arguments of `...` that cbe_loco_mp_coxnet() does not already take

@@ -27,10 +27,10 @@ A merged tibble matching the return format of
 \description{
 Merges per-task checkpoint files written by [summarize_tune_results()] or
 [score_outer()] across multiple machines (`shard = c(i, n)`). Verifies that
-all checkpoint files carry the same `checkpoint_run_fingerprint` so results
-from different data, recipes, feature sets, or settings cannot be combined
-by mistake.
+all checkpoint files carry the same `checkpoint_run_fingerprint` and
+`seed_scheme` so results from different data, recipes, feature sets, seed
+schemes, or settings cannot be combined by mistake.
 }
 \seealso{
-[summarize_tune_results()], [score_outer()]
+[summarize_tune_results()], [score_outer()], [clean_checkpoints()]
 }

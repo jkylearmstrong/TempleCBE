@@ -22,6 +22,7 @@ nested_cv_coxnet(
   importance = c("none", "loco_mp"),
   check_subject_overlap = TRUE,
   tune_method = c("grid", "race_anova", "race_win_loss"),
+  on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
 
@@ -76,6 +77,10 @@ Details and [cv_coxnet()]. `FALSE` skips the check.}
 `"grid"` (default, standard [cv_coxnet()] grid search), `"race_anova"`
 ([finetune::tune_race_anova()] racing), or `"race_win_loss"`
 ([finetune::tune_race_win_loss()] racing; needs BradleyTerry2).}
+
+\item{on_complete}{Optional callback `function(result)` invoked when
+`cv_coxnet()` finishes or errors (defaults to
+`getOption("templecbe.on_complete", NULL)`).}
 
 \item{...}{Further arguments passed to [glmnet::glmnet()], such as `cox.ties`,
 `standardize`, `penalty.factor`, or `nlambda`. With `importance = "loco_mp"`

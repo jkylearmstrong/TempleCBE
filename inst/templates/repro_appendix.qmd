@@ -1,0 +1,12 @@
+```{r}
+#| label: repro-appendix-auto
+#| echo: false
+#| results: asis
+cat(TempleCBE::repro_appendix(
+  run = if (exists("cbe_run", inherits = TRUE)) get("cbe_run", inherits = TRUE) else NULL,
+  data = if (exists("cbe_data", inherits = TRUE)) get("cbe_data", inherits = TRUE) else NULL,
+  run_dir = if (exists("cbe_run_dir", inherits = TRUE)) get("cbe_run_dir", inherits = TRUE) else NULL,
+  seed = if (exists("cbe_seed", inherits = TRUE)) get("cbe_seed", inherits = TRUE) else NULL,
+  format = "markdown"
+))
+```

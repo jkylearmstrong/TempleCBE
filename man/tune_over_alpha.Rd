@@ -14,7 +14,8 @@ tune_over_alpha(
   progress = FALSE,
   seed = NULL,
   checkpoint_dir = NULL,
-  checkpoint_mismatch = c("recompute", "error")
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  on_complete = getOption("templecbe.on_complete", NULL)
 )
 }
 \arguments{
@@ -45,8 +46,12 @@ their checkpoint fingerprint matches.}
 
 \item{checkpoint_mismatch}{Action when a checkpoint file exists in
 `checkpoint_dir` but its stored fingerprint does not match the current
-inputs/settings: `"recompute"` (default; warns and recomputes the task) or
-`"error"` (stops immediately).}
+inputs/settings: `"recompute"` (default; warns and recomputes the task),
+`"overwrite"` (overwrites mismatched files in place and cleans up stale
+checkpoint files from previous runs), or `"error"` (stops immediately).}
+
+\item{on_complete}{Optional callback `function(result)` (or option
+`templecbe.on_complete`) invoked when the run finishes or errors.}
 }
 \value{
 A list named by `alpha`, one element per fit, each the output of
@@ -76,5 +81,5 @@ Random draws use the R session's random number stream, so call
 To tune `alpha` and the penalty together in one call, see [cv_coxnet()].
 }
 \seealso{
-[glmnet_IBS()], [summarize_tune_results()], [cv_coxnet()]
+[glmnet_IBS()], [summarize_tune_results()], [clean_checkpoints()], [cv_coxnet()]
 }

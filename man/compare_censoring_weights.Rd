@@ -10,6 +10,7 @@ compare_censoring_weights(
   recipe = NULL,
   ...,
   seed = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL),
   progress = FALSE
 )
 }
@@ -27,6 +28,9 @@ is already a scored data frame.}
 
 \item{seed}{Optional integer seed for reproducible draws and fitting.}
 
+\item{on_complete}{Optional callback `function(result)` invoked when the run
+finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
+
 \item{progress}{Show progress bar (default `FALSE`).}
 }
 \value{
@@ -41,8 +45,9 @@ A tibble with columns:
   \item{rank_ipcw}{Model rank under IPCW IBS (1 = best / lowest IBS)}
   \item{rank_diff}{`rank_ipcw - rank_none`}
 
-The returned object has attribute `"rank_agreement"` containing a named list with
-`spearman` (Spearman's rank correlation) and `kendall` (Kendall's rank correlation).
+The returned object has attributes `"rank_agreement"` (containing `spearman`
+and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
+skipped), and `"n_score_outer_runs"`.
 }
 \description{
 Evaluates candidate models on an outer resampling split under both `"none"`
@@ -52,6 +57,10 @@ Brier scores (IBS) and model ranks, along with rank agreement statistics
 (Spearman rank correlation and Kendall's tau).
 }
 \details{
+When the training data across splits contains no censored subjects, this is
+detected before model fitting so [score_outer()] is run only once and both
+`ibs_none` and `ibs_ipcw` are populated from that single fit.
+
 Alternatively, accepts two precomputed tables of model evaluations (one under
 `"none"` and one under `"ipcw"`) and merges them into the comparison table.
 }

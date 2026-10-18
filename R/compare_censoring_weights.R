@@ -24,18 +24,27 @@
 #'   Finished tasks are loaded from disk on rerun when their fingerprint matches,
 #'   skipping recomputation.
 #' @param checkpoint_mismatch Action when a checkpoint file in `checkpoint_dir`
-#'   has a mismatched fingerprint: `"recompute"` (default; warns and recomputes)
-#'   or `"error"` (stops immediately).
+#'   has a mismatched fingerprint: `"recompute"` (default; warns and recomputes),
+#'   `"overwrite"` (recomputes and overwrites mismatched checkpoint files in
+#'   place without warning; can also be enabled via
+#'   `options(templecbe.checkpoint_mismatch = "overwrite")` or
+#'   `options(templecbe.checkpoint_overwrite = TRUE)`), or `"error"` (stops
+#'   immediately).
 #' @param shard Optional integer vector `c(i, n)` specifying that this machine
 #'   should evaluate shard `i` of `n` into `checkpoint_dir`. Use
 #'   [collect_checkpoints()] to merge all shards once finished.
+#' @param chunk_size Optional integer number of tasks per worker chunk passed to
+#'   [furrr::furrr_options()] (default `NULL`, which lets \pkg{furrr} divide
+#'   tasks evenly into one chunk per worker).
+#' @param on_complete Optional callback `function(result)` invoked when the run
+#'   finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param progress Show progress bar (default `FALSE`).
 #' @return A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
 #'   `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
 #'   coefficient estimates).
 #' @seealso [glmnet_IBS()], [tidy_outer_coefficients()], [summarize_outer_importance()],
-#'   [plot_outer_importance()], [collect_checkpoints()], [compare_censoring_weights()],
-#'   [select_candidate_models()]
+#'   [plot_outer_importance()], [collect_checkpoints()], [clean_checkpoints()],
+#'   [compare_censoring_weights()], [select_candidate_models()]
 #' @export
 score_outer <- function(object,
                         grid,
@@ -45,14 +54,25 @@ score_outer <- function(object,
                         coefficients = c("all", "nonzero"),
                         seed = NULL,
                         checkpoint_dir = NULL,
-                        checkpoint_mismatch = c("recompute", "error"),
+                        checkpoint_mismatch = c("recompute", "overwrite", "error"),
                         shard = NULL,
+                        chunk_size = NULL,
+                        on_complete = getOption("templecbe.on_complete", NULL),
                         progress = FALSE) {
   require_packages(c("glmnet", "survival", "rsample", "yardstick", "recipes"), "score_outer")
   censoring_weights <- match.arg(censoring_weights)
   coefficients <- match.arg(coefficients)
-  checkpoint_mismatch <- match.arg(checkpoint_mismatch)
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(
+    checkpoint_mismatch,
+    missing_arg = missing(checkpoint_mismatch)
+  )
   shard <- validate_shard_spec(shard)
+  if (!is.null(chunk_size)) {
+    chunk_size <- as.integer(chunk_size)
+    if (length(chunk_size) != 1L || is.na(chunk_size) || chunk_size < 1L) {
+      stop("`chunk_size` must be a positive integer or NULL.", call. = FALSE)
+    }
+  }
   dots <- list(...)
 
   # Resolve splits and fold identifiers
@@ -112,242 +132,331 @@ score_outer <- function(object,
   )
   n_tasks <- nrow(tasks)
 
-  if (!is.null(seed)) {
-    local_seed(seed)
-    task_seeds <- as.list(sample.int(1e9, n_tasks))
-  } else {
-    task_seeds <- vector("list", n_tasks)
-  }
-
-  if (!is.null(checkpoint_dir)) {
-    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
-    if (isTRUE(progress)) {
-      existing_ckpts <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$")
-      if (length(existing_ckpts) > 0) {
-        message(sprintf("Found %d cached checkpoint file(s) in '%s'; skipping.", length(existing_ckpts), checkpoint_dir))
+  run_with_on_complete(
+    fn_name = "score_outer",
+    on_complete = on_complete,
+    meta = list(n_tasks = n_tasks, checkpoint_dir = checkpoint_dir, shard = shard, seed = seed),
+    expr = {
+      if (!is.null(seed)) {
+        local_seed(seed)
+        task_seeds <- as.list(sample.int(1e9, n_tasks))
+      } else {
+        task_seeds <- vector("list", n_tasks)
       }
-    }
-  }
 
-  base_dots <- c(list(recipe = recipe, censoring_weights = censoring_weights), dots)
-  splits_canon <- lapply(splits, canonicalize_split_for_hash)
-  run_fp <- compute_checkpoint_fingerprint(
-    split = NULL,
-    dots = base_dots,
-    seed = seed,
-    extra = list(
-      fn = "score_outer",
-      splits = splits_canon,
-      grid = as.data.frame(grid_df),
-      coefficients = coefficients
-    )
-  )
-
-  resolve_task_call_args <- function(task_idx) {
-    t_row <- tasks[task_idx, ]
-    r <- grid_df[t_row$row_idx, , drop = FALSE]
-    curr_split <- splits[[t_row$split_idx]]
-    a <- r$alpha[[1]]
-    call_args <- c(
-      list(object = curr_split, alpha = a, recipe = recipe, censoring_weights = censoring_weights),
-      dots
-    )
-    if ("formula" %in% names(r)) {
-      call_args$formula <- r$formula[[1]]
-    } else if ("formulas" %in% names(r)) {
-      call_args$formula <- r$formulas[[1]]
-    }
-    if (!"feature_names" %in% names(call_args)) {
-      if ("feature_names" %in% names(r)) {
-        call_args$feature_names <- r$feature_names[[1]]
-      } else if (!is.null(call_args$formula)) {
-        call_args$feature_names <- trimws(strsplit(formula_terms_string(call_args$formula), "\\+")[[1]])
-      } else if (inherits(recipe, "recipe") && !is.null(recipe$var_info)) {
-        roles <- recipe$var_info$role
-        call_args$feature_names <- recipe$var_info$variable[!roles %in% c("id variable", "outcome")]
-      }
-    }
-    call_args
-  }
-
-  task_fps <- lapply(seq_len(n_tasks), function(task_idx) {
-    t_row <- tasks[task_idx, ]
-    r <- grid_df[t_row$row_idx, , drop = FALSE]
-    curr_split <- splits[[t_row$split_idx]]
-    curr_fold <- fold_names[t_row$split_idx]
-    c_args <- resolve_task_call_args(task_idx)
-    c_dots <- c_args[setdiff(names(c_args), c("object", "alpha"))]
-    compute_checkpoint_fingerprint(
-      split = curr_split,
-      dots = c_dots,
-      alpha = r$alpha[[1]],
-      formula = c_args$formula,
-      seed = task_seeds[[task_idx]],
-      extra = list(
-        fn = "score_outer_task",
-        outer_fold = curr_fold,
-        model = r$model[[1]],
-        coefficients = coefficients
-      )
-    )
-  })
-
-  ckpt_files <- lapply(seq_len(n_tasks), function(task_idx) {
-    if (is.null(checkpoint_dir)) return(NULL)
-    t_row <- tasks[task_idx, ]
-    r <- grid_df[t_row$row_idx, , drop = FALSE]
-    curr_fold <- fold_names[t_row$split_idx]
-    safe_fold <- gsub("[^A-Za-z0-9._-]", "_", curr_fold)
-    safe_model <- gsub("[^A-Za-z0-9._-]", "_", r$model[[1]])
-    file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
-  })
-
-  if (!is.null(shard)) {
-    active_indices <- which(((seq_len(n_tasks) - 1L) %% shard[2]) + 1L == shard[1])
-  } else {
-    active_indices <- seq_len(n_tasks)
-  }
-
-  if (!is.null(checkpoint_dir) && length(active_indices) > 0L) {
-    mismatch_msgs <- character()
-    for (k in active_indices) {
-      f_k <- ckpt_files[[k]]
-      if (!is.null(f_k) && file.exists(f_k)) {
-        chk <- read_verified_checkpoint(f_k, task_fps[[k]], checkpoint_mismatch = checkpoint_mismatch)
-        if (identical(chk$status, "mismatch")) {
-          mismatch_msgs <- c(mismatch_msgs, chk$message)
-          unlink(f_k)
-        }
-      }
-    }
-    if (is.null(shard)) {
-      all_existing <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
-      other_files <- setdiff(all_existing, unlist(ckpt_files))
-      for (of in other_files) {
-        if (file.exists(of)) {
-          cached_of <- tryCatch(readRDS(of), error = function(e) NULL)
-          found_run_fp <- if (!is.null(cached_of)) attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) else NULL
-          if (!identical(found_run_fp, run_fp)) {
-            msg <- sprintf(
-              "Checkpoint '%s' has a mismatched fingerprint (inputs, recipe, features, censoring_weights, or settings changed).",
-              basename(of)
-            )
-            if (checkpoint_mismatch == "error") {
-              stop(msg, call. = FALSE)
-            }
-            mismatch_msgs <- c(mismatch_msgs, msg)
-            unlink(of)
+      if (!is.null(checkpoint_dir)) {
+        dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+        if (isTRUE(progress)) {
+          existing_ckpts <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$")
+          if (length(existing_ckpts) > 0) {
+            message(sprintf("Found %d cached checkpoint file(s) in '%s'; skipping.", length(existing_ckpts), checkpoint_dir))
           }
         }
       }
-    }
-    if (length(mismatch_msgs) > 0L) {
-      warning(sprintf(
-        "%d checkpoint file(s) in '%s' had mismatched fingerprints and will be recomputed. First mismatch: %s",
-        length(mismatch_msgs), checkpoint_dir, mismatch_msgs[1]
-      ), call. = FALSE)
-    }
-  }
 
-  score_one_task <- function(task_idx, s_seed) {
-    if (!is.null(s_seed)) {
-      local_seed(s_seed)
-    }
-    t_row <- tasks[task_idx, ]
-    r <- grid_df[t_row$row_idx, , drop = FALSE]
-    curr_fold <- fold_names[t_row$split_idx]
-    ckpt_file <- ckpt_files[[task_idx]]
-    t_fp <- task_fps[[task_idx]]
-
-    if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
-      chk <- read_verified_checkpoint(ckpt_file, t_fp, checkpoint_mismatch = "recompute")
-      if (identical(chk$status, "hit")) {
-        return(chk$value)
-      }
-    }
-
-    a <- r$alpha[[1]]
-    call_args <- resolve_task_call_args(task_idx)
-
-    res <- tryCatch(
-      do.call(glmnet_IBS, call_args),
-      error = function(e) {
-        warning("score_outer() task failed: ", conditionMessage(e), call. = FALSE)
-        tibble::tibble(IBS = NA_real_, lambda = NA_real_, term = character(), estimate = numeric())
-      }
-    )
-
-    has_coefs <- all(c("term", "estimate") %in% names(res))
-    coef_tbl <- if (has_coefs && nrow(res) > 0) {
-      if (coefficients == "nonzero") {
-        tibble::tibble(term = res$term[res$estimate != 0], estimate = res$estimate[res$estimate != 0])
-      } else {
-        tibble::tibble(term = res$term, estimate = res$estimate)
-      }
-    } else {
-      tibble::tibble(term = character(), estimate = numeric())
-    }
-
-    res_row <- tibble::tibble(
-      outer_fold = curr_fold,
-      model = r$model[[1]],
-      alpha = a,
-      formula = if ("formula" %in% names(r)) as.character(r$formula[[1]]) else NA_character_,
-      IBS = if (nrow(res) > 0) res$IBS[1] else NA_real_,
-      lambda = if (nrow(res) > 0) res$lambda[1] else NA_real_,
-      coefficients = list(coef_tbl)
-    )
-
-    res_row <- write_verified_checkpoint(
-      res_row,
-      ckpt_file = ckpt_file,
-      fingerprint = t_fp,
-      run_fingerprint = run_fp,
-      meta = list(
-        fn = "score_outer",
-        task_idx = task_idx,
-        n_tasks = n_tasks,
-        outer_fold = curr_fold,
-        model = r$model[[1]],
-        alpha = a,
-        shard = shard
+      base_dots <- c(list(recipe = recipe, censoring_weights = censoring_weights), dots)
+      splits_canon <- lapply(splits, canonicalize_split_for_hash)
+      run_fp <- compute_checkpoint_fingerprint(
+        split = NULL,
+        dots = base_dots,
+        seed = seed,
+        extra = list(
+          fn = "score_outer",
+          splits = splits_canon,
+          grid = as.data.frame(grid_df),
+          coefficients = coefficients
+        )
       )
-    )
 
-    res_row
-  }
+      resolve_task_call_args <- function(task_idx, split_obj = NULL, recipe_obj = recipe, base_dots_obj = dots) {
+        t_row <- tasks[task_idx, ]
+        r <- grid_df[t_row$row_idx, , drop = FALSE]
+        curr_split <- split_obj %||% splits[[t_row$split_idx]]
+        a <- r$alpha[[1]]
+        call_args <- c(
+          list(object = curr_split, alpha = a, recipe = recipe_obj, censoring_weights = censoring_weights),
+          base_dots_obj
+        )
+        if ("formula" %in% names(r)) {
+          call_args$formula <- r$formula[[1]]
+        } else if ("formulas" %in% names(r)) {
+          call_args$formula <- r$formulas[[1]]
+        }
+        if (!"feature_names" %in% names(call_args)) {
+          if ("feature_names" %in% names(r)) {
+            call_args$feature_names <- r$feature_names[[1]]
+          } else if (!is.null(call_args$formula)) {
+            call_args$feature_names <- trimws(strsplit(formula_terms_string(call_args$formula), "\\+")[[1]])
+          } else if (inherits(recipe_obj, "recipe") && !is.null(recipe_obj$var_info)) {
+            roles <- recipe_obj$var_info$role
+            call_args$feature_names <- recipe_obj$var_info$variable[!roles %in% c("id variable", "outcome")]
+          }
+        }
+        call_args
+      }
 
-  can_furrr <- requireNamespace("furrr", quietly = TRUE) &&
-    requireNamespace("future", quietly = TRUE)
+      task_fps <- lapply(seq_len(n_tasks), function(task_idx) {
+        t_row <- tasks[task_idx, ]
+        r <- grid_df[t_row$row_idx, , drop = FALSE]
+        curr_split <- splits[[t_row$split_idx]]
+        curr_fold <- fold_names[t_row$split_idx]
+        c_args <- resolve_task_call_args(task_idx)
+        c_dots <- c_args[setdiff(names(c_args), c("object", "alpha"))]
+        compute_checkpoint_fingerprint(
+          split = curr_split,
+          dots = c_dots,
+          alpha = r$alpha[[1]],
+          formula = c_args$formula,
+          seed = task_seeds[[task_idx]],
+          extra = list(
+            fn = "score_outer_task",
+            outer_fold = curr_fold,
+            model = r$model[[1]],
+            coefficients = coefficients
+          )
+        )
+      })
 
-  furrr_pkgs <- furrr_worker_packages()
+      ckpt_files <- lapply(seq_len(n_tasks), function(task_idx) {
+        if (is.null(checkpoint_dir)) return(NULL)
+        t_row <- tasks[task_idx, ]
+        r <- grid_df[t_row$row_idx, , drop = FALSE]
+        curr_fold <- fold_names[t_row$split_idx]
+        safe_fold <- gsub("[^A-Za-z0-9._-]", "_", curr_fold)
+        safe_model <- gsub("[^A-Za-z0-9._-]", "_", r$model[[1]])
+        file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
+      })
 
-  if (can_furrr) {
-    res_list <- furrr::future_map2(
-      active_indices,
-      task_seeds[active_indices],
-      score_one_task,
-      .options = furrr::furrr_options(seed = TRUE, packages = furrr_pkgs),
-      .progress = progress
-    )
-  } else {
-    res_list <- purrr::map2(
-      active_indices,
-      task_seeds[active_indices],
-      score_one_task
-    )
-  }
+      if (!is.null(shard)) {
+        active_indices <- which(((seq_len(n_tasks) - 1L) %% shard[2]) + 1L == shard[1])
+      } else {
+        active_indices <- seq_len(n_tasks)
+      }
 
-  res_tbl <- dplyr::bind_rows(res_list)
-  if (!is.data.frame(res_tbl) || nrow(res_tbl) == 0L || all(is.na(res_tbl$IBS))) {
-    stop("All candidate model fits failed in score_outer().", call. = FALSE)
-  }
-  n_failed <- sum(is.na(res_tbl$IBS))
-  if (n_failed > 0L) {
-    warning(sprintf("%d candidate model fit(s) failed in score_outer().", n_failed), call. = FALSE)
-  }
-  attr(res_tbl, "checkpoint_run_fingerprint") <- run_fp
-  res_tbl
+      if (!is.null(checkpoint_dir) && length(active_indices) > 0L) {
+        mismatch_msgs <- character()
+        for (k in active_indices) {
+          f_k <- ckpt_files[[k]]
+          if (!is.null(f_k) && file.exists(f_k)) {
+            chk <- read_verified_checkpoint(f_k, task_fps[[k]], checkpoint_mismatch = checkpoint_mismatch)
+            if (identical(chk$status, "mismatch")) {
+              if (checkpoint_mismatch == "recompute") {
+                mismatch_msgs <- c(mismatch_msgs, chk$message)
+              }
+              unlink(f_k)
+            }
+          }
+        }
+        if (is.null(shard)) {
+          all_existing <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
+          other_files <- setdiff(all_existing, unlist(ckpt_files))
+          for (of in other_files) {
+            if (file.exists(of)) {
+              cached_of <- tryCatch(readRDS(of), error = function(e) NULL)
+              found_run_fp <- if (!is.null(cached_of)) attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) else NULL
+              found_scheme <- if (!is.null(cached_of)) {
+                attr(cached_of, "seed_scheme", exact = TRUE) %||%
+                  attr(cached_of, "checkpoint_meta", exact = TRUE)$seed_scheme
+              } else {
+                NULL
+              }
+              if (!identical(found_run_fp, run_fp) || !identical(found_scheme, current_seed_scheme())) {
+                msg <- sprintf(
+                  "Checkpoint '%s' has a mismatched fingerprint (inputs, recipe, features, censoring_weights, seed_scheme, or settings changed).",
+                  basename(of)
+                )
+                if (checkpoint_mismatch == "error") {
+                  stop(msg, call. = FALSE)
+                }
+                if (checkpoint_mismatch == "recompute") {
+                  mismatch_msgs <- c(mismatch_msgs, msg)
+                }
+                unlink(of)
+              }
+            }
+          }
+        }
+        if (length(mismatch_msgs) > 0L && checkpoint_mismatch == "recompute") {
+          warning(sprintf(
+            "%d checkpoint file(s) in '%s' had mismatched fingerprints and will be recomputed. First mismatch: %s",
+            length(mismatch_msgs), checkpoint_dir, mismatch_msgs[1]
+          ), call. = FALSE)
+        }
+      }
+
+      can_furrr <- requireNamespace("furrr", quietly = TRUE) &&
+        requireNamespace("future", quietly = TRUE)
+      is_parallel <- can_furrr && tryCatch(future::nbrOfWorkers() > 1L, error = function(e) FALSE)
+
+      shared_bundle <- create_shared_worker_bundle(splits, base_dots, run_fp)
+      bundle_file <- shared_bundle$bundle_file
+      fallback_payload <- if (is_parallel && file.exists(bundle_file)) NULL else shared_bundle$payload
+      on.exit({
+        if (!is.null(bundle_file) && file.exists(bundle_file)) {
+          unlink(bundle_file)
+        }
+        if (exists(run_fp, envir = .worker_cache, inherits = FALSE)) {
+          rm(list = run_fp, envir = .worker_cache)
+        }
+      }, add = TRUE)
+
+      furrr_pkgs <- furrr_worker_packages()
+
+      score_one_task <- local({
+        tasks <- tasks
+        grid_df <- grid_df
+        fold_names <- fold_names
+        ckpt_files <- ckpt_files
+        task_fps <- task_fps
+        run_fp <- run_fp
+        bundle_file <- bundle_file
+        fallback_payload <- fallback_payload
+        censoring_weights <- censoring_weights
+        coefficients <- coefficients
+        n_tasks <- n_tasks
+        shard <- shard
+        is_parallel <- is_parallel
+        function(task_idx, s_seed) {
+          if (is_parallel) {
+            Sys.setenv(
+              OMP_NUM_THREADS = "1",
+              OPENBLAS_NUM_THREADS = "1",
+              MKL_NUM_THREADS = "1",
+              VECLIB_MAXIMUM_THREADS = "1"
+            )
+          }
+          if (!is.null(s_seed)) {
+            local_seed(s_seed)
+          }
+          t_row <- tasks[task_idx, ]
+          r <- grid_df[t_row$row_idx, , drop = FALSE]
+          curr_fold <- fold_names[t_row$split_idx]
+          ckpt_file <- ckpt_files[[task_idx]]
+          t_fp <- task_fps[[task_idx]]
+
+          if (!is.null(ckpt_file) && file.exists(ckpt_file)) {
+            chk <- read_verified_checkpoint(ckpt_file, t_fp, checkpoint_mismatch = "recompute")
+            if (identical(chk$status, "hit")) {
+              return(chk$value)
+            }
+          }
+
+          bundle <- get_worker_bundle(run_fp, bundle_file = bundle_file, fallback_payload = fallback_payload)
+          prep_split <- get_worker_prepared_split(bundle, t_row$split_idx)
+
+          a <- r$alpha[[1]]
+          w_dots <- bundle$dots[setdiff(names(bundle$dots), c("recipe", "censoring_weights"))]
+          w_recipe <- bundle$dots$recipe
+          call_args <- c(
+            list(
+              object = bundle$splits[[t_row$split_idx]],
+              alpha = a,
+              recipe = w_recipe,
+              censoring_weights = censoring_weights,
+              .prepared_split = prep_split
+            ),
+            w_dots
+          )
+          if ("formula" %in% names(r)) {
+            call_args$formula <- r$formula[[1]]
+          } else if ("formulas" %in% names(r)) {
+            call_args$formula <- r$formulas[[1]]
+          }
+          if (!"feature_names" %in% names(call_args)) {
+            if ("feature_names" %in% names(r)) {
+              call_args$feature_names <- r$feature_names[[1]]
+            } else if (!is.null(call_args$formula)) {
+              call_args$feature_names <- trimws(strsplit(formula_terms_string(call_args$formula), "\\+")[[1]])
+            } else if (inherits(w_recipe, "recipe") && !is.null(w_recipe$var_info)) {
+              roles <- w_recipe$var_info$role
+              call_args$feature_names <- w_recipe$var_info$variable[!roles %in% c("id variable", "outcome")]
+            }
+          }
+
+          res <- tryCatch(
+            do.call(glmnet_IBS, call_args),
+            error = function(e) {
+              warning("score_outer() task failed: ", conditionMessage(e), call. = FALSE)
+              tibble::tibble(IBS = NA_real_, lambda = NA_real_, term = character(), estimate = numeric())
+            }
+          )
+
+          has_coefs <- all(c("term", "estimate") %in% names(res))
+          coef_tbl <- if (has_coefs && nrow(res) > 0) {
+            if (coefficients == "nonzero") {
+              tibble::tibble(term = res$term[res$estimate != 0], estimate = res$estimate[res$estimate != 0])
+            } else {
+              tibble::tibble(term = res$term, estimate = res$estimate)
+            }
+          } else {
+            tibble::tibble(term = character(), estimate = numeric())
+          }
+
+          res_row <- tibble::tibble(
+            outer_fold = curr_fold,
+            model = r$model[[1]],
+            alpha = a,
+            formula = if ("formula" %in% names(r)) as.character(r$formula[[1]]) else NA_character_,
+            IBS = if (nrow(res) > 0) res$IBS[1] else NA_real_,
+            lambda = if (nrow(res) > 0) res$lambda[1] else NA_real_,
+            coefficients = list(coef_tbl)
+          )
+
+          res_row <- write_verified_checkpoint(
+            res_row,
+            ckpt_file = ckpt_file,
+            fingerprint = t_fp,
+            run_fingerprint = run_fp,
+            meta = list(
+              fn = "score_outer",
+              task_idx = task_idx,
+              n_tasks = n_tasks,
+              outer_fold = curr_fold,
+              model = r$model[[1]],
+              alpha = a,
+              shard = shard,
+              seed_scheme = current_seed_scheme()
+            )
+          )
+
+          res_row
+        }
+      })
+
+      if (can_furrr) {
+        f_opts <- furrr::furrr_options(
+          seed = TRUE,
+          packages = furrr_pkgs,
+          chunk_size = chunk_size
+        )
+        res_list <- furrr::future_map2(
+          active_indices,
+          task_seeds[active_indices],
+          score_one_task,
+          .options = f_opts,
+          .progress = progress
+        )
+      } else {
+        res_list <- purrr::map2(
+          active_indices,
+          task_seeds[active_indices],
+          score_one_task
+        )
+      }
+
+      res_tbl <- dplyr::bind_rows(res_list)
+      if (!is.data.frame(res_tbl) || nrow(res_tbl) == 0L || all(is.na(res_tbl$IBS))) {
+        stop("All candidate model fits failed in score_outer().", call. = FALSE)
+      }
+      n_failed <- sum(is.na(res_tbl$IBS))
+      if (n_failed > 0L) {
+        warning(sprintf("%d candidate model fit(s) failed in score_outer().", n_failed), call. = FALSE)
+      }
+      attr(res_tbl, "checkpoint_run_fingerprint") <- run_fp
+      attr(res_tbl, "seed_scheme") <- current_seed_scheme()
+      res_tbl
+    }
+  )
 }
 
 #' Tidy Outer Model Coefficients into Long Format
@@ -619,6 +728,57 @@ plot_outer_importance <- function(x,
 }
 
 
+#' Check Whether Any Training Split Contains Censored Subjects (E3)
+#'
+#' @keywords internal
+#' @noRd
+has_censored_subjects_in_splits <- function(object, recipe = NULL, dots = list()) {
+  splits <- if (inherits(object, "rsplit")) {
+    list(object)
+  } else if (inherits(object, "nested_cv") || inherits(object, "rset") ||
+             (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits))) {
+    object$splits
+  } else if (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit"))) {
+    object
+  } else {
+    return(TRUE)
+  }
+
+  id_col <- dots$id_col %||% "id"
+  status_col <- dots$status_col %||% "status"
+
+  for (sp in splits) {
+    train_raw <- tryCatch(rsample::analysis(sp), error = function(e) NULL)
+    if (is.null(train_raw) || !is.data.frame(train_raw)) {
+      return(TRUE)
+    }
+    check_df <- train_raw
+    if (!(status_col %in% names(check_df)) && inherits(recipe, "recipe")) {
+      check_df <- tryCatch({
+        rec_bound <- bind_recipes_namespace(recipe)
+        prepped <- recipes::prep(rec_bound, training = train_raw)
+        recipes::bake(prepped, new_data = train_raw)
+      }, error = function(e) train_raw)
+    }
+    if (!(status_col %in% names(check_df))) {
+      return(TRUE)
+    }
+    status_vec <- check_df[[status_col]]
+    if (anyNA(status_vec)) {
+      return(TRUE)
+    }
+    has_cens <- if (id_col %in% names(check_df)) {
+      any(!tapply(status_vec != 0, check_df[[id_col]], any))
+    } else {
+      any(status_vec == 0)
+    }
+    if (isTRUE(has_cens)) {
+      return(TRUE)
+    }
+  }
+  FALSE
+}
+
 #' Compare Model Performance Under Unweighted and IPCW Censoring Weights
 #'
 #' Evaluates candidate models on an outer resampling split under both `"none"`
@@ -626,6 +786,10 @@ plot_outer_importance <- function(x,
 #' weighted scoring), returning a tidy side-by-side comparison table of integrated
 #' Brier scores (IBS) and model ranks, along with rank agreement statistics
 #' (Spearman rank correlation and Kendall's tau).
+#'
+#' When the training data across splits contains no censored subjects, this is
+#' detected before model fitting so [score_outer()] is run only once and both
+#' `ibs_none` and `ibs_ipcw` are populated from that single fit.
 #'
 #' Alternatively, accepts two precomputed tables of model evaluations (one under
 #' `"none"` and one under `"ipcw"`) and merges them into the comparison table.
@@ -638,6 +802,8 @@ plot_outer_importance <- function(x,
 #' @param recipe Preprocessing recipe passed to [score_outer()].
 #' @param ... Additional arguments passed to [glmnet_IBS()] through [score_outer()].
 #' @param seed Optional integer seed for reproducible draws and fitting.
+#' @param on_complete Optional callback `function(result)` invoked when the run
+#'   finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param progress Show progress bar (default `FALSE`).
 #' @return A tibble with columns:
 #'   \item{outer_fold}{Outer fold identifier (if present)}
@@ -650,8 +816,9 @@ plot_outer_importance <- function(x,
 #'   \item{rank_ipcw}{Model rank under IPCW IBS (1 = best / lowest IBS)}
 #'   \item{rank_diff}{`rank_ipcw - rank_none`}
 #'
-#' The returned object has attribute `"rank_agreement"` containing a named list with
-#' `spearman` (Spearman's rank correlation) and `kendall` (Kendall's rank correlation).
+#' The returned object has attributes `"rank_agreement"` (containing `spearman`
+#' and `kendall`), `"single_fit_no_censoring"` (`TRUE` when the duplicate fit was
+#' skipped), and `"n_score_outer_runs"`.
 #' @seealso [score_outer()], [glmnet_IBS()], [select_candidate_models()]
 #' @export
 compare_censoring_weights <- function(object,
@@ -659,98 +826,136 @@ compare_censoring_weights <- function(object,
                                       recipe = NULL,
                                       ...,
                                       seed = NULL,
+                                      on_complete = getOption("templecbe.on_complete", NULL),
                                       progress = FALSE) {
   shared_seed <- if (!is.null(seed)) seed else sample.int(1e9, 1L)
+  dots <- list(...)
 
-  if (is.data.frame(object) && !("splits" %in% names(object)) && any(c("IBS", "ibs_none") %in% names(object)) && is.data.frame(grid)) {
-    # Pre-scored tables mode
-    tbl_none <- tibble::as_tibble(object)
-    tbl_ipcw <- tibble::as_tibble(grid)
+  run_with_on_complete(
+    fn_name = "compare_censoring_weights",
+    on_complete = on_complete,
+    meta = list(seed = shared_seed),
+    expr = {
+      single_fit_no_censoring <- FALSE
+      n_score_outer_runs <- 0L
 
-    ibs_col_none <- if ("ibs_none" %in% names(tbl_none)) "ibs_none" else if ("IBS" %in% names(tbl_none)) "IBS" else stop("First table must contain 'IBS' or 'ibs_none'.", call. = FALSE)
-    ibs_col_ipcw <- if ("ibs_ipcw" %in% names(tbl_ipcw)) "ibs_ipcw" else if ("IBS" %in% names(tbl_ipcw)) "IBS" else stop("Second table must contain 'IBS' or 'ibs_ipcw'.", call. = FALSE)
+      if (is.data.frame(object) && !("splits" %in% names(object)) && any(c("IBS", "ibs_none") %in% names(object)) && is.data.frame(grid)) {
+        # Pre-scored tables mode
+        tbl_none <- tibble::as_tibble(object)
+        tbl_ipcw <- tibble::as_tibble(grid)
 
-    id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), intersect(names(tbl_none), names(tbl_ipcw)))
-    if (length(id_cols) == 0) {
-      tbl_none$model <- paste0("model_", seq_len(nrow(tbl_none)))
-      tbl_ipcw$model <- paste0("model_", seq_len(nrow(tbl_ipcw)))
-      id_cols <- "model"
+        ibs_col_none <- if ("ibs_none" %in% names(tbl_none)) "ibs_none" else if ("IBS" %in% names(tbl_none)) "IBS" else stop("First table must contain 'IBS' or 'ibs_none'.", call. = FALSE)
+        ibs_col_ipcw <- if ("ibs_ipcw" %in% names(tbl_ipcw)) "ibs_ipcw" else if ("IBS" %in% names(tbl_ipcw)) "IBS" else stop("Second table must contain 'IBS' or 'ibs_ipcw'.", call. = FALSE)
+
+        id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), intersect(names(tbl_none), names(tbl_ipcw)))
+        if (length(id_cols) == 0) {
+          tbl_none$model <- paste0("model_", seq_len(nrow(tbl_none)))
+          tbl_ipcw$model <- paste0("model_", seq_len(nrow(tbl_ipcw)))
+          id_cols <- "model"
+        }
+
+        sub_none <- dplyr::select(tbl_none, dplyr::all_of(c(id_cols, ibs_col_none)))
+        sub_none <- dplyr::rename(sub_none, ibs_none = !!ibs_col_none)
+
+        sub_ipcw <- dplyr::select(tbl_ipcw, dplyr::all_of(c(id_cols, ibs_col_ipcw)))
+        sub_ipcw <- dplyr::rename(sub_ipcw, ibs_ipcw = !!ibs_col_ipcw)
+
+        out <- dplyr::inner_join(sub_none, sub_ipcw, by = id_cols)
+      } else if (inherits(object, "rsplit") || inherits(object, "nested_cv") || inherits(object, "rset") || (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits)) || (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit")))) {
+        if (is.null(recipe)) {
+          stop("`recipe` is required when scoring on an rsplit `object`.", call. = FALSE)
+        }
+        has_cens <- has_censored_subjects_in_splits(object, recipe = recipe, dots = dots)
+        if (!has_cens) {
+          single_fit_no_censoring <- TRUE
+          n_score_outer_runs <- 1L
+          freq <- if (isTRUE(getOption("templecbe_suppress_frequency_limit", FALSE))) "always" else "once"
+          rlang::inform(
+            "Training data contains no censored subjects; running score_outer() once and returning both 'ibs_none' and 'ibs_ipcw' from the single fit.",
+            .frequency = freq,
+            .frequency_id = "TempleCBE_compare_censoring_weights_no_censoring_single_fit"
+          )
+          scored_once <- score_outer(
+            object, grid, recipe = recipe, ...,
+            censoring_weights = "none", seed = shared_seed,
+            on_complete = NULL, progress = progress
+          )
+          id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(scored_once))
+          out <- dplyr::select(scored_once, dplyr::all_of(id_cols))
+          out$ibs_none <- scored_once$IBS
+          out$ibs_ipcw <- scored_once$IBS
+          attr(out, "scored_outer") <- scored_once
+        } else {
+          n_score_outer_runs <- 2L
+          scored_none <- score_outer(
+            object, grid, recipe = recipe, ...,
+            censoring_weights = "none", seed = shared_seed,
+            on_complete = NULL, progress = progress
+          )
+          scored_ipcw <- score_outer(
+            object, grid, recipe = recipe, ...,
+            censoring_weights = "ipcw", seed = shared_seed,
+            on_complete = NULL, progress = progress
+          )
+
+          id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(scored_none))
+          out <- dplyr::inner_join(
+            dplyr::select(scored_none, dplyr::all_of(c(id_cols, "IBS"))),
+            dplyr::select(scored_ipcw, dplyr::all_of(c(id_cols, "IBS"))),
+            by = id_cols,
+            suffix = c("_none", "_ipcw")
+          )
+          out <- dplyr::rename(out, ibs_none = .data$IBS_none, ibs_ipcw = .data$IBS_ipcw)
+        }
+      } else {
+        stop("`object` must be an rsplit, nested_cv, list of rsplits, or a data frame.", call. = FALSE)
+      }
+
+      if ("outer_fold" %in% names(out)) {
+        out <- dplyr::group_by(out, .data$outer_fold)
+        out <- dplyr::mutate(
+          out,
+          rank_none = rank(.data$ibs_none, ties.method = "min", na.last = "keep"),
+          rank_ipcw = rank(.data$ibs_ipcw, ties.method = "min", na.last = "keep"),
+          rank_diff = .data$rank_ipcw - .data$rank_none
+        )
+        out <- dplyr::ungroup(out)
+      } else {
+        out$rank_none <- rank(out$ibs_none, ties.method = "min", na.last = "keep")
+        out$rank_ipcw <- rank(out$ibs_ipcw, ties.method = "min", na.last = "keep")
+        out$rank_diff <- out$rank_ipcw - out$rank_none
+      }
+
+      n_valid <- sum(!is.na(out$ibs_none) & !is.na(out$ibs_ipcw))
+      if (n_valid == 0L) {
+        stop("All model evaluations failed in compare_censoring_weights().", call. = FALSE)
+      }
+
+      is_identical <- n_valid > 0L && all(abs(out$ibs_none - out$ibs_ipcw) < 1e-12, na.rm = TRUE)
+      if (is_identical) {
+        rlang::inform(
+          "Censoring weights 'none' and 'ipcw' produce identical scores across all models.",
+          .frequency = "once",
+          .frequency_id = "TempleCBE_compare_censoring_weights_identical"
+        )
+        spearman_rho <- 1.0
+        kendall_tau <- 1.0
+      } else {
+        spearman_rho <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "spearman", use = "complete.obs") else NA_real_
+        kendall_tau <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "kendall", use = "complete.obs") else NA_real_
+      }
+
+      attr(out, "seed") <- shared_seed
+      attr(out, "single_fit_no_censoring") <- single_fit_no_censoring
+      attr(out, "n_score_outer_runs") <- n_score_outer_runs
+      attr(out, "rank_agreement") <- list(
+        spearman = spearman_rho,
+        kendall = kendall_tau
+      )
+
+      out
     }
-
-    sub_none <- dplyr::select(tbl_none, dplyr::all_of(c(id_cols, ibs_col_none)))
-    sub_none <- dplyr::rename(sub_none, ibs_none = !!ibs_col_none)
-
-    sub_ipcw <- dplyr::select(tbl_ipcw, dplyr::all_of(c(id_cols, ibs_col_ipcw)))
-    sub_ipcw <- dplyr::rename(sub_ipcw, ibs_ipcw = !!ibs_col_ipcw)
-
-    out <- dplyr::inner_join(sub_none, sub_ipcw, by = id_cols)
-  } else if (inherits(object, "rsplit") || inherits(object, "nested_cv") || inherits(object, "rset") || (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits)) || (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit")))) {
-    if (is.null(recipe)) {
-      stop("`recipe` is required when scoring on an rsplit `object`.", call. = FALSE)
-    }
-    # Direct evaluation mode
-    scored_none <- score_outer(
-      object, grid, recipe = recipe, ...,
-      censoring_weights = "none", seed = shared_seed, progress = progress
-    )
-    scored_ipcw <- score_outer(
-      object, grid, recipe = recipe, ...,
-      censoring_weights = "ipcw", seed = shared_seed, progress = progress
-    )
-
-    id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), names(scored_none))
-    out <- dplyr::inner_join(
-      dplyr::select(scored_none, dplyr::all_of(c(id_cols, "IBS"))),
-      dplyr::select(scored_ipcw, dplyr::all_of(c(id_cols, "IBS"))),
-      by = id_cols,
-      suffix = c("_none", "_ipcw")
-    )
-    out <- dplyr::rename(out, ibs_none = .data$IBS_none, ibs_ipcw = .data$IBS_ipcw)
-  } else {
-    stop("`object` must be an rsplit, nested_cv, list of rsplits, or a data frame.", call. = FALSE)
-  }
-
-  if ("outer_fold" %in% names(out)) {
-    out <- dplyr::group_by(out, .data$outer_fold)
-    out <- dplyr::mutate(
-      out,
-      rank_none = rank(.data$ibs_none, ties.method = "min", na.last = "keep"),
-      rank_ipcw = rank(.data$ibs_ipcw, ties.method = "min", na.last = "keep"),
-      rank_diff = .data$rank_ipcw - .data$rank_none
-    )
-    out <- dplyr::ungroup(out)
-  } else {
-    out$rank_none <- rank(out$ibs_none, ties.method = "min", na.last = "keep")
-    out$rank_ipcw <- rank(out$ibs_ipcw, ties.method = "min", na.last = "keep")
-    out$rank_diff <- out$rank_ipcw - out$rank_none
-  }
-
-  n_valid <- sum(!is.na(out$ibs_none) & !is.na(out$ibs_ipcw))
-  if (n_valid == 0L) {
-    stop("All model evaluations failed in compare_censoring_weights().", call. = FALSE)
-  }
-
-  is_identical <- n_valid > 0L && all(abs(out$ibs_none - out$ibs_ipcw) < 1e-12, na.rm = TRUE)
-  if (is_identical) {
-    rlang::inform(
-      "Censoring weights 'none' and 'ipcw' produce identical scores across all models.",
-      .frequency = "once",
-      .frequency_id = "TempleCBE_compare_censoring_weights_identical"
-    )
-    spearman_rho <- 1.0
-    kendall_tau <- 1.0
-  } else {
-    spearman_rho <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "spearman", use = "complete.obs") else NA_real_
-    kendall_tau <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "kendall", use = "complete.obs") else NA_real_
-  }
-
-  attr(out, "seed") <- shared_seed
-  attr(out, "rank_agreement") <- list(
-    spearman = spearman_rho,
-    kendall = kendall_tau
   )
-
-  out
 }
 
 #' Select Candidate Models From Tuning Results

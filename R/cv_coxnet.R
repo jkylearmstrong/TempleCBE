@@ -88,6 +88,9 @@
 #'   in both the analysis and the assessment set of a split; see Details. `FALSE`
 #'   skips the check. Folds that `cv_coxnet()` builds itself are never checked,
 #'   as they are grouped by subject already.
+#' @param on_complete Optional callback `function(result)` invoked when
+#'   `cv_coxnet()` finishes or errors (defaults to
+#'   `getOption("templecbe.on_complete", NULL)`).
 #' @param ... Further arguments passed to [glmnet::glmnet()], such as
 #'   `cox.ties` or `nlambda`.
 #' @return A `cv_coxnet` object, with:
@@ -148,13 +151,16 @@ cv_coxnet.default <- function(x, ...) {
 cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                                  resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                                  metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                                 parallel = FALSE, check_subject_overlap = TRUE, ...) {
-  cv_coxnet_impl(
-    spec_xy(x, y, subject_id, group),
-    mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
-    eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-    parallel = parallel, check_subject_overlap = check_subject_overlap, ...
-  )
+                                 parallel = FALSE, check_subject_overlap = TRUE,
+                                 on_complete = getOption("templecbe.on_complete", NULL), ...) {
+  run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
+    cv_coxnet_impl(
+      spec_xy(x, y, subject_id, group),
+      mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
+      eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
+      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+    )
+  })
 }
 
 #' @rdname cv_coxnet
@@ -162,13 +168,16 @@ cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture 
 cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                             parallel = FALSE, check_subject_overlap = TRUE, ...) {
-  cv_coxnet_impl(
-    spec_xy(matrix_to_df(x), y, subject_id, group),
-    mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
-    eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-    parallel = parallel, check_subject_overlap = check_subject_overlap, ...
-  )
+                             parallel = FALSE, check_subject_overlap = TRUE,
+                             on_complete = getOption("templecbe.on_complete", NULL), ...) {
+  run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
+    cv_coxnet_impl(
+      spec_xy(matrix_to_df(x), y, subject_id, group),
+      mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
+      eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
+      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+    )
+  })
 }
 
 #' @rdname cv_coxnet
@@ -176,13 +185,16 @@ cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1,
 cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                               resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                               metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                              parallel = FALSE, check_subject_overlap = TRUE, ...) {
-  cv_coxnet_impl(
-    spec_formula(formula, data, subject_id, group),
-    mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
-    eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-    parallel = parallel, check_subject_overlap = check_subject_overlap, ...
-  )
+                              parallel = FALSE, check_subject_overlap = TRUE,
+                              on_complete = getOption("templecbe.on_complete", NULL), ...) {
+  run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
+    cv_coxnet_impl(
+      spec_formula(formula, data, subject_id, group),
+      mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
+      eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
+      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+    )
+  })
 }
 
 #' @rdname cv_coxnet
@@ -190,13 +202,16 @@ cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mi
 cv_coxnet.recipe <- function(x, data, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                             parallel = FALSE, check_subject_overlap = TRUE, ...) {
-  cv_coxnet_impl(
-    spec_recipe(x, data, subject_id, group),
-    mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
-    eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-    parallel = parallel, check_subject_overlap = check_subject_overlap, ...
-  )
+                             parallel = FALSE, check_subject_overlap = TRUE,
+                             on_complete = getOption("templecbe.on_complete", NULL), ...) {
+  run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
+    cv_coxnet_impl(
+      spec_recipe(x, data, subject_id, group),
+      mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
+      eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
+      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+    )
+  })
 }
 
 #' Use a `cv_coxnet` Result

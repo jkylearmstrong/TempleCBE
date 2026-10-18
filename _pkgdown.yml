@@ -31,6 +31,7 @@ articles:
     contents:
       - eda_and_missingness
       - nested_survival_cv
+      - rossi_nested_survival
       - compute_graph
       - sas_survival
       - R_to_SAS
@@ -138,7 +139,12 @@ reference:
       - tune_over_alpha
       - summarize_tune_results
       - collect_checkpoints
+      - clean_checkpoints
       - estimate_runtime
+      - cbe_nested_survival_run
+      - summary.cbe_nested_survival_run
+      - plot.cbe_nested_survival_run
+      - tidy.cbe_nested_survival_run
       - compare_censoring_weights
       - score_outer
       - select_candidate_models
@@ -291,6 +297,9 @@ reference:
       - render_me
       - zip_reports
       - write_run_manifest
+      - repro_appendix
+      - repro_appendix_template
+      - cbe_domain_children
       - check_renv_guard
       - extract_yaml_formats
       - scan_data_io

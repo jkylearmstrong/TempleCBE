@@ -4,7 +4,12 @@
 \alias{write_run_manifest}
 \title{Write a Run Manifest JSON Beside Render Outputs}
 \usage{
-write_run_manifest(output_dir, targets_result, seed = NULL)
+write_run_manifest(
+  output_dir,
+  targets_result,
+  seed = NULL,
+  seed_scheme = current_seed_scheme()
+)
 }
 \arguments{
 \item{output_dir}{Directory to write `render_manifest.json` into.}
@@ -12,6 +17,9 @@ write_run_manifest(output_dir, targets_result, seed = NULL)
 \item{targets_result}{Data frame of render timing and status from [render()].}
 
 \item{seed}{Optional integer RNG seed used for the run.}
+
+\item{seed_scheme}{Task seed generation scheme identifier (defaults to
+`current_seed_scheme()`, `"v0.5.6"`).}
 }
 \value{
 The absolute path to the written `render_manifest.json` file.
