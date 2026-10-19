@@ -1,4 +1,4 @@
-# Unit tests for cbe_docx_review_extract and supporting functions
+# Unit tests for docx_review_extract and supporting functions
 
 # =============================================================================
 # SYNTHETIC DOCX HELPER
@@ -373,7 +373,7 @@ test_that("apply_reviewer_fork_overlays pulls edits from reviewer fork files", {
 # TESTS: END-TO-END WORKFLOW
 # =============================================================================
 
-test_that("cbe_docx_review_extract completes end-to-end and generates all artifacts", {
+test_that("docx_review_extract completes end-to-end and generates all artifacts", {
   skip_if_not(requireNamespace("openxlsx", quietly = TRUE), "openxlsx not available")
 
   tmp_dir <- tempfile(pattern = "test_e2e_")
@@ -432,7 +432,7 @@ test_that("cbe_docx_review_extract completes end-to-end and generates all artifa
 
   out_dir <- file.path(tmp_dir, "output")
 
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     tracker = "review_tracker.xlsx",
@@ -563,7 +563,7 @@ test_that("three reviewers signing off across separate forks achieve consensus i
   out_dir <- file.path(tmp_dir, "tracker_out")
 
   # Run 1: Initial extraction
-  res1 <- cbe_docx_review_extract(
+  res1 <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     fork_reviewers = c("rev_a", "rev_b", "rev_c")
@@ -588,7 +588,7 @@ test_that("three reviewers signing off across separate forks achieve consensus i
   openxlsx::saveWorkbook(wb_rev_c, rev_c_fork, overwrite = TRUE)
 
   # Run 2: Re-run extraction, pulling all 3 forks back into master
-  res2 <- cbe_docx_review_extract(
+  res2 <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     fork_reviewers = c("rev_a", "rev_b", "rev_c")
@@ -671,7 +671,7 @@ test_that("extract_docx_stem recognizes a configured reviewer id longer than gen
   expect_equal(extract_docx_stem("eda_longreviewerid_11_21_25.docx", reviewer_ids = character(0)), "eda_longreviewerid")
 })
 
-test_that("cbe_docx_review_extract works end-to-end with arbitrarily named, non-default reviewers", {
+test_that("docx_review_extract works end-to-end with arbitrarily named, non-default reviewers", {
   skip_if_not(requireNamespace("openxlsx", quietly = TRUE), "openxlsx not available")
 
   tmp_dir <- tempfile(pattern = "test_custom_reviewers_")
@@ -705,7 +705,7 @@ test_that("cbe_docx_review_extract works end-to-end with arbitrarily named, non-
   fork_reviewers <- c("alpha", "beta", "gamma", "delta")
   signoff_reviewers <- "lead_pi"
 
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     fork_reviewers = fork_reviewers,
@@ -745,7 +745,7 @@ test_that("cbe_docx_review_extract works end-to-end with arbitrarily named, non-
   expect_false(file.exists(file.path(out_dir, sprintf("review_tracker_%s.xlsx", signoff_reviewers))))
 })
 
-test_that("cbe_docx_review_extract supports zero fork reviewers with only a sign-off reviewer", {
+test_that("docx_review_extract supports zero fork reviewers with only a sign-off reviewer", {
   skip_if_not(requireNamespace("openxlsx", quietly = TRUE), "openxlsx not available")
 
   tmp_dir <- tempfile(pattern = "test_signoff_only_")
@@ -756,7 +756,7 @@ test_that("cbe_docx_review_extract supports zero fork reviewers with only a sign
   create_synthetic_docx(doc_file)
 
   out_dir <- file.path(tmp_dir, "output")
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     fork_reviewers = character(0),
@@ -788,7 +788,7 @@ test_that("documents_sheet_mode = 'per_reviewer' writes one Documents_<id> sheet
   fork_reviewers <- c("alpha", "beta")
   signoff_reviewers <- "lead_pi"
 
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     input_dir = tmp_dir,
     output_dir = out_dir,
     fork_reviewers = fork_reviewers,
@@ -855,7 +855,7 @@ test_that("the defaults name no reviewer: they resolve to generic placeholders",
   on.exit(options(old), add = TRUE)
 
   # Reviewer arguments default to NULL, i.e. "ask review_config()"
-  fm <- formals(cbe_docx_review_extract)
+  fm <- formals(docx_review_extract)
   expect_null(fm$fork_reviewers)
   expect_null(fm$signoff_reviewers)
   expect_null(fm$documents_sheet_mode)
@@ -872,7 +872,7 @@ test_that("the defaults name no reviewer: they resolve to generic placeholders",
   write_min_review_docx(file.path(tmp_dir, "eda_11_21_25.docx"))
   out_dir <- file.path(tmp_dir, "output")
 
-  res <- cbe_docx_review_extract(tmp_dir, out_dir)
+  res <- docx_review_extract(tmp_dir, out_dir)
 
   # Every reviewer column and fork workbook is a generic placeholder
   base_cols <- canonical_columns(character(0), character(0))
@@ -908,7 +908,7 @@ test_that("the tracker columns and fork workbooks are exactly the configured rev
   out_dir <- file.path(tmp_dir, "output")
 
   review_config(fork_reviewers = c("rev_x", "rev_y"), signoff_reviewers = "lead_pi")
-  cbe_docx_review_extract(tmp_dir, out_dir)
+  docx_review_extract(tmp_dir, out_dir)
 
   master <- file.path(out_dir, "review_tracker.xlsx")
   expect_equal(
@@ -990,19 +990,19 @@ test_that("a tracker written under other reviewer ids stays readable and warns",
 
   # A tracker created under project-specific ids; rev_a signs off in their fork
   old_ids <- list(fork_reviewers = c("rev_a", "rev_b"), signoff_reviewers = "lead_pi")
-  expect_warning(do.call(cbe_docx_review_extract, c(list(tmp_dir, out_dir), old_ids)), NA)
+  expect_warning(do.call(docx_review_extract, c(list(tmp_dir, out_dir), old_ids)), NA)
   fork <- file.path(out_dir, "review_tracker_rev_a.xlsx")
   wb <- openxlsx::loadWorkbook(fork)
   fork_cols <- names(openxlsx::read.xlsx(fork, sheet = "Comments"))
   openxlsx::writeData(wb, "Comments", "TRUE", startCol = which(fork_cols == "rev_a"), startRow = 2)
   openxlsx::saveWorkbook(wb, fork, overwrite = TRUE)
-  merged <- do.call(cbe_docx_review_extract, c(list(tmp_dir, out_dir), old_ids))
+  merged <- do.call(docx_review_extract, c(list(tmp_dir, out_dir), old_ids))
   expect_equal(merged$comments$rev_a, "TRUE")
 
   # Re-running with the generic defaults must not lose the old sign-off, and
   # must say which reviewers it no longer merges
   expect_warning(
-    generic <- cbe_docx_review_extract(tmp_dir, out_dir),
+    generic <- docx_review_extract(tmp_dir, out_dir),
     "not configured: .*rev_a"
   )
   expect_equal(generic$comments$rev_a, "TRUE")
@@ -1010,7 +1010,7 @@ test_that("a tracker written under other reviewer ids stays readable and warns",
 
   # Configuring the old ids again restores the old behaviour, silently
   expect_warning(
-    restored <- do.call(cbe_docx_review_extract, c(list(tmp_dir, out_dir), old_ids)),
+    restored <- do.call(docx_review_extract, c(list(tmp_dir, out_dir), old_ids)),
     NA
   )
   expect_equal(restored$comments$rev_a, "TRUE")

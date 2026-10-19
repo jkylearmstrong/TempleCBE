@@ -1,4 +1,4 @@
-# Privacy and hardening tests for cbe_docx_review_extract() (audit chunk A6).
+# Privacy and hardening tests for docx_review_extract() (audit chunk A6).
 # All reviewer ids, stage names and texts below are invented.
 
 # =============================================================================
@@ -35,7 +35,7 @@ test_that("review_config() rejects reviewer ids that cannot be used in names, pa
   expect_equal(review_config(fork_reviewers = character(0))$fork_reviewers, character(0))
 })
 
-test_that("cbe_docx_review_extract() validates reviewer ids passed as arguments before writing anything (A6-16)", {
+test_that("docx_review_extract() validates reviewer ids passed as arguments before writing anything (A6-16)", {
   skip_if_not_installed("openxlsx")
   old <- review_options_reset()
   on.exit(options(old), add = TRUE)
@@ -45,10 +45,10 @@ test_that("cbe_docx_review_extract() validates reviewer ids passed as arguments 
   on.exit(unlink(input, recursive = TRUE), add = TRUE)
   build_review_docx(file.path(input, "doc_one.docx"))
 
-  expect_error(cbe_docx_review_extract(input, fork_reviewers = c("rev_a", "../evil")), "Invalid reviewer id")
-  expect_error(cbe_docx_review_extract(input, signoff_reviewers = "c++"), "Invalid reviewer id")
+  expect_error(docx_review_extract(input, fork_reviewers = c("rev_a", "../evil")), "Invalid reviewer id")
+  expect_error(docx_review_extract(input, signoff_reviewers = "c++"), "Invalid reviewer id")
   expect_error(
-    cbe_docx_review_extract(input, fork_reviewers = "a_long_reviewer_identifier_abc", documents_sheet_mode = "per_reviewer"),
+    docx_review_extract(input, fork_reviewers = "a_long_reviewer_identifier_abc", documents_sheet_mode = "per_reviewer"),
     "longer than 20"
   )
   # Rejected before the output folder, a backup or a workbook is created
@@ -56,7 +56,7 @@ test_that("cbe_docx_review_extract() validates reviewer ids passed as arguments 
 
   # The longest allowed id still fits the 31-character sheet-name limit in per_reviewer mode
   longest <- strrep("r", 20)
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     input,
     fork_reviewers = longest, signoff_reviewers = "lead_x",
     documents_sheet_mode = "per_reviewer"
@@ -116,7 +116,7 @@ test_that("the sign-off reviewer's private note and the other fork reviewers nev
 
   fx <- fork_fixture()
   run <- function() {
-    cbe_docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
+    docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
   }
   res <- run()
 
@@ -160,7 +160,7 @@ test_that("a fork's Documents sheet is filtered the same way in both documents_s
 
   for (mode in c("columns", "per_reviewer")) {
     fx <- fork_fixture()
-    res <- cbe_docx_review_extract(
+    res <- docx_review_extract(
       fx$input, fx$out,
       fork_reviewers = fx$fork, signoff_reviewers = fx$signoff, documents_sheet_mode = mode
     )
@@ -214,7 +214,7 @@ test_that("a fork carries no sign-off columns and no Word author column on any s
   on.exit(options(old), add = TRUE)
 
   fx <- fork_fixture()
-  res <- cbe_docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
+  res <- docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
 
   for (sheet in c("Comments", "SuggestedChanges", "TrackedChanges")) {
     master_cols <- names(openxlsx::read.xlsx(res$paths$master, sheet = sheet))
@@ -239,7 +239,7 @@ test_that("the CSV exports leave out sign-off columns and authors unless review_
   read_csv_names <- function(path) names(utils::read.csv(path, nrows = 1, check.names = FALSE))
   run <- function() {
     fx <- fork_fixture(parent.frame())
-    res <- cbe_docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
+    res <- docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork, signoff_reviewers = fx$signoff)
     lapply(res$paths[c("comments_csv", "tracked_changes_csv", "suggested_changes_csv")], read_csv_names)
   }
 
@@ -307,7 +307,7 @@ test_that("no CSV export holds a live formula, whether Word text or a reviewer's
     insertions = list(list(author = "Word Author Two", text = "=1+1 inserted", para = 5))
   )
   out <- file.path(input, "out")
-  run <- function() cbe_docx_review_extract(input, out, fork_reviewers = "rev_a")
+  run <- function() docx_review_extract(input, out, fork_reviewers = "rev_a")
   res <- run()
 
   # A reviewer types a formula-looking note into their own comment column of the fork
@@ -408,7 +408,7 @@ test_that("a failed document's stored error text names no local path, but verbos
   out <- file.path(input, "out")
   # a document that fails to extract is reported in one warning (A6-10), which names the file only
   expect_warning(
-    res <- cbe_docx_review_extract(input, out, fork_reviewers = "rev_a"),
+    res <- docx_review_extract(input, out, fork_reviewers = "rev_a"),
     "1 Word file\\(s\\) could not be read.*broken\\.docx"
   )
 
@@ -432,7 +432,7 @@ test_that("a failed document's stored error text names no local path, but verbos
   # The console keeps the full message when asked to be verbose
   console <- character(0)
   withCallingHandlers(
-    utils::capture.output(cbe_docx_review_extract(input, out, fork_reviewers = "rev_a", verbose = TRUE)),
+    utils::capture.output(docx_review_extract(input, out, fork_reviewers = "rev_a", verbose = TRUE)),
     message = function(m) {
       console <<- c(console, conditionMessage(m))
       invokeRestart("muffleMessage")
@@ -448,7 +448,7 @@ test_that("workbooks do not carry the operating-system account name as author (A
   on.exit(options(old), add = TRUE)
 
   fx <- fork_fixture()
-  res <- cbe_docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork)
+  res <- docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork)
   account <- c(Sys.getenv("USERNAME"), Sys.getenv("USER"), Sys.info()[["user"]])
   account <- unique(account[nzchar(account)])
 
@@ -536,7 +536,7 @@ test_that("the docXwalk sheets of the master and of a fork never hold an absolut
   fx <- fork_fixture()
   elsewhere <- withr::local_tempdir(pattern = "a6_cwd_")
   withr::local_dir(elsewhere)
-  res <- cbe_docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork)
+  res <- docx_review_extract(fx$input, fx$out, fork_reviewers = fx$fork)
 
   for (workbook in c(res$paths$master, res$paths$forks[["rev_a"]])) {
     walk <- openxlsx::read.xlsx(workbook, sheet = "docXwalk")
@@ -689,7 +689,7 @@ test_that("documents are labelled and ordered by the configured stages, and are 
     file.path(input, "omega_step.docx"),
     comments = list(list(id = 0, author = "Word Author One", text = "note on omega", para = 1))
   )
-  run <- function(out) cbe_docx_review_extract(input, file.path(input, out), fork_reviewers = "rev_a", verbose = TRUE)
+  run <- function(out) docx_review_extract(input, file.path(input, out), fork_reviewers = "rev_a", verbose = TRUE)
   quietly <- function(code) {
     console <- character(0)
     res <- withCallingHandlers(

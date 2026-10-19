@@ -147,7 +147,7 @@ test_that("tracked changes, comments and redlines number paragraphs the same way
 
   # The same agreement holds in what a run reports (and sorts by)
   a6_options()
-  out <- cbe_docx_review_extract(d, output_dir = file.path(d, "out"))
+  out <- docx_review_extract(d, output_dir = file.path(d, "out"))
   expect_equal(out$revisions$paragraph_number, c(2L, 3L, 6L))
   tc <- a6_sheet(out$paths$master, "TrackedChanges")
   expect_equal(tc$paragraph_number, c("2", "3", "6"))
@@ -273,7 +273,7 @@ test_that("a second round with a new comment, a signed-off comment and a documen
     paste0(a6_commented_para(0, "intro text"), a6_para("Intro.", ins = "added intro")),
     comments = a6_comment(0, "intro comment")
   )
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(nrow(r1$comments), 3)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "second comment",
                list(rev_a = "TRUE", rev_a_comment = "checked"))
@@ -287,7 +287,7 @@ test_that("a second round with a new comment, a signed-off comment and a documen
            a6_para("Gamma.", ins = "added gamma"), a6_para("Epsilon.", ins = "added epsilon")),
     comments = c(a6_comment(0, "first comment"), a6_comment(1, "second comment"), a6_comment(2, "third comment"))
   )
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
 
   expect_setequal(r2$comments$comment_text, c("first comment", "second comment", "third comment", "intro comment"))
   expect_equal(r2$comments$rev_a[r2$comments$comment_text == "second comment"], "TRUE")
@@ -303,7 +303,7 @@ test_that("a second round with a new comment, a signed-off comment and a documen
   expect_type(r2$redlines$is_toc_or_lof, "logical")
 
   # and the round-2 workbook can be merged again
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(nrow(r3$comments), 4)
 })
 
@@ -316,11 +316,11 @@ test_that("a signed-off comment deleted from the document is kept as a prior-rou
 
   a6_docx(docx, paste0(a6_commented_para(0, "alpha"), a6_commented_para(1, "beta")),
           comments = c(a6_comment(0, "keep me"), a6_comment(1, "delete me")))
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "delete me", list(rev_a = "TRUE"))
 
   a6_docx(docx, a6_commented_para(0, "alpha"), comments = a6_comment(0, "keep me"))
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
 
   expect_equal(nrow(r2$comments), 2)
   gone <- r2$comments[r2$comments$comment_text == "delete me", ]
@@ -482,12 +482,12 @@ test_that("a reviewer's sign-off survives a round in which Word renumbered the c
   body <- function(n) paste0(vapply(seq_len(n) - 1L, function(i) a6_commented_para(i, paste("text", i)), ""), collapse = "")
 
   a6_docx(docx, body(2), comments = c(a6_comment(0, "first comment"), a6_comment(1, "second comment")))
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "second comment",
                list(rev_a = "TRUE", rev_a_comment = "I checked the SECOND comment"))
 
   a6_docx(docx, body(2), comments = c(a6_comment(0, "second comment"), a6_comment(1, "first comment")))
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
   second <- r2$comments[r2$comments$comment_text == "second comment", ]
   first <- r2$comments[r2$comments$comment_text == "first comment", ]
   expect_equal(second$comment_id, "0")
@@ -497,7 +497,7 @@ test_that("a reviewer's sign-off survives a round in which Word renumbered the c
   expect_true(is.na(first$rev_a))
 
   # nothing moves on a run that changes nothing
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(r3$comments$comment_text, r2$comments$comment_text)
   expect_equal(r3$comments$rev_a, r2$comments$rev_a)
 })
@@ -511,18 +511,18 @@ test_that("rows that share a comment id keep their own sign-offs through the for
   body <- paste0(a6_commented_para(0, "alpha"), a6_commented_para(1, "beta"))
 
   a6_docx(docx, body, comments = c(a6_comment(0, "first comment"), a6_comment(1, "old wording")))
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "old wording",
                list(rev_a = "TRUE", rev_a_comment = "agreed with the old wording"))
 
   # round 2: id 1 now carries a different text; the old row stays as a prior-round row
   a6_docx(docx, body, comments = c(a6_comment(0, "first comment"), a6_comment(1, "new wording")))
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(sum(r2$comments$comment_id == "1"), 2)
   a6_set_cells(r2$paths$forks[["rev_a"]], "Comments", "comment_text", "new wording",
                list(rev_a = "TRUE", rev_a_comment = "agreed with the new wording"))
 
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   old <- r3$comments[r3$comments$comment_text == "old wording", ]
   new <- r3$comments[r3$comments$comment_text == "new wording", ]
   expect_equal(old$rev_a_comment, "agreed with the old wording")
@@ -567,13 +567,13 @@ test_that("a sign-off typed into the master workbook survives the next run (A6-0
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$master, "Comments", "comment_text", "first comment",
                list(rev_a = "TRUE", rev_a_comment = "recorded by the coordinator"))
   a6_set_cells(r1$paths$master, "SuggestedChanges", "original_text", "Beta.",
                list(rev_a = "TRUE", rev_a_comment = "change accepted"))
 
-  expect_no_warning(r2 <- cbe_docx_review_extract(d, output_dir = out_dir))
+  expect_no_warning(r2 <- docx_review_extract(d, output_dir = out_dir))
   expect_equal(r2$comments$rev_a, "TRUE")
   expect_equal(r2$comments$rev_a_comment, "recorded by the coordinator")
   expect_equal(r2$redlines$rev_a, "TRUE")
@@ -587,7 +587,7 @@ test_that("a sign-off typed into the master workbook survives the next run (A6-0
   expect_equal(a6_sheet(r2$paths$forks[["rev_a"]], "SuggestedChanges")$rev_a_comment, "change accepted")
 
   # and they stay through further runs
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(r3$comments$rev_a_comment, "recorded by the coordinator")
 })
 
@@ -598,11 +598,11 @@ test_that("a fork edit and a master edit to different cells of one row are both 
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "first comment", list(rev_a = "TRUE"))
   a6_set_cells(r1$paths$master, "Comments", "comment_text", "first comment", list(rev_a_comment = "noted in master"))
 
-  expect_no_warning(r2 <- cbe_docx_review_extract(d, output_dir = out_dir))
+  expect_no_warning(r2 <- docx_review_extract(d, output_dir = out_dir))
   expect_equal(r2$comments$rev_a, "TRUE")
   expect_equal(r2$comments$rev_a_comment, "noted in master")
 })
@@ -614,16 +614,16 @@ test_that("a reviewer's own edits to the fork still come back, including emptyin
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "first comment",
                list(rev_a = "TRUE", rev_a_comment = "looks right"))
-  expect_no_warning(r2 <- cbe_docx_review_extract(d, output_dir = out_dir))
+  expect_no_warning(r2 <- docx_review_extract(d, output_dir = out_dir))
   expect_equal(r2$comments$rev_a, "TRUE")
   expect_equal(r2$comments$rev_a_comment, "looks right")
 
   # the reviewer takes the sign-off and the note back
   a6_clear_cells(r2$paths$forks[["rev_a"]], "Comments", "comment_text", "first comment", c("rev_a", "rev_a_comment"))
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   expect_true(is.na(r3$comments$rev_a))
   expect_true(is.na(r3$comments$rev_a_comment))
 })
@@ -635,12 +635,12 @@ test_that("a cell changed in both the master and the fork takes the fork's value
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$master, "Comments", "comment_text", "first comment", list(rev_a_comment = "master note"))
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "first comment", list(rev_a_comment = "fork note"))
 
   expect_warning(
-    r2 <- cbe_docx_review_extract(d, output_dir = out_dir),
+    r2 <- docx_review_extract(d, output_dir = out_dir),
     "both in the master workbook and in a reviewer's fork.*rev_a_comment of rev_a: master 'master note', fork 'fork note'"
   )
   expect_equal(r2$comments$rev_a_comment, "fork note")
@@ -656,7 +656,7 @@ test_that("a fork without a baseline (an earlier version's) never blanks a maste
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   for (fork in r1$paths$forks) {
     wb <- openxlsx::loadWorkbook(fork)
     openxlsx::removeWorksheet(wb, "ForkBaseline")
@@ -666,7 +666,7 @@ test_that("a fork without a baseline (an earlier version's) never blanks a maste
                list(rev_a = "TRUE", rev_a_comment = "typed in the master"))
   a6_set_cells(r1$paths$forks[["rev_b"]], "Comments", "comment_text", "first comment", list(rev_b = "TRUE"))
 
-  expect_no_warning(r2 <- cbe_docx_review_extract(d, output_dir = out_dir))
+  expect_no_warning(r2 <- docx_review_extract(d, output_dir = out_dir))
   expect_equal(r2$comments$rev_a_comment, "typed in the master")
   expect_equal(r2$comments$rev_a, "TRUE")
   expect_equal(r2$comments$rev_b, "TRUE")
@@ -710,10 +710,10 @@ test_that("the baseline sheet of a fork is hidden and holds only that reviewer's
   out_dir <- file.path(d, "out")
   a6_one_comment_one_change(file.path(d, "eda.docx"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$master, "Comments", "comment_text", "first comment",
                list(rev_b = "TRUE", rev_b_comment = "PRIVATE-NOTE-OF-B"))
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
 
   fork_a <- r2$paths$forks[["rev_a"]]
   expect_match(a6_workbook_xml(fork_a), "<sheet name=\"ForkBaseline\"[^>]*state=\"veryHidden\"")
@@ -761,13 +761,13 @@ test_that("a sign-off typed on a Documents_<id> sheet survives the next run (A6-
   a6_docx(file.path(d, "eda.docx"), a6_commented_para(0, "alpha"), comments = a6_comment(0, "only comment"))
   a6_docx(file.path(d, "intro.docx"), a6_commented_para(0, "intro"), comments = a6_comment(0, "intro comment"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$master, "Documents_lead", "file", "eda.docx",
                list(lead = "TRUE", lead_comment = "LEAD-SIGNOFF-NOTE"))
   a6_set_cells(r1$paths$master, "Documents_second", "file", "intro.docx",
                list(second = "FALSE", second_comment = "needs another look"))
 
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
   lead <- a6_sheet(r2$paths$master, "Documents_lead")
   expect_equal(lead$lead[lead$file == "eda.docx"], "TRUE")
   expect_equal(lead$lead_comment[lead$file == "eda.docx"], "LEAD-SIGNOFF-NOTE")
@@ -777,7 +777,7 @@ test_that("a sign-off typed on a Documents_<id> sheet survives the next run (A6-
   expect_equal(r2$documents$lead_comment[r2$documents$file == "eda.docx"], "LEAD-SIGNOFF-NOTE")
 
   # and through yet another run
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   lead3 <- a6_sheet(r3$paths$master, "Documents_lead")
   expect_equal(lead3$lead_comment[lead3$file == "eda.docx"], "LEAD-SIGNOFF-NOTE")
 })
@@ -789,19 +789,19 @@ test_that("document sign-offs follow a change of documents_sheet_mode in either 
   out_dir <- file.path(d, "out")
   a6_docx(file.path(d, "eda.docx"), a6_commented_para(0, "alpha"), comments = a6_comment(0, "only comment"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   a6_set_cells(r1$paths$master, "Documents_lead", "file", "eda.docx",
                list(lead = "TRUE", lead_comment = "signed off in per-reviewer mode"))
 
   options(review.documents_sheet_mode = "columns")
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
   docs <- a6_sheet(r2$paths$master, "Documents")
   expect_equal(docs$lead, "TRUE")
   expect_equal(docs$lead_comment, "signed off in per-reviewer mode")
   expect_false("Documents_lead" %in% readxl::excel_sheets(r2$paths$master))
 
   options(review.documents_sheet_mode = "per_reviewer")
-  r3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r3 <- docx_review_extract(d, output_dir = out_dir)
   lead <- a6_sheet(r3$paths$master, "Documents_lead")
   expect_equal(lead$lead_comment, "signed off in per-reviewer mode")
 })
@@ -837,13 +837,13 @@ test_that("a document that fails to extract keeps what the tracker holds for it 
   a6_docx(eda, eda_body, comments = eda_comments)
   a6_docx(file.path(d, "intro.docx"), a6_commented_para(0, "intro"), comments = a6_comment(0, "intro comment"))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(sum(r1$comments$file == "eda.docx"), 3)
   a6_set_cells(r1$paths$forks[["rev_a"]], "Comments", "comment_text", "second comment", list(rev_a = "TRUE"))
 
   # round 2: eda.docx arrives with a truncated word/document.xml, which still passes as a package
   a6_docx(eda, document_xml = "<w:document><oops", comments = eda_comments)
-  r2 <- a6_with_warnings(cbe_docx_review_extract(d, output_dir = out_dir))
+  r2 <- a6_with_warnings(docx_review_extract(d, output_dir = out_dir))
   res <- r2$value
   expect_true(any(grepl("1 Word file\\(s\\) could not be read.*eda\\.docx", r2$warnings)))
   expect_equal(res$errors$file, "eda.docx")
@@ -863,7 +863,7 @@ test_that("a document that fails to extract keeps what the tracker holds for it 
 
   # round 3: the document is repaired and its rows are continued, sign-off included
   a6_docx(eda, eda_body, comments = eda_comments)
-  res3 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  res3 <- docx_review_extract(d, output_dir = out_dir)
   eda3 <- res3$comments[res3$comments$file == "eda.docx", ]
   expect_equal(nrow(eda3), 3)
   expect_true(all(eda3$doc_status == "Active"))
@@ -882,7 +882,7 @@ test_that("files that are not readable Word documents are reported, and lock fil
   writeBin(as.raw(sample(0:255, 162, replace = TRUE)), file.path(d, "~$intro.docx"))
   a6_docx(file.path(d, "renamed.docx"), document = FALSE, parts = list("xl/workbook.xml" = "<workbook/>"))
 
-  r <- a6_with_warnings(cbe_docx_review_extract(d, output_dir = out_dir))
+  r <- a6_with_warnings(docx_review_extract(d, output_dir = out_dir))
   res <- r$value
 
   # one warning, with the count, naming the files but not the lock file
@@ -911,7 +911,7 @@ test_that("a folder with no readable Word document warns, reports why, and write
   file.create(file.path(d, "empty.docx"))
   writeLines("text", file.path(d, "notzip.docx"))
 
-  r <- a6_with_warnings(cbe_docx_review_extract(d, output_dir = out_dir))
+  r <- a6_with_warnings(docx_review_extract(d, output_dir = out_dir))
   expect_length(r$warnings, 1)
   expect_match(r$warnings, "No valid DOCX files found to process: 2 file\\(s\\) could not be read")
   expect_setequal(r$value$errors$file, c("empty.docx", "notzip.docx"))
@@ -945,7 +945,7 @@ test_that("a run that finds no Word document creates and backs up nothing (A6-25
 
   # the default input folder is the working directory
   withr::local_dir(d)
-  res <- expect_no_warning(cbe_docx_review_extract())
+  res <- expect_no_warning(docx_review_extract())
   expect_equal(nrow(res$comments), 0)
   expect_equal(sort(list.files(d, all.files = TRUE, no.. = TRUE)), sort(c("notes.txt", "~$lock.docx")))
 
@@ -953,7 +953,7 @@ test_that("a run that finds no Word document creates and backs up nothing (A6-25
   out_dir <- file.path(d, "elsewhere")
   dir.create(out_dir)
   file.copy(system.file("DESCRIPTION", package = "TempleCBE"), file.path(out_dir, "review_tracker.xlsx"))
-  cbe_docx_review_extract(d, output_dir = out_dir)
+  docx_review_extract(d, output_dir = out_dir)
   expect_false(dir.exists(file.path(out_dir, "backups")))
 })
 
@@ -1026,7 +1026,7 @@ test_that("rows and a tracker written by an earlier version, with fused words, s
   )
   a6_docx(docx, body, comments = a6_comment(0, c("First para.", "Second para.")))
 
-  r1 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r1 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(r1$comments$comment_text, "First para. Second para.")
   expect_equal(r1$redlines$original_text, "Hello World")
 
@@ -1043,7 +1043,7 @@ test_that("rows and a tracker written by an earlier version, with fused words, s
   # (the forks still hold the new text; remove them so only the master speaks)
   file.remove(unlist(r1$paths$forks))
 
-  r2 <- cbe_docx_review_extract(d, output_dir = out_dir)
+  r2 <- docx_review_extract(d, output_dir = out_dir)
   expect_equal(nrow(r2$comments), 1)
   expect_equal(r2$comments$rev_a, "TRUE")
   expect_equal(r2$comments$rev_a_comment, "checked")

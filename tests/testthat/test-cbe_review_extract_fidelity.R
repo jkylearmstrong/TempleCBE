@@ -299,7 +299,7 @@ test_that("the master and the forks of one run are written from data prepared on
     n_prepared <<- n_prepared + 1L
     real(...)
   })
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     d, output_dir = file.path(d, "out"),
     fork_reviewers = c("rev_a", "rev_b", "rev_c"), signoff_reviewers = "lead"
   )
@@ -396,7 +396,7 @@ test_that("changes and comment ranges in footnotes, endnotes, headers and footer
   expect_equal(nrow(extract_from_docx(file.path(d, "clean.docx"))$unread_parts), 0L)
 
   warned <- capture_warnings(
-    out <- cbe_docx_review_extract(
+    out <- docx_review_extract(
       d, output_dir = file.path(d, "out"),
       fork_reviewers = "rev_a", signoff_reviewers = character(0)
     )
@@ -410,7 +410,7 @@ test_that("changes and comment ranges in footnotes, endnotes, headers and footer
 
   # nothing to warn about: no warning
   unlink(file.path(d, "notes.docx"))
-  expect_no_warning(cbe_docx_review_extract(
+  expect_no_warning(docx_review_extract(
     d, output_dir = file.path(d, "out2"),
     fork_reviewers = "rev_a", signoff_reviewers = character(0)
   ))
@@ -452,7 +452,7 @@ test_that("an archive over a limit is reported in $errors before anything is ext
 
   # the whole run reports the file and carries on with the others
   expect_warning(
-    res <- cbe_docx_review_extract(
+    res <- docx_review_extract(
       d, output_dir = file.path(d, "out"),
       fork_reviewers = "rev_a", signoff_reviewers = character(0),
       docx_limits = list(max_entries = 6, max_total_bytes = 1e6)
@@ -503,7 +503,7 @@ test_that("docx_limits is validated and its defaults are generous (A6-22)", {
   expect_error(resolve_docx_limits(list(max_entries = "many")), "positive number")
   expect_error(resolve_docx_limits(list(max_files = 3)), "Unknown")
   expect_error(resolve_docx_limits(5), "named list")
-  expect_error(cbe_docx_review_extract(tempdir(), docx_limits = list(max_entries = 0)), "positive number")
+  expect_error(docx_review_extract(tempdir(), docx_limits = list(max_entries = 0)), "positive number")
 })
 
 # A drawing Word stores twice: mc:Choice for current readers, mc:Fallback (VML) for older ones
@@ -594,7 +594,7 @@ test_that("a redlined paragraph names every author who changed it (A6-18)", {
 
   # and it reaches the tracker
   skip_if_not_installed("openxlsx")
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     d, output_dir = file.path(d, "out"),
     fork_reviewers = "rev_a", signoff_reviewers = character(0)
   )
@@ -637,7 +637,7 @@ test_that("a file that can no longer be read keeps the rows the tracker already 
   good <- comments_part('<w:comment w:id="1" w:author="Ann" w:date="2026-01-01T10:00:00Z"><w:p><w:r><w:t>first round note</w:t></w:r></w:p></w:comment>')
   write_test_docx(file.path(d, "eda.docx"), body, good)
   args <- list(d, output_dir = file.path(d, "out"), fork_reviewers = "rev_a", signoff_reviewers = character(0))
-  first <- do.call(cbe_docx_review_extract, args)
+  first <- do.call(docx_review_extract, args)
   expect_equal(first$comments$comment_text, "first round note")
 
   # round two: the same file, now with a comments.xml that cannot be parsed
@@ -645,7 +645,7 @@ test_that("a file that can no longer be read keeps the rows the tracker already 
     file.path(d, "eda.docx"), body,
     paste0(XML_PROLOG, "<w:comments ", W_DECL, '><w:comment w:id="1" w:author="Ann"><w:p><w:r><w:t>never closed')
   )
-  expect_warning(second <- do.call(cbe_docx_review_extract, args), "could not be read")
+  expect_warning(second <- do.call(docx_review_extract, args), "could not be read")
   expect_equal(second$errors$file, "eda.docx")
   expect_equal(second$comments$comment_text, "first round note")
 })
@@ -735,7 +735,7 @@ test_that("thread and resolved state reach the merged table, the workbook and th
   d <- fid_tmp_dir()
   write_threaded_docx(file.path(d, "threads.docx"))
 
-  res <- cbe_docx_review_extract(
+  res <- docx_review_extract(
     d, output_dir = file.path(d, "out"),
     fork_reviewers = "rev_a", signoff_reviewers = character(0)
   )
@@ -826,7 +826,7 @@ test_that("a comments.xml that cannot be parsed is reported, not read as blank c
   )
 
   expect_warning(
-    res <- cbe_docx_review_extract(
+    res <- docx_review_extract(
       d, output_dir = file.path(d, "out"),
       fork_reviewers = "rev_a", signoff_reviewers = character(0)
     ),
