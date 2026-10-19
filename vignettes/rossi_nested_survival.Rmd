@@ -79,9 +79,9 @@ val
 
 ---
 
-## 2. One-Call Nested Survival Run (`cbe_nested_survival_run()`)
+## 2. One-Call Nested Survival Run (`nested_survival_run()`)
 
-`cbe_nested_survival_run()` executes all seven stages in order, writes fingerprinted checkpoints and `render_manifest.json` into `run_dir`, and resumes automatically if rerun with identical data and settings:
+`nested_survival_run()` executes all seven stages in order, writes fingerprinted checkpoints and `render_manifest.json` into `run_dir`, and resumes automatically if rerun with identical data and settings:
 
 ```{r one_call_run}
 run_dir <- file.path(tempdir(), "rossi_e1_run")
@@ -95,7 +95,7 @@ candidate_formulas <- c(
   "fin + age + race + wexp + mar + paro + prio + educ"
 )
 
-rossi_run <- cbe_nested_survival_run(
+rossi_run <- nested_survival_run(
   data = rossi_cohort,
   recipe = rec,
   id = "id",
@@ -155,7 +155,7 @@ nested_splits <- nested_cv(
 times_df <- unique(rossi_cohort[, c("tstart", "tstop")])
 
 # --- Machine 1 evaluates Shard 1 of 2 ---
-tune_shard_1 <- summarize_tune_results(
+tune_shard_1 <- tune_alpha_by_split(
   object = nested_splits$inner_resamples[[1]],
   recipe = rec,
   feature_names = features,
@@ -169,7 +169,7 @@ tune_shard_1 <- summarize_tune_results(
 )
 
 # --- Machine 2 evaluates Shard 2 of 2 ---
-tune_shard_2 <- summarize_tune_results(
+tune_shard_2 <- tune_alpha_by_split(
   object = nested_splits$inner_resamples[[1]],
   recipe = rec,
   feature_names = features,

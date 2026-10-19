@@ -14,10 +14,13 @@
 
 /* 1. Set SAS macro search path or define macros */
 %let script_dir = %sysfunc(tranwrd(%sysfunc(getoption(sysin)), benchmark_brier_lung.sas, %str()));
-%if %length(&script_dir) > 0 %then %do;
-    %include "&script_dir/cbe_brier_score.sas";
-    %include "&script_dir/cbe_cox_phreg.sas";
-%end;
+%macro _load_includes;
+    %if %length(&script_dir) > 0 %then %do;
+        %include "&script_dir/cbe_brier_score.sas";
+        %include "&script_dir/cbe_cox_phreg.sas";
+    %end;
+%mend _load_includes;
+%_load_includes;
 
 /* 2. Load or transcribe NCCTG Lung Dataset */
 data work.lung;

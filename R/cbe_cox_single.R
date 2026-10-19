@@ -57,6 +57,13 @@ cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ..
   fmla_str <- sprintf("%s ~ %s", outcome, feature)
   fmla <- stats::as.formula(fmla_str)
   dots <- match.call(expand.dots = FALSE)$...
+  dots <- lapply(dots, function(arg) {
+    if (is.symbol(arg) && grepl("^\\.\\.", as.character(arg))) {
+      eval(arg, parent.frame())
+    } else {
+      arg
+    }
+  })
   base_args <- list(quote(survival::coxph), formula = fmla, data = quote(data))
   if (!"model" %in% names(dots)) base_args$model <- TRUE
   cph_call <- as.call(c(base_args, as.list(dots)))
@@ -64,7 +71,7 @@ cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ..
   fit$call$data <- match.call()$data
 
   # 2. Test Proportional Hazards Assumption
-  check <- cbe_cox_check(fit)
+  check <- cox_check(fit)
   zph_res <- check$zph
   zph_tab <- check$zph_table
   zph_violated <- if (is.null(zph_res)) FALSE else unname(check$zph_violated[1])
@@ -196,6 +203,8 @@ utils::globalVariables(c(
 #' @export
 cbe_cox_single <- function(...) {
   lifecycle::deprecate_warn("0.5.8", "cbe_cox_single()", "cox_single()")
-  cox_single(...)
+  mc <- match.call()
+  mc[[1L]] <- quote(TempleCBE::cox_single)
+  eval(mc, parent.frame())
 }
 

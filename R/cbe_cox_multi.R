@@ -66,6 +66,13 @@ cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL
   )
 
   dots <- match.call(expand.dots = FALSE)$...
+  dots <- lapply(dots, function(arg) {
+    if (is.symbol(arg) && grepl("^\\.\\.", as.character(arg))) {
+      eval(arg, parent.frame())
+    } else {
+      arg
+    }
+  })
   base_args <- list(quote(survival::coxph), formula = fmla, data = quote(data))
   if (!"model" %in% names(dots)) base_args$model <- TRUE
   cph_call <- as.call(c(base_args, as.list(dots)))
@@ -83,7 +90,7 @@ cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL
   )
   fit$call$data <- match.call()$data
 
-  check <- cbe_cox_check(fit)
+  check <- cox_check(fit)
 
   td <- broom::tidy(fit, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE)
 
@@ -212,5 +219,7 @@ utils::globalVariables(c(
 #' @export
 cbe_cox_multi <- function(...) {
   lifecycle::deprecate_warn("0.5.8", "cbe_cox_multi()", "cox_multi()")
-  cox_multi(...)
+  mc <- match.call()
+  mc[[1L]] <- quote(TempleCBE::cox_multi)
+  eval(mc, parent.frame())
 }

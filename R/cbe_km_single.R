@@ -126,5 +126,7 @@ utils::globalVariables(c(".cbe_km_strata"))
 #' @export
 cbe_km_single <- function(...) {
   lifecycle::deprecate_warn("0.5.8", "cbe_km_single()", "km_single()")
-  km_single(...)
+  mc <- match.call()
+  mc[[1L]] <- quote(TempleCBE::km_single)
+  eval(mc, parent.frame())
 }
