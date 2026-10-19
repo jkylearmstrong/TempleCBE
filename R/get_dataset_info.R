@@ -396,7 +396,7 @@ get_dataset_info.list <- function(x, subject_id = NULL, database_name = NULL, ..
     }
   }
 
-  db_name <- database_name %||% cbe_database_name(x)
+  db_name <- database_name %||% database_name(x)
 
   info_list <- lapply(seq_along(x), function(i) {
     nm <- tbl_names[[i]]

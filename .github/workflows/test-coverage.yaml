@@ -38,6 +38,7 @@ jobs:
             any::xml2
             any::readr
             any::jquerylib
+            any::caret
           needs: check
 
       - name: Test coverage

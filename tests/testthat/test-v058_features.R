@@ -183,11 +183,13 @@ test_that("3. Canonical functions execute and deprecated aliases warn", {
   expect_warning(normalize_safely(tempdir()), "deprecated")
 
   # drop_correlated_columns / find_correlation
-  mat <- matrix(c(1, 0.99, 0.99, 1), nrow = 2)
-  colnames(mat) <- c("v1", "v2")
-  rownames(mat) <- c("v1", "v2")
-  expect_equal(drop_correlated_columns(mat, cutoff = 0.9), "v2")
-  expect_warning(find_correlation(mat, cutoff = 0.9), "deprecated")
+  if (requireNamespace("caret", quietly = TRUE)) {
+    mat <- matrix(c(1, 0.99, 0.99, 1), nrow = 2)
+    colnames(mat) <- c("v1", "v2")
+    rownames(mat) <- c("v1", "v2")
+    expect_equal(drop_correlated_columns(mat, cutoff = 0.9), "v2")
+    expect_warning(find_correlation(mat, cutoff = 0.9), "deprecated")
+  }
 
   # describe_columns / proc_contents
   expect_s3_class(describe_columns(iris), "tbl_df")

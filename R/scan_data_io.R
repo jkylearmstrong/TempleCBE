@@ -61,11 +61,11 @@ scan_data_io <- function(code_path,
   }
   ext_escaped <- stringr::str_escape(ext)
 
-  ws <- write_search(code_path, include_comments = include_comments_write)
-  rs <- read_search(code_path, include_comments = TRUE)
+  ws <- find_write_calls(code_path, include_comments = include_comments_write)
+  rs <- find_read_calls(code_path, include_comments = TRUE)
 
-  actual_root <- normalize_safely(here::here())
-  custom_root <- normalize_safely(project_root)
+  actual_root <- normalize_path_safely(here::here())
+  custom_root <- normalize_path_safely(project_root)
 
   is_absolute_path <- function(p) {
     grepl("^[~/]|^[A-Za-z]:", p)
@@ -83,7 +83,7 @@ scan_data_io <- function(code_path,
 
   adjust_here_path <- function(p) {
     if (is.null(p) || length(p) == 0) return(p)
-    p_norm <- normalize_safely(p)
+    p_norm <- normalize_path_safely(p)
     actual_root_lower <- tolower(actual_root)
     actual_root_lower_slash <- if (grepl("[/\\\\]$", actual_root_lower)) actual_root_lower else paste0(actual_root_lower, "/")
 
@@ -164,8 +164,8 @@ scan_data_io <- function(code_path,
       ),
       outfile_path = dplyr::case_when(
         !is.na(here_path) ~ here_path,
-        !is.na(raw_token) & is_absolute_path(raw_token) ~ normalize_safely(raw_token),
-        !is.na(raw_token) ~ normalize_safely(file.path(custom_root, raw_token)),
+        !is.na(raw_token) & is_absolute_path(raw_token) ~ normalize_path_safely(raw_token),
+        !is.na(raw_token) ~ normalize_path_safely(file.path(custom_root, raw_token)),
         TRUE ~ NA_character_
       )
     ) |>
@@ -176,7 +176,7 @@ scan_data_io <- function(code_path,
 
   existing_write_tbl <- writes_resolved |>
     dplyr::filter(!is.na(outfile_path)) |>
-    dplyr::mutate(path = normalize_safely(outfile_path)) |>
+    dplyr::mutate(path = normalize_path_safely(outfile_path)) |>
     dplyr::group_by(path) |>
     dplyr::summarise(
       write_pattern = paste(unique(pattern), collapse = ", "),
@@ -212,8 +212,8 @@ scan_data_io <- function(code_path,
       ),
       infile_path = dplyr::case_when(
         !is.na(here_path) ~ here_path,
-        !is.na(raw_token) & is_absolute_path(raw_token) ~ normalize_safely(raw_token),
-        !is.na(raw_token) ~ normalize_safely(file.path(custom_root, raw_token)),
+        !is.na(raw_token) & is_absolute_path(raw_token) ~ normalize_path_safely(raw_token),
+        !is.na(raw_token) ~ normalize_path_safely(file.path(custom_root, raw_token)),
         TRUE ~ NA_character_
       ),
       workflow_input = TRUE
@@ -252,7 +252,7 @@ scan_data_io <- function(code_path,
     ) |>
       dplyr::left_join(file_meta_fs(present_by_dir), by = c("dir_name", "dir_path")) |>
       dplyr::mutate(
-        path = normalize_safely(path),
+        path = normalize_path_safely(path),
         file_name = dplyr::if_else(is.na(path), NA_character_, basename(path)),
         deliverable = TRUE
       )
@@ -270,7 +270,7 @@ scan_data_io <- function(code_path,
     all_files <- all_files[stringr::str_count(rel, "/") + 1 <= max_depth]
   }
   all_files_tbl <- file_meta_fs(as.character(all_files)) |>
-    dplyr::mutate(path = normalize_safely(path))
+    dplyr::mutate(path = normalize_path_safely(path))
 
   inputs_heur <- inputs |>
     dplyr::rowwise() |>
