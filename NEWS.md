@@ -1,3 +1,50 @@
+# TempleCBE 0.5.8
+
+## General-Purpose Checkpointing
+
+* **General `checkpoint_map()`**: Added and exported `checkpoint_map(.x, .f, ..., checkpoint_dir, key, fingerprint, shard, checkpoint_mismatch, progress)`, providing a purrr/furrr-style checkpointed mapping engine that caches intermediate results to fingerprinted `.rds` files, detects mismatches, and supports parallelization and multi-machine sharding.
+* **Tidymodels Checkpointed Resampling & Tuning Wrappers**: Added `tune_grid_checkpointed()`, `fit_resamples_checkpointed()`, `workflow_map_checkpointed()`, and `tune_race_survival_checkpointed()`. Each wrapper checkpoints individual resample fits (workflow $\times$ resample $\times$ grid) using comprehensive split, workflow, data, and version fingerprints, and returns standard `tune_results` objects compatible with all downstream tidymodels operations (`collect_metrics()`, `select_best()`, `autoplot()`).
+* **Universal Checkpoint Arguments**: Added `checkpoint_dir`, `shard`, and `checkpoint_mismatch` to all long-running analytical workflows (`compare_censoring_weights()`, `cv_coxnet()`, `nested_cv_coxnet()`, `tune_race_survival()`, `cv_joint_model()`, `nested_cv_joint_model()`, `tune_best_glmnet_workflow()`, `missforest_sweep_mtry()`, `missranger_sweep_mtry()`, and `tune_impute_numeric()`).
+* **Consolidated Fold-Level Checkpoints**: In `nested_survival_run()`, intermediate results are now saved consolidated by outer fold (`tune_outer_<fold>.rds` and `score_outer_<weights>.rds`), reducing thousands of task files down to ~10 clean checkpoint files per domain.
+* **Checkpoint Utilities**: Upgraded `collect_checkpoints()` and `clean_checkpoints()` to operate uniformly across all checkpointed functions and directories.
+
+## Function Naming & the `cbe_` Convention
+
+* **Strict `cbe_*` Scoping**: Codified the naming policy across documentation: `cbe_*` is reserved strictly for Temple CBE presentation and formatting only (themes, palettes, scales, plots, report tables, number formatters). Every computational or data transformation function is a plain verb-noun.
+* **Deprecation of Legacy Aliases**: All 49 byte-identical `cbe_*` aliases and non-formatting `cbe_*` exports have been deprecated with `lifecycle::deprecate_warn("0.5.8", ...)` in favor of canonical verb-noun functions.
+* **Canonical Renamings**:
+  * `summarize_tune_results()` $\rightarrow$ `tune_alpha_by_split()`
+  * `normalize_safely()` $\rightarrow$ `normalize_path_safely()`
+  * `find_correlation()` $\rightarrow$ `drop_correlated_columns()`
+  * `proc_contents()` $\rightarrow$ `describe_columns()`
+  * `proc_pca()` $\rightarrow$ `run_pca()`
+  * `SumNa()` $\rightarrow$ `count_na()`
+  * `R_names()` $\rightarrow$ `clean_names_keep_labels()`
+  * `keep_only()` $\rightarrow$ `rm_all_except()`
+  * `read_search()` / `write_search()` $\rightarrow$ `find_read_calls()` / `find_write_calls()`
+  * `extract_win_posix_paths()` $\rightarrow$ `extract_xlsx_paths()`
+  * `get_model_parameters()` / `fit_n_rank()` $\rightarrow$ `workflow_set_params()` / `workflow_set_rank_fit()`
+  * `factor_reference()` $\rightarrow$ `relevel_factor()`
+  * `sd.error()` $\rightarrow$ `std_error()`
+  * `is.int()` $\rightarrow$ `is_integer_valued()`
+  * `install.packages.no_lock()` $\rightarrow$ `install_package_no_lock()`
+  * `my_summary_table()` $\rightarrow$ `summary_table()`
+  * `controls_datasets()` $\rightarrow$ `produces_data()`
+  * `render()` / `render_me()` $\rightarrow$ `render_pipeline()`
+* **Disambiguated Masked Exports**: Replaced exports masking CRAN/core packages with non-conflicting names: `clean_names_keep_labels()`, `match_like()`, `render_pipeline()`, and `write_xlsx_file()`, retaining legacy wrappers with deprecation warnings.
+
+## Packaged Quarto Child Report Template
+
+* **`nested_survival_report.qmd` & `nested_survival_report_template()`**: Packaged an end-to-end Quarto child template in `inst/templates/nested_survival_report.qmd` accessible via `nested_survival_report_template()`. Automatically renders executive summaries, hyperparameter tuning paths, outer-fold mixed models, standardized Cox coefficients, LOCO importance, censoring comparisons, and correlation structures from a `nested_survival_run` object and `cbe_labels()`.
+
+## Bugs & Gaps (G1 – G5)
+
+* **G1 (Parallel Scaling)**: Enforced single-threaded BLAS in future workers and introduced detailed timing breakdowns (`avg s/task`) when `progress = TRUE`.
+* **G2 (Repeated Censoring Notice)**: Muffled repeated "no censored subjects" notices inside parallel workers and emitted once per run in the main orchestrating session.
+* **G3 (Checkpoint Proliferation)**: Consolidated checkpoints into fold-level files.
+* **G4 (Censoring Comparison Checkpointing)**: Added checkpointing and sharding arguments to `compare_censoring_weights()`.
+* **G5 (Historical Tuning Results Adapter)**: Added `as_tuning_results()` to adapt legacy Wolfson tuning files and tidymodels objects into standardized `cbe_tuning_results` compatible with `compare_tuning_runs()`.
+
 # TempleCBE 0.5.7
 
 ## Gaps & Bug Fixes
