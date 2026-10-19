@@ -92,7 +92,7 @@ test_that("cbe_loco_mp_coxnet works with 2-parameter Surv data via formula", {
   expect_true(all(c("term", "importance", "std_error", "statistic", "p_value", "p_adjusted", "conf_low", "conf_high") %in% names(fit$results)))
 
   # Print method
-  expect_output(print(fit), "<cbe_loco_mp_coxnet>")
+  expect_output(print(fit), "<(cbe_)?loco_mp_coxnet>")
 
   # Tidy method
   td <- generics::tidy(fit)

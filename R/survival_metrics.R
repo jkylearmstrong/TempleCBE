@@ -1636,9 +1636,36 @@ tune_alpha_by_split <- function(object,
 
 #' @rdname tune_alpha_by_split
 #' @export
-summarize_tune_results <- function(...) {
+summarize_tune_results <- function(object,
+                                   ...,
+                                   num_alpha_values = 10,
+                                   num_fixed = 6,
+                                   alphas = NULL,
+                                   formulas = NULL,
+                                   progress = FALSE,
+                                   seed = NULL,
+                                   checkpoint_dir = NULL,
+                                   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+                                   shard = NULL,
+                                   chunk_size = NULL,
+                                   on_complete = getOption("templecbe.on_complete", NULL)) {
   lifecycle::deprecate_warn("0.5.8", "summarize_tune_results()", "tune_alpha_by_split()")
-  tune_alpha_by_split(..., .fn_name = "summarize_tune_results")
+  tune_alpha_by_split(
+    object = object,
+    ...,
+    num_alpha_values = num_alpha_values,
+    num_fixed = num_fixed,
+    alphas = alphas,
+    formulas = formulas,
+    progress = progress,
+    seed = seed,
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_mismatch = checkpoint_mismatch,
+    shard = shard,
+    chunk_size = chunk_size,
+    on_complete = on_complete,
+    .fn_name = "summarize_tune_results"
+  )
 }
 
 #' Run an Expression With a Temporary Random Seed

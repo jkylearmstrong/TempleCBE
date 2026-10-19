@@ -360,7 +360,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
 # or set itself (B, mixture, penalty, eval_time, subject_id, ...), which it
 # passes on to coxnet() and so to glmnet.
 forwardable_glmnet_args <- function(args) {
-  own <- names(formals(cbe_loco_mp_coxnet))
+  own <- union(names(formals(loco_mp_coxnet)), names(formals(cbe_loco_mp_coxnet)))
   nms <- names(args) %||% character(length(args))
   args[nzchar(nms) & !nms %in% own]
 }

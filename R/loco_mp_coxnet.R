@@ -360,9 +360,45 @@ loco_mp_coxnet <- function(formula = NULL,
 
 #' @rdname loco_mp_coxnet
 #' @export
-cbe_loco_mp_coxnet <- function(...) {
+cbe_loco_mp_coxnet <- function(formula = NULL,
+                               data = NULL,
+                               x = NULL,
+                               y = NULL,
+                               B = 100,
+                               n_ratio = 0.7,
+                               m_ratio = 0.5,
+                               penalty = NULL,
+                               mixture = 1,
+                               eval_time = NULL,
+                               subject_id = NULL,
+                               alpha = 0.05,
+                               p_adjust = c("bonferroni", "BH", "fdr", "holm", "none"),
+                               trunc = 0.05,
+                               parallel = FALSE,
+                               seed = NULL,
+                               covariates = c("path", "baseline"),
+                               ...) {
   lifecycle::deprecate_warn("0.5.8", "cbe_loco_mp_coxnet()", "loco_mp_coxnet()")
-  loco_mp_coxnet(...)
+  loco_mp_coxnet(
+    formula = formula,
+    data = data,
+    x = x,
+    y = y,
+    B = B,
+    n_ratio = n_ratio,
+    m_ratio = m_ratio,
+    penalty = penalty,
+    mixture = mixture,
+    eval_time = eval_time,
+    subject_id = subject_id,
+    alpha = alpha,
+    p_adjust = p_adjust,
+    trunc = trunc,
+    parallel = parallel,
+    seed = seed,
+    covariates = covariates,
+    ...
+  )
 }
 
 #' A Minipatch That Failed, With Its Error Message

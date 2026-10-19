@@ -121,7 +121,7 @@ cbe_dataset_label <- function(x) {
 #' @rdname dataset_labels
 #' @export
 `cbe_dataset_label<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label<-()", "dataset_label<-()")
+  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label()", "dataset_label()", details = "Use `dataset_label<-` for assignment.")
   `dataset_label<-`(x, value)
 }
 
@@ -135,7 +135,7 @@ cbe_database_name <- function(x) {
 #' @rdname dataset_labels
 #' @export
 `cbe_database_name<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_name<-()", "database_name<-()")
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_name()", "database_name()", details = "Use `database_name<-` for assignment.")
   `database_name<-`(x, value)
 }
 
@@ -149,7 +149,7 @@ cbe_database_label <- function(x) {
 #' @rdname dataset_labels
 #' @export
 `cbe_database_label<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_label<-()", "database_label<-()")
+  lifecycle::deprecate_warn("0.5.8", "cbe_database_label()", "database_label()", details = "Use `database_label<-` for assignment.")
   `database_label<-`(x, value)
 }
 
@@ -205,10 +205,10 @@ get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NUL
     dataset_name <- deparse(substitute(x))
   }
   if (is.null(database_name)) {
-    database_name <- cbe_database_name(df)
+    database_name <- database_name(df)
   }
   if (is.null(dataset_label)) {
-    dataset_label <- cbe_dataset_label(df)
+    dataset_label <- dataset_label(df)
   }
 
   columns <- colnames(df)
@@ -230,7 +230,7 @@ get_dataset_info.data.frame <- function(x, subject_id = NULL, dataset_name = NUL
   )
 
   na_info <- if (ncol(df) > 0) {
-    dplyr::summarise(df, dplyr::across(dplyr::everything(), \(v) SumNa(v))) |>
+    dplyr::summarise(df, dplyr::across(dplyr::everything(), \(v) count_na(v))) |>
       tidyr::pivot_longer(dplyr::everything(), names_to = "columns", values_to = "SumNa") |>
       dplyr::mutate(PctNa = .data$SumNa / nrow(df))
   } else {
