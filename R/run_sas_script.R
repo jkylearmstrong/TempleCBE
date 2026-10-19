@@ -219,6 +219,7 @@ cbe_sas_macro_dir <- function() {
 #'   `"cbe_cox_phreg.sas"`, `"cbe_counting_process.sas"`, `"coxtvc.sas"`,
 #'   `"cpdata.sas"`, `"benchmark_brier_lung.sas"`, `"benchmark_brier_lung_full.sas"`,
 #'   and `"example_85_7.sas"`.
+#' @param ... Passed to [sas_macro_path()].
 #' @return Absolute path to the requested `.sas` file.
 #' @seealso [sas_macro_dir()], [run_sas_script()], [find_sas()]
 #' @name sas_macro_path

@@ -339,9 +339,6 @@ compare_df.default <- function(base,
   res
 }
 
-#' @export
-cbe_compare_df.default <- compare_df.default
-
 #' @rdname compare_df
 #' @export
 #' @examples
@@ -378,26 +375,17 @@ compare_df.cbe_database <- function(base,
   res
 }
 
-#' @export
-cbe_compare_df.cbe_database <- compare_df.cbe_database
-
 #' @rdname compare_df
 #' @export
 compare_df.igraph <- function(base, compare, ...) {
   compare_df(as_database(base), as_database(compare), ...)
 }
 
-#' @export
-cbe_compare_df.igraph <- compare_df.igraph
-
 #' @rdname compare_df
 #' @export
 compare_df.visNetwork <- function(base, compare, ...) {
   compare_df(as_database(base), as_database(compare), ...)
 }
-
-#' @export
-cbe_compare_df.visNetwork <- compare_df.visNetwork
 
 #' @export
 print.cbe_compare_database <- function(x, ...) {

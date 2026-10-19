@@ -7,6 +7,7 @@
 #'
 #' @param fit A fitted \code{survival::coxph} model, or a \code{cbe_cox} or
 #'   \code{cbe_cox_multi} object.
+#' @param ... Passed to \code{cox_check()}.
 #' @return An object of class \code{cbe_cox_check} containing:
 #'   \itemize{
 #'     \item \code{zph}: The \code{survival::cox.zph} object (or \code{NULL} if it could not be computed).

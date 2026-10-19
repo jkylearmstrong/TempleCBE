@@ -1,6 +1,7 @@
 #' Install a Package, Bypassing an Existing Lock
 #'
 #' @param packages Character vector of package name(s) to install.
+#' @param ... Passed to \code{install_package_no_lock()}.
 #' @return Invisibly, \code{NULL} (as per \code{\link[utils]{install.packages}}).
 #' @export
 #' @examples

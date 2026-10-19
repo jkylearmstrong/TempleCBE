@@ -1070,6 +1070,7 @@ plot_categorical_associations <- function(data, cols = NULL,
 #' @param cols Optional character vector of column names to include. If \code{NULL},
 #'   all factor and character columns are included.
 #' @param labels_df Optional lookup data frame with columns \code{variable} and \code{label}.
+#' @param ... Passed to [pairwise_combos()].
 #'
 #' @return A tibble with columns \code{id}, \code{var1}, \code{var2}, \code{label1}, \code{label2},
 #'   and \code{comparison_label}.

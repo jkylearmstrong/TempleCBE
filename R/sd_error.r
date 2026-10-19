@@ -2,6 +2,7 @@
 #'
 #' @param x vector of data
 #' @param na.rm should NA values be removed, TRUE or FALSE, default is FALSE
+#' @param ... Passed to [std_error()].
 #'
 #' @return numeric value representing standard error
 #'

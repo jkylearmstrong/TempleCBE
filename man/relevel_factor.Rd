@@ -17,6 +17,8 @@ cbe_factor_reference(...)
 
 \item{ref_level}{Character string naming the level to use as reference. Defaults
 to the first level of \code{x} (its current or natural ordering).}
+
+\item{...}{Passed to [relevel_factor()].}
 }
 \value{
 The releveled factor, with attribute \code{"cbe_reference_level"} set to

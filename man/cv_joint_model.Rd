@@ -51,6 +51,12 @@ to score the cross-validation that tunes each fold's \code{coxnet} penalty.}
 split; see Details. \code{FALSE} skips the check. Folds that \code{cv_joint_model()} builds
 itself are never checked, as they are grouped by subject already.}
 
+\item{checkpoint_dir}{Optional directory path where per-split checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. \code{c(1, 2)}) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: \code{"recompute"}, \code{"overwrite"}, or \code{"error"}.}
+
 \item{...}{Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.}
 }
 \value{

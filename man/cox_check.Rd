@@ -12,6 +12,8 @@ cbe_cox_check(...)
 \arguments{
 \item{fit}{A fitted \code{survival::coxph} model, or a \code{cbe_cox} or
 \code{cbe_cox_multi} object.}
+
+\item{...}{Passed to \code{cox_check()}.}
 }
 \value{
 An object of class \code{cbe_cox_check} containing:

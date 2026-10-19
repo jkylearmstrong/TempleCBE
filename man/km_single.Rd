@@ -21,6 +21,8 @@ predictors are binned into quartiles for the Kaplan-Meier strata (matching
 [plot_cox_survival()]'s convention), while the Cox side treats them as continuous.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
+
+\item{...}{Passed to [km_single()].}
 }
 \value{
 An object of class \code{cbe_km} containing:

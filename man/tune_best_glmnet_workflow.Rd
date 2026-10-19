@@ -27,6 +27,12 @@ tune_best_glmnet_workflow(
 
 \item{rule}{Hyperparameter selection rule: `"min"` (default) or `"1se"`.}
 
+\item{checkpoint_dir}{Optional directory path where per-task checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. `c(1, 2)`) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.}
+
 \item{...}{Additional arguments passed to [cv_coxnet()].}
 }
 \value{

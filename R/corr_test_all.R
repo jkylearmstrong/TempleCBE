@@ -109,6 +109,7 @@ corr_test_all <- function(data,
 #' @param exact Passed to \code{\link[caret]{findCorrelation}}; defaults to
 #'   \code{ncol(data) < 100} (the original had a bug here referencing an
 #'   undefined \code{x} instead of \code{data} — fixed).
+#' @param ... Passed to \code{drop_correlated_columns()}.
 #' @return Character vector (or integer indices) of columns to remove.
 #' @seealso [correlated_pairs_table()], [corr_test_all()], [plot_corr_scatter()]
 #' @export

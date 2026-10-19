@@ -20,6 +20,7 @@
 #'
 #' @param vector Character vector of object names to keep.
 #' @param .dontask Logical (default \code{FALSE}); skip the confirmation prompt.
+#' @param env Environment to operate on; defaults to \code{parent.frame()}.
 #' @return Invisibly, \code{NULL}.
 #' @export
 #' @examples

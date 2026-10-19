@@ -7,6 +7,7 @@
 #' @param x A vector, matrix, or data frame.
 #' @param na_list Optional vector of additional values to treat as missing,
 #'   beyond actual \code{NA}.
+#' @param ... Passed to \code{count_na()}.
 #' @return An integer representing the total count of missing values.
 #' @export
 #' @examples

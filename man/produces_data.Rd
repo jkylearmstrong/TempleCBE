@@ -11,6 +11,8 @@ controls_datasets(...)
 }
 \arguments{
 \item{obj}{A FileOutputs object.}
+
+\item{...}{Passed to [produces_data()].}
 }
 \value{
 Logical.

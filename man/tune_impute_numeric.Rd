@@ -25,6 +25,12 @@ tune_impute_numeric(
 \item{prop_mask}{Proportion of observed values to artificially mask (default 0.15).}
 
 \item{seed}{Random seed for reproducible masking.}
+
+\item{checkpoint_dir}{Optional directory path where per-task checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. `c(1, 2)`) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.}
 }
 \value{
 A tibble ranking the imputation methods by RSE and MAE across variables.

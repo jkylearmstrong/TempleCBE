@@ -6,6 +6,7 @@
 #' machine-friendly.
 #'
 #' @param df A data frame or tibble.
+#' @param ... Passed to \code{clean_names_keep_labels()}.
 #' @return A tibble with cleaned column names and the original names stored
 #'   as variable labels (see \code{\link[labelled]{var_label}}).
 #' @export

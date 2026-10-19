@@ -11,6 +11,8 @@ R_names(...)
 }
 \arguments{
 \item{df}{A data frame or tibble.}
+
+\item{...}{Passed to \code{clean_names_keep_labels()}.}
 }
 \value{
 A tibble with cleaned column names and the original names stored

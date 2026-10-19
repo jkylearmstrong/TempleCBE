@@ -5,6 +5,7 @@
 #' @param na.rm should NA values be removed, TRUE or FALSE, default is FALSE
 #' @param data.output should the data be output, TRUE or FALSE, default is TRUE
 #' @param table.output should the table be output, TRUE or FALSE, default is FALSE
+#' @param ... Passed to [summary_table()].
 #'
 #' @return either a dataframe or readable table 
 #'

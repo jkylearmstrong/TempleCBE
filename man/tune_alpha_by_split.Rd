@@ -22,7 +22,21 @@ tune_alpha_by_split(
   .fn_name = "tune_alpha_by_split"
 )
 
-summarize_tune_results(...)
+summarize_tune_results(
+  object,
+  ...,
+  num_alpha_values = 10,
+  num_fixed = 6,
+  alphas = NULL,
+  formulas = NULL,
+  progress = FALSE,
+  seed = NULL,
+  checkpoint_dir = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  shard = NULL,
+  chunk_size = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL)
+)
 }
 \arguments{
 \item{object}{A resampling object with a `splits` column (e.g. one element
@@ -67,6 +81,8 @@ receives all of its assigned tasks in a single batch).}
 
 \item{on_complete}{Optional callback `function(result)` (or option
 `templecbe.on_complete`) invoked when the run finishes or errors.}
+
+\item{.fn_name}{Internal caller function name for logging and checkpointing metadata.}
 }
 \value{
 A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`

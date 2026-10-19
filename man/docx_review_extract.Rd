@@ -73,6 +73,8 @@ in \code{$errors} instead of being read. \code{Inf} switches a limit off.
 The session-wide options \code{review.docx_max_entries},
 \code{review.docx_max_bytes} and \code{review.docx_max_xml_bytes} set the
 defaults.}
+
+\item{...}{Passed to \code{docx_review_extract()}.}
 }
 \value{
 An object of class `cbe_review_extract`, which is a named list containing:

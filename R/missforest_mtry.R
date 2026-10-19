@@ -171,6 +171,9 @@ missforest_impute_by_mtry <- function(sweep, best) {
 #'   all-`NA` column exceeds every threshold.
 #' @param parallel Whether to evaluate the sweep with [furrr::future_map()].
 #'   Default `TRUE`. When `FALSE`, runs sequentially via [purrr::map()].
+#' @param checkpoint_dir Optional directory path where per-task checkpoints are stored.
+#' @param shard Optional shard specification (e.g. `c(1, 2)`) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.
 #'
 #' @return A list of four elements:
 #'   \describe{

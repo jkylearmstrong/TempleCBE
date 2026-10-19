@@ -257,6 +257,7 @@ cbe_explain_survival <- function(...) {
 #' @param max_quantile Upper quantile cutoff for evaluation time window. Default is 1.
 #' @param trunc Lower truncation threshold for censoring survival probabilities to prevent
 #'   inflation by rare tails. Default is 0.05.
+#' @param ... Passed to [survex_loss_ibs()] or [survex_loss_brier()].
 #'
 #' @return A loss function with attributes \code{"loss_type"} (\code{"integrated"} or
 #'   \code{"time-dependent"}) and \code{"loss_name"}, directly passable to \code{survex}.

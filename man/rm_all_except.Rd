@@ -7,12 +7,14 @@
 \usage{
 rm_all_except(vector, .dontask = FALSE, env = parent.frame())
 
-keep_only(vector, .dontask = FALSE)
+keep_only(vector, .dontask = FALSE, env = parent.frame())
 }
 \arguments{
 \item{vector}{Character vector of object names to keep.}
 
 \item{.dontask}{Logical (default \code{FALSE}); skip the confirmation prompt.}
+
+\item{env}{Environment to operate on; defaults to \code{parent.frame()}.}
 }
 \value{
 Invisibly, \code{NULL}.

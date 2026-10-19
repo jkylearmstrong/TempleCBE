@@ -81,6 +81,12 @@ Details and [cv_coxnet()]. `FALSE` skips the check.}
 ([finetune::tune_race_anova()] racing), or `"race_win_loss"`
 ([finetune::tune_race_win_loss()] racing; needs BradleyTerry2).}
 
+\item{checkpoint_dir}{Optional directory path where per-split checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. `c(1, 2)`) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.}
+
 \item{on_complete}{Optional callback `function(result)` invoked when
 `cv_coxnet()` finishes or errors (defaults to
 `getOption("templecbe.on_complete", NULL)`).}

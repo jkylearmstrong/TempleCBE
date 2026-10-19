@@ -184,6 +184,9 @@ plot_imputed_ridgeline <- function(orig, imp, cols) {
 #' @param methods Imputation methods to benchmark: `"mean"`, `"median"`, and/or `"knn"`.
 #' @param prop_mask Proportion of observed values to artificially mask (default 0.15).
 #' @param seed Random seed for reproducible masking.
+#' @param checkpoint_dir Optional directory path where per-task checkpoints are stored.
+#' @param shard Optional shard specification (e.g. `c(1, 2)`) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.
 #' @return A tibble ranking the imputation methods by RSE and MAE across variables.
 #' @export
 tune_impute_numeric <- function(data,

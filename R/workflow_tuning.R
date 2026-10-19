@@ -16,6 +16,9 @@ NULL
 #' @param resamples An `rsample` resample object (e.g. `vfold_cv` or `group_vfold_cv`).
 #' @param mixture Numeric vector of candidate alpha mixture values (default `c(0.2, 0.5, 0.8, 1.0)`).
 #' @param rule Hyperparameter selection rule: `"min"` (default) or `"1se"`.
+#' @param checkpoint_dir Optional directory path where per-task checkpoints are stored.
+#' @param shard Optional shard specification (e.g. `c(1, 2)`) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.
 #' @param ... Additional arguments passed to [cv_coxnet()].
 #' @return A list containing `best_mixture`, `best_penalty`, `model` (fitted on full data), and `cv_results`.
 #' @export

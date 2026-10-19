@@ -17,6 +17,7 @@ NULL
 #'   predictors are binned into quartiles for the Kaplan-Meier strata (matching
 #'   [plot_cox_survival()]'s convention), while the Cox side treats them as continuous.
 #' @param conf_level Numeric confidence level (default: 0.95).
+#' @param ... Passed to [km_single()].
 #' @return An object of class \code{cbe_km} containing:
 #'   \itemize{
 #'     \item \code{cox}: The \code{cbe_cox} object from [cbe_cox_single()].

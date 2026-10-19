@@ -14,6 +14,8 @@ SumNa(...)
 
 \item{na_list}{Optional vector of additional values to treat as missing,
 beyond actual \code{NA}.}
+
+\item{...}{Passed to \code{count_na()}.}
 }
 \value{
 An integer representing the total count of missing values.

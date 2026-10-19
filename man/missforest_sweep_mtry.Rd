@@ -53,6 +53,12 @@ all-`NA` column exceeds every threshold.}
 
 \item{parallel}{Whether to evaluate the sweep with [furrr::future_map()].
 Default `TRUE`. When `FALSE`, runs sequentially via [purrr::map()].}
+
+\item{checkpoint_dir}{Optional directory path where per-task checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. `c(1, 2)`) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.}
 }
 \value{
 A list of four elements:

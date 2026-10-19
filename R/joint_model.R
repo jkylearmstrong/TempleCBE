@@ -763,6 +763,9 @@ tidy.joint_model <- function(x, ...) {
 #'   \code{resamples} puts the same subject in both the analysis and the assessment set of a
 #'   split; see Details. \code{FALSE} skips the check. Folds that \code{cv_joint_model()} builds
 #'   itself are never checked, as they are grouped by subject already.
+#' @param checkpoint_dir Optional directory path where per-split checkpoints are stored.
+#' @param shard Optional shard specification (e.g. \code{c(1, 2)}) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: \code{"recompute"}, \code{"overwrite"}, or \code{"error"}.
 #' @param ... Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.
 #'
 #' @return An S3 object of class \code{c("cv_joint_model", "tbl_df")} summarizing
@@ -935,6 +938,9 @@ cv_joint_model <- function(data,
 #'   (\code{\link[finetune]{tune_race_win_loss}} racing, which needs \pkg{BradleyTerry2}).
 #'   With racing, the penalty found on each outer split's inner resamples replaces any
 #'   \code{penalty} given in \code{...}.
+#' @param checkpoint_dir Optional directory path where per-split checkpoints are stored.
+#' @param shard Optional shard specification (e.g. \code{c(1, 2)}) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: \code{"recompute"}, \code{"overwrite"}, or \code{"error"}.
 #' @param ... Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.
 #'
 #' @return An S3 object of class \code{c("nested_cv_joint_model", "tbl_df")}: \code{outer_id},

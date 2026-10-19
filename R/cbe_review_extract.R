@@ -67,6 +67,7 @@
 #'   The session-wide options \code{review.docx_max_entries},
 #'   \code{review.docx_max_bytes} and \code{review.docx_max_xml_bytes} set the
 #'   defaults.
+#' @param ... Passed to \code{docx_review_extract()}.
 #'
 #' @details
 #' \strong{Merging a new round into the tracker.} A comment is identified by what
@@ -4332,6 +4333,7 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #'   tracked paragraph redlines in addition to comments.
 #' @param overwrite Logical (default `TRUE`). Overwrite `file` if it already
 #'   exists.
+#' @param ... Passed to \code{review_tracker()}.
 #' @return A tibble of class `cbe_review_tracker` with columns `item_id`,
 #'   `file`, `item_type`, `comment_id`, `author`, `paragraph`, `selected_text`,
 #'   `comment`, `trivial`, `status`, `location`, and `rationale`.

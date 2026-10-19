@@ -1210,6 +1210,7 @@ tune_over_alpha <- function(object,
 #'   receives all of its assigned tasks in a single batch).
 #' @param on_complete Optional callback `function(result)` (or option
 #'   `templecbe.on_complete`) invoked when the run finishes or errors.
+#' @param .fn_name Internal caller function name for logging and checkpointing metadata.
 #' @return A tibble of [glmnet_IBS()] results with an `inner_resamples_splits`
 #'   column giving the split's identifier.
 #' @seealso [glmnet_IBS()], [tune_over_alpha()], [collect_checkpoints()],

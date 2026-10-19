@@ -49,6 +49,12 @@ workflow); pass \code{eval_time} for any other preprocessor.}
 
 \item{seed}{Optional random seed integer for reproducible candidate generation and fold processing.}
 
+\item{checkpoint_dir}{Optional directory path where per-task checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. \code{c(1, 2)}) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: \code{"recompute"}, \code{"overwrite"}, or \code{"error"}.}
+
 \item{...}{Additional arguments passed to \code{\link[finetune]{tune_race_anova}},
 \code{\link[finetune]{tune_race_win_loss}}, or \code{\link[workflowsets]{workflow_map}}.}
 }

@@ -25,6 +25,8 @@ my_summary_table(...)
 \item{data.output}{should the data be output, TRUE or FALSE, default is TRUE}
 
 \item{table.output}{should the table be output, TRUE or FALSE, default is FALSE}
+
+\item{...}{Passed to [summary_table()].}
 }
 \value{
 either a dataframe or readable table

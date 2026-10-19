@@ -46,6 +46,8 @@ x \%notin\% table
 \item{ignore.case, fixed, perl}{Logical flags controlling how \code{pattern}
 is matched, as in \code{\link{grepl}}.}
 
+\item{...}{Passed to \code{match_like()}.}
+
 \item{x, vector}{A vector to test.}
 
 \item{table}{Vector of values to test against (for \code{notin()}/\code{\%notin\%}/\code{\%!in\%}).}

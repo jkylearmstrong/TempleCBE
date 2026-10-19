@@ -48,6 +48,12 @@ resample, puts the same subject in both its analysis and its assessment set; see
 With racing, the penalty found on each outer split's inner resamples replaces any
 \code{penalty} given in \code{...}.}
 
+\item{checkpoint_dir}{Optional directory path where per-split checkpoints are stored.}
+
+\item{shard}{Optional shard specification (e.g. \code{c(1, 2)}) for distributed computation.}
+
+\item{checkpoint_mismatch}{Action on mismatch: \code{"recompute"}, \code{"overwrite"}, or \code{"error"}.}
+
 \item{...}{Additional arguments passed to \code{\link[TempleCBE]{joint_model}}.}
 }
 \value{

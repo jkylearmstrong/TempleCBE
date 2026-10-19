@@ -28,6 +28,8 @@ tracked paragraph redlines in addition to comments.}
 
 \item{overwrite}{Logical (default `TRUE`). Overwrite `file` if it already
 exists.}
+
+\item{...}{Passed to \code{review_tracker()}.}
 }
 \value{
 A tibble of class `cbe_review_tracker` with columns `item_id`,

@@ -66,6 +66,9 @@
 #'   `"grid"` (default, standard [cv_coxnet()] grid search), `"race_anova"`
 #'   ([finetune::tune_race_anova()] racing), or `"race_win_loss"`
 #'   ([finetune::tune_race_win_loss()] racing; needs BradleyTerry2).
+#' @param checkpoint_dir Optional directory path where per-split checkpoints are stored.
+#' @param shard Optional shard specification (e.g. `c(1, 2)`) for distributed computation.
+#' @param checkpoint_mismatch Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.
 #' @inheritParams cv_coxnet
 #' @return A tibble, of class `nested_cv_coxnet`, with one row per outer split:
 #'   `id`, the chosen `mixture` and `penalty`, `.metrics` (outer assessment-set

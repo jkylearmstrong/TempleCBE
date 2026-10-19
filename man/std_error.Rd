@@ -13,6 +13,8 @@ sd.error(...)
 \item{x}{vector of data}
 
 \item{na.rm}{should NA values be removed, TRUE or FALSE, default is FALSE}
+
+\item{...}{Passed to [std_error()].}
 }
 \value{
 numeric value representing standard error

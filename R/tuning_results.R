@@ -10,6 +10,7 @@
 #' @param rank_metric Name of the metric to rank by, e.g. `"rmse"` or
 #'   `"brier_survival_integrated"`.
 #' @param .rank Position to return; 1 (default) is the best workflow.
+#' @param ... Additional arguments passed to [workflow_set_params()].
 #' @return A one-row tibble with `wflow_id`, `preproc`, `model`, and one column
 #'   per tuning parameter.
 #' @seealso [workflow_set_rank_fit()] to also fit the chosen configuration.

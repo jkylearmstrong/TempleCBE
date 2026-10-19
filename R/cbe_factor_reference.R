@@ -13,6 +13,7 @@
 #' @param x A factor, or a vector coercible to one via \code{as.factor()}.
 #' @param ref_level Character string naming the level to use as reference. Defaults
 #'   to the first level of \code{x} (its current or natural ordering).
+#' @param ... Passed to [relevel_factor()].
 #' @return The releveled factor, with attribute \code{"cbe_reference_level"} set to
 #'   the chosen reference level.
 #' @seealso [cbe_cox_single()], [cbe_cox_multi()]

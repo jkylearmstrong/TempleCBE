@@ -2543,6 +2543,7 @@ get_render_plan <- function(all_objects,
 #' Check if a FileOutputs object produces datasets (outputs an rds, xlsx, etc. file)
 #'
 #' @param obj A FileOutputs object.
+#' @param ... Passed to [produces_data()].
 #' @return Logical.
 #' @export
 produces_data <- function(obj) {
