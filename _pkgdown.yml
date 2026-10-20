@@ -66,6 +66,7 @@ reference:
       - read_database_from_excel
       - write_workbook
       - write_xlsx
+      - write_xlsx_file
       - cbe_write_database
       - cbe_read_database
       - write_database_metadata
