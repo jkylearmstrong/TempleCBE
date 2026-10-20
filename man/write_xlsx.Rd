@@ -14,6 +14,6 @@ write_xlsx(...)
 
 `write_xlsx()` in TempleCBE was a re-export of [writexl::write_xlsx()] and is now
 deprecated to avoid masking conflicts when both packages are loaded.
-Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027).
+Scheduled for complete removal in TempleCBE 0.7.0.
 Call [write_xlsx_file()] or [writexl::write_xlsx()] directly instead.
 }

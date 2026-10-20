@@ -287,10 +287,10 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     if (!dir.exists(checkpoint_dir)) {
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+    ckpt_schema <- checkpoint_schema_version()
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
-        version = pkg_ver,
+        schema = ckpt_schema,
         seed_scheme = current_seed_scheme(),
         outer_split = object$splits[[i]]$in_id,
         rule = rule,
