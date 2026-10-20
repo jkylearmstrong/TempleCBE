@@ -88,6 +88,12 @@
 #'   in both the analysis and the assessment set of a split; see Details. `FALSE`
 #'   skips the check. Folds that `cv_coxnet()` builds itself are never checked,
 #'   as they are grouped by subject already.
+#' @param checkpoint_dir Optional directory path where per-resample `.rds`
+#'   checkpoint files are stored. If `NULL` (default), executes without caching.
+#' @param shard Optional integer vector `c(i, n)` specifying that this execution
+#'   evaluates shard `i` of `n` resample folds.
+#' @param checkpoint_mismatch Action when a checkpoint fingerprint mismatches:
+#'   `"recompute"` (default), `"overwrite"`, or `"error"`.
 #' @param on_complete Optional callback `function(result)` invoked when
 #'   `cv_coxnet()` finishes or errors (defaults to
 #'   `getOption("templecbe.on_complete", NULL)`).
@@ -152,13 +158,16 @@ cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture 
                                  resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                                  metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
                                  parallel = FALSE, check_subject_overlap = TRUE,
+                                 checkpoint_dir = NULL, shard = NULL,
+                                 checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                  on_complete = getOption("templecbe.on_complete", NULL), ...) {
   run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
     cv_coxnet_impl(
       spec_xy(x, y, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, ...
     )
   })
 }
@@ -169,13 +178,16 @@ cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1,
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
                              parallel = FALSE, check_subject_overlap = TRUE,
+                             checkpoint_dir = NULL, shard = NULL,
+                             checkpoint_mismatch = c("recompute", "overwrite", "error"),
                              on_complete = getOption("templecbe.on_complete", NULL), ...) {
   run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
     cv_coxnet_impl(
       spec_xy(matrix_to_df(x), y, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, ...
     )
   })
 }
@@ -186,13 +198,16 @@ cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mi
                               resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                               metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
                               parallel = FALSE, check_subject_overlap = TRUE,
+                              checkpoint_dir = NULL, shard = NULL,
+                              checkpoint_mismatch = c("recompute", "overwrite", "error"),
                               on_complete = getOption("templecbe.on_complete", NULL), ...) {
   run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
     cv_coxnet_impl(
       spec_formula(formula, data, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, ...
     )
   })
 }
@@ -203,13 +218,16 @@ cv_coxnet.recipe <- function(x, data, subject_id = NULL, group = NULL, mixture =
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
                              parallel = FALSE, check_subject_overlap = TRUE,
+                             checkpoint_dir = NULL, shard = NULL,
+                             checkpoint_mismatch = c("recompute", "overwrite", "error"),
                              on_complete = getOption("templecbe.on_complete", NULL), ...) {
   run_with_on_complete("cv_coxnet", on_complete, meta = list(v = v, mixture = mixture), expr = {
     cv_coxnet_impl(
       spec_recipe(x, data, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap, ...
+      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, ...
     )
   })
 }
@@ -413,16 +431,33 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
     pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    metrics_repr <- if (!is.null(metrics)) {
+      m_attr <- attr(metrics, "metrics", exact = TRUE)
+      if (!is.null(m_attr)) {
+        list(metric_names = sort(names(m_attr)))
+      } else {
+        paste0(as.character(openssl::sha256(serialize(metrics, NULL))), collapse = "")
+      }
+    } else {
+      NULL
+    }
+
     split_fps <- vapply(seq_len(n_splits), function(i) {
       sp <- resamples$splits[[i]]
+      data_repr <- if (inherits(sp, "rsplit") && is.data.frame(sp$data)) {
+        paste0(as.character(openssl::sha256(serialize(sp$data, NULL))), collapse = "")
+      } else {
+        NULL
+      }
       payload <- list(
         version = pkg_ver,
         seed_scheme = current_seed_scheme(),
+        data = data_repr,
         split_in = sp$in_id,
         mixture = mixture,
         paths = paths,
         eval_time = eval_time,
-        metrics = names(metrics),
+        metrics = metrics_repr,
         covariates = covariates,
         trunc = trunc
       )
@@ -431,10 +466,32 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
 
     run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = fold_ids), NULL))), collapse = "")
 
-    active_mask <- if (!is.null(shard)) {
-      ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
+    shard_parsed <- validate_shard_spec(shard)
+    active_mask <- if (!is.null(shard_parsed)) {
+      ((seq_len(n_splits) - 1L) %% shard_parsed[2]) + 1L == shard_parsed[1]
     } else {
       rep(TRUE, n_splits)
+    }
+
+    # Verify existing checkpoints up front
+    mismatch_count <- 0L
+    for (i in seq_len(n_splits)) {
+      sp_id <- fold_ids[i]
+      safe_id <- gsub("[^A-Za-z0-9._-]", "_", sp_id)
+      cf <- file.path(checkpoint_dir, sprintf("cv_coxnet_%s.rds", safe_id))
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, split_fps[i], checkpoint_mismatch = checkpoint_mismatch)
+        if (identical(chk$status, "mismatch")) {
+          mismatch_count <- mismatch_count + 1L
+          unlink(cf)
+        }
+      }
+    }
+    if (mismatch_count > 0L) {
+      message(sprintf(
+        "cv_coxnet(): Discarded %d cached task(s) in '%s' due to mismatched fingerprint. Recomputing...",
+        mismatch_count, checkpoint_dir
+      ))
     }
 
     eval_split_ckpt <- function(i) {

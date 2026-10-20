@@ -1329,43 +1329,169 @@ print.templecbe_run_comparison <- function(x, ...) {
 #' @param tolerance Numeric tolerance for differences in mean IBS (default `1e-4`).
 #' @param label1 Character label for `tune1` (default `"run1"`).
 #' @param label2 Character label for `tune2` (default `"run2"`).
+#' @param match Matching strategy for candidate hyperparameter configurations:
+#'   `"exact"` (default; matches on exact `alpha` values), `"nearest"` (matches each
+#'   `alpha` in `tune1` to the closest `alpha` in `tune2`), or `"binned"` (discretizes
+#'   `alpha` into `n_bins` equal-width bins).
+#' @param n_bins Number of bins when `match = "binned"` (default `10`).
 #' @return An object of class `c("templecbe_tuning_comparison", "tbl_df", "tbl", "data.frame")`
-#'   summarizing per-alpha IBS distributions and shifts.
+#'   summarizing per-alpha IBS distributions, distributional shifts, and global IBS statistics.
 #' @seealso [summarize_tune_results()], [compare_runs()]
 #' @export
 compare_tuning_runs <- function(tune1,
                                 tune2,
                                 tolerance = 1e-4,
                                 label1 = "run1",
-                                label2 = "run2") {
+                                label2 = "run2",
+                                match = c("exact", "nearest", "binned"),
+                                n_bins = 10) {
+  match <- match.arg(match)
   tune1 <- as_tuning_results(tune1)
   tune2 <- as_tuning_results(tune2)
 
-  group_cols <- "alpha"
-  if ("formula" %in% names(tune1) && "formula" %in% names(tune2)) {
-    group_cols <- c("alpha", "formula")
-  }
-
-  summarize_tune <- function(df, lbl) {
-    g <- dplyr::group_by(df, dplyr::across(dplyr::all_of(group_cols)))
-    s <- dplyr::summarize(
-      g,
-      n_fits = dplyr::n(),
-      mean_ibs = mean(.data$IBS, na.rm = TRUE),
-      median_ibs = stats::median(.data$IBS, na.rm = TRUE),
-      q25_ibs = stats::quantile(.data$IBS, 0.25, na.rm = TRUE),
-      q75_ibs = stats::quantile(.data$IBS, 0.75, na.rm = TRUE),
-      .groups = "drop"
+  # Overall distribution comparison across all raw fits (J1)
+  calc_dist <- function(df) {
+    ibs <- stats::na.omit(as.numeric(df$IBS))
+    best_row <- if (length(ibs) > 0L) which.min(df$IBS) else NA_integer_
+    list(
+      n = length(ibs),
+      best_ibs = if (!is.na(best_row)) df$IBS[best_row] else NA_real_,
+      best_alpha = if (!is.na(best_row)) df$alpha[best_row] else NA_real_,
+      min = if (length(ibs) > 0L) min(ibs) else NA_real_,
+      q25 = if (length(ibs) > 0L) stats::quantile(ibs, 0.25, names = FALSE) else NA_real_,
+      median = if (length(ibs) > 0L) stats::median(ibs) else NA_real_,
+      mean = if (length(ibs) > 0L) mean(ibs) else NA_real_,
+      q75 = if (length(ibs) > 0L) stats::quantile(ibs, 0.75, names = FALSE) else NA_real_,
+      max = if (length(ibs) > 0L) max(ibs) else NA_real_
     )
-    names(s)[names(s) %in% c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs")] <-
-      paste0(c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs"), "_", lbl)
-    s
+  }
+  d1 <- calc_dist(tune1)
+  d2 <- calc_dist(tune2)
+  ks_p <- if (d1$n >= 2L && d2$n >= 2L) {
+    tryCatch(stats::ks.test(tune1$IBS, tune2$IBS)$p.value, error = function(e) NA_real_)
+  } else {
+    NA_real_
+  }
+  dist_comparison <- tibble::tibble(
+    metric = c("n_fits", "best_ibs", "best_alpha", "min_ibs", "q25_ibs", "median_ibs", "mean_ibs", "q75_ibs", "max_ibs"),
+    run1 = c(d1$n, d1$best_ibs, d1$best_alpha, d1$min, d1$q25, d1$median, d1$mean, d1$q75, d1$max),
+    run2 = c(d2$n, d2$best_ibs, d2$best_alpha, d2$min, d2$q25, d2$median, d2$mean, d2$q75, d2$max),
+    abs_diff = c(abs(d1$n - d2$n), abs(d1$best_ibs - d2$best_ibs), abs(d1$best_alpha - d2$best_alpha),
+                 abs(d1$min - d2$min), abs(d1$q25 - d2$q25), abs(d1$median - d2$median),
+                 abs(d1$mean - d2$mean), abs(d1$q75 - d2$q75), abs(d1$max - d2$max))
+  )
+  names(dist_comparison)[2:3] <- c(label1, label2)
+
+  has_formula <- ("formula" %in% names(tune1) && "formula" %in% names(tune2))
+
+  if (identical(match, "exact")) {
+    group_cols <- if (has_formula) c("alpha", "formula") else "alpha"
+
+    summarize_tune <- function(df, lbl) {
+      g <- dplyr::group_by(df, dplyr::across(dplyr::all_of(group_cols)))
+      s <- dplyr::summarize(
+        g,
+        n_fits = dplyr::n(),
+        mean_ibs = mean(.data$IBS, na.rm = TRUE),
+        median_ibs = stats::median(.data$IBS, na.rm = TRUE),
+        q25_ibs = stats::quantile(.data$IBS, 0.25, na.rm = TRUE),
+        q75_ibs = stats::quantile(.data$IBS, 0.75, na.rm = TRUE),
+        .groups = "drop"
+      )
+      names(s)[names(s) %in% c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs")] <-
+        paste0(c("n_fits", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs"), "_", lbl)
+      s
+    }
+
+    s1 <- summarize_tune(tune1, label1)
+    s2 <- summarize_tune(tune2, label2)
+    merged <- dplyr::inner_join(s1, s2, by = group_cols)
+
+  } else if (identical(match, "nearest")) {
+    group_cols <- if (has_formula) c("alpha", "formula") else "alpha"
+
+    summarize_tune_base <- function(df) {
+      g <- dplyr::group_by(df, dplyr::across(dplyr::all_of(group_cols)))
+      dplyr::summarize(
+        g,
+        n_fits = dplyr::n(),
+        mean_ibs = mean(.data$IBS, na.rm = TRUE),
+        median_ibs = stats::median(.data$IBS, na.rm = TRUE),
+        q25_ibs = stats::quantile(.data$IBS, 0.25, na.rm = TRUE),
+        q75_ibs = stats::quantile(.data$IBS, 0.75, na.rm = TRUE),
+        .groups = "drop"
+      )
+    }
+
+    s1 <- summarize_tune_base(tune1)
+    s2 <- summarize_tune_base(tune2)
+
+    rows <- vector("list", nrow(s1))
+    for (i in seq_len(nrow(s1))) {
+      a1 <- s1$alpha[i]
+      cand_s2 <- if (has_formula) s2[s2$formula == s1$formula[i], , drop = FALSE] else s2
+      if (nrow(cand_s2) == 0L) cand_s2 <- s2
+
+      dist_a <- abs(cand_s2$alpha - a1)
+      best_idx <- which.min(dist_a)
+      match_row <- cand_s2[best_idx, , drop = FALSE]
+
+      row_i <- tibble::tibble(
+        alpha_1 = a1,
+        alpha_2 = match_row$alpha,
+        alpha_dist = abs(a1 - match_row$alpha)
+      )
+      if (has_formula) {
+        row_i$formula <- s1$formula[i]
+      }
+      row_i[[paste0("n_fits_", label1)]] <- s1$n_fits[i]
+      row_i[[paste0("mean_ibs_", label1)]] <- s1$mean_ibs[i]
+      row_i[[paste0("median_ibs_", label1)]] <- s1$median_ibs[i]
+      row_i[[paste0("q25_ibs_", label1)]] <- s1$q25_ibs[i]
+      row_i[[paste0("q75_ibs_", label1)]] <- s1$q75_ibs[i]
+
+      row_i[[paste0("n_fits_", label2)]] <- match_row$n_fits
+      row_i[[paste0("mean_ibs_", label2)]] <- match_row$mean_ibs
+      row_i[[paste0("median_ibs_", label2)]] <- match_row$median_ibs
+      row_i[[paste0("q25_ibs_", label2)]] <- match_row$q25_ibs
+      row_i[[paste0("q75_ibs_", label2)]] <- match_row$q75_ibs
+      rows[[i]] <- row_i
+    }
+    merged <- dplyr::bind_rows(rows)
+
+  } else if (identical(match, "binned")) {
+    breaks <- seq(0, 1, length.out = as.integer(n_bins) + 1L)
+    bin_labels <- sprintf("[%.2f, %.2f]", breaks[-length(breaks)], breaks[-1])
+
+    b1 <- tune1
+    b2 <- tune2
+    b1$alpha_bin <- cut(b1$alpha, breaks = breaks, labels = bin_labels, include.lowest = TRUE)
+    b2$alpha_bin <- cut(b2$alpha, breaks = breaks, labels = bin_labels, include.lowest = TRUE)
+
+    group_cols <- if (has_formula) c("alpha_bin", "formula") else "alpha_bin"
+
+    summarize_binned <- function(df, lbl) {
+      g <- dplyr::group_by(df, dplyr::across(dplyr::all_of(group_cols)))
+      s <- dplyr::summarize(
+        g,
+        n_fits = dplyr::n(),
+        mean_alpha = mean(.data$alpha, na.rm = TRUE),
+        mean_ibs = mean(.data$IBS, na.rm = TRUE),
+        median_ibs = stats::median(.data$IBS, na.rm = TRUE),
+        q25_ibs = stats::quantile(.data$IBS, 0.25, na.rm = TRUE),
+        q75_ibs = stats::quantile(.data$IBS, 0.75, na.rm = TRUE),
+        .groups = "drop"
+      )
+      names(s)[names(s) %in% c("n_fits", "mean_alpha", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs")] <-
+        paste0(c("n_fits", "mean_alpha", "mean_ibs", "median_ibs", "q25_ibs", "q75_ibs"), "_", lbl)
+      s
+    }
+
+    s1 <- summarize_binned(b1, label1)
+    s2 <- summarize_binned(b2, label2)
+    merged <- dplyr::inner_join(s1, s2, by = group_cols)
   }
 
-  s1 <- summarize_tune(tune1, label1)
-  s2 <- summarize_tune(tune2, label2)
-
-  merged <- dplyr::inner_join(s1, s2, by = group_cols)
   if (nrow(merged) == 0L) {
     stop("No matching alpha/formula configurations found between tune1 and tune2.", call. = FALSE)
   }
@@ -1383,14 +1509,18 @@ compare_tuning_runs <- function(tune1,
   summary_info <- list(
     label1 = label1,
     label2 = label2,
+    match = match,
     tolerance = tolerance,
     n_configs = nrow(merged),
     all_reproducible = all(reproducible),
     max_mean_diff = max(diff_mean, na.rm = TRUE),
-    rank_correlation = spearman_rho
+    rank_correlation = spearman_rho,
+    ks_pvalue = ks_p,
+    distribution_comparison = dist_comparison
   )
 
   attr(merged, "comparison_summary") <- summary_info
+  attr(merged, "distribution_comparison") <- dist_comparison
   class(merged) <- c("templecbe_tuning_comparison", class(merged))
   merged
 }
@@ -1400,18 +1530,22 @@ print.templecbe_tuning_comparison <- function(x, ...) {
   s <- attr(x, "comparison_summary")
   cat("====================================================\n")
   cat("TempleCBE Tuning Run Comparison\n")
-  cat(sprintf("Runs compared: '%s' vs '%s'\n", s$label1, s$label2))
-  cat(sprintf("Tuning configurations: %d\n", s$n_configs))
+  cat(sprintf("Runs compared: '%s' vs '%s' (match = '%s')\n", s$label1, s$label2, s$match))
+  cat(sprintf("Tuning configurations matched: %d\n", s$n_configs))
   cat(sprintf("Tolerance: mean |IBS diff| <= %g\n", s$tolerance))
   cat("----------------------------------------------------\n")
   cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
   cat(sprintf("Max mean |IBS diff|:   %g\n", s$max_mean_diff))
   cat(sprintf("Spearman Rank Corr:    %.4f\n", s$rank_correlation))
+  cat(sprintf("KS Test (IBS dist):    p = %.4g\n", s$ks_pvalue))
+  cat("----------------------------------------------------\n")
+  cat("Overall IBS Distribution Summary:\n")
+  print(as.data.frame(s$distribution_comparison), row.names = FALSE)
   cat("====================================================\n")
   if (!s$all_reproducible) {
     discrepant <- x[!x$reproducible, , drop = FALSE]
     cat(sprintf("\n%d configuration(s) exceeded tolerance:\n", nrow(discrepant)))
-    print(utils::head(discrepant, 10))
+    print(as.data.frame(utils::head(discrepant, 10)))
   }
   invisible(x)
 }

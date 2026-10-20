@@ -29,6 +29,9 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -49,6 +52,9 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -69,6 +75,9 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -89,6 +98,9 @@ cv_coxnet(x, ...)
   trunc = 0.05,
   parallel = FALSE,
   check_subject_overlap = TRUE,
+  checkpoint_dir = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -146,6 +158,15 @@ in `metrics` by default.}
 in both the analysis and the assessment set of a split; see Details. `FALSE`
 skips the check. Folds that `cv_coxnet()` builds itself are never checked,
 as they are grouped by subject already.}
+
+\item{checkpoint_dir}{Optional directory path where per-resample `.rds`
+checkpoint files are stored. If `NULL` (default), executes without caching.}
+
+\item{shard}{Optional integer vector `c(i, n)` specifying that this execution
+evaluates shard `i` of `n` resample folds.}
+
+\item{checkpoint_mismatch}{Action when a checkpoint fingerprint mismatches:
+`"recompute"` (default), `"overwrite"`, or `"error"`.}
 
 \item{on_complete}{Optional callback `function(result)` invoked when
 `cv_coxnet()` finishes or errors (defaults to

@@ -390,3 +390,311 @@ test_that("5. G3: nested_survival_run() writes consolidated fold-level checkpoin
   expect_true(!is.null(res$elapsed_sec))
   expect_true(res$elapsed_sec > 0)
 })
+
+
+# ------------------------------------------------------------------------------
+# 6. Tests for H1 - H7 and J1 - J2
+# ------------------------------------------------------------------------------
+
+make_tune_fixture <- function(n = 60, seed = 1) {
+  set.seed(seed)
+  long <- do.call(rbind, lapply(seq_len(n), function(i) {
+    k <- sample(1:3, 1)
+    stops <- cumsum(stats::runif(k, 2, 6))
+    risk <- stats::rnorm(1)
+    data.frame(
+      id = i,
+      tstart = c(0, utils::head(stops, -1)),
+      tstop = stops,
+      status = c(rep(0, k - 1), stats::rbinom(1, 1, stats::plogis(risk))),
+      x1 = risk + stats::rnorm(k, sd = 0.2),
+      x2 = stats::rnorm(k),
+      x3 = stats::rnorm(k)
+    )
+  }))
+  rec <- recipes::recipe(~ ., data = long) |>
+    recipes::update_role(id, tstart, tstop, status, new_role = "id variable") |>
+    recipes::step_range(recipes::all_numeric_predictors())
+  list(
+    split = rsample::group_initial_split(long, group = id, prop = 0.7),
+    splits = rsample::group_vfold_cv(long, group = id, v = 2),
+    recipe = rec,
+    features = c("x1", "x2", "x3"),
+    times = unique(long[, c("tstart", "tstop")]),
+    long = long
+  )
+}
+
+
+test_that("H1: tune_grid_checkpointed() detects changed metrics, control, data, and grid", {
+  for (pkg in c("rsample", "recipes", "parsnip", "tune", "workflows", "yardstick", "rpart")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(123)
+  df1 <- data.frame(y = stats::rnorm(30), x = stats::rnorm(30))
+  splits <- rsample::vfold_cv(df1, v = 2)
+  rec <- recipes::recipe(y ~ x, data = df1)
+  spec <- parsnip::decision_tree(cost_complexity = tune::tune()) |>
+    parsnip::set_engine("rpart") |>
+    parsnip::set_mode("regression")
+  wf <- workflows::workflow() |> workflows::add_recipe(rec) |> workflows::add_model(spec)
+  grid1 <- tibble::tibble(cost_complexity = c(0.01, 0.1))
+
+  tmp_dir <- file.path(tempdir(), paste0("h1_test_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Initial run with default metrics (rmse, rsq)
+  m_default <- yardstick::metric_set(yardstick::rmse, yardstick::rsq)
+  res1 <- tune_grid_checkpointed(
+    object = wf, resamples = splits, grid = grid1, metrics = m_default,
+    checkpoint_dir = tmp_dir
+  )
+  m1_names <- sort(unique(tune::collect_metrics(res1)$.metric))
+  expect_equal(m1_names, c("rmse", "rsq"))
+
+  # Changed metrics: yardstick::mae -> MUST detect mismatch, invalidate, and recompute
+  m_mae <- yardstick::metric_set(yardstick::mae)
+  expect_message(
+    res_mae <- tune_grid_checkpointed(
+      object = wf, resamples = splits, grid = grid1, metrics = m_mae,
+      checkpoint_dir = tmp_dir
+    ),
+    "tune_grid_checkpointed\\(\\): Discarded"
+  )
+  m_mae_names <- sort(unique(tune::collect_metrics(res_mae)$.metric))
+  expect_equal(m_mae_names, "mae")
+
+  # Changed control: save_pred = TRUE -> MUST detect mismatch
+  ctrl_pred <- tune::control_grid(save_pred = TRUE)
+  expect_message(
+    res_ctrl <- tune_grid_checkpointed(
+      object = wf, resamples = splits, grid = grid1, metrics = m_mae,
+      control = ctrl_pred, checkpoint_dir = tmp_dir
+    ),
+    "tune_grid_checkpointed\\(\\): Discarded"
+  )
+  expect_true(".predictions" %in% names(res_ctrl))
+
+  # Changed grid: cost_complexity = c(0.05, 0.5) -> MUST detect mismatch
+  grid2 <- tibble::tibble(cost_complexity = c(0.05, 0.5))
+  expect_message(
+    res_grid <- tune_grid_checkpointed(
+      object = wf, resamples = splits, grid = grid2, metrics = m_mae,
+      control = ctrl_pred, checkpoint_dir = tmp_dir
+    ),
+    "tune_grid_checkpointed\\(\\): Discarded"
+  )
+  expect_equal(sort(unique(tune::collect_metrics(res_grid)$cost_complexity)), c(0.05, 0.5))
+})
+
+test_that("H2: Discarded mismatched checkpoints report a clear informative message", {
+  tmp_dir <- file.path(tempdir(), paste0("h2_test_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Save with fingerprint 1
+  checkpoint_map(1:2, function(x) x + 1, checkpoint_dir = tmp_dir, fingerprint = "v1")
+
+  # Rerun with fingerprint 2 -> expect clear message
+  expect_message(
+    checkpoint_map(1:2, function(x) x + 1, checkpoint_dir = tmp_dir, fingerprint = "v2"),
+    "checkpoint_map\\(\\): Discarded 2 cached task\\(s\\) in '.*' due to mismatched fingerprint"
+  )
+})
+
+test_that("H3: cv_coxnet() exposes checkpoint_dir, shard, and checkpoint_mismatch; tune_over_alpha() exposes shard", {
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(123)
+  df <- data.frame(
+    id = 1:30,
+    time = stats::rexp(30, 0.1) + 1,
+    status = stats::rbinom(30, 1, 0.7),
+    x1 = stats::rnorm(30),
+    x2 = stats::rnorm(30)
+  )
+
+  tmp_dir <- file.path(tempdir(), paste0("h3_test_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Check formals
+  expect_true(all(c("checkpoint_dir", "shard", "checkpoint_mismatch") %in% names(formals(TempleCBE:::cv_coxnet.formula))))
+  expect_true(all(c("checkpoint_dir", "shard", "checkpoint_mismatch") %in% names(formals(TempleCBE:::cv_coxnet.data.frame))))
+  expect_true("shard" %in% names(formals(tune_over_alpha)))
+
+  # Run cv_coxnet with checkpoint_dir
+  cv1 <- cv_coxnet(
+    survival::Surv(time, status) ~ x1 + x2,
+    data = df,
+    subject_id = "id",
+    v = 2,
+    mixture = 1,
+    nlambda = 5,
+    checkpoint_dir = tmp_dir
+  )
+  expect_s3_class(cv1, "cv_coxnet")
+  expect_true(length(list.files(tmp_dir, pattern = "\\.rds$")) >= 2L)
+
+  # Sharding in tune_over_alpha
+  fx <- make_tune_fixture()
+  tmp_alpha <- file.path(tempdir(), paste0("h3_alpha_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_alpha, recursive = TRUE), add = TRUE)
+
+  s1 <- suppressWarnings(tune_over_alpha(
+    object = fx$split,
+    recipe = fx$recipe,
+    feature_names = fx$features,
+    time_data = fx$times,
+    cox.ties = "breslow",
+    alphas = c(0.2, 0.4, 0.6, 0.8),
+    checkpoint_dir = tmp_alpha,
+    shard = "1/2",
+    internal_folds = 2
+  ))
+  # Shard 1 only computed half of tasks
+  expect_equal(length(s1), 4L)
+  non_nulls <- sum(vapply(s1, function(x) !is.null(x$result), logical(1)))
+  expect_equal(non_nulls, 2L)
+})
+
+test_that("H4: write_xlsx_file() is exported and functional; legacy masking names warn with 0.6.0 removal date", {
+  skip_if_not_installed("writexl")
+
+  tmp_file <- tempfile(fileext = ".xlsx")
+  on.exit(unlink(tmp_file), add = TRUE)
+
+  # write_xlsx_file() works
+  test_df <- data.frame(a = 1:3, b = c("x", "y", "z"))
+  write_xlsx_file(test_df, tmp_file)
+  expect_true(file.exists(tmp_file))
+
+  # Deprecation warnings mention removal in 0.6.0
+  expect_warning(TempleCBE::clean_names(test_df), "0\\.6\\.0")
+  expect_warning(TempleCBE::write_xlsx(test_df, tmp_file), "0\\.6\\.0")
+  expect_warning(TempleCBE::like("abc", "b"), "0\\.6\\.0")
+  expect_warning(TempleCBE::`%like%`("abc", "b"), "0\\.6\\.0")
+  expect_warning(TempleCBE::`%notin%`(1, 2:3), "0\\.6\\.0")
+})
+
+test_that("H5: workflow_map_checkpointed() accepts seed without unused argument warnings", {
+  for (pkg in c("rsample", "recipes", "parsnip", "workflows", "workflowsets")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(42)
+  df <- data.frame(y = stats::rnorm(25), x = stats::rnorm(25))
+  splits <- rsample::vfold_cv(df, v = 2)
+  rec <- recipes::recipe(y ~ x, data = df)
+  spec <- parsnip::linear_reg() |> parsnip::set_engine("lm")
+
+  wf_set <- workflowsets::workflow_set(
+    preproc = list(simple = rec),
+    models = list(lm = spec)
+  )
+
+  tmp_dir <- file.path(tempdir(), paste0("h5_wflow_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Should run with seed = 123 without any warnings about unused argument 'seed'
+  expect_no_warning(
+    res_w <- workflow_map_checkpointed(
+      wf_set,
+      fn = "fit_resamples",
+      resamples = splits,
+      seed = 123,
+      checkpoint_dir = tmp_dir
+    )
+  )
+  expect_s3_class(res_w, "workflow_set")
+  expect_true(nrow(res_w) == 1L)
+})
+
+test_that("H6: checkpoint_map() return items do not carry checkpoint attributes and identical() holds across runs", {
+  tmp_dir <- file.path(tempdir(), paste0("h6_attrs_", floor(stats::runif(1, 1e5, 9e5))))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  items <- list(x = c(a = 1, b = 2), y = c(c = 3, d = 4))
+  fn <- function(v) v * 10
+
+  run1 <- checkpoint_map(items, fn, checkpoint_dir = tmp_dir, fingerprint = "h6_fp")
+  # Verify returned items have NO checkpoint attributes
+  expect_null(attr(run1[[1]], "checkpoint_fingerprint"))
+  expect_null(attr(run1[[1]], "checkpoint_meta"))
+  expect_null(attr(run1[[2]], "checkpoint_fingerprint"))
+
+  # Run 2: loaded from disk
+  run2 <- checkpoint_map(items, fn, checkpoint_dir = tmp_dir, fingerprint = "h6_fp")
+  expect_null(attr(run2[[1]], "checkpoint_fingerprint"))
+  expect_null(attr(run2[[2]], "checkpoint_fingerprint"))
+
+  # Both runs must be identical!
+  expect_true(identical(run1, run2))
+})
+
+test_that("H7: tune_alpha_by_split() records and returns timing breakdown", {
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick")) {
+    skip_if_not_installed(pkg)
+  }
+
+  fx <- make_tune_fixture()
+  res <- suppressWarnings(tune_alpha_by_split(
+    fx$splits,
+    recipe = fx$recipe,
+    feature_names = fx$features,
+    time_data = fx$times,
+    cox.ties = "breslow",
+    alphas = c(0.2, 0.8),
+    internal_folds = 2,
+    progress = FALSE
+  ))
+
+  tb <- attr(res, "timing_breakdown")
+  expect_true(is.list(tb))
+  expect_true(all(c("n_tasks", "n_splits", "n_workers", "elapsed_sec", "total_cpu_sec", "speedup") %in% names(tb)))
+  expect_true(tb$elapsed_sec >= 0)
+  expect_true(tb$total_cpu_sec >= 0)
+})
+
+test_that("J1: compare_tuning_runs() supports exact, nearest, and binned matching and overall distribution comparison", {
+  # Run 1: alphas 0, 0.2, 0.4, 0.6, 0.8, 1.0 (fixed) + 0.15, 0.75
+  t1 <- tibble::tibble(
+    inner_resamples_splits = rep(c("s1", "s2"), each = 8),
+    alpha = rep(c(0, 0.15, 0.2, 0.4, 0.6, 0.75, 0.8, 1.0), 2),
+    IBS = stats::runif(16, 0.1, 0.2)
+  )
+
+  # Run 2: alphas 0, 0.2, 0.4, 0.6, 0.8, 1.0 (fixed) + 0.35, 0.85 (different random alphas!)
+  t2 <- tibble::tibble(
+    inner_resamples_splits = rep(c("s1", "s2"), each = 8),
+    alpha = rep(c(0, 0.2, 0.35, 0.4, 0.6, 0.8, 0.85, 1.0), 2),
+    IBS = stats::runif(16, 0.1, 0.2)
+  )
+
+  # Exact matching: matches 6 fixed configurations
+  cmp_exact <- compare_tuning_runs(t1, t2, match = "exact")
+  expect_equal(attr(cmp_exact, "comparison_summary")$n_configs, 6L)
+
+  # Nearest matching: matches all 8 configurations from t1 to nearest in t2
+  cmp_nearest <- compare_tuning_runs(t1, t2, match = "nearest")
+  expect_equal(attr(cmp_nearest, "comparison_summary")$n_configs, 8L)
+  expect_true("alpha_dist" %in% names(cmp_nearest))
+
+  # Binned matching: bins into 5 bins
+  cmp_binned <- compare_tuning_runs(t1, t2, match = "binned", n_bins = 5)
+  expect_s3_class(cmp_binned, "templecbe_tuning_comparison")
+  expect_true("alpha_bin" %in% names(cmp_binned))
+
+  # Overall distribution comparison is present across all modes
+  dist1 <- attr(cmp_exact, "distribution_comparison")
+  expect_s3_class(dist1, "tbl_df")
+  expect_true(all(c("metric", "run1", "run2", "abs_diff") %in% names(dist1)))
+  expect_true("best_ibs" %in% dist1$metric)
+  expect_true("median_ibs" %in% dist1$metric)
+
+  # Print output contains distribution summary without infinite recursion
+  out_txt <- utils::capture.output(print(cmp_nearest))
+  expect_true(any(grepl("Overall IBS Distribution Summary", out_txt)))
+  expect_true(any(grepl("KS Test", out_txt)))
+})

@@ -8,7 +8,7 @@
 #' @examples
 #' clean_names(c("First Name", "ZIP Code", "Total ($)"))
 clean_names <- function(data) {
-  lifecycle::deprecate_warn("0.5.8", "clean_names()", details = "Use clean_names_keep_labels() or janitor::clean_names() directly.")
+  lifecycle::deprecate_warn("0.5.8", "clean_names()", "clean_names_keep_labels()", details = "Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027) to avoid masking janitor::clean_names(). Use clean_names_keep_labels() or janitor::clean_names() directly.")
   if (is.character(data)) {
     return(janitor::make_clean_names(data))
   } else if (is.data.frame(data)) {

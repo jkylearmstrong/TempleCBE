@@ -46,11 +46,12 @@ if (exists("labels", inherits = TRUE)) {
 ```{r overview_{{domain}}, echo = FALSE, results = 'asis'}
 if (!is.null(run_target) && !is.null(run_target$validation)) {
   v <- run_target$validation
+  clean_status <- gsub('^[\'"]+|[\'"]+$', '', as.character(run_target$status %||% "completed"))
   cat(sprintf(
     "- **Subjects:** %d (%d events, %d censored; censoring rate: %.1f%%)\n- **Outer CV Folds:** %d\n- **Candidate Models:** %d\n- **Status:** %s (Elapsed: %.1f s)\n\n",
     v$n_subjects, v$n_subjects_with_event, v$n_censored, 100 * v$censoring_rate,
     nrow(run_target$nested_folds), nrow(run_target$candidates),
-    run_target$status, run_target$elapsed_sec %||% 0
+    clean_status, run_target$elapsed_sec %||% 0
   ))
 } else {
   cat("*No run validation data available for this domain.*\n\n")

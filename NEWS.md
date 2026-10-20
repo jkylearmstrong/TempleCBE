@@ -1,12 +1,31 @@
 # TempleCBE 0.5.8
 
-## General-Purpose Checkpointing
+## General-Purpose Checkpointing & Envelope Container (H1, H2, H6)
 
-* **General `checkpoint_map()`**: Added and exported `checkpoint_map(.x, .f, ..., checkpoint_dir, key, fingerprint, shard, checkpoint_mismatch, progress)`, providing a purrr/furrr-style checkpointed mapping engine that caches intermediate results to fingerprinted `.rds` files, detects mismatches, and supports parallelization and multi-machine sharding.
-* **Tidymodels Checkpointed Resampling & Tuning Wrappers**: Added `tune_grid_checkpointed()`, `fit_resamples_checkpointed()`, `workflow_map_checkpointed()`, and `tune_race_survival_checkpointed()`. Each wrapper checkpoints individual resample fits (workflow $\times$ resample $\times$ grid) using comprehensive split, workflow, data, and version fingerprints, and returns standard `tune_results` objects compatible with all downstream tidymodels operations (`collect_metrics()`, `select_best()`, `autoplot()`).
-* **Universal Checkpoint Arguments**: Added `checkpoint_dir`, `shard`, and `checkpoint_mismatch` to all long-running analytical workflows (`compare_censoring_weights()`, `cv_coxnet()`, `nested_cv_coxnet()`, `tune_race_survival()`, `cv_joint_model()`, `nested_cv_joint_model()`, `tune_best_glmnet_workflow()`, `missforest_sweep_mtry()`, `missranger_sweep_mtry()`, and `tune_impute_numeric()`).
-* **Consolidated Fold-Level Checkpoints**: In `nested_survival_run()`, intermediate results are now saved consolidated by outer fold (`tune_outer_<fold>.rds` and `score_outer_<weights>.rds`), reducing thousands of task files down to ~10 clean checkpoint files per domain.
-* **Checkpoint Utilities**: Upgraded `collect_checkpoints()` and `clean_checkpoints()` to operate uniformly across all checkpointed functions and directories.
+* **General `checkpoint_map()` & Clean Return Objects (H6)**: Added and exported `checkpoint_map(.x, .f, ..., checkpoint_dir, key, fingerprint, shard, checkpoint_mismatch, progress)`, providing a purrr/furrr-style checkpointed mapping engine. Per-task `.rds` checkpoint files are saved in a transparent `templecbe_checkpoint_envelope` container, ensuring returned task results carry no polluting metadata attributes so first runs and resumed runs are strictly `identical()`.
+* **Tidymodels Checkpointed Resampling & Tuning Wrappers**: Added `tune_grid_checkpointed()`, `fit_resamples_checkpointed()`, `workflow_map_checkpointed()`, and `tune_race_survival_checkpointed()`. Work unit = one resample ($\times$ workflow $\times$ grid), returning standard `tune_results` objects compatible with `collect_metrics()`, `select_best()`, and `autoplot()`.
+* **Comprehensive Workflow & Metrics Fingerprinting (H1)**: `compute_tidymodels_split_fingerprint()` now serializes and digests the metric set (`attr(metrics, "metrics")`), control settings (`unclass(control)`, capturing `save_pred`, `extract`), model/workflow specification digest, resample split IDs, and data hash. Changing any metric (e.g. from `rmse, rsq` to `mae`), control option, or data slice immediately invalidates stale checkpoints and recomputes.
+* **Informative Mismatch Reporting (H2)**: When cached checkpoints are invalidated due to changed fingerprints, a clear, unified message is emitted per call stating exactly how many cached tasks were discarded and recomputed.
+* **Universal Checkpoint Arguments & Coxnet/Alpha Sharding (H3)**: Added and exposed `checkpoint_dir`, `shard`, and `checkpoint_mismatch` on all `cv_coxnet()` methods (`data.frame`, `matrix`, `formula`, `recipe`) and added `shard` support to `tune_over_alpha()`.
+* **Consolidated Fold-Level Checkpoints**: In `nested_survival_run()`, intermediate results are saved consolidated by outer fold (`tune_outer_<fold>.rds` and `score_outer_<weights>.rds`), reducing thousands of task files down to ~10 clean checkpoint files per domain.
+* **Checkpoint Utilities**: Upgraded `collect_checkpoints()` and `clean_checkpoints()` to operate uniformly across all checkpointed functions, directories, and envelope containers.
+
+## Function Naming, Deprecation Schedule & Export Cleanup (H4)
+
+* **Export of `write_xlsx_file()`**: Added and exported `write_xlsx_file(x, path, ...)` wrapping `writexl::write_xlsx()` without name collision.
+* **Deprecation Schedule for Masked CRAN/Core Names**: Masked exports (`clean_names`, `write_xlsx`, `render`, `render_me`, `like`, `%like%`, `%notin%`) are formally scheduled for complete removal in **TempleCBE 0.6.0 (Q1 2027)** with clear deprecation notices.
+* **Deprecation Schedule for 58 Presentation Aliases**: The 58 legacy `cbe_*` aliases are formally scheduled for removal in **TempleCBE 0.6.0 (Q1 2027)** in favor of canonical verb-noun functions.
+* **Workflow Map Seed Handling (H5)**: `workflow_map_checkpointed()` handles `seed` and `verbose` as formal parameters rather than forwarding them through `...`, eliminating "`...` are not used: seed" warnings on tidymodels fits.
+
+## Tuning Run Comparison & Diagnostics (J1, H7, J2)
+
+* **Flexible Hyperparameter Configuration Matching (J1)**: Enhanced `compare_tuning_runs(tune1, tune2, match = c("exact", "nearest", "binned"), n_bins = 10)` to support:
+  * `"exact"`: Exact matching on `alpha` (and `formula`).
+  * `"nearest"`: Matches each hyperparameter configuration in `tune1` to the closest configuration in `tune2` by minimum $|\alpha_1 - \alpha_2|$ distance.
+  * `"binned"`: Discretizes $\alpha$ into `n_bins` equal-width intervals for comparing runs with different random $\alpha$ grids.
+* **Overall IBS Distribution Comparison (J1)**: Computes global distributional summaries across all model fits in both runs (best IBS, min, Q25, median, mean, Q75, max) and performs a two-sample Kolmogorov-Smirnov test (`ks.test`) to assess distributional shifts between runs.
+* **Parallel Tuning Scaling & Timing Breakdown (H7)**: Added `timing_breakdown` attribute and informative progress breakdown to `tune_alpha_by_split()` and `nested_survival_run()`, reporting setup time, task evaluation time, total CPU fit compute, effective parallel speedup, and socket/IPC serialization overhead.
+* **Sanitized Child Report Status (J2)**: Stripped stray quotes from domain status formatting in `inst/templates/nested_survival_report.qmd`.
 
 ## Function Naming & the `cbe_` Convention
 

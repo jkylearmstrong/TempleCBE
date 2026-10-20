@@ -8,6 +8,8 @@ workflow_map_checkpointed(
   object,
   fn = "tune_grid",
   ...,
+  seed = 1L,
+  verbose = FALSE,
   checkpoint_dir = NULL,
   shard = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
@@ -20,6 +22,10 @@ workflow_map_checkpointed(
 \item{fn}{Function to apply to each workflow (default `"tune_grid"`).}
 
 \item{...}{Arguments passed to `fn`.}
+
+\item{seed}{Optional integer seed (default `1L`) used to set a reproducible RNG seed per workflow.}
+
+\item{verbose}{Logical (default `FALSE`). Display progress from [workflowsets::workflow_map()].}
 
 \item{checkpoint_dir}{Directory to store per-workflow checkpoints.}
 

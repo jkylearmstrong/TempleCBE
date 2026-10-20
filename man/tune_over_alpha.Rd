@@ -15,6 +15,7 @@ tune_over_alpha(
   seed = NULL,
   checkpoint_dir = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  shard = NULL,
   on_complete = getOption("templecbe.on_complete", NULL)
 )
 }
@@ -49,6 +50,9 @@ their checkpoint fingerprint matches.}
 inputs/settings: `"recompute"` (default; warns and recomputes the task),
 `"overwrite"` (overwrites mismatched files in place and cleans up stale
 checkpoint files from previous runs), or `"error"` (stops immediately).}
+
+\item{shard}{Optional integer vector `c(i, n)` or string `'i/n'` specifying
+that this execution evaluates shard `i` of `n` items.}
 
 \item{on_complete}{Optional callback `function(result)` (or option
 `templecbe.on_complete`) invoked when the run finishes or errors.}

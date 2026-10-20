@@ -9,7 +9,9 @@ compare_tuning_runs(
   tune2,
   tolerance = 1e-04,
   label1 = "run1",
-  label2 = "run2"
+  label2 = "run2",
+  match = c("exact", "nearest", "binned"),
+  n_bins = 10
 )
 }
 \arguments{
@@ -24,10 +26,17 @@ or a path to an `.rds` file.}
 \item{label1}{Character label for `tune1` (default `"run1"`).}
 
 \item{label2}{Character label for `tune2` (default `"run2"`).}
+
+\item{match}{Matching strategy for candidate hyperparameter configurations:
+`"exact"` (default; matches on exact `alpha` values), `"nearest"` (matches each
+`alpha` in `tune1` to the closest `alpha` in `tune2`), or `"binned"` (discretizes
+`alpha` into `n_bins` equal-width bins).}
+
+\item{n_bins}{Number of bins when `match = "binned"` (default `10`).}
 }
 \value{
 An object of class `c("templecbe_tuning_comparison", "tbl_df", "tbl", "data.frame")`
-  summarizing per-alpha IBS distributions and shifts.
+  summarizing per-alpha IBS distributions, distributional shifts, and global IBS statistics.
 }
 \description{
 Computes comparative summary statistics (mean, median, 25th and 75th percentiles)

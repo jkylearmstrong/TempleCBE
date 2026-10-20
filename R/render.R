@@ -877,13 +877,13 @@ render_pipeline <- function(path,
 #' @rdname render_pipeline
 #' @export
 render <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()")
+  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027) to avoid masking rmarkdown::render().")
   render_pipeline(...)
 }
 
 #' @rdname render_pipeline
 #' @export
 render_me <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()")
+  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027). Use render_pipeline().")
   render_pipeline(...)
 }
