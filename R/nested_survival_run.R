@@ -1584,9 +1584,9 @@ domain_children <- function(domains,
     }, error = function(e) {
       msg <- conditionMessage(e)
       if (on_error == "stop") {
-        stop(sprintf("Domain '%s' failed in cbe_domain_children(): %s", dom, msg), call. = FALSE)
+        stop(sprintf("Domain '%s' failed in domain_children(): %s", dom, msg), call. = FALSE)
       }
-      warning(sprintf("Domain '%s' failed in cbe_domain_children(): %s", dom, msg), call. = FALSE)
+      warning(sprintf("Domain '%s' failed in domain_children(): %s", dom, msg), call. = FALSE)
       err_block <- paste(
         sprintf("::: {.callout-warning title=\"Domain '%s' Failed\"}", dom),
         sprintf("Execution of domain `%s` encountered an error and was isolated:", dom),

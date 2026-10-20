@@ -110,7 +110,7 @@ cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL
   not_shown <- setdiff(td$term, shown_terms)
   if (length(not_shown) > 0) {
     warning(
-      "cbe_cox_multi(): these coefficients are in `model` but not in `table` ",
+      "cox_multi(): these coefficients are in `model` but not in `table` ",
       "(interactions and transformed terms are not tabulated): ",
       paste(not_shown, collapse = ", "), ".",
       call. = FALSE

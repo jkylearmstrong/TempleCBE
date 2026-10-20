@@ -39,7 +39,7 @@ database_relationships <- function(db, id_cols = NULL) {
     ))
   }
 
-  shared_key_info <- cbe_find_shared_keys(db)
+  shared_key_info <- find_shared_keys(db)
   keys_to_eval <- if (!is.null(id_cols)) {
     id_cols
   } else {

@@ -119,7 +119,7 @@ read_excel_multiple_headers <- function(path,
   my_colnames <- vctrs::vec_as_names(my_colnames, repair = "unique", quiet = TRUE)
 
   if (isTRUE(clean_names)) {
-    my_colnames <- clean_names(my_colnames)
+    my_colnames <- clean_names_keep_labels(my_colnames)
   }
 
   # 5. Read data body with caller options (...)
