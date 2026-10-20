@@ -30,3 +30,7 @@ Reviewer: a fresh-context agent, read-only, high effort. Verdict: approve with c
 | 6 | `head`/`Head` pass the name check | Nit | Fixed: `HEAD` is refused in any case |
 
 Not checked by the reviewer or by me: macOS/BSD and Debian/Ubuntu shells, a non-UTF-8 R locale, git versions other than 2.51.0, `R CMD check`, lint. CI decides.
+
+## Existing suite on the fixed code
+
+`tests/testthat/test-clean_publish.R` (130 tests, Windows, git 2.51.0, run from a clean copy of commit 234f4d1): 129 passed. One test failed, "a git call that fails in a gate stops the run ... (CPC-06, CPA-13)": its mock recognised `ls-files` only as the first git argument, and CP-L3-04 now runs it after `-c core.quotePath=false`. The code still stops on a failing `ls-files`; the mock now matches the subcommand anywhere in the arguments, and the test passes. Not yet run on Ubuntu or macOS.
