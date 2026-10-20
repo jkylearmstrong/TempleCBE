@@ -120,7 +120,7 @@ loco_mp_coxnet <- function(formula = NULL,
                                seed = NULL,
                                covariates = c("path", "baseline"),
                                ...) {
-  rlang::check_installed(c("glmnet", "survival"), reason = "for cbe_loco_mp_coxnet().")
+  rlang::check_installed(c("glmnet", "survival"), reason = "for loco_mp_coxnet().")
   p_adjust <- match.arg(p_adjust)
   covariates <- match.arg(covariates)
 

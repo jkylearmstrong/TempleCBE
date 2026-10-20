@@ -523,7 +523,7 @@ render_pipeline <- function(path,
   }
 
   if (!has_quarto && !has_rmarkdown) {
-    stop("Either 'quarto' or 'rmarkdown' package is required by render().", call. = FALSE)
+    stop("Either 'quarto' or 'rmarkdown' package is required by render_pipeline().", call. = FALSE)
   }
 
   # Helper to map format shorthand for rmarkdown

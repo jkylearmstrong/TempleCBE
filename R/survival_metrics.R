@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.11")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.11")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
@@ -1630,9 +1630,10 @@ tune_alpha_by_split <- function(object,
       warmup_idx <- active_indices[1]
       warmup_out <- run_one_flat_task(warmup_idx)
 
-      # 2. Benchmark on a small sample of tasks run serially after warm-up
-      n_bench <- min(3L, length(active_indices) - 1L)
-      bench_indices <- active_indices[seq(2L, length.out = n_bench)]
+      # 2. Benchmark on a sample of tasks run serially after warm-up
+      n_bench <- min(5L, max(1L, length(active_indices) - 1L))
+      if (n_bench > (length(active_indices) - 1L)) n_bench <- length(active_indices) - 1L
+      bench_indices <- if (n_bench > 0L) active_indices[seq(2L, length.out = n_bench)] else integer()
       bench_outs <- vector("list", n_bench)
       bench_durs <- numeric(n_bench)
 
@@ -1645,6 +1646,8 @@ tune_alpha_by_split <- function(object,
       }
 
       ser_task_dur <- max(0.001, stats::median(bench_durs))
+      ser_task_dur_min <- max(0.001, min(bench_durs))
+      ser_task_dur_max <- max(0.001, max(bench_durs))
       warmup_out$fit_dur <- warmup_out$fit_dur %||% ser_task_dur
 
       # 3. Dispatch remaining tasks to parallel workers
@@ -1674,17 +1677,21 @@ tune_alpha_by_split <- function(object,
         .options = f_opts,
         .progress = progress
       )
-      ser_task_dur <- if (length(task_outcomes) > 0L) {
-        stats::median(vapply(task_outcomes, function(x) x$fit_dur %||% 0.001, numeric(1)))
-      } else {
-        0.001
-      }
+      all_durs <- vapply(task_outcomes, function(x) x$fit_dur %||% 0.001, numeric(1))
+      ser_task_dur <- if (length(all_durs) > 0L) stats::median(all_durs) else 0.001
+      ser_task_dur_min <- if (length(all_durs) > 0L) min(all_durs) else 0.001
+      ser_task_dur_max <- if (length(all_durs) > 0L) max(all_durs) else 0.001
     }
     t_elapsed <- as.numeric(proc.time()["elapsed"] - t_start)
 
     n_active <- length(active_indices)
     serial_baseline_total <- ser_task_dur * n_active
+    serial_baseline_min <- ser_task_dur_min * n_active
+    serial_baseline_max <- ser_task_dur_max * n_active
+
     real_speedup <- if (t_elapsed > 0) serial_baseline_total / t_elapsed else 1.0
+    speedup_min <- if (t_elapsed > 0) serial_baseline_min / t_elapsed else 1.0
+    speedup_max <- if (t_elapsed > 0) serial_baseline_max / t_elapsed else 1.0
 
     worker_cpu_total <- sum(vapply(task_outcomes, function(x) x$fit_dur %||% 0, numeric(1)))
     worker_avg_sec <- worker_cpu_total / max(1L, n_active)
@@ -1700,9 +1707,12 @@ tune_alpha_by_split <- function(object,
       logical_cores = logical_cores,
       elapsed_sec = t_elapsed,
       measured_serial_task_sec = ser_task_dur,
+      measured_serial_task_range_sec = c(ser_task_dur_min, ser_task_dur_max),
       measured_serial_baseline_sec = serial_baseline_total,
+      measured_serial_baseline_range_sec = c(serial_baseline_min, serial_baseline_max),
       real_speedup = real_speedup,
       speedup = real_speedup,
+      speedup_range = c(speedup_min, speedup_max),
       worker_avg_task_sec = worker_avg_sec,
       avg_task_sec = worker_avg_sec,
       worker_concurrency_slowdown = worker_concurrency_slowdown,
@@ -1714,8 +1724,9 @@ tune_alpha_by_split <- function(object,
 
     if (isTRUE(progress)) {
       msg <- sprintf(
-        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx real speedup on %d workers vs %.2f s measured serial baseline)\n  - Per-task fit time: %.2f s serial baseline vs %.2f s in workers (%.2fx worker concurrency slowdown)\n  - Parallel IPC / serialization / sync overhead: %.2f s",
-        n_active, length(active_splits), t_elapsed, real_speedup, n_workers, serial_baseline_total,
+        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx [range: %.2fx - %.2fx] real speedup on %d workers vs %.2f s [range: %.2f - %.2f s] measured serial baseline)\n  - Per-task fit time: %.2f s serial baseline vs %.2f s in workers (%.2fx worker concurrency slowdown)\n  - Parallel IPC / serialization / sync overhead: %.2f s",
+        n_active, length(active_splits), t_elapsed, real_speedup, speedup_min, speedup_max, n_workers,
+        serial_baseline_total, serial_baseline_min, serial_baseline_max,
         ser_task_dur, worker_avg_sec, worker_concurrency_slowdown, ipc_overhead
       )
       if (!is.na(physical_cores) && n_workers > physical_cores) {

@@ -1,3 +1,33 @@
+# TempleCBE 0.5.11
+
+## Fast Paragraph Pairing & Budgeted Deliverable Diffing (P1)
+
+* **High-Performance Paragraph Pairing (P1)**: Modernized `diff_deliverables()` and `pair_paragraphs_by_similarity()` with $O(N)$ hash-based exact matching, section-scoped similarity comparisons, precomputed token sets, sliding positional window candidate capping, and an adaptive time budget fallback (`time_budget_sec = 6.0`). Large reports (5,700+ paragraphs) compare in under a second rather than hanging, with clear progress notifications when diffing extensive documents.
+
+## Robust Deprecated Call Finder and Rewriter (P2)
+
+* **Strict Script Extension & UTF-8 Safety (P2)**: `find_deprecated_calls()` and `update_deprecated_calls()` strictly target `.R`, `.r`, `.Rmd`, `.qmd`, and `.md` files, skipping binary files (`.rds`, `.rtf`) and gracefully recovering from invalid UTF-8 with user notifications.
+* **External Namespace & Local Scope Isolation (P2)**: Calls prefixed with external package namespaces (e.g. `janitor::clean_names()`, `data.table::like()`, `writexl::write_xlsx()`) and functions defined locally within the script itself (e.g. local `SumNa <- function(...)`) are strictly preserved and excluded from deprecation matching and rewriting.
+* **Single-Pass Master Regex Performance (P2)**: Optimized scanning from 136 regex evaluations per line down to a single compiled master pattern, speeding up scans by over 100x (< 0.01 s per file).
+* **Accurate Replacement Counts & Per-File Summaries (P2)**: `update_deprecated_calls()` tracks actual lines modified, reporting exact replacement counts and printing detailed before/after summaries for every updated file.
+
+## Internal Deprecated Call Cleanup & Verification (P3)
+
+* **Zero Internal Deprecation Invocations (P3)**: Replaced `cbe_find_shared_keys()` in `database_relationships()` with canonical `find_shared_keys()`, replaced internal `clean_names()` in `read_excel_multiple_headers()` with `clean_names_keep_labels()`, and updated message references across `cbe_cox_multi.R`, `loco_mp_coxnet.R`, `nested_survival_run.R`, `plot_cox.R`, and `render.R`.
+* **Automated Codebase Deprecation Sweep Test (P3)**: Added unit test verifying that every `R/*.R` implementation contains zero internal calls to functions in `templecbe_deprecated_map()` and that `database_relationships()` executes cleanly under `options(lifecycle_verbosity = "error")`.
+
+## Non-Overlapping Variable Diagnostics for PCA (P4)
+
+* **Early Validation for Disjoint PCA Fits (P4)**: `pca_loading_diff()` and `pca_loading_diff_heatmap()` now detect when two PCA fits share zero common variables and stop early with `"The two fits have no variables in common."`, eliminating downstream integer coercion errors and non-missing argument warnings.
+
+## Serial Baseline Range & Speedup Diagnostics (P5)
+
+* **Multi-Task Serial Baseline Calibration & Speedup Range (P5)**: `tune_alpha_by_split()` benchmarks an expanded sample of serial warm-up tasks, computing and reporting both median and empirical bounds (`measured_serial_baseline_range_sec`, `speedup_range`) in timing messages and `timing_breakdown` metadata (`"%.2fx [range: %.2fx - %.2fx] real speedup on %d workers vs %.2f s [range: %.2f - %.2f s] measured serial baseline"`).
+
+## Tag Immutability & Release Policy (P6)
+
+* **Permanent Tag Immutability (P6)**: Strict enforcement that published release tags (`v0.5.8`, `v0.5.9`, `v0.5.10`) are permanent and never moved. All fixes ship as incremental patch releases.
+
 # TempleCBE 0.5.10
 
 ## Internal Lifecycle Cleanup & Deprecation Warnings (M1, M2)

@@ -122,7 +122,7 @@ plot_cox_forest_multi <- function(x,
                                   label_map = NULL,
                                   style = NULL) {
   if (!inherits(x, "cbe_cox_multi")) {
-    stop("`x` must be a `cbe_cox_multi` object (see `cbe_cox_multi()`).", call. = FALSE)
+    stop("`x` must be a `cbe_cox_multi` object (see `cox_multi()`).", call. = FALSE)
   }
   scale <- match.arg(scale)
   color_by <- match.arg(color_by)

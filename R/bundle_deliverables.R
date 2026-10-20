@@ -499,7 +499,13 @@ print.cbe_deliverable_diff <- function(x, ...) {
 
 
 
-pair_paragraphs_by_similarity <- function(old_tu, new_tu) {
+pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0) {
+  t_pair_start <- proc.time()["elapsed"]
+  total_paras <- length(old_tu) + length(new_tu)
+  if (total_paras > 1000L) {
+    message(sprintf("Comparing %d paragraphs across sections...", total_paras))
+  }
+
   is_heading <- function(s) {
     s <- trimws(s)
     grepl("^#{1,6}\\s+", s) ||
@@ -521,25 +527,27 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu) {
   old_sec <- get_sections(old_tu)
   new_sec <- get_sections(new_tu)
 
-  token_jaccard <- function(s1, s2) {
-    if (identical(s1, s2)) return(1.0)
-    w1 <- unique(tolower(strsplit(s1, "\\W+")[[1]]))
-    w2 <- unique(tolower(strsplit(s2, "\\W+")[[1]]))
-    w1 <- w1[nzchar(w1)]
-    w2 <- w2[nzchar(w2)]
-    if (length(w1) == 0L || length(w2) == 0L) return(0.0)
-    length(intersect(w1, w2)) / length(union(w1, w2))
-  }
-
   matched_old <- rep(FALSE, length(old_tu))
   matched_new <- rep(FALSE, length(new_tu))
 
+  # 1. Fast exact matching in O(N) using hash/split lookup
+  new_idx_by_str <- split(seq_along(new_tu), new_tu)
+  new_ptr_by_str <- new.env(hash = TRUE, parent = emptyenv())
+  for (s_val in names(new_idx_by_str)) {
+    new_ptr_by_str[[s_val]] <- 1L
+  }
+
   for (i in seq_along(old_tu)) {
-    j_cand <- which(!matched_new & new_tu == old_tu[i])
-    if (length(j_cand) > 0L) {
-      best_j <- j_cand[which.min(abs(j_cand - i))]
-      matched_old[i] <- TRUE
-      matched_new[best_j] <- TRUE
+    s_val <- old_tu[i]
+    idxs <- new_idx_by_str[[s_val]]
+    if (!is.null(idxs)) {
+      ptr <- new_ptr_by_str[[s_val]]
+      if (ptr <= length(idxs)) {
+        best_j <- idxs[ptr]
+        new_ptr_by_str[[s_val]] <- ptr + 1L
+        matched_old[i] <- TRUE
+        matched_new[best_j] <- TRUE
+      }
     }
   }
 
@@ -547,19 +555,77 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu) {
   unmatched_old_idx <- which(!matched_old)
   unmatched_new_idx <- which(!matched_new)
 
+  # 2. Similarity pairing for unmatched paragraphs:
+  # Pair ONLY within the same section, with pre-tokenization, candidate capping, and time budget
   if (length(unmatched_old_idx) > 0L && length(unmatched_new_idx) > 0L) {
+    get_tokens <- function(s) {
+      w <- unique(tolower(strsplit(s, "\\W+")[[1]]))
+      w[nzchar(w)]
+    }
+
+    old_toks <- lapply(old_tu[unmatched_old_idx], get_tokens)
+    names(old_toks) <- as.character(unmatched_old_idx)
+
+    new_toks <- lapply(new_tu[unmatched_new_idx], get_tokens)
+    names(new_toks) <- as.character(unmatched_new_idx)
+
+    secs_in_old <- unique(old_sec[unmatched_old_idx])
+
     sim_scores <- list()
-    for (oi in unmatched_old_idx) {
-      for (ni in unmatched_new_idx) {
-        sim <- token_jaccard(old_tu[oi], new_tu[ni])
-        sec_bonus <- if (identical(old_sec[oi], new_sec[ni])) 0.1 else 0.0
-        pos_dist <- abs((oi / max(1L, length(old_tu))) - (ni / max(1L, length(new_tu))))
-        pos_bonus <- max(0, 0.1 - pos_dist * 0.1)
-        tot_score <- sim + sec_bonus + pos_bonus
-        if (sim >= 0.30 || (sim >= 0.20 && identical(old_sec[oi], new_sec[ni]))) {
-          sim_scores[[length(sim_scores) + 1L]] <- list(
-            oi = oi, ni = ni, sim = sim, score = tot_score
-          )
+    budget_exceeded <- FALSE
+
+    for (sec in secs_in_old) {
+      if (budget_exceeded) break
+
+      # Check time budget
+      if (as.numeric(proc.time()["elapsed"] - t_pair_start) > time_budget_sec) {
+        budget_exceeded <- TRUE
+        message("Paragraph pairing reached time budget; finalizing with remaining unmatched as added/removed.")
+        break
+      }
+
+      sec_old <- unmatched_old_idx[old_sec[unmatched_old_idx] == sec]
+      sec_new <- unmatched_new_idx[new_sec[unmatched_new_idx] == sec]
+      if (length(sec_old) == 0L || length(sec_new) == 0L) next
+
+      len_old <- length(sec_old)
+      len_new <- length(sec_new)
+
+      # Cap candidate comparisons: if section has many unmatched paragraphs, use sliding positional window
+      for (o_pos in seq_along(sec_old)) {
+        if (budget_exceeded) break
+        if (as.numeric(proc.time()["elapsed"] - t_pair_start) > time_budget_sec) {
+          budget_exceeded <- TRUE
+          message("Paragraph pairing reached time budget; finalizing with remaining unmatched as added/removed.")
+          break
+        }
+
+        oi <- sec_old[o_pos]
+        tok1 <- old_toks[[as.character(oi)]]
+        if (length(tok1) == 0L) next
+
+        # Target relative position in new section
+        target_pos <- max(1L, min(len_new, round((o_pos / len_old) * len_new)))
+        window_size <- 25L
+        cand_n_pos <- seq(max(1L, target_pos - window_size), min(len_new, target_pos + window_size))
+
+        for (n_pos in cand_n_pos) {
+          ni <- sec_new[n_pos]
+          tok2 <- new_toks[[as.character(ni)]]
+          if (length(tok2) == 0L) next
+
+          int_len <- length(intersect(tok1, tok2))
+          if (int_len == 0L) next
+          union_len <- length(union(tok1, tok2))
+          sim <- int_len / union_len
+
+          if (sim >= 0.30) {
+            pos_dist <- abs((o_pos / len_old) - (n_pos / len_new))
+            tot_score <- sim + 0.10 + max(0, 0.10 - pos_dist * 0.10)
+            sim_scores[[length(sim_scores) + 1L]] <- list(
+              oi = oi, ni = ni, sim = sim, score = tot_score, sec = sec
+            )
+          }
         }
       }
     }
@@ -578,7 +644,7 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu) {
           edited_pairs[[length(edited_pairs) + 1L]] <- list(
             old_idx = pair$oi,
             new_idx = pair$ni,
-            section = new_sec[pair$ni] %||% old_sec[pair$oi],
+            section = pair$sec,
             old_text = old_s,
             new_text = new_s,
             sim = pair$sim,

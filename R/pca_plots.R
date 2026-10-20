@@ -529,6 +529,9 @@ pca_loading_diff <- function(pca_baseline, pca_comparison, n_components = NULL) 
   rot_comparison <- pca_c$rotation
 
   shared_features <- intersect(rownames(rot_baseline), rownames(rot_comparison))
+  if (length(shared_features) == 0L) {
+    stop("The two fits have no variables in common.", call. = FALSE)
+  }
   rot_baseline <- rot_baseline[shared_features, , drop = FALSE]
   rot_comparison <- rot_comparison[shared_features, , drop = FALSE]
 
