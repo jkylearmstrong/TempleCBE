@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
@@ -1223,22 +1223,27 @@ tune_over_alpha <- function(object,
 #' as a single flat task grid across all available [future::plan()] workers and
 #' row-binds the successful fits.
 #'
-#' @section Nested Parallelism & Benchmarking:
+#' @section Nested Parallelism, Benchmarking & Physical Cores:
 #' When tuning penalized survival models across nested resampling structures, computation
 #' scales multiplicatively: \eqn{\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}}.
-#' `summarize_tune_results()` flattens `inner splits x alphas` into a single task
+#' `tune_alpha_by_split()` flattens `inner splits x alphas` into a single task
 #' pool (e.g. 7 splits x 10 alphas = 70 tasks), sends the shared dataset, recipe,
 #' and split definitions once per worker, and pre-preps/bakes each split once per
 #' worker rather than repeating recipe preprocessing for every `alpha`.
 #'
-#' **Recommended worker count:** On a 16-core / 16-thread workstation, `7` to `8`
-#' multisession workers (matching the number of inner splits or physical CPU cores,
-#' leaving 1--2 cores for the coordinator process and OS I/O) yields the best
-#' wall-clock speedup (~3x+ faster than sequential). Scaling past physical core
-#' count (e.g., 14+ workers on 16 logical threads) can suffer from L3 cache and
-#' memory-bandwidth contention during `glmnet` and Breslow cumulative hazard loops.
-#' Set \code{future::plan(multisession, workers = 7)} before calling while keeping
-#' inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
+#' **Physical Cores vs. Hyper-Threading:** When configuring a parallel backend
+#' (e.g. `future::plan(future::multisession, workers = ...)`), it is strongly
+#' recommended to set worker count to the number of *physical* CPU cores
+#' ([parallel::detectCores(logical = FALSE)]), leaving 1--2 cores for the coordinator
+#' process and OS I/O, rather than using all hyper-threaded logical cores.
+#' Because CPU-intensive coordinate descent and Breslow hazard calculations saturate
+#' CPU execution units and L1/L2 caches, two worker processes executing on siblings of
+#' the same physical core contend for the same ALUs, FPUs, and memory bandwidth, which
+#' frequently doubles per-task compute latency inside concurrent workers (e.g., tasks
+#' taking ~2.2 s serially taking ~5.0 s inside 14 concurrent workers on 8 physical cores).
+#' Sizing workers to physical cores yields optimal wall-clock speedup and reduces IPC
+#' contention. Set \code{future::plan(multisession, workers = 7)} before calling while
+#' keeping inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
 #' Use `chunk_size` to control how many tasks are batched per worker message.
 #'
 #' @param object A resampling object with a `splits` column (e.g. one element
@@ -1611,39 +1616,89 @@ tune_alpha_by_split <- function(object,
       furrr::furrr_options(seed = TRUE, packages = furrr_pkgs)
     }
 
-    t_start <- proc.time()["elapsed"]
-    task_outcomes <- furrr::future_map(
-      active_indices,
-      run_one_flat_task,
-      .options = f_opts,
-      .progress = progress
-    )
-    t_elapsed <- as.numeric(proc.time()["elapsed"] - t_start)
-    total_cpu_fit <- sum(vapply(task_outcomes, function(x) x$fit_dur %||% 0, numeric(1)))
     n_workers <- if (requireNamespace("future", quietly = TRUE) && !inherits(future::plan(), "sequential")) {
       future::nbrOfWorkers()
     } else {
       1L
     }
-    ideal_speedup <- if (t_elapsed > 0) total_cpu_fit / t_elapsed else 1.0
-    ipc_overhead <- max(0, t_elapsed - (total_cpu_fit / max(1L, n_workers)))
+    physical_cores <- tryCatch(parallel::detectCores(logical = FALSE), error = function(e) NA_integer_)
+    logical_cores <- tryCatch(parallel::detectCores(logical = TRUE), error = function(e) NA_integer_)
+
+    t_start <- proc.time()["elapsed"]
+    if (n_workers > 1L && length(active_indices) > 1L) {
+      t_ser_0 <- proc.time()["elapsed"]
+      first_out <- run_one_flat_task(active_indices[1])
+      ser_task_dur <- max(0.001, as.numeric(proc.time()["elapsed"] - t_ser_0))
+      first_out$fit_dur <- ser_task_dur
+
+      rem_indices <- active_indices[-1]
+      rem_outs <- furrr::future_map(
+        rem_indices,
+        run_one_flat_task,
+        .options = f_opts,
+        .progress = progress
+      )
+      task_outcomes <- c(list(first_out), rem_outs)
+    } else {
+      task_outcomes <- furrr::future_map(
+        active_indices,
+        run_one_flat_task,
+        .options = f_opts,
+        .progress = progress
+      )
+      ser_task_dur <- if (length(task_outcomes) > 0L) {
+        mean(vapply(task_outcomes, function(x) x$fit_dur %||% 0.001, numeric(1)))
+      } else {
+        0.001
+      }
+    }
+    t_elapsed <- as.numeric(proc.time()["elapsed"] - t_start)
+
+    n_active <- length(active_indices)
+    serial_baseline_total <- ser_task_dur * n_active
+    real_speedup <- if (t_elapsed > 0) serial_baseline_total / t_elapsed else 1.0
+
+    worker_cpu_total <- sum(vapply(task_outcomes, function(x) x$fit_dur %||% 0, numeric(1)))
+    worker_avg_sec <- worker_cpu_total / max(1L, n_active)
+    worker_concurrency_slowdown <- if (ser_task_dur > 0) worker_avg_sec / ser_task_dur else 1.0
+    ideal_speedup <- if (t_elapsed > 0) worker_cpu_total / t_elapsed else 1.0
+    ipc_overhead <- max(0, t_elapsed - (worker_cpu_total / max(1L, n_workers)))
+
     timing_breakdown <- list(
-      n_tasks = length(active_indices),
+      n_tasks = n_active,
       n_splits = length(active_splits),
       n_workers = n_workers,
+      physical_cores = physical_cores,
+      logical_cores = logical_cores,
       elapsed_sec = t_elapsed,
-      total_cpu_sec = total_cpu_fit,
-      avg_task_sec = total_cpu_fit / max(1L, length(active_indices)),
-      speedup = ideal_speedup,
+      measured_serial_task_sec = ser_task_dur,
+      measured_serial_baseline_sec = serial_baseline_total,
+      real_speedup = real_speedup,
+      speedup = real_speedup,
+      worker_avg_task_sec = worker_avg_sec,
+      avg_task_sec = worker_avg_sec,
+      worker_concurrency_slowdown = worker_concurrency_slowdown,
+      total_worker_cpu_sec = worker_cpu_total,
+      total_cpu_sec = worker_cpu_total,
+      ideal_speedup = ideal_speedup,
       ipc_overhead_sec = ipc_overhead
     )
 
     if (isTRUE(progress)) {
-      message(sprintf(
-        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx speedup on %d workers vs %.2f s CPU total)\n  - Per-task average fit: %.3f s CPU\n  - Parallel IPC / serialization / sync overhead: %.2f s",
-        length(active_indices), length(active_splits), t_elapsed, ideal_speedup, n_workers, total_cpu_fit,
-        total_cpu_fit / max(1L, length(active_indices)), ipc_overhead
-      ))
+      msg <- sprintf(
+        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx real speedup on %d workers vs %.2f s measured serial baseline)\n  - Per-task fit time: %.2f s serial baseline vs %.2f s in workers (%.2fx worker concurrency slowdown)\n  - Parallel IPC / serialization / sync overhead: %.2f s",
+        n_active, length(active_splits), t_elapsed, real_speedup, n_workers, serial_baseline_total,
+        ser_task_dur, worker_avg_sec, worker_concurrency_slowdown, ipc_overhead
+      )
+      if (!is.na(physical_cores) && n_workers > physical_cores) {
+        msg <- paste0(
+          msg, sprintf(
+            "\n  - NOTE: Worker count (%d) exceeds physical CPU cores (%d). Hyper-threaded logical cores share execution units and cache, which often doubles per-task compute time in concurrent workers. Recommend setting workers <= %d.",
+            n_workers, physical_cores, physical_cores
+          )
+        )
+      }
+      message(msg)
     }
 
     # Group outcomes by split to check failures, emit at most 1 warning per split, and write split checkpoints
@@ -2309,6 +2364,8 @@ estimate_runtime <- function(fn,
   seq_sec <- mean_sec * n_total_fits
   total_sec <- seq_sec / workers
   per_machine_sec <- total_sec / n_machines
+  physical_cores <- tryCatch(parallel::detectCores(logical = FALSE), error = function(e) NA_integer_)
+  logical_cores <- tryCatch(parallel::detectCores(logical = TRUE), error = function(e) NA_integer_)
 
   out <- tibble::tibble(
     fn = fn_name,
@@ -2319,6 +2376,8 @@ estimate_runtime <- function(fn,
     n_tasks = as.integer(n_tasks),
     n_total_fits = n_total_fits,
     workers = workers,
+    physical_cores = physical_cores,
+    logical_cores = logical_cores,
     n_machines = n_machines,
     projected_sequential_sec = seq_sec,
     projected_total_sec = total_sec,
@@ -2342,6 +2401,12 @@ print.cbe_runtime_estimate <- function(x, ...) {
               x$n_total_fits[1], x$n_tasks[1]))
   cat(sprintf("Workers / Machines:   %d worker(s) x %d machine(s)\n",
               x$workers[1], x$n_machines[1]))
+  if (!is.na(x$physical_cores[1])) {
+    cat(sprintf("Recommended workers:  <= %d (physical CPU cores; hyper-threading increases per-task worker latency)\n", x$physical_cores[1]))
+    if (x$workers[1] > x$physical_cores[1]) {
+      cat(sprintf("  * NOTE: Current worker count (%d) exceeds physical cores (%d). Hyper-threaded logical cores share execution units and cache, which often doubles per-task compute time in concurrent workers.\n", x$workers[1], x$physical_cores[1]))
+    }
+  }
   cat(sprintf("Projected sequential: %.1f s (%.2f min)\n",
               x$projected_sequential_sec[1], x$projected_sequential_sec[1] / 60))
   cat(sprintf("Projected total (1m): %.1f s (%.2f min)\n",

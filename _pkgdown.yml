@@ -523,7 +523,6 @@ reference:
       - "%ilike%"
       - "%flike%"
       - "%plike%"
-      - "%notin%"
       - "%!in%"
 
   - title: Package Development & Release Tooling

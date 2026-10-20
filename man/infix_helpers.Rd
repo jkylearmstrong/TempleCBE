@@ -13,7 +13,6 @@
 \alias{\%plike\%}
 \alias{notin}
 \alias{\%!in\%}
-\alias{\%notin\%}
 \title{Pattern Matching and Logical-Negation Infix Operators}
 \usage{
 match_like(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE)
@@ -37,8 +36,6 @@ vector \%plike\% pattern
 notin(x, table)
 
 x \%!in\% table
-
-x \%notin\% table
 }
 \arguments{
 \item{pattern}{Pattern to match (for the \code{like} family).}

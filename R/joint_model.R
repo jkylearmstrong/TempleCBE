@@ -832,7 +832,7 @@ cv_joint_model <- function(data,
     if (!dir.exists(checkpoint_dir)) {
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
     split_fps <- vapply(seq_len(n_splits), function(i) {
       payload <- list(
         version = pkg_ver,
@@ -1047,7 +1047,7 @@ nested_cv_joint_model <- function(object,
     if (!dir.exists(checkpoint_dir)) {
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
         version = pkg_ver,

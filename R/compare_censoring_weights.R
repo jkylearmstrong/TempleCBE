@@ -1367,8 +1367,9 @@ compare_tuning_runs <- function(tune1,
   }
   d1 <- calc_dist(tune1)
   d2 <- calc_dist(tune2)
+  has_ties <- any(duplicated(tune1$IBS[!is.na(tune1$IBS)])) || any(duplicated(tune2$IBS[!is.na(tune2$IBS)]))
   ks_p <- if (d1$n >= 2L && d2$n >= 2L) {
-    tryCatch(stats::ks.test(tune1$IBS, tune2$IBS)$p.value, error = function(e) NA_real_)
+    suppressWarnings(tryCatch(stats::ks.test(tune1$IBS, tune2$IBS)$p.value, error = function(e) NA_real_))
   } else {
     NA_real_
   }
@@ -1516,6 +1517,7 @@ compare_tuning_runs <- function(tune1,
     max_mean_diff = max(diff_mean, na.rm = TRUE),
     rank_correlation = spearman_rho,
     ks_pvalue = ks_p,
+    ks_has_ties = has_ties,
     distribution_comparison = dist_comparison
   )
 
@@ -1537,7 +1539,8 @@ print.templecbe_tuning_comparison <- function(x, ...) {
   cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
   cat(sprintf("Max mean |IBS diff|:   %g\n", s$max_mean_diff))
   cat(sprintf("Spearman Rank Corr:    %.4f\n", s$rank_correlation))
-  cat(sprintf("KS Test (IBS dist):    p = %.4g\n", s$ks_pvalue))
+  ties_note <- if (isTRUE(s$ks_has_ties)) " (approximate in presence of ties)" else ""
+  cat(sprintf("KS Test (IBS dist):    p = %.4g%s\n", s$ks_pvalue, ties_note))
   cat("----------------------------------------------------\n")
   cat("Overall IBS Distribution Summary:\n")
   print(as.data.frame(s$distribution_comparison), row.names = FALSE)

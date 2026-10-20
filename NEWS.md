@@ -1,3 +1,27 @@
+# TempleCBE 0.5.9
+
+## Reproducible Checkpointing & Cross-Validation Folds (K1)
+
+* **Deterministic Fold Generation When Checkpointing `cv_coxnet()`**: Added formal `seed = NULL` argument across all `cv_coxnet()` methods (`data.frame`, `matrix`, `formula`, `recipe`). When `checkpoint_dir` is supplied and `resamples` is `NULL`, `seed` defaults to `1L` to ensure cross-validation fold partitions are identical across repeated calls, enabling instant checkpoint reuse and cache hits without manual caller seeding. Informative messages clarify when default fold seeding is active.
+
+## Parallel Tuning Diagnostics & Physical Core Guidance (K2)
+
+* **Measured Serial Baseline & Real Speedup**: `tune_alpha_by_split()` now measures an empirical serial execution baseline directly, computing the true wall-clock speedup against measured serial compute rather than summing concurrency-slowed worker CPU times.
+* **Worker Concurrency Slowdown & Profiling**: Added detailed diagnostics reporting average task compute time in workers vs. serial baseline, measuring concurrency slowdown factors caused by hyper-threaded core contention, memory bus bandwidth, and multi-threaded library calls.
+* **Physical Core Recommendation**: Recommends sizing worker pools to physical CPU cores (`parallel::detectCores(logical = FALSE)`), highlighting why hyper-threaded logical cores share execution units and cache and degrade per-worker throughput. `estimate_runtime()` reports recommended physical worker limits.
+
+## Tuning Comparison Diagnostics (K3)
+
+* **Silent Kolmogorov-Smirnov Test with Tie Notification**: `compare_tuning_runs()` now suppresses tie approximation warnings from `stats::ks.test` and clearly notes `(approximate in presence of ties)` in the printed distribution summary when duplicate metric values are present.
+
+## Masking & Export Cleanup (K4)
+
+* **Unexported `%notin%`**: Removed `%notin%` from package exports to immediately resolve name masking against base R 4.6 (`%notin%`). Deprecated legacy `%notin%` remains available as an internal shim, while `%!in%` and `!(x %in% table)` are the recommended exported alternatives.
+
+## Release Process Integrity (K5)
+
+* **Patch Release Discipline**: Version bumped to `0.5.9` with synchronized `NEWS.md` and `DESCRIPTION`. Immutable tags and non-destructive branch merges ensure strict `renv` pin stability and checkpoint fingerprint reproducibility.
+
 # TempleCBE 0.5.8
 
 ## General-Purpose Checkpointing & Envelope Container (H1, H2, H6)

@@ -32,6 +32,7 @@ cv_coxnet(x, ...)
   checkpoint_dir = NULL,
   shard = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  seed = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -55,6 +56,7 @@ cv_coxnet(x, ...)
   checkpoint_dir = NULL,
   shard = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  seed = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -78,6 +80,7 @@ cv_coxnet(x, ...)
   checkpoint_dir = NULL,
   shard = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  seed = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -101,6 +104,7 @@ cv_coxnet(x, ...)
   checkpoint_dir = NULL,
   shard = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  seed = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
@@ -167,6 +171,11 @@ evaluates shard `i` of `n` resample folds.}
 
 \item{checkpoint_mismatch}{Action when a checkpoint fingerprint mismatches:
 `"recompute"` (default), `"overwrite"`, or `"error"`.}
+
+\item{seed}{Optional integer seed for reproducible fold generation when
+`resamples` is `NULL`. When `checkpoint_dir` is supplied and `resamples` is
+`NULL`, defaults to `1L` to ensure cross-validation fold partitions are
+identical across calls, enabling instant checkpoint reuse.}
 
 \item{on_complete}{Optional callback `function(result)` invoked when
 `cv_coxnet()` finishes or errors (defaults to

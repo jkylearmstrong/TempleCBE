@@ -196,7 +196,7 @@ tune_race_survival <- function(object,
   }
 
   fp <- if (!is.null(ckpt_file)) {
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.8")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
     payload <- list(version = pkg_ver, fn = call_fn, grid = grid, metrics = names(metrics), eval_time = eval_time, seed = seed)
     paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
   } else {

@@ -71,9 +71,8 @@ notin <- function(x, table) !(x %in% table)
 #' @export
 `%!in%` <- function(x, table) notin(x, table)
 
-#' @rdname infix_helpers
-#' @export
+# Unexported in TempleCBE 0.5.9 to avoid masking base R 4.6 `%notin%`. Retained as internal shim.
 `%notin%` <- function(x, table) {
-  warning("`%notin%` was deprecated in TempleCBE 0.5.8. Please use `%!`in`%` or `!(x %in% table)` instead. Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027).", call. = FALSE)
+  warning("`%notin%` was deprecated in TempleCBE 0.5.8 and unexported in 0.5.9. Please use `%!`in`%` or `!(x %in% table)` instead. Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027).", call. = FALSE)
   notin(x, table)
 }

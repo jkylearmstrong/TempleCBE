@@ -93,23 +93,28 @@ Evaluates candidate `(split, alpha)` (or `(split, formula)`) combinations
 as a single flat task grid across all available [future::plan()] workers and
 row-binds the successful fits.
 }
-\section{Nested Parallelism & Benchmarking}{
+\section{Nested Parallelism, Benchmarking & Physical Cores}{
 
 When tuning penalized survival models across nested resampling structures, computation
 scales multiplicatively: \eqn{\text{outer folds} \times \text{inner splits} \times \text{alphas} \times \text{internal CV folds}}.
-`summarize_tune_results()` flattens `inner splits x alphas` into a single task
+`tune_alpha_by_split()` flattens `inner splits x alphas` into a single task
 pool (e.g. 7 splits x 10 alphas = 70 tasks), sends the shared dataset, recipe,
 and split definitions once per worker, and pre-preps/bakes each split once per
 worker rather than repeating recipe preprocessing for every `alpha`.
 
-**Recommended worker count:** On a 16-core / 16-thread workstation, `7` to `8`
-multisession workers (matching the number of inner splits or physical CPU cores,
-leaving 1--2 cores for the coordinator process and OS I/O) yields the best
-wall-clock speedup (~3x+ faster than sequential). Scaling past physical core
-count (e.g., 14+ workers on 16 logical threads) can suffer from L3 cache and
-memory-bandwidth contention during `glmnet` and Breslow cumulative hazard loops.
-Set \code{future::plan(multisession, workers = 7)} before calling while keeping
-inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
+**Physical Cores vs. Hyper-Threading:** When configuring a parallel backend
+(e.g. `future::plan(future::multisession, workers = ...)`), it is strongly
+recommended to set worker count to the number of *physical* CPU cores
+([parallel::detectCores(logical = FALSE)]), leaving 1--2 cores for the coordinator
+process and OS I/O, rather than using all hyper-threaded logical cores.
+Because CPU-intensive coordinate descent and Breslow hazard calculations saturate
+CPU execution units and L1/L2 caches, two worker processes executing on siblings of
+the same physical core contend for the same ALUs, FPUs, and memory bandwidth, which
+frequently doubles per-task compute latency inside concurrent workers (e.g., tasks
+taking ~2.2 s serially taking ~5.0 s inside 14 concurrent workers on 8 physical cores).
+Sizing workers to physical cores yields optimal wall-clock speedup and reduces IPC
+contention. Set \code{future::plan(multisession, workers = 7)} before calling while
+keeping inner model evaluations sequential (\code{parallel = FALSE} in \code{glmnet_IBS()}).
 Use `chunk_size` to control how many tasks are batched per worker message.
 }
 

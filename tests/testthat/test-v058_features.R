@@ -575,7 +575,8 @@ test_that("H4: write_xlsx_file() is exported and functional; legacy masking name
   expect_warning(TempleCBE::write_xlsx(test_df, tmp_file), "0\\.6\\.0")
   expect_warning(TempleCBE::like("abc", "b"), "0\\.6\\.0")
   expect_warning(TempleCBE::`%like%`("abc", "b"), "0\\.6\\.0")
-  expect_warning(TempleCBE::`%notin%`(1, 2:3), "0\\.6\\.0")
+  expect_false("%notin%" %in% getNamespaceExports("TempleCBE"))
+  expect_warning(TempleCBE:::`%notin%`(1, 2:3), "0\\.6\\.0")
 })
 
 test_that("H5: workflow_map_checkpointed() accepts seed without unused argument warnings", {
