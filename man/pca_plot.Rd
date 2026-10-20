@@ -11,7 +11,7 @@ pca_plot(
 )
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object. (Not `x`, which
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}. (Not `x`, which
 would capture the `x` component argument of `type = "bi"` and
 `"biplot"`.)}
 

@@ -384,7 +384,7 @@ check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FAL
           # so the duplicate-key warning would be noise
           cmp <- tryCatch(
             withCallingHandlers(
-              cbe_compare_df(
+              compare_df(
                 base = db[[master_dataset]],
                 compare = d,
                 by = id_col,
@@ -393,6 +393,7 @@ check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FAL
                 compare_name = nm,
                 ...
               ),
+              compare_df_duplicate_keys = function(w) invokeRestart("muffleWarning"),
               cbe_compare_df_duplicate_keys = function(w) invokeRestart("muffleWarning")
             ),
             error = function(e) NULL

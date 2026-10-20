@@ -7,7 +7,7 @@
 plot_pca_bi(pca_model, newdata, column, x = 1, y = 2)
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object.}
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.}
 
 \item{newdata}{Data to project onto \code{pca_model}.}
 

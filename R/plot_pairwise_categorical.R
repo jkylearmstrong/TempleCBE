@@ -144,7 +144,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
     caption_txt <- if (!is.null(caption)) caption else paste0(p_fmt, " (", fisher_lbl, ")")
   } else if (test == "exact") {
     if (is_2x2_t) {
-      tst <- cbe_exact2x2(tab_t, midp = has_zero)
+      tst <- exact2x2(tab_t, midp = has_zero)
       p_val <- tst$p.value
       p_fmt <- p_fmt_fn(p_val)
       caption_txt <- if (!is.null(caption)) {
@@ -163,7 +163,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
   } else {
     # test == "auto" (default CBE hierarchy)
     if (is_2x2_t) {
-      tst <- cbe_exact2x2(tab_t, midp = has_zero)
+      tst <- exact2x2(tab_t, midp = has_zero)
       p_val <- tst$p.value
       p_fmt <- p_fmt_fn(p_val)
       caption_txt <- if (!is.null(caption)) {
@@ -800,7 +800,7 @@ cbe_four_quadrant_report <- function(data, var1 = NULL, var2 = NULL,
     tst_method <- "Fisher's Exact Test"
   } else {
     # test == "auto" or "exact"
-    tst <- cbe_exact2x2(tab, midp = has_zero)
+    tst <- exact2x2(tab, midp = has_zero)
     p_val <- tst$p.value
     tst_method <- tst$method
   }
@@ -1003,7 +1003,7 @@ plot_categorical_associations <- function(data, cols = NULL,
           # fall below 1/(B + 1) and would make a perfect 3x3 association look
           # weaker than a moderate 2x2 one.)
           pval <- if (identical(as.integer(dims), c(2L, 2L))) {
-            cbe_exact2x2(tab)$p.value
+            exact2x2(tab)$p.value
           } else {
             suppressWarnings(stats::chisq.test(tab, correct = FALSE)$p.value)
           }

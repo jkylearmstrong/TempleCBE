@@ -10,7 +10,7 @@ features_percent_miss(data, na_list = NULL)
 \item{data}{A data frame or tibble.}
 
 \item{na_list}{Optional vector of additional values to treat as missing,
-passed to \code{\link{SumNa}} (beyond actual \code{NA}).}
+passed to \code{\link{count_na}} (beyond actual \code{NA}).}
 }
 \value{
 A tibble with columns `feature`, `SumNa`, `SumComp`, `PctNa`, `PctComp` sorted descending by `PctNa`.

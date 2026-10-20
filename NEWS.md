@@ -1,3 +1,34 @@
+# TempleCBE 0.5.10
+
+## Internal Lifecycle Cleanup & Deprecation Warnings (M1, M2)
+
+* **Robust Installed Package Environment Detection (M1)**: R CMD check and installed test environments safely resolve version metadata via `utils::packageVersion("TempleCBE")` without assuming source tree layout.
+* **Zero Deprecation Warnings on Internal Calls (M2)**: Replaced all internal package calls to deprecated functions (`SumNa`, `cbe_exact2x2`, `cbe_compare_df`, `cbe_test_categorical`) with their canonical implementations (`count_na`, `exact2x2`, `compare_df`, `test_categorical`). Updated all error messages and diagnostic text to reference canonical functions (`run_pca` instead of `proc_pca`). Enforced zero internal deprecation warnings across test suites under `options(lifecycle_verbosity = "error")`.
+
+## Principal Component Analysis Interoperability (M3)
+
+* **Unified `cbe_pca` and `prcomp` Support (M3)**: Every PCA helper function (`pca_feature_loading_heatmap()`, `plot_pca_bi()`, `pca_biplot()`, `pca_scree_plot()`, `pca_variables_plot()`, `rotation_matrix()`, `pca_loadings()`, `pca_eqns()`, `pca_percent_var_explained()`, `pca_loading_diff()`, `pca_loading_diff_heatmap()`, `pca_plot()`) now seamlessly accepts both `cbe_pca` objects produced by `run_pca()` and raw `stats::prcomp` fits.
+
+## Calibrated Parallel Baseline Tuning (M4)
+
+* **Warmed Serial Baseline Calibration (M4)**: In `tune_alpha_by_split()`, serial baseline measurement is now calibrated from the median fit duration of a warm-up sample of serial tasks without progress bars, eliminating cold-start initialization artifacts and ensuring reported speedup accurately matches full sequential execution.
+
+## Deprecated Call Migration Tooling (N1)
+
+* **Automated Codebase Scanner and Rewriter (N1)**: Added `find_deprecated_calls(path)` and `update_deprecated_calls(path, dry_run = TRUE)` to scan user projects (`.R`, `.Rmd`, `.qmd`) for legacy TempleCBE functions scheduled for removal in 0.6.0. Supports both package-qualified (`TempleCBE::old()`) and unqualified calls, providing dry-run previews and in-place code migration.
+
+## Pinned Cox Tie-Handling & Quiet Scope (N2)
+
+* **Reproducible Cox Tie Handling Across glmnet 5.0/5.1+ (N2)**: Introduced package option `templecbe.cox_ties` (default `"breslow"`), `get_templecbe_cox_ties()`, `apply_workflow_cox_ties()`, and `with_quiet_cox_ties()` to pin reproducible Breslow tie handling across tidymodels and checkpointed wrappers (`tune_grid_checkpointed()`, `tune_race_survival()`, `nested_cv_coxnet()`, `coxnet()`, `cv_coxnet()`). Silences repetitive glmnet 5.1 transitional tie messages across folds and parallel workers with a single session notification.
+
+## Intelligent Deliverable Diffing (N3)
+
+* **Similarity-Paired Document Diffs (N3)**: Modernized `diff_deliverables()` with token-level paragraph similarity pairing to distinguish edits from delete/add pairs, ignore Word XML tracked-change markup (`<w:del>`), summarize changes by document section/heading, and surface top largest changes.
+
+## Removal Schedule (N4)
+
+* **Scheduled Removals in 0.6.0 (N4)**: Re-affirmed deprecation timeline for legacy masking wrappers (`clean_names`, `write_xlsx`, `render`, `like`, `%like%`) and 58 deprecated `cbe_*` aliases scheduled for final removal in TempleCBE 0.6.0 (Q1 2027).
+
 # TempleCBE 0.5.9
 
 ## Reproducible Checkpointing & Cross-Validation Folds (K1)

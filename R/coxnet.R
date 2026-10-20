@@ -246,12 +246,15 @@ fit_glmnet_cox <- function(x, y, mixture, path, glmnet_args) {
   # Breslow ties by default: it matches the Breslow baseline hazard used for
   # survival predictions, and doesn't change with glmnet's default (Breslow
   # in 5.0, Efron from 5.1).
+  tie_method <- glmnet_args$cox.ties %||% get_templecbe_cox_ties()
   if (!is.null(glmnet_args$cox.ties)) {
     glmnet_args$cox.ties <- match.arg(glmnet_args$cox.ties, c("breslow", "efron"))
   } else if ("cox.ties" %in% names(formals(glmnet::glmnet))) {
-    glmnet_args$cox.ties <- "breslow"
+    glmnet_args$cox.ties <- match.arg(tie_method, c("breslow", "efron"))
   }
-  do.call(glmnet::glmnet, c(list(x = x, y = y, family = "cox", alpha = mixture, lambda = path), glmnet_args))
+  with_quiet_cox_ties(
+    do.call(glmnet::glmnet, c(list(x = x, y = y, family = "cox", alpha = mixture, lambda = path), glmnet_args))
+  )
 }
 
 coxnet_formula_blueprint <- function() {

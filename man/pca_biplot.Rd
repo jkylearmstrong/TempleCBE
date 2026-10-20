@@ -15,7 +15,7 @@ pca_biplot(
 )
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object.}
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.}
 
 \item{x, y}{Which principal components to plot on the x/y axes (default 1, 2).}
 

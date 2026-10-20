@@ -79,7 +79,7 @@ checkpoint_map <- function(.x,
   }
 
   # Derive fingerprints
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
   fps <- if (!is.null(fingerprint)) {
     if (is.function(fingerprint)) {
       vapply(seq_len(n), function(i) as.character(fingerprint(.x[[i]], ...)), character(1))
@@ -203,7 +203,7 @@ compute_tidymodels_split_fingerprint <- function(object,
                                                  metrics = NULL,
                                                  eval_time = NULL,
                                                  control = NULL) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
   in_id <- if (inherits(split, "rsplit")) split$in_id else NULL
   out_id <- if (inherits(split, "rsplit")) {
     tryCatch(rsample::complement(split), error = function(e) split$out_id)
@@ -294,16 +294,17 @@ tune_grid_checkpointed <- function(object,
                                    ...) {
   rlang::check_installed("tune", reason = "for tune_grid_checkpointed().")
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  object <- apply_workflow_cox_ties(object)
 
   if (is.null(checkpoint_dir)) {
-    return(tune::tune_grid(
+    return(with_quiet_cox_ties(tune::tune_grid(
       object = object,
       resamples = resamples,
       grid = grid,
       metrics = metrics,
       control = control,
       ...
-    ))
+    )))
   }
 
   if (!inherits(resamples, "rset")) {
@@ -379,14 +380,14 @@ tune_grid_checkpointed <- function(object,
       }
     }
 
-    res_single <- tune::tune_grid(
+    res_single <- with_quiet_cox_ties(tune::tune_grid(
       object = object,
       resamples = single_rset,
       grid = grid,
       metrics = metrics,
       control = control,
       ...
-    )
+    ))
 
     write_verified_checkpoint(
       res_single, cf, fingerprint = split_fps[i], run_fingerprint = run_fp,

@@ -265,6 +265,19 @@ audit_report_deliverables <- function(analysis_path = ".", file_pattern = "\\.(x
     return(character())
   }
   ns <- xml2::xml_ns(doc)
+  # Strip tracked deletions, comment ranges, and deletion text so markup is ignored
+  del_nodes <- tryCatch(
+    if ("w" %in% names(ns)) {
+      xml2::xml_find_all(doc, ".//w:del | .//w:commentRangeStart | .//w:commentRangeEnd", ns = ns)
+    } else {
+      xml2::xml_find_all(doc, ".//*[local-name()='del' or local-name()='commentRangeStart' or local-name()='commentRangeEnd']")
+    },
+    error = function(e) list()
+  )
+  if (length(del_nodes) > 0L) {
+    xml2::xml_remove(del_nodes)
+  }
+
   p_nodes <- tryCatch(
     if ("w" %in% names(ns)) xml2::xml_find_all(doc, ".//w:p", ns = ns) else xml2::xml_find_all(doc, ".//*[local-name()='p']"),
     error = function(e) list()
@@ -417,46 +430,29 @@ diff_deliverables <- function(old_zip, new_zip) {
           text_changed = FALSE,
           n_added = 0L,
           n_removed = 0L,
+          n_edited = 0L,
           diff_summary = "No text changes",
-          diff_lines = list(character())
+          diff_lines = list(character()),
+          section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer())),
+          largest_changes = list(tibble::tibble(section = character(), old = character(), new = character(), score = numeric()))
         ))
       }
-      # Compute added/removed paragraph/line multiset difference
-      added_lines <- setdiff(new_tu, old_tu)
-      removed_lines <- setdiff(old_tu, new_tu)
-      # If setdiff is empty (e.g. reordered or duplicate count changed), compare index by index
-      if (length(added_lines) == 0L && length(removed_lines) == 0L) {
-        max_len <- max(length(old_tu), length(new_tu))
-        for (idx in seq_len(max_len)) {
-          o_v <- if (idx <= length(old_tu)) old_tu[idx] else NA_character_
-          n_v <- if (idx <= length(new_tu)) new_tu[idx] else NA_character_
-          if (!identical(o_v, n_v)) {
-            if (!is.na(o_v)) removed_lines <- c(removed_lines, o_v)
-            if (!is.na(n_v)) added_lines <- c(added_lines, n_v)
-          }
-        }
-      }
-      d_lines <- c(
-        if (length(removed_lines) > 0L) paste0("- ", removed_lines) else character(),
-        if (length(added_lines) > 0L) paste0("+ ", added_lines) else character()
-      )
-      preview <- if (length(added_lines) > 0L) {
-        sprintf(" (+ \"%s\")", substr(added_lines[1], 1L, 60L))
-      } else if (length(removed_lines) > 0L) {
-        sprintf(" (- \"%s\")", substr(removed_lines[1], 1L, 60L))
-      } else {
-        ""
-      }
-      sum_txt <- sprintf("+%d / -%d paragraph(s)%s", length(added_lines), length(removed_lines), preview)
+
+      # Pair paragraphs by similarity to distinguish edits from additions/deletions
+      alignment <- pair_paragraphs_by_similarity(old_tu, new_tu)
+
       return(tibble::tibble(
         file = rel_f,
         status = "modified",
         hash_changed = h_changed,
         text_changed = TRUE,
-        n_added = as.integer(length(added_lines)),
-        n_removed = as.integer(length(removed_lines)),
-        diff_summary = sum_txt,
-        diff_lines = list(d_lines)
+        n_added = as.integer(alignment$n_added),
+        n_removed = as.integer(alignment$n_removed),
+        n_edited = as.integer(alignment$n_edited),
+        diff_summary = alignment$diff_summary,
+        diff_lines = list(alignment$diff_lines),
+        section_summary = list(alignment$section_summary),
+        largest_changes = list(alignment$largest_changes)
       ))
     }
 
@@ -501,3 +497,172 @@ print.cbe_deliverable_diff <- function(x, ...) {
   invisible(x)
 }
 
+
+
+pair_paragraphs_by_similarity <- function(old_tu, new_tu) {
+  is_heading <- function(s) {
+    s <- trimws(s)
+    grepl("^#{1,6}\\s+", s) ||
+      (nchar(s) <= 80 && (grepl("^[A-Z0-9 ._-]+:$", s) || grepl("^(Table|Figure|Section|Chapter|Appendix)\\s+[0-9A-Za-z]", s, ignore.case = TRUE)))
+  }
+
+  get_sections <- function(lines) {
+    curr_sec <- "Overview"
+    secs <- character(length(lines))
+    for (i in seq_along(lines)) {
+      if (is_heading(lines[i])) {
+        curr_sec <- sub("^#{1,6}\\s*", "", trimws(lines[i]))
+      }
+      secs[i] <- curr_sec
+    }
+    secs
+  }
+
+  old_sec <- get_sections(old_tu)
+  new_sec <- get_sections(new_tu)
+
+  token_jaccard <- function(s1, s2) {
+    if (identical(s1, s2)) return(1.0)
+    w1 <- unique(tolower(strsplit(s1, "\\W+")[[1]]))
+    w2 <- unique(tolower(strsplit(s2, "\\W+")[[1]]))
+    w1 <- w1[nzchar(w1)]
+    w2 <- w2[nzchar(w2)]
+    if (length(w1) == 0L || length(w2) == 0L) return(0.0)
+    length(intersect(w1, w2)) / length(union(w1, w2))
+  }
+
+  matched_old <- rep(FALSE, length(old_tu))
+  matched_new <- rep(FALSE, length(new_tu))
+
+  for (i in seq_along(old_tu)) {
+    j_cand <- which(!matched_new & new_tu == old_tu[i])
+    if (length(j_cand) > 0L) {
+      best_j <- j_cand[which.min(abs(j_cand - i))]
+      matched_old[i] <- TRUE
+      matched_new[best_j] <- TRUE
+    }
+  }
+
+  edited_pairs <- list()
+  unmatched_old_idx <- which(!matched_old)
+  unmatched_new_idx <- which(!matched_new)
+
+  if (length(unmatched_old_idx) > 0L && length(unmatched_new_idx) > 0L) {
+    sim_scores <- list()
+    for (oi in unmatched_old_idx) {
+      for (ni in unmatched_new_idx) {
+        sim <- token_jaccard(old_tu[oi], new_tu[ni])
+        sec_bonus <- if (identical(old_sec[oi], new_sec[ni])) 0.1 else 0.0
+        pos_dist <- abs((oi / max(1L, length(old_tu))) - (ni / max(1L, length(new_tu))))
+        pos_bonus <- max(0, 0.1 - pos_dist * 0.1)
+        tot_score <- sim + sec_bonus + pos_bonus
+        if (sim >= 0.30 || (sim >= 0.20 && identical(old_sec[oi], new_sec[ni]))) {
+          sim_scores[[length(sim_scores) + 1L]] <- list(
+            oi = oi, ni = ni, sim = sim, score = tot_score
+          )
+        }
+      }
+    }
+
+    if (length(sim_scores) > 0L) {
+      scores_v <- vapply(sim_scores, function(x) x$score, numeric(1))
+      sim_scores <- sim_scores[order(scores_v, decreasing = TRUE)]
+
+      for (pair in sim_scores) {
+        if (!matched_old[pair$oi] && !matched_new[pair$ni]) {
+          matched_old[pair$oi] <- TRUE
+          matched_new[pair$ni] <- TRUE
+          old_s <- old_tu[pair$oi]
+          new_s <- new_tu[pair$ni]
+          change_mag <- abs(nchar(new_s) - nchar(old_s)) + round((1 - pair$sim) * max(nchar(old_s), nchar(new_s)))
+          edited_pairs[[length(edited_pairs) + 1L]] <- list(
+            old_idx = pair$oi,
+            new_idx = pair$ni,
+            section = new_sec[pair$ni] %||% old_sec[pair$oi],
+            old_text = old_s,
+            new_text = new_s,
+            sim = pair$sim,
+            change_magnitude = change_mag
+          )
+        }
+      }
+    }
+  }
+
+  unmatched_rem <- which(!matched_old)
+  unmatched_add <- which(!matched_new)
+
+  n_edited <- length(edited_pairs)
+  n_removed <- length(unmatched_rem)
+  n_added <- length(unmatched_add)
+
+  diff_lines <- character()
+  for (ep in edited_pairs) {
+    diff_lines <- c(diff_lines, paste0("- ", ep$old_text), paste0("+ ", ep$new_text))
+  }
+  for (ri in unmatched_rem) {
+    diff_lines <- c(diff_lines, paste0("- ", old_tu[ri]))
+  }
+  for (ai in unmatched_add) {
+    diff_lines <- c(diff_lines, paste0("+ ", new_tu[ai]))
+  }
+
+  all_secs <- unique(c(
+    vapply(edited_pairs, function(x) x$section, character(1)),
+    old_sec[unmatched_rem],
+    new_sec[unmatched_add]
+  ))
+  all_secs <- all_secs[nzchar(all_secs)]
+  if (length(all_secs) == 0L) all_secs <- "Document Body"
+
+  sec_df <- tibble::tibble(
+    section = all_secs,
+    edited = vapply(all_secs, function(s) sum(vapply(edited_pairs, function(x) x$section == s, logical(1))), integer(1)),
+    added = vapply(all_secs, function(s) sum(new_sec[unmatched_add] == s), integer(1)),
+    removed = vapply(all_secs, function(s) sum(old_sec[unmatched_rem] == s), integer(1))
+  )
+
+  largest_df <- if (length(edited_pairs) > 0L) {
+    mags <- vapply(edited_pairs, function(x) x$change_magnitude, numeric(1))
+    ord <- order(mags, decreasing = TRUE)
+    top_ep <- edited_pairs[ord[seq_len(min(5L, length(ord)))]]
+    tibble::tibble(
+      section = vapply(top_ep, function(x) x$section, character(1)),
+      old = vapply(top_ep, function(x) substr(x$old_text, 1L, 100L), character(1)),
+      new = vapply(top_ep, function(x) substr(x$new_text, 1L, 100L), character(1)),
+      score = vapply(top_ep, function(x) round(x$change_magnitude, 1), numeric(1))
+    )
+  } else {
+    tibble::tibble(section = character(), old = character(), new = character(), score = numeric())
+  }
+
+  top_change_txt <- if (nrow(largest_df) > 0L) {
+    sprintf(" (Largest in '%s': \"%s\" -> \"%s\")",
+            largest_df$section[1],
+            substr(largest_df$old[1], 1L, 35L),
+            substr(largest_df$new[1], 1L, 35L))
+  } else if (n_added > 0L) {
+    sprintf(" (+ \"%s\")", substr(new_tu[unmatched_add[1]], 1L, 50L))
+  } else if (n_removed > 0L) {
+    sprintf(" (- \"%s\")", substr(old_tu[unmatched_rem[1]], 1L, 50L))
+  } else {
+    ""
+  }
+
+  diff_summary <- if (n_edited > 0L) {
+    sprintf("%d edited, %d added, %d removed paragraph(s) across %d section(s)%s",
+            n_edited, n_added, n_removed, nrow(sec_df), top_change_txt)
+  } else {
+    sprintf("+%d / -%d paragraph(s)%s", n_added, n_removed, top_change_txt)
+  }
+
+  list(
+    n_edited = n_edited,
+    n_added = n_added,
+    n_removed = n_removed,
+    diff_summary = diff_summary,
+    diff_lines = diff_lines,
+    section_summary = sec_df,
+    largest_changes = largest_df
+  )
+}

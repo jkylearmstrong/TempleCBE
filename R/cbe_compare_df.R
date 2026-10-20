@@ -168,7 +168,7 @@ compare_df.default <- function(base,
     # either side come out unmatched.
     if (anyDuplicated(k_base[, by, drop = FALSE]) > 0 || anyDuplicated(k_comp[, by, drop = FALSE]) > 0) {
       warning(structure(
-        class = c("cbe_compare_df_duplicate_keys", "warning", "condition"),
+        class = c("compare_df_duplicate_keys", "cbe_compare_df_duplicate_keys", "warning", "condition"),
         list(
           message = paste0("Duplicate key values in `by` (", paste(by, collapse = ", "),
                            "); rows sharing a key are paired in order of appearance."),

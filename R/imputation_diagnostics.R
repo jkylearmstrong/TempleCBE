@@ -218,7 +218,7 @@ tune_impute_numeric <- function(data,
     dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
   active_mask <- if (!is.null(shard)) {
     ((seq_along(target_cols) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
   } else {

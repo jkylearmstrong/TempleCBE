@@ -80,7 +80,7 @@ exact2x2 <- function(x, y = NULL, data = NULL, variable = NULL, by = NULL,
   } else if (!is.null(y)) {
     tab <- table(x, y)
   } else {
-    stop("cbe_exact2x2() requires a 2x2 table/matrix, two vectors (x, y), or (data, variable, by).",
+    stop("exact2x2() requires a 2x2 table/matrix, two vectors (x, y), or (data, variable, by).",
          call. = FALSE)
   }
 
@@ -89,8 +89,8 @@ exact2x2 <- function(x, y = NULL, data = NULL, variable = NULL, by = NULL,
     # Tolerate unused factor levels: an all-zero row/column is not data.
     trimmed <- drop_empty_margins(tab)
     if (!identical(as.integer(dim(trimmed)), c(2L, 2L))) {
-      stop("cbe_exact2x2() requires a 2x2 contingency table; received dimensions ",
-           paste(dims, collapse = "x"), ". For general RxC tables, use cbe_test_categorical().",
+      stop("exact2x2() requires a 2x2 contingency table; received dimensions ",
+           paste(dims, collapse = "x"), ". For general RxC tables, use test_categorical().",
            call. = FALSE)
     }
     tab <- trimmed
@@ -168,9 +168,9 @@ drop_empty_margins <- function(tab) {
 cbe_exact2x2_ci <- function(data, variable = NULL, by = NULL, digits = 1,
                             conf.level = 0.95, midp = NULL, ...) {
   res <- if (is.matrix(data) || is.table(data)) {
-    cbe_exact2x2(data, conf.level = conf.level, midp = midp, ...)
+    exact2x2(data, conf.level = conf.level, midp = midp, ...)
   } else {
-    cbe_exact2x2(data = data, variable = variable, by = by,
+    exact2x2(data = data, variable = variable, by = by,
                  conf.level = conf.level, midp = midp, ...)
   }
 
@@ -323,7 +323,7 @@ test_categorical <- function(data,
 
   # Check grouping variable 'by'
   if (is.null(by) || !is.character(by) || length(by) != 1L || !by %in% names(data)) {
-    stop("cbe_test_categorical() requires a single grouping column 'by' present in 'data'.",
+    stop("test_categorical() requires a single grouping column 'by' present in 'data'.",
          call. = FALSE)
   }
 
@@ -344,7 +344,7 @@ test_categorical <- function(data,
     }
 
     test_single <- function(v) {
-      out <- cbe_test_categorical(
+      out <- test_categorical(
         data = data,
         variable = v,
         by = by,
@@ -458,7 +458,7 @@ test_categorical <- function(data,
   # Explicit test = "exact" for 2x2
   if (test == "exact" && identical(as.integer(dims), c(2L, 2L))) {
     has_zero <- any(tab == 0L)
-    res <- cbe_exact2x2(tab, midp = has_zero, ...)
+    res <- exact2x2(tab, midp = has_zero, ...)
     return(tibble::tibble(
       p.value = res$p.value,
       statistic = res$estimate,
@@ -470,7 +470,7 @@ test_categorical <- function(data,
   # Rule 1 & 2: 2x2 Tables
   if (identical(as.integer(dims), c(2L, 2L))) {
     has_zero <- any(tab == 0L)
-    res <- cbe_exact2x2(tab, midp = has_zero, ...)
+    res <- exact2x2(tab, midp = has_zero, ...)
     return(tibble::tibble(
       p.value = res$p.value,
       statistic = res$estimate,

@@ -1,15 +1,32 @@
+extract_prcomp <- function(pca_model, arg_name = "pca_model") {
+  if (inherits(pca_model, "prcomp")) {
+    pca_model
+  } else if (!is.null(attr(pca_model, "prcomp")) && inherits(attr(pca_model, "prcomp"), "prcomp")) {
+    attr(pca_model, "prcomp")
+  } else {
+    stop(sprintf("`%s` must be a prcomp object or output from run_pca().", arg_name), call. = FALSE)
+  }
+}
+
 #' PCA Feature-Loading Heatmap
 #'
 #' Heatmap of each original feature's loading onto each principal component.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.
 #' @return A ggplot object.
 #' @export
 #' @examples
 #' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
 #' pca_feature_loading_heatmap(pca_model)
 pca_feature_loading_heatmap <- function(pca_model) {
-  rot <- pca_model$rotation
+  pca_obj <- extract_prcomp(pca_model, "pca_model")
+  rot <- pca_obj$rotation
+  if (is.null(rot)) {
+    stop("`pca_model` has no rotation matrix.", call. = FALSE)
+  }
+  if (is.null(rownames(rot))) {
+    rownames(rot) <- paste0("V", seq_len(nrow(rot)))
+  }
   long <- tibble::as_tibble(rot, rownames = "feature") |>
     tidyr::pivot_longer(-"feature", names_to = "PC", values_to = "value") |>
     dplyr::mutate(PC = as.numeric(sub("^PC", "", .data$PC)))
@@ -26,7 +43,7 @@ pca_feature_loading_heatmap <- function(pca_model) {
 #'
 #' Biplot of feature loading vectors against two principal components.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.
 #' @param newdata Data to project onto \code{pca_model}.
 #' @param column Column in \code{newdata} to use as point labels.
 #' @param x,y Which principal components to plot on the x/y axes (default 1, 2).
@@ -37,12 +54,13 @@ pca_feature_loading_heatmap <- function(pca_model) {
 #' mtcars2 <- tibble::rownames_to_column(mtcars, "model")
 #' plot_pca_bi(pca_model, mtcars2, column = "model")
 plot_pca_bi <- function(pca_model, newdata, column, x = 1, y = 2) {
+  pca_obj <- extract_prcomp(pca_model, "pca_model")
   if (!column %in% colnames(newdata)) {
     message("Column '", column, "' not found in newdata; using the first column instead.")
     column <- colnames(newdata)[1]
   }
 
-  projection <- stats::predict(pca_model, newdata)
+  projection <- stats::predict(pca_obj, newdata)
   n_components <- ncol(projection)
 
   if (n_components < 2) {
@@ -84,7 +102,7 @@ plot_pca_bi <- function(pca_model, newdata, column, x = 1, y = 2) {
 #' their maximum extent is 80\% of the score cloud's maximum extent (a
 #' standard biplot convention) before being drawn.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.
 #' @param x,y Which principal components to plot on the x/y axes (default 1, 2).
 #' @param group Optional categorical vector (e.g. \code{iris$Species}) to color observations by.
 #' @param ellipse Logical (default \code{FALSE}); if \code{TRUE} and \code{group} is provided,
@@ -102,7 +120,7 @@ pca_biplot <- function(pca_model, x = 1, y = 2, group = NULL, ellipse = FALSE, t
   } else if (!is.null(attr(pca_model, "prcomp"))) {
     attr(pca_model, "prcomp")
   } else {
-    stop("`pca_model` must be a prcomp object or proc_pca output.", call. = FALSE)
+    stop("`pca_model` must be a prcomp object or output from run_pca().", call. = FALSE)
   }
 
   if (is.null(pca_obj$x)) {
@@ -212,7 +230,7 @@ pca_scree_plot <- function(pca_model, metric = c("eigenvalue", "variance"), kais
   } else if (!is.null(attr(pca_model, "prcomp"))) {
     attr(pca_model, "prcomp")
   } else {
-    stop("`pca_model` must be a prcomp object or output from proc_pca().", call. = FALSE)
+    stop("`pca_model` must be a prcomp object or output from run_pca().", call. = FALSE)
   }
 
   vars <- pca_obj$sdev^2
@@ -287,7 +305,7 @@ pca_variables_plot <- function(pca_model, x = 1, y = 2, title = "Variables Corre
   } else if (!is.null(attr(pca_model, "prcomp"))) {
     attr(pca_model, "prcomp")
   } else {
-    stop("`pca_model` must be a prcomp object or output from proc_pca().", call. = FALSE)
+    stop("`pca_model` must be a prcomp object or output from run_pca().", call. = FALSE)
   }
 
   x_col <- paste0("PC", x)
@@ -375,7 +393,11 @@ pca_variables_plot <- function(pca_model, x = 1, y = 2, title = "Variables Corre
 #' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
 #' rotation_matrix(pca_model)
 rotation_matrix <- function(PC_mod) {
-  rot <- PC_mod$rotation
+  pca_obj <- extract_prcomp(PC_mod, "PC_mod")
+  rot <- pca_obj$rotation
+  if (is.null(rot)) {
+    stop("`PC_mod` has no rotation matrix.", call. = FALSE)
+  }
   if (is.null(rownames(rot))) {
     rownames(rot) <- paste0("V", seq_len(nrow(rot)))
   }
@@ -433,14 +455,15 @@ pca_eqns <- function(PC_mod, precision = 3) {
 #' of the total variance. A fit truncated with \code{rank.} or \code{tol}
 #' still stores every standard deviation, so all components are shown.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.
 #' @return A ggplot object showing per-component and cumulative variance explained.
 #' @export
 #' @examples
 #' pca_model <- prcomp(mtcars, center = TRUE, scale. = TRUE)
 #' pca_percent_var_explained(pca_model)
 pca_percent_var_explained <- function(pca_model) {
-  vars <- pca_model$sdev^2
+  pca_obj <- extract_prcomp(pca_model, "pca_model")
+  vars <- pca_obj$sdev^2
   eig <- tibble::tibble(
     PC = seq_along(vars),
     percent = vars / sum(vars),
@@ -500,8 +523,10 @@ pca_percent_var_explained <- function(pca_model) {
 #' comparison <- prcomp(mtcars[sample(nrow(mtcars)), ], center = TRUE, scale. = TRUE)
 #' pca_loading_diff(baseline, comparison)
 pca_loading_diff <- function(pca_baseline, pca_comparison, n_components = NULL) {
-  rot_baseline <- pca_baseline$rotation
-  rot_comparison <- pca_comparison$rotation
+  pca_b <- extract_prcomp(pca_baseline, "pca_baseline")
+  pca_c <- extract_prcomp(pca_comparison, "pca_comparison")
+  rot_baseline <- pca_b$rotation
+  rot_comparison <- pca_c$rotation
 
   shared_features <- intersect(rownames(rot_baseline), rownames(rot_comparison))
   rot_baseline <- rot_baseline[shared_features, , drop = FALSE]
@@ -575,7 +600,7 @@ pca_loading_diff_heatmap <- function(pca_baseline, pca_comparison, n_components 
 #' changes `plot()` for everyone who loads it. Call `pca_plot(x, type = )`,
 #' or [stats::screeplot()] for the base scree plot.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object. (Not `x`, which
+#' @param pca_model A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}. (Not `x`, which
 #'   would capture the `x` component argument of `type = "bi"` and
 #'   `"biplot"`.)
 #' @param type One of \code{"variance"} (\code{\link{pca_percent_var_explained}}),
@@ -598,7 +623,7 @@ pca_plot <- function(pca_model, type = c("variance", "heatmap", "bi", "biplot", 
   } else if (!is.null(attr(pca_model, "prcomp"))) {
     attr(pca_model, "prcomp")
   } else {
-    stop("`pca_model` must be a prcomp object, from stats::prcomp().", call. = FALSE)
+    stop("`pca_model` must be a prcomp object or output from run_pca().", call. = FALSE)
   }
   type <- match.arg(type)
   switch(type,

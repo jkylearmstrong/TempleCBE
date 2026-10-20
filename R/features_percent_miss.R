@@ -5,7 +5,7 @@
 #'
 #' @param data A data frame or tibble.
 #' @param na_list Optional vector of additional values to treat as missing,
-#'   passed to \code{\link{SumNa}} (beyond actual \code{NA}).
+#'   passed to \code{\link{count_na}} (beyond actual \code{NA}).
 #' @return A tibble with columns `feature`, `SumNa`, `SumComp`, `PctNa`, `PctComp` sorted descending by `PctNa`.
 #' @importFrom tidyr pivot_longer
 #' @export
@@ -35,7 +35,7 @@ features_percent_miss <- function(data, na_list = NULL) {
 
   res <- purrr::map_dfr(names(data), function(col) {
     vec <- data[[col]]
-    s_na <- SumNa(vec, na_list)
+    s_na <- count_na(vec, na_list)
     s_comp <- n_rows - s_na
     pct_na <- s_na / n_rows
     pct_comp <- s_comp / n_rows

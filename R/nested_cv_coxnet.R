@@ -170,7 +170,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     )
   }
 
-  run_outer <- function(i) {
+  run_outer <- function(i) with_quiet_cox_ties({
     outer <- object$splits[[i]]
     analysis <- rsample::analysis(outer)
     assessment <- rsample::assessment(outer)
@@ -278,7 +278,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
       res_row$.importance <- loco_col
     }
     res_row
-  }
+  })
 
   outer_ids <- seq_along(object$splits)
   n_outer <- length(outer_ids)
@@ -287,7 +287,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     if (!dir.exists(checkpoint_dir)) {
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
         version = pkg_ver,

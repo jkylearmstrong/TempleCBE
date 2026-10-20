@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
@@ -1626,19 +1626,47 @@ tune_alpha_by_split <- function(object,
 
     t_start <- proc.time()["elapsed"]
     if (n_workers > 1L && length(active_indices) > 1L) {
-      t_ser_0 <- proc.time()["elapsed"]
-      first_out <- run_one_flat_task(active_indices[1])
-      ser_task_dur <- max(0.001, as.numeric(proc.time()["elapsed"] - t_ser_0))
-      first_out$fit_dur <- ser_task_dur
+      # 1. Warm-up task serially (loads bundle, models, packages; no progress output)
+      warmup_idx <- active_indices[1]
+      warmup_out <- run_one_flat_task(warmup_idx)
 
-      rem_indices <- active_indices[-1]
-      rem_outs <- furrr::future_map(
-        rem_indices,
-        run_one_flat_task,
-        .options = f_opts,
-        .progress = progress
-      )
-      task_outcomes <- c(list(first_out), rem_outs)
+      # 2. Benchmark on a small sample of tasks run serially after warm-up
+      n_bench <- min(3L, length(active_indices) - 1L)
+      bench_indices <- active_indices[seq(2L, length.out = n_bench)]
+      bench_outs <- vector("list", n_bench)
+      bench_durs <- numeric(n_bench)
+
+      for (b_i in seq_len(n_bench)) {
+        t_b_start <- proc.time()["elapsed"]
+        b_res <- run_one_flat_task(bench_indices[b_i])
+        b_dur <- as.numeric(proc.time()["elapsed"] - t_b_start)
+        bench_durs[b_i] <- max(0.001, b_res$fit_dur %||% b_dur)
+        bench_outs[[b_i]] <- b_res
+      }
+
+      ser_task_dur <- max(0.001, stats::median(bench_durs))
+      warmup_out$fit_dur <- warmup_out$fit_dur %||% ser_task_dur
+
+      # 3. Dispatch remaining tasks to parallel workers
+      n_done_serial <- 1L + n_bench
+      rem_indices <- if (length(active_indices) > n_done_serial) {
+        active_indices[-seq_len(n_done_serial)]
+      } else {
+        integer()
+      }
+
+      rem_outs <- if (length(rem_indices) > 0L) {
+        furrr::future_map(
+          rem_indices,
+          run_one_flat_task,
+          .options = f_opts,
+          .progress = progress
+        )
+      } else {
+        list()
+      }
+
+      task_outcomes <- c(list(warmup_out), bench_outs, rem_outs)
     } else {
       task_outcomes <- furrr::future_map(
         active_indices,
@@ -1647,7 +1675,7 @@ tune_alpha_by_split <- function(object,
         .progress = progress
       )
       ser_task_dur <- if (length(task_outcomes) > 0L) {
-        mean(vapply(task_outcomes, function(x) x$fit_dur %||% 0.001, numeric(1)))
+        stats::median(vapply(task_outcomes, function(x) x$fit_dur %||% 0.001, numeric(1)))
       } else {
         0.001
       }

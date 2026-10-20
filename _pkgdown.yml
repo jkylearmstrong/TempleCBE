@@ -143,6 +143,9 @@ reference:
       - tune_alpha_by_split
       - checkpoint_map
       - tune_grid_checkpointed
+      - get_templecbe_cox_ties
+      - with_quiet_cox_ties
+      - apply_workflow_cox_ties
       - fit_resamples_checkpointed
       - workflow_map_checkpointed
       - tune_race_survival_checkpointed
@@ -531,3 +534,5 @@ reference:
       - build_manual_versioned
       - clean_publish
       - guard_public_remote
+      - find_deprecated_calls
+      - update_deprecated_calls

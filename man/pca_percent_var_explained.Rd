@@ -7,7 +7,7 @@
 pca_percent_var_explained(pca_model)
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object.}
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or \code{cbe_pca} object from \code{\link{run_pca}}.}
 }
 \value{
 A ggplot object showing per-component and cumulative variance explained.

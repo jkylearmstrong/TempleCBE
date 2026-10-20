@@ -140,6 +140,7 @@ tune_race_survival <- function(object,
                                checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                ...) {
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  object <- apply_workflow_cox_ties(object)
   rlang::check_installed(c("finetune", "tune", "yardstick"), reason = "for tune_race_survival().")
   fn <- match.arg(fn)
   if (fn == "tune_race_win_loss") {
@@ -196,7 +197,7 @@ tune_race_survival <- function(object,
   }
 
   fp <- if (!is.null(ckpt_file)) {
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.9")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.10")
     payload <- list(version = pkg_ver, fn = call_fn, grid = grid, metrics = names(metrics), eval_time = eval_time, seed = seed)
     paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
   } else {
@@ -210,27 +211,29 @@ tune_race_survival <- function(object,
     }
   }
 
-  res <- if (call_fn == "tune_race_anova") {
-    finetune::tune_race_anova(
-      object,
-      resamples = resamples,
-      grid = grid,
-      metrics = metrics,
-      eval_time = eval_time,
-      control = control,
-      ...
-    )
-  } else {
-    finetune::tune_race_win_loss(
-      object,
-      resamples = resamples,
-      grid = grid,
-      metrics = metrics,
-      eval_time = eval_time,
-      control = control,
-      ...
-    )
-  }
+  res <- with_quiet_cox_ties(
+    if (call_fn == "tune_race_anova") {
+      finetune::tune_race_anova(
+        object,
+        resamples = resamples,
+        grid = grid,
+        metrics = metrics,
+        eval_time = eval_time,
+        control = control,
+        ...
+      )
+    } else {
+      finetune::tune_race_win_loss(
+        object,
+        resamples = resamples,
+        grid = grid,
+        metrics = metrics,
+        eval_time = eval_time,
+        control = control,
+        ...
+      )
+    }
+  )
 
   if (!is.null(ckpt_file)) {
     write_verified_checkpoint(
