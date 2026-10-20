@@ -1,3 +1,48 @@
+# TempleCBE 0.6.0
+
+TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
+
+## Enhanced Performance and Scalability
+
+* **$O(N)$ Hash-Based Exact Paragraph Pairing**: Re-architected `diff_deliverables()` and `pair_paragraphs_by_similarity()` with hash-based exact matching and section-scoped candidate clustering. Large production documents (5,700+ paragraphs) now compare in under a second rather than stalling or hanging.
+* **Adaptive Paragraph Pairing Time Budgeting**: Integrated an adaptive pairing time budget (`time_budget_sec = 6.0`) with clean early-exit fallback to prevent unbounded latency on massive documents while surfacing clear progress notifications.
+* **Instant Parallel Dispatch & Flexible Calibration**: Added `calibrate = TRUE` (default) / `calibrate = FALSE` to `tune_alpha_by_split()` and `summarize_tune_results()`. Setting `calibrate = FALSE` bypasses serial benchmarking and dispatches tasks immediately to parallel workers, eliminating warm-up delay in high-throughput workflows.
+* **100x Faster Deprecation Auditing**: Optimized project codebase scanning in `find_deprecated_calls()` from 136 sequential per-line regular expressions down to a single compiled master pattern, speeding up scans by over 100x (< 0.01 s per file) across extensive script repositories.
+
+## Improved Reporting and Deliverable Management
+
+* **Unicode & Smart Quote Normalization**: Enhanced deliverable diffing to automatically normalize curly quotes (`‘’`, `“”`), typographical dashes (`–`, `—`), non-breaking spaces (`\u00a0`), zero-width spaces, and indentation variations prior to matching, eliminating spurious differences introduced by Word/XML conversions.
+* **Accurate Unpaired Paragraph Accounting**: When paragraph diffing reaches the configured time budget, unmatched paragraphs are cleanly isolated under `n_unpaired` and `budget_exceeded = TRUE`, preventing artificial inflation of `n_added` and `n_removed` metrics.
+* **Divergence-Focused Excerpting**: Surfaced deliverable edits (`largest_changes`) pinpoint character-level divergence points via `excerpt_diff()`, displaying meaningful contextual modifications rather than truncated identical sentence prefixes.
+
+## Developer Productivity and Code Quality Enhancements
+
+* **Polymorphic Column Header Normalization**: Modernized `clean_names_keep_labels()` to seamlessly accept both character vectors and data frames. Character vectors are cleaned directly via `janitor::make_clean_names()`, preventing runtime errors on character inputs.
+* **Multi-Header Excel Spreadsheet Ingestion**: Enhanced `read_excel_multiple_headers(clean_names = TRUE)` to cleanly ingest multi-row concatenated headers without type mismatches.
+* **Automated Codebase Scanner and Rewriter**: Provided `find_deprecated_calls(path)` and `update_deprecated_calls(path, dry_run = TRUE)` to scan and migrate user projects (`.R`, `.Rmd`, `.qmd`, `.md`) for deprecated function calls scheduled for retirement.
+* **Encoding & Namespace Protection in Migration Tooling**: Deprecation migration tooling gracefully handles non-UTF-8 encodings and strictly protects external namespaces (e.g. `janitor::clean_names()`, `data.table::like()`) and locally defined functions.
+
+## Workflow Configuration and Control
+
+* **Fine-Grained Execution Diagnostics**: Parallel execution routines now capture and report isolated calibration durations (`calibration_sec`) and empirical serial baseline bounds (`measured_serial_baseline_range_sec`, `speedup_range`) in `timing_breakdown` metadata and progress output.
+* **User-Controlled Performance Tuning**: Configurable balance between serial warm-up verification and rapid parallel worker dispatch across nested cross-validation and tuning pipelines.
+
+## Modernization and API Cleanup
+
+* **Canonical Verb-Noun API Architecture**: Consolidated package interfaces around clean verb-noun conventions (`clean_names_keep_labels()`, `write_xlsx_file()`, `match_like()`, `render_pipeline()`, `describe_columns()`, `run_pca()`).
+* **Zero Internal Deprecation Invocations**: Swept internal package code to eliminate internal calls to deprecated functions, achieving zero deprecation warnings under strict `options(lifecycle_verbosity = "error")`.
+* **Environment-Agnostic Version Resolution**: Hardened version metadata resolution during R CMD check and installed test environments via `utils::packageVersion("TempleCBE")`.
+
+## Reliability and Ecosystem Compatibility
+
+* **Disjoint PCA Fit Early Validation**: Enhanced `pca_loading_diff()` and `pca_loading_diff_heatmap()` to detect disjoint PCA fits sharing zero variables and stop early with clear diagnostic errors.
+* **Strict Tag Immutability Codification**: Formally re-affirmed permanent tag immutability policy across all historical and future releases (`v0.5.8` through `v0.6.0`).
+* **Clean Test and CI Matrix**: Fully passing test suite across Windows, Ubuntu, and macOS platforms.
+
+## Documentation and User Experience
+
+* **Comprehensive Release and Migration Documentation**: Updated reference documentation, man pages, and migration pathways guiding downstream analytical projects from legacy wrappers to canonical APIs.
+
 # TempleCBE 0.5.12
 
 ## Header Cleaning & Polymorphic Name Support (#12)

@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.12")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.12")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)

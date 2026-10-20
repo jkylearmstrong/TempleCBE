@@ -443,7 +443,7 @@ missranger_sweep_mtry <- function(data,
 
   if (!is.null(checkpoint_dir)) {
     if (!dir.exists(checkpoint_dir)) dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.12")
+    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
     data_fp <- paste0(as.character(openssl::sha256(serialize(dt, NULL))), collapse = "")
     fps <- vapply(mtry_values, function(m) {
       payload <- list(version = pkg_ver, data_fp = data_fp, mtry = m, num.trees = num.trees, pmm.k = pmm.k, maxiter = maxiter, seed = seed)
