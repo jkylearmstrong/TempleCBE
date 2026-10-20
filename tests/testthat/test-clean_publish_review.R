@@ -101,3 +101,96 @@ test_that("CP-L3-04: allow_ignored accepts a tracked-but-ignored file whose name
   # naming it lets the publish through
   expect_no_error(cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, allow_ignored = name)))
 })
+
+# ---- follow-ups from the independent review of the fixes ---------------------------------------
+
+test_that("CP-L3-02: ordinary branch names are still accepted, and HEAD in any case is not", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
+  for (ok in c("main", "master", "private-history", "feature/x", "a/b/c", "release-1.0", "caf\u00e9")) {
+    expect_no_error(.cp_check_branch_name(run_git, ok))
+  }
+  for (bad in c("HEAD", "head", "Head", "@", "@{-1}", "a b", "x..y", "foo.lock")) {
+    expect_error(.cp_check_branch_name(run_git, bad), "is not a valid branch name")
+  }
+})
+
+test_that("CP-L3-02: a branch name that collides with an existing branch is refused before the push", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  cp_git(fx$repo, "branch", "feat")
+  before <- cp_state(fx$repo)
+  err <- tryCatch(
+    cp_quiet(clean_publish(repo_root = fx$repo, remote = "origin", publish_branch = "feat/x")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "collides with 'feat'")
+  expect_false(grepl("ALREADY UPDATED", err, fixed = TRUE))
+  expect_length(cp_remote_refs(fx), 0L)
+  expect_identical(cp_state(fx$repo), before)
+
+  # the private branch too, and the two names against each other
+  err <- tryCatch(
+    cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, private_branch = "feat/x")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "collides with 'feat'")
+  err <- tryCatch(
+    cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, publish_branch = "pub", private_branch = "pub/old")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "collides with")
+  expect_identical(cp_state(fx$repo), before)
+})
+
+test_that("CP-L3-03: credentials are stripped from other URL shapes in the hook", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  cp_git(fx$repo, "remote", "add", "public", "https://example.invalid/o/r.git")
+  cp_quiet(guard_public_remote("public", repo_root = fx$repo))
+  cases <- list(
+    c("ssh://git:SECRETTOKEN@example.invalid/o/r.git", "ssh://example.invalid/o/r.git"),
+    c("https://u:SECRET@TOKEN@example.invalid/o/r.git", "https://example.invalid/o/r.git"),
+    c("https://example.invalid/o/r.git", "https://example.invalid/o/r.git")
+  )
+  # the fenced URL is matched after normalising, so these spellings are all refused
+  for (sh in cp_hook_shells()) {
+    for (case in cases) {
+      res <- cp_run_hook(sh, fx$repo, remote = "", url = case[1])
+      expect_false(res$status == 0L, info = case[1])
+      out <- paste(res$out, collapse = "\n")
+      expect_false(grepl("SECRET", out, fixed = TRUE), info = case[1])
+      expect_true(grepl(paste0("remote '", case[2], "' is guarded"), out, fixed = TRUE), info = case[1])
+    }
+  }
+})
+
+test_that("CP-L3-01: an unnormalizable public_url is reported without its credentials", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  err <- tryCatch(
+    cp_quiet(guard_public_remote(paste0("https://u:", secret, "@/"), repo_root = fx$repo, allow_unmatched = TRUE)),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "could not be normalized")
+  expect_false(grepl(secret, err, fixed = TRUE))
+})
+
+test_that("CP-L3-04: a tracked-but-ignored file whose name git still quotes is reported, never allowed", {
+  skip_if_no_git()
+  skip_on_os("windows") # a tab cannot be part of a file name there
+  fx <- cp_fixture()
+  name <- "tab\there.txt"
+  writeLines("keep", file.path(fx$repo, name))
+  writeLines("tab*", file.path(fx$repo, ".gitignore"))
+  cp_git(fx$repo, "add", "-f", "-A")
+  cp_git(fx$repo, "commit", "--quiet", "-m", "tracked and ignored")
+  before <- cp_state(fx$repo)
+  err <- tryCatch(
+    cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, allow_ignored = name)),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "match .gitignore patterns")
+  expect_identical(cp_state(fx$repo), before)
+})

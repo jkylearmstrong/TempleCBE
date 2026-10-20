@@ -362,6 +362,7 @@ clean_publish <- function(
     branch_exists = function(name) !is.na(branch_oid(name))
   )
   .cp_check_branch_name(run_git, publish_branch)
+  .cp_check_branch_conflicts(run_git, c(publish_branch, private_branch))
   publish_oid <- branch_oid(publish_branch)
   private_oid <- branch_oid(private_branch)
   protected_names <- .cp_config_get_all(repo_root, "cleanpublish.protectedbranch")
@@ -396,9 +397,14 @@ clean_publish <- function(
   tracked_ignored <- trimws(ignored_res$output[nzchar(ignored_res$output)])
   Encoding(tracked_ignored) <- "UTF-8"
   if (length(tracked_ignored) > 0L) {
-    norm_ti <- fs::path_norm(tracked_ignored)
-    norm_allowed <- fs::path_norm(allow_ignored)
-    disallowed <- tracked_ignored[!norm_ti %in% norm_allowed]
+    # a name whose bytes are not UTF-8 (a Latin-1 name on ext4) cannot be compared: it is never
+    # allowed, and is shown with its bytes escaped
+    valid <- validUTF8(tracked_ignored)
+    norm_ti <- rep(NA_character_, length(tracked_ignored))
+    norm_ti[valid] <- as.character(fs::path_norm(tracked_ignored[valid]))
+    norm_allowed <- as.character(fs::path_norm(allow_ignored))
+    disallowed <- tracked_ignored[!valid | !norm_ti %in% norm_allowed]
+    disallowed[!validUTF8(disallowed)] <- iconv(disallowed[!validUTF8(disallowed)], "latin1", "ASCII", sub = "byte")
     if (length(disallowed) > 0L) {
       stop(
         "Found tracked files that match .gitignore patterns. Because clean_publish publishes the ",
@@ -411,6 +417,7 @@ clean_publish <- function(
     }
     message("[NOTE] Publishing tracked-but-ignored files permitted via allow_ignored:\n",
             paste0("  - ", tracked_ignored, collapse = "\n"))
+    # (only reached when every one of them is allowed, so each is valid UTF-8)
   }
   # Submodules: a gitlink names the commit of another repository and .gitmodules its URL
   tree_lines <- run_git(c("ls-tree", "-r", head_oid))$output
@@ -1198,16 +1205,39 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
   }
   invisible(x)
 }
-# A branch name as git will use it: valid as refs/heads/<name> (not `check-ref-format --branch`,
-# which expands `@{-1}` to the previous branch), and with no leading `@` and no `@{`
+# A branch name as git will use it: valid as refs/heads/<name>, with no leading `@` and no `@{`
+# (those are rejected first, so the `@{-1}` expansion of `check-ref-format --branch` cannot be
+# reached). `HEAD` is valid as refs/heads/HEAD but git refuses it as a branch name, in any case
+# (`head` makes `HEAD` ambiguous on a case-insensitive file system); --branch as well catches
+# whatever else `git branch` would refuse after the push.
 .cp_check_branch_name <- function(run_git, name) {
-  # `HEAD` is valid as refs/heads/HEAD, but git refuses it as the name of a branch; checking
-  # --branch as well catches any other name that `git branch` would refuse after the push
-  ok <- !identical(name, "HEAD") && !startsWith(name, "@") && !grepl("@{", name, fixed = TRUE) &&
+  ok <- !identical(toupper(name), "HEAD") && !startsWith(name, "@") && !grepl("@{", name, fixed = TRUE) &&
     run_git(c("check-ref-format", paste0("refs/heads/", name)), error_ok = TRUE)$status == 0L &&
     run_git(c("check-ref-format", "--branch", name), error_ok = TRUE)$status == 0L
   if (!ok) stop("'", name, "' is not a valid branch name.", call. = FALSE)
   invisible(name)
+}
+# Branch names collide when one is a path prefix of the other (`feat` and `feat/x`): git cannot
+# hold both, and the failure would come after the push. Checked for the two branches that are
+# written, against each other and against the local branches that exist.
+.cp_check_branch_conflicts <- function(run_git, names) {
+  existing <- trimws(run_git(c("for-each-ref", "--format=%(refname:short)", "refs/heads"))$output)
+  existing <- existing[nzchar(existing)]
+  clash <- function(a, b) !identical(a, b) && (startsWith(a, paste0(b, "/")) || startsWith(b, paste0(a, "/")))
+  names <- unique(names)
+  for (i in seq_along(names)) {
+    for (other in c(existing, names[-i])) {
+      if (clash(names[i], other)) {
+        stop(
+          "The branch name '", names[i], "' collides with '", other, "': git cannot hold both a branch and a ",
+          "branch inside its namespace, so the run would fail after the push. Choose another name. ",
+          "Nothing was changed.",
+          call. = FALSE
+        )
+      }
+    }
+  }
+  invisible(names)
 }
 # The author or committer (`which`) git will give a commit, as list(who = "Name <email>", tz = "+0200").
 # Stops when git has none (a fresh clone with no user.name or user.email).
@@ -1489,7 +1519,18 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
     r"---(        case "$_tcbe_nl$_tcbe_nf$_tcbe_nl" in)---",
     r"---(          *"$_tcbe_nl$_tcbe_n$_tcbe_nl"*))---",
     r"---(            # same rule as .cp_strip_credentials() in R: no credentials in a message)---",
-    r"---(            _tcbe_show=$(printf '%s\n' "$_tcbe_target" | sed 's|^\([a-zA-Z0-9+_.-]*://\)[^/]*@|\1|'))---",
+    r"---(            _tcbe_show=$_tcbe_target)---",
+    r"---(            case "$_tcbe_show" in)---",
+    r"---(              *://*))---",
+    r"---(                _tcbe_s=${_tcbe_show%%://*})---",
+    r"---(                case "$_tcbe_s" in)---",
+    r"---(                  ''|*[!a-zA-Z0-9+_.-]*) ;;)---",
+    r"---(                  *))---",
+    r"---(                    _tcbe_rest=${_tcbe_show#*://})---",
+    r"---(                    _tcbe_auth=${_tcbe_rest%%/*})---",
+    r"---(                    case "$_tcbe_auth" in *@*) _tcbe_show=$_tcbe_s://${_tcbe_rest#"${_tcbe_auth%@*}"@} ;; esac ;;)---",
+    r"---(                esac ;;)---",
+    r"---(            esac)---",
     r"---(            _tcbe_say "push refused: direct push to public remote '$_tcbe_show' is guarded.")---",
     r"---(            _tcbe_say "Use clean_publish() (or scripts/clean_publish.R --push) to publish a clean snapshot, or re-point the remote.")---",
     r"---(            exit 1 ;;)---",
@@ -1566,7 +1607,7 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
     r"---(unset -f _tcbe_say _tcbe_norm_url _tcbe_spellings _tcbe_norm_lines _tcbe_is_id _tcbe_commits)---",
     r"---(unset _tcbe_in _tcbe_noglob _tcbe_nl _tcbe_protected _tcbe_clean _tcbe_tips _tcbe_public _tcbe_k _tcbe_v)---",
     r"---(unset _tcbe_not _tcbe_tipc _tcbe_roots _tcbe_b _tcbe_t _tcbe_nothing _tcbe_target _tcbe_nf _tcbe_p _tcbe_n)---",
-    r"---(unset _tcbe_lref _tcbe_loid _tcbe_rref _tcbe_roid _tcbe_hit _tcbe_c _tcbe_y _tcbe_a _tcbe_d _tcbe_u _tcbe_s _tcbe_l _tcbe_o _tcbe_key _tcbe_show)---",
+    r"---(unset _tcbe_lref _tcbe_loid _tcbe_rref _tcbe_roid _tcbe_hit _tcbe_c _tcbe_y _tcbe_a _tcbe_d _tcbe_u _tcbe_s _tcbe_l _tcbe_o _tcbe_key _tcbe_show _tcbe_rest _tcbe_auth)---",
     .cp_marker_end
   )
 }

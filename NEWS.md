@@ -2,10 +2,10 @@
 
 ## `clean_publish()` security review fixes (L3 review CP-L3-01 to CP-L3-04)
 
-* **CP-L3-02**: `clean_publish()` now refuses `HEAD`, and any other name `git check-ref-format --branch` rejects, as `publish_branch` or `private_branch` before anything is pushed or written. Before, `publish_branch = "HEAD"` passed the checks, force-pushed `refs/heads/HEAD` to the remote and only then failed.
+* **CP-L3-02**: `clean_publish()` now refuses `HEAD` (in any case), any other name `git check-ref-format --branch` rejects, and a `publish_branch` or `private_branch` that collides with an existing branch or with each other (`feat` and `feat/x`), before anything is pushed or written. Before, `publish_branch = "HEAD"` or `"feat/x"` next to a branch `feat` passed the checks, force-pushed to the remote and only then failed.
 * **CP-L3-01**: `guard_public_remote()` no longer prints credentials: the error that lists the push URLs of the configured remotes, the "could not be normalized" error and the "matches no configured remote" message strip the `user:password@` part of every URL.
-* **CP-L3-03**: the pre-push hook no longer echoes credentials when it refuses a push to a guarded public remote.
-* **CP-L3-04**: `allow_ignored` now matches tracked-but-ignored files whose names contain non-ASCII characters (git printed them quoted, so they could never be allowed).
+* **CP-L3-03**: the pre-push hook no longer echoes credentials when it refuses a push to a guarded public remote. An already installed hook keeps the old message until `guard_public_remote()` or `clean_publish()` is run again in that repository, which rewrites the managed block.
+* **CP-L3-04**: `allow_ignored` now matches tracked-but-ignored files whose names contain non-ASCII characters (git printed them quoted, so they could never be allowed). A name that is not valid UTF-8, or that git still quotes (tab, newline, quote), is reported and never allowed.
 * `.Rbuildignore` excludes `release-notes/`, which holds review records.
 
 # TempleCBE 0.6.0
