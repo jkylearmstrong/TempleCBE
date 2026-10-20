@@ -1,3 +1,11 @@
+# TempleCBE (development version)
+
+## Review extraction
+
+* `docx_review_extract()` and `review_config()` gain `fork_mode = c("redacted", "collaborative")`. The default, `"redacted"`, is the behaviour so far: a reviewer's fork holds only their own sign-off and note columns. `"collaborative"` also shows the other fork reviewers' columns (sign-off reviewers' columns and Word authors still never go into a fork). Only a reviewer's own columns are merged back, so editing a colleague's column in a fork changes nothing.
+* A row a reviewer adds to their fork workbook, which matches no master row, is no longer dropped: it is kept as a general comment with the id `gen_<reviewer>_<n>` and `doc_status = "General Comment"`, in the master and in every fork. Forks written by an earlier version (no baseline sheet) add nothing.
+* `docx_review_extract(manifest_path = "auto")` looks for `reports_to_render.xlsx` in the input folder, its two parents and the working directory (in the folder itself and in `analysis/<folder>/`) when `review_config(analysis_dir =)` finds none. Nothing is searched by default.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
