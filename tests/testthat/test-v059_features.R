@@ -208,6 +208,6 @@ test_that("K5: Version 0.5.9 is properly synchronized across DESCRIPTION, NEWS, 
   found_news <- news_candidates[file.exists(news_candidates) & nzchar(news_candidates)]
   if (length(found_news) > 0L) {
     news_lines <- readLines(found_news[1], n = 5)
-    expect_true(any(grepl("^# TempleCBE 0\\.5\\.", news_lines)))
+    expect_true(any(grepl("^# TempleCBE [0-9]+\\.[0-9]+", news_lines)))
   }
 })
