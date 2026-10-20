@@ -1,3 +1,9 @@
+# TempleCBE (development version)
+
+## New functions
+
+* `boot_lmer()`: fixed effects of a linear mixed model with parametric-bootstrap standard errors and percentile intervals, with an optional Tukey-fence outlier filter on the response (`fence = "inner"`/`"outer"`) that reports how many rows it removed. Replaces the copied bootstrap blocks in report templates.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
