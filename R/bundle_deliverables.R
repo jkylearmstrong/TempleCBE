@@ -449,6 +449,8 @@ diff_deliverables <- function(old_zip, new_zip) {
         n_added = as.integer(alignment$n_added),
         n_removed = as.integer(alignment$n_removed),
         n_edited = as.integer(alignment$n_edited),
+        n_unpaired = as.integer(alignment$n_unpaired %||% 0L),
+        budget_exceeded = isTRUE(alignment$budget_exceeded),
         diff_summary = alignment$diff_summary,
         diff_lines = list(alignment$diff_lines),
         section_summary = list(alignment$section_summary),
@@ -506,6 +508,19 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
     message(sprintf("Comparing %d paragraphs across sections...", total_paras))
   }
 
+  norm_text <- function(s) {
+    # Non-breaking space, zero-width space, soft hyphens
+    s <- gsub("[\u00a0\u200b\u00ad]", " ", s, perl = TRUE)
+    # Smart/curly quotes & apostrophes -> standard ASCII
+    s <- gsub("[\u2018\u2019\u201a\u201b`]", "'", s, perl = TRUE)
+    s <- gsub("[\u201c\u201d\u201e\u201f]", "\"", s, perl = TRUE)
+    # Dashes -> hyphen
+    s <- gsub("[\u2013\u2014\u2015]", "-", s, perl = TRUE)
+    # Multiple whitespace -> single space
+    s <- gsub("\\s+", " ", s, perl = TRUE)
+    trimws(s)
+  }
+
   is_heading <- function(s) {
     s <- trimws(s)
     grepl("^#{1,6}\\s+", s) ||
@@ -527,18 +542,21 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
   old_sec <- get_sections(old_tu)
   new_sec <- get_sections(new_tu)
 
+  norm_old <- norm_text(old_tu)
+  norm_new <- norm_text(new_tu)
+
   matched_old <- rep(FALSE, length(old_tu))
   matched_new <- rep(FALSE, length(new_tu))
 
-  # 1. Fast exact matching in O(N) using hash/split lookup
-  new_idx_by_str <- split(seq_along(new_tu), new_tu)
+  # 1. Fast exact matching in O(N) using hash/split lookup on normalized text
+  new_idx_by_str <- split(seq_along(norm_new), norm_new)
   new_ptr_by_str <- new.env(hash = TRUE, parent = emptyenv())
   for (s_val in names(new_idx_by_str)) {
     new_ptr_by_str[[s_val]] <- 1L
   }
 
-  for (i in seq_along(old_tu)) {
-    s_val <- old_tu[i]
+  for (i in seq_along(norm_old)) {
+    s_val <- norm_old[i]
     idxs <- new_idx_by_str[[s_val]]
     if (!is.null(idxs)) {
       ptr <- new_ptr_by_str[[s_val]]
@@ -556,31 +574,30 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
   unmatched_new_idx <- which(!matched_new)
 
   # 2. Similarity pairing for unmatched paragraphs:
-  # Pair ONLY within the same section, with pre-tokenization, candidate capping, and time budget
+  # Pair strictly within the same section, with precomputed tokens, sliding window, and time budget
+  budget_exceeded <- FALSE
+
   if (length(unmatched_old_idx) > 0L && length(unmatched_new_idx) > 0L) {
     get_tokens <- function(s) {
       w <- unique(tolower(strsplit(s, "\\W+")[[1]]))
       w[nzchar(w)]
     }
 
-    old_toks <- lapply(old_tu[unmatched_old_idx], get_tokens)
+    old_toks <- lapply(norm_old[unmatched_old_idx], get_tokens)
     names(old_toks) <- as.character(unmatched_old_idx)
 
-    new_toks <- lapply(new_tu[unmatched_new_idx], get_tokens)
+    new_toks <- lapply(norm_new[unmatched_new_idx], get_tokens)
     names(new_toks) <- as.character(unmatched_new_idx)
 
     secs_in_old <- unique(old_sec[unmatched_old_idx])
-
     sim_scores <- list()
-    budget_exceeded <- FALSE
 
     for (sec in secs_in_old) {
       if (budget_exceeded) break
 
-      # Check time budget
       if (as.numeric(proc.time()["elapsed"] - t_pair_start) > time_budget_sec) {
         budget_exceeded <- TRUE
-        message("Paragraph pairing reached time budget; finalizing with remaining unmatched as added/removed.")
+        message("Paragraph pairing reached time budget; preserving remaining unmatched as unpaired.")
         break
       }
 
@@ -591,12 +608,11 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
       len_old <- length(sec_old)
       len_new <- length(sec_new)
 
-      # Cap candidate comparisons: if section has many unmatched paragraphs, use sliding positional window
       for (o_pos in seq_along(sec_old)) {
         if (budget_exceeded) break
         if (as.numeric(proc.time()["elapsed"] - t_pair_start) > time_budget_sec) {
           budget_exceeded <- TRUE
-          message("Paragraph pairing reached time budget; finalizing with remaining unmatched as added/removed.")
+          message("Paragraph pairing reached time budget; preserving remaining unmatched as unpaired.")
           break
         }
 
@@ -604,7 +620,6 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
         tok1 <- old_toks[[as.character(oi)]]
         if (length(tok1) == 0L) next
 
-        # Target relative position in new section
         target_pos <- max(1L, min(len_new, round((o_pos / len_old) * len_new)))
         window_size <- 25L
         cand_n_pos <- seq(max(1L, target_pos - window_size), min(len_new, target_pos + window_size))
@@ -655,43 +670,89 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
     }
   }
 
-  unmatched_rem <- which(!matched_old)
-  unmatched_add <- which(!matched_new)
-
   n_edited <- length(edited_pairs)
-  n_removed <- length(unmatched_rem)
-  n_added <- length(unmatched_add)
+
+  if (budget_exceeded) {
+    unmatched_unpaired_old <- which(!matched_old)
+    unmatched_unpaired_new <- which(!matched_new)
+    n_unpaired <- length(unmatched_unpaired_old) + length(unmatched_unpaired_new)
+    unmatched_rem <- integer()
+    unmatched_add <- integer()
+    n_removed <- 0L
+    n_added <- 0L
+  } else {
+    unmatched_unpaired_old <- integer()
+    unmatched_unpaired_new <- integer()
+    n_unpaired <- 0L
+    unmatched_rem <- which(!matched_old)
+    unmatched_add <- which(!matched_new)
+    n_removed <- length(unmatched_rem)
+    n_added <- length(unmatched_add)
+  }
 
   diff_lines <- character()
   for (ep in edited_pairs) {
     diff_lines <- c(diff_lines, paste0("- ", ep$old_text), paste0("+ ", ep$new_text))
   }
-  for (ri in unmatched_rem) {
-    diff_lines <- c(diff_lines, paste0("- ", old_tu[ri]))
-  }
-  for (ai in unmatched_add) {
-    diff_lines <- c(diff_lines, paste0("+ ", new_tu[ai]))
+  if (budget_exceeded) {
+    diff_lines <- c(diff_lines, sprintf("... [comparison budget exceeded; %d paragraphs unpaired] ...", n_unpaired))
+  } else {
+    for (ri in unmatched_rem) {
+      diff_lines <- c(diff_lines, paste0("- ", old_tu[ri]))
+    }
+    for (ai in unmatched_add) {
+      diff_lines <- c(diff_lines, paste0("+ ", new_tu[ai]))
+    }
   }
 
   all_secs <- unique(c(
     vapply(edited_pairs, function(x) x$section, character(1)),
-    old_sec[unmatched_rem],
-    new_sec[unmatched_add]
+    if (budget_exceeded) old_sec[unmatched_unpaired_old] else old_sec[unmatched_rem],
+    if (budget_exceeded) new_sec[unmatched_unpaired_new] else new_sec[unmatched_add]
   ))
   all_secs <- all_secs[nzchar(all_secs)]
   if (length(all_secs) == 0L) all_secs <- "Document Body"
 
-  sec_df <- tibble::tibble(
-    section = all_secs,
-    edited = vapply(all_secs, function(s) sum(vapply(edited_pairs, function(x) x$section == s, logical(1))), integer(1)),
-    added = vapply(all_secs, function(s) sum(new_sec[unmatched_add] == s), integer(1)),
-    removed = vapply(all_secs, function(s) sum(old_sec[unmatched_rem] == s), integer(1))
-  )
+  sec_df <- if (budget_exceeded) {
+    tibble::tibble(
+      section = all_secs,
+      edited = vapply(all_secs, function(s) sum(vapply(edited_pairs, function(x) x$section == s, logical(1))), integer(1)),
+      unpaired = vapply(all_secs, function(s) sum(old_sec[unmatched_unpaired_old] == s) + sum(new_sec[unmatched_unpaired_new] == s), integer(1)),
+      added = 0L,
+      removed = 0L
+    )
+  } else {
+    tibble::tibble(
+      section = all_secs,
+      edited = vapply(all_secs, function(s) sum(vapply(edited_pairs, function(x) x$section == s, logical(1))), integer(1)),
+      unpaired = 0L,
+      added = vapply(all_secs, function(s) sum(new_sec[unmatched_add] == s), integer(1)),
+      removed = vapply(all_secs, function(s) sum(old_sec[unmatched_rem] == s), integer(1))
+    )
+  }
 
-  largest_df <- if (length(edited_pairs) > 0L) {
-    mags <- vapply(edited_pairs, function(x) x$change_magnitude, numeric(1))
+  # Filter substantive changes to avoid identical truncated prefixes
+  substantive_pairs <- Filter(function(x) norm_old[x$old_idx] != norm_new[x$new_idx], edited_pairs)
+
+  excerpt_diff <- function(s1, s2, max_len = 35L) {
+    if (identical(s1, s2)) return(list(e1 = substr(s1, 1L, max_len), e2 = substr(s2, 1L, max_len)))
+    c1 <- strsplit(s1, "")[[1]]
+    c2 <- strsplit(s2, "")[[1]]
+    min_len <- min(length(c1), length(c2))
+    diff_pos <- which(c1[seq_len(min_len)] != c2[seq_len(min_len)])
+    first_diff <- if (length(diff_pos) > 0L) diff_pos[1] else (min_len + 1L)
+    start_pos <- max(1L, first_diff - 8L)
+    prefix <- if (start_pos > 1L) "..." else ""
+    list(
+      e1 = paste0(prefix, substr(s1, start_pos, start_pos + max_len - 1L)),
+      e2 = paste0(prefix, substr(s2, start_pos, start_pos + max_len - 1L))
+    )
+  }
+
+  largest_df <- if (length(substantive_pairs) > 0L) {
+    mags <- vapply(substantive_pairs, function(x) x$change_magnitude, numeric(1))
     ord <- order(mags, decreasing = TRUE)
-    top_ep <- edited_pairs[ord[seq_len(min(5L, length(ord)))]]
+    top_ep <- substantive_pairs[ord[seq_len(min(5L, length(ord)))]]
     tibble::tibble(
       section = vapply(top_ep, function(x) x$section, character(1)),
       old = vapply(top_ep, function(x) substr(x$old_text, 1L, 100L), character(1)),
@@ -703,10 +764,9 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
   }
 
   top_change_txt <- if (nrow(largest_df) > 0L) {
+    ed <- excerpt_diff(largest_df$old[1], largest_df$new[1], 35L)
     sprintf(" (Largest in '%s': \"%s\" -> \"%s\")",
-            largest_df$section[1],
-            substr(largest_df$old[1], 1L, 35L),
-            substr(largest_df$new[1], 1L, 35L))
+            largest_df$section[1], ed$e1, ed$e2)
   } else if (n_added > 0L) {
     sprintf(" (+ \"%s\")", substr(new_tu[unmatched_add[1]], 1L, 50L))
   } else if (n_removed > 0L) {
@@ -715,7 +775,11 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
     ""
   }
 
-  diff_summary <- if (n_edited > 0L) {
+  diff_summary <- if (budget_exceeded) {
+    unpaired_sec_count <- length(unique(c(old_sec[unmatched_unpaired_old], new_sec[unmatched_unpaired_new])))
+    sprintf("%d edited paragraph(s); comparison budget exceeded (%d unpaired paragraph(s) across %d section(s))%s",
+            n_edited, n_unpaired, unpaired_sec_count, top_change_txt)
+  } else if (n_edited > 0L) {
     sprintf("%d edited, %d added, %d removed paragraph(s) across %d section(s)%s",
             n_edited, n_added, n_removed, nrow(sec_df), top_change_txt)
   } else {
@@ -726,6 +790,8 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
     n_edited = n_edited,
     n_added = n_added,
     n_removed = n_removed,
+    n_unpaired = n_unpaired,
+    budget_exceeded = budget_exceeded,
     diff_summary = diff_summary,
     diff_lines = diff_lines,
     section_summary = sec_df,

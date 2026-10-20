@@ -856,7 +856,7 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.11")
+  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.12")
   payload <- list(
     version = pkg_ver,
     seed_scheme = as.character(seed_scheme),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.11")
+  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.5.12")
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
@@ -1250,6 +1250,8 @@ tune_over_alpha <- function(object,
 #'   of the `inner_resamples` column of [rsample::nested_cv()]).
 #' @inheritParams tune_over_alpha
 #' @param seed Optional integer seed for reproducible random draws across splits.
+#' @param calibrate Logical (default TRUE); whether to benchmark baseline serial execution.
+#'   Set to FALSE to skip serial benchmarking and dispatch tasks directly to parallel workers.
 #' @param checkpoint_dir Optional directory path to save checkpoint files.
 #'   Finished splits/tasks are loaded from disk on rerun when their fingerprint
 #'   matches, skipping recomputation.
@@ -1281,6 +1283,7 @@ tune_alpha_by_split <- function(object,
                                 formulas = NULL,
                                 progress = FALSE,
                                 seed = NULL,
+                                calibrate = TRUE,
                                 checkpoint_dir = NULL,
                                 checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                 shard = NULL,
@@ -1625,14 +1628,17 @@ tune_alpha_by_split <- function(object,
     logical_cores <- tryCatch(parallel::detectCores(logical = TRUE), error = function(e) NA_integer_)
 
     t_start <- proc.time()["elapsed"]
-    if (n_workers > 1L && length(active_indices) > 1L) {
+    t_calib_dur <- 0.0
+
+    if (isTRUE(calibrate) && n_workers > 1L && length(active_indices) > 1L) {
+      t_calib_start <- proc.time()["elapsed"]
+
       # 1. Warm-up task serially (loads bundle, models, packages; no progress output)
       warmup_idx <- active_indices[1]
       warmup_out <- run_one_flat_task(warmup_idx)
 
-      # 2. Benchmark on a sample of tasks run serially after warm-up
-      n_bench <- min(5L, max(1L, length(active_indices) - 1L))
-      if (n_bench > (length(active_indices) - 1L)) n_bench <- length(active_indices) - 1L
+      # 2. Benchmark on a concise sample of tasks run serially after warm-up
+      n_bench <- min(2L, length(active_indices) - 1L)
       bench_indices <- if (n_bench > 0L) active_indices[seq(2L, length.out = n_bench)] else integer()
       bench_outs <- vector("list", n_bench)
       bench_durs <- numeric(n_bench)
@@ -1645,9 +1651,12 @@ tune_alpha_by_split <- function(object,
         bench_outs[[b_i]] <- b_res
       }
 
-      ser_task_dur <- max(0.001, stats::median(bench_durs))
-      ser_task_dur_min <- max(0.001, min(bench_durs))
-      ser_task_dur_max <- max(0.001, max(bench_durs))
+      t_calib_dur <- as.numeric(proc.time()["elapsed"] - t_calib_start)
+
+      sample_durs <- if (n_bench > 0L) bench_durs else warmup_out$fit_dur %||% 0.001
+      ser_task_dur <- max(0.001, stats::median(sample_durs))
+      ser_task_dur_min <- max(0.001, min(sample_durs))
+      ser_task_dur_max <- max(0.001, max(sample_durs))
       warmup_out$fit_dur <- warmup_out$fit_dur %||% ser_task_dur
 
       # 3. Dispatch remaining tasks to parallel workers
@@ -1706,6 +1715,8 @@ tune_alpha_by_split <- function(object,
       physical_cores = physical_cores,
       logical_cores = logical_cores,
       elapsed_sec = t_elapsed,
+      calibrated = isTRUE(calibrate),
+      calibration_sec = t_calib_dur,
       measured_serial_task_sec = ser_task_dur,
       measured_serial_task_range_sec = c(ser_task_dur_min, ser_task_dur_max),
       measured_serial_baseline_sec = serial_baseline_total,
@@ -1723,10 +1734,11 @@ tune_alpha_by_split <- function(object,
     )
 
     if (isTRUE(progress)) {
+      calib_msg <- if (t_calib_dur > 0) sprintf("; calibration took %.2f s", t_calib_dur) else ""
       msg <- sprintf(
-        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx [range: %.2fx - %.2fx] real speedup on %d workers vs %.2f s [range: %.2f - %.2f s] measured serial baseline)\n  - Per-task fit time: %.2f s serial baseline vs %.2f s in workers (%.2fx worker concurrency slowdown)\n  - Parallel IPC / serialization / sync overhead: %.2f s",
+        "tune_alpha_by_split() timing breakdown:\n  - Completed %d task(s) across %d split(s) in %.2f s (%.2fx [range: %.2fx - %.2fx] real speedup on %d workers vs %.2f s [range: %.2f - %.2f s] measured serial baseline%s)\n  - Per-task fit time: %.2f s serial baseline vs %.2f s in workers (%.2fx worker concurrency slowdown)\n  - Parallel IPC / serialization / sync overhead: %.2f s",
         n_active, length(active_splits), t_elapsed, real_speedup, speedup_min, speedup_max, n_workers,
-        serial_baseline_total, serial_baseline_min, serial_baseline_max,
+        serial_baseline_total, serial_baseline_min, serial_baseline_max, calib_msg,
         ser_task_dur, worker_avg_sec, worker_concurrency_slowdown, ipc_overhead
       )
       if (!is.na(physical_cores) && n_workers > physical_cores) {
@@ -1813,6 +1825,7 @@ summarize_tune_results <- function(object,
                                    formulas = NULL,
                                    progress = FALSE,
                                    seed = NULL,
+                                   calibrate = TRUE,
                                    checkpoint_dir = NULL,
                                    checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                    shard = NULL,
@@ -1828,6 +1841,7 @@ summarize_tune_results <- function(object,
     formulas = formulas,
     progress = progress,
     seed = seed,
+    calibrate = calibrate,
     checkpoint_dir = checkpoint_dir,
     checkpoint_mismatch = checkpoint_mismatch,
     shard = shard,
