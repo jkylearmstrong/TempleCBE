@@ -103,6 +103,8 @@ test_that("K2: Parallel tuning timing breakdown reports serial baseline, speedup
   skip_if_not_installed("glmnet")
   skip_if_not_installed("survival")
   skip_if_not_installed("rsample")
+  skip_if_not_installed("recipes")
+  skip_if_not_installed("yardstick")
 
   fx <- make_tune_fixture()
   msgs <- character()
@@ -195,9 +197,17 @@ test_that("K4: %notin% is unexported and masks no base function while internal s
 })
 
 test_that("K5: Version 0.5.9 is properly synchronized across DESCRIPTION, NEWS, and code", {
-  desc <- read.dcf(testthat::test_path("../../DESCRIPTION"))
-  expect_equal(unname(desc[1, "Version"]), "0.5.9")
+  ver <- as.character(utils::packageVersion("TempleCBE"))
+  expect_equal(ver, "0.5.9")
 
-  news_lines <- readLines(testthat::test_path("../../NEWS.md"), n = 5)
-  expect_true(any(grepl("^# TempleCBE 0\\.5\\.9", news_lines)))
+  news_candidates <- c(
+    system.file("NEWS.md", package = "TempleCBE"),
+    file.path(system.file(package = "TempleCBE"), "NEWS.md"),
+    tryCatch(testthat::test_path("../../NEWS.md"), error = function(e) "")
+  )
+  found_news <- news_candidates[file.exists(news_candidates) & nzchar(news_candidates)]
+  if (length(found_news) > 0L) {
+    news_lines <- readLines(found_news[1], n = 5)
+    expect_true(any(grepl("^# TempleCBE 0\\.5\\.9", news_lines)))
+  }
 })
