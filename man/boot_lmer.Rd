@@ -2,69 +2,92 @@
 % Please edit documentation in R/boot_lmer.R
 \name{boot_lmer}
 \alias{boot_lmer}
-\title{Bootstrap the Fixed Effects of a Linear Mixed-Effects Model}
+\title{Cluster Bootstrap of a Linear Mixed-Effects Model}
 \usage{
 boot_lmer(
   formula,
   data,
+  group,
   n_boot = 1000L,
-  fence = c("none", "inner", "outer"),
+  normalize = NULL,
+  fence = c("outer", "inner", "none"),
+  fallback_formula = NULL,
   conf_level = 0.95,
+  include_intercept = FALSE,
   seed = NULL,
   ...
 )
 }
 \arguments{
-\item{formula}{A mixed-model formula with at least one random-effect term,
-for example `y ~ time + (1 | id)`.}
+\item{formula}{A mixed-model formula with a random-effect term, for example
+`y ~ x1 + x2 + (1 | id)`.}
 
 \item{data}{A data frame.}
 
+\item{group}{Name of the column that identifies the groups to resample (usually
+the grouping factor of the random effect).}
+
 \item{n_boot}{Number of bootstrap replicates (default 1000).}
 
-\item{fence}{`"none"` (default), `"inner"` or `"outer"`; see Details.}
+\item{normalize}{`NULL` or the names of numeric columns to rescale to
+\[0, 1\] within each resample.}
+
+\item{fence}{`"outer"` (default), `"inner"` or `"none"`; see Details.}
+
+\item{fallback_formula}{`NULL` or a formula used when the model fails.}
 
 \item{conf_level}{Confidence level of the percentile interval (default 0.95).}
 
-\item{seed}{Optional integer; the bootstrap is reproducible with it, and the
-random number generator state of the session is restored afterwards.}
+\item{include_intercept}{If `TRUE`, the intercept is summarised too (default
+`FALSE`).}
 
-\item{...}{Passed to [lme4::lmer()] (for example `REML = FALSE`).}
+\item{seed}{Optional integer. With it the result is reproducible, and the random
+number generator state of the session is restored afterwards.}
+
+\item{...}{Passed to [lme4::lmer()].}
 }
 \value{
-A tibble of class `boot_lmer` with one row per fixed effect: `term`,
-  `estimate` (from the fit), `std.error` (standard deviation of the bootstrap
-  estimates), `conf.low`, `conf.high`, `n_boot` (replicates that fitted).
-  Attributes: `fit` (the `merMod`), `n_removed` (rows dropped by the fence),
-  `n_failed` (replicates that failed), `fence`, `conf_level`.
+A tibble of class `boot_lmer`, one row per fixed effect: `term`, `n` (kept
+  estimates), `mean`, `sd`, `std.error`, `median`, `lower`, `upper`, `p.value`.
+  Attributes: `draws` (every bootstrap estimate: `boot`, `term`, `estimate`,
+  `kept`, `fallback`), `n_boot`, `n_failed`, `n_fallback`, `fence`, `conf_level`.
 }
 \description{
-Fits a linear mixed model with [lme4::lmer()] and returns the fixed effects
-with parametric-bootstrap standard errors and percentile confidence
-intervals ([lme4::bootMer()]). Optionally removes outliers of the response
-first, by Tukey's fences ([calculate_fences()]), and says how many rows that
-removed. It replaces the long copied blocks of "filter outliers, fit, bootstrap,
-tidy" in report templates.
+Refits a linear mixed model ([lme4::lmer()]) on bootstrap resamples of whole
+groups (for example subjects), drops outlying bootstrap estimates of each fixed
+effect with Tukey's fences ([calculate_fences()]) and summarises what is left:
+mean, standard error, median, percentile interval and a two-tailed bootstrap
+p-value ([boot_p_value()]). It is the "resample, fit with a fallback, tidy, drop
+outlying coefficients, summarise" block that report templates otherwise repeat.
 }
 \details{
-The outlier filter looks at the response only, on the whole data set (not
-within a group), and keeps rows whose response is missing (the model drops
-them as usual). `fence = "inner"` removes values beyond 1.5 x IQR from the
-quartiles, `"outer"` beyond 3 x IQR, `"none"` removes nothing.
+Each replicate draws as many groups as there are, with replacement, and uses all
+rows of every drawn group. A group drawn twice keeps its identifier, so it is
+still one level of the random effect (as with `rsample::group_bootstraps()`).
 
-Each bootstrap replicate simulates a new response from the fitted model
-(new random effects are not drawn: `use.u = FALSE`, so the clusters of the
-data are the clusters of the replicates) and refits it. A replicate that fails
-to fit contributes nothing and is counted in `n_failed`; the interval and
-standard error use the replicates that fitted. With fewer than 2 fitted
-replicates the interval and standard error are `NA`.
+`normalize` names numeric columns that are rescaled to \[0, 1\] by their minimum
+and maximum \emph{within each resample} ([min_max_norm()]) before the model is
+fitted, so the estimates are per full range of the predictor.
+
+A replicate whose model cannot be fitted is refitted with `fallback_formula`, if
+one is given (for example the intercept-only `y ~ -1 + (1 | id)`); a fallback
+model contributes only the fixed effects it has. A replicate that cannot be
+fitted at all is counted in `n_failed` and contributes nothing. Warnings and
+messages from the fits (singular fits, convergence notes) are not shown.
+
+The fences are applied to the bootstrap estimates of each term separately: an
+estimate is kept when it lies strictly between the lower and upper fence (the
+inner fences at 1.5 x IQR, the outer at 3 x IQR). `std.error` is the standard
+deviation of the kept estimates divided by the square root of their number, and
+the p-value uses it as the tolerance `epsilon` around the null value, which is
+what the report templates did. Percentile limits use all kept estimates.
 }
 \examples{
 \dontrun{
-sleep <- lme4::sleepstudy
-boot_lmer(Reaction ~ Days + (1 | Subject), sleep, n_boot = 200, seed = 1)
+boot_lmer(Reaction ~ Days + (1 | Subject), lme4::sleepstudy, group = "Subject",
+          n_boot = 200, normalize = "Days", seed = 1)
 }
 }
 \seealso{
-[fit_lmer_safely()], [calculate_fences()]
+[fit_lmer_safely()], [calculate_fences()], [boot_p_value()]
 }

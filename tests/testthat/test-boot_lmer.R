@@ -6,21 +6,58 @@ boot_fixture <- function(n_id = 20, n_t = 5, slope = 2, seed = 11) {
   data.frame(id = factor(id), time = time, y = 5 + slope * time + u + stats::rnorm(n_id * n_t, sd = 0.5))
 }
 
-test_that("boot_lmer() returns one row per fixed effect with sensible intervals", {
+# ---- boot_p_value() ------------------------------------------------------------------------------
+
+test_that("boot_p_value() doubles the smaller tail", {
+  expect_equal(boot_p_value(c(1, 2, 3, 4)), 0) # nothing at or below the null
+  expect_equal(boot_p_value(c(-1, 1, 2, 3)), 2 * 0.25)
+  expect_equal(boot_p_value(c(-1, -1, 1, 1)), 1)
+  expect_equal(boot_p_value(c(0, 2, 2, 2), null_value = 1, epsilon = 0.5), 2 * 0.25)
+  # estimates within epsilon of the null count on neither side
+  expect_equal(boot_p_value(c(0, 0, 5, 5), epsilon = 1e-5), 0)
+  expect_equal(boot_p_value(c(0, 0, 5, 5), epsilon = 0), 2 * 0.5)
+  expect_equal(boot_p_value(c(NA, 1, 2)), 0)
+  expect_true(is.na(boot_p_value(numeric())))
+  expect_true(is.na(boot_p_value(NA_real_)))
+})
+
+test_that("boot_p_value() checks its arguments", {
+  expect_error(boot_p_value("a"), "must be numeric")
+  expect_error(boot_p_value(1, null_value = c(1, 2)), "null_value")
+  expect_error(boot_p_value(1, epsilon = -1), "epsilon")
+})
+
+# ---- boot_lmer() ---------------------------------------------------------------------------------
+
+test_that("boot_lmer() resamples groups and summarises each fixed effect", {
   skip_if_not_installed("lme4")
   d <- boot_fixture()
-  res <- boot_lmer(y ~ time + (1 | id), d, n_boot = 60, seed = 1)
+  res <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 60, seed = 1)
   expect_s3_class(res, "boot_lmer")
   expect_s3_class(res, "tbl_df")
-  expect_identical(res$term, c("(Intercept)", "time"))
-  expect_named(res, c("term", "estimate", "std.error", "conf.low", "conf.high", "n_boot"))
-  expect_equal(res$estimate, unname(lme4::fixef(attr(res, "fit"))))
-  expect_true(all(res$conf.low < res$estimate & res$estimate < res$conf.high))
-  expect_true(all(res$std.error > 0))
-  expect_lt(abs(res$estimate[2] - 2), 0.2)
-  expect_true(res$conf.low[2] < 2 && 2 < res$conf.high[2])
-  expect_identical(attr(res, "n_removed"), 0L)
-  expect_identical(res$n_boot + attr(res, "n_failed"), rep(60L, 2))
+  expect_named(res, c("term", "n", "mean", "sd", "std.error", "median", "lower", "upper", "p.value"))
+  expect_identical(res$term, "time") # the intercept is left out by default
+  expect_lt(abs(res$mean - 2), 0.2)
+  expect_true(res$lower < 2 && 2 < res$upper)
+  expect_equal(res$std.error, res$sd / sqrt(res$n))
+  expect_lt(res$p.value, 0.05)
+  expect_identical(attr(res, "n_boot"), 60L)
+  expect_identical(attr(res, "n_failed"), 0L)
+  draws <- attr(res, "draws")
+  expect_identical(sort(unique(draws$term)), c("(Intercept)", "time"))
+  expect_identical(max(draws$boot), 60L)
+  expect_identical(nrow(boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 10, include_intercept = TRUE, seed = 1)), 2L)
+})
+
+test_that("boot_lmer() draws whole groups: every replicate holds complete groups", {
+  skip_if_not_installed("lme4")
+  d <- boot_fixture(n_id = 8)
+  # a model whose only fixed effect is the cluster size makes the replicate's row count visible
+  d$ones <- 1
+  res <- boot_lmer(y ~ 0 + ones + (1 | id), d, group = "id", n_boot = 15, fence = "none", seed = 3)
+  draws <- attr(res, "draws")
+  expect_true(all(draws$term == "ones"))
+  expect_identical(nrow(draws), 15L)
 })
 
 test_that("boot_lmer() is reproducible with a seed and leaves the session's random numbers alone", {
@@ -29,44 +66,86 @@ test_that("boot_lmer() is reproducible with a seed and leaves the session's rand
   set.seed(99)
   before <- stats::runif(1)
   set.seed(99)
-  a <- boot_lmer(y ~ time + (1 | id), d, n_boot = 30, seed = 5)
+  a <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 20, seed = 5)
   after <- stats::runif(1)
-  b <- boot_lmer(y ~ time + (1 | id), d, n_boot = 30, seed = 5)
+  b <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 20, seed = 5)
   expect_equal(as.data.frame(a)[names(a)], as.data.frame(b)[names(b)])
-  expect_identical(after, before) # the seed argument did not move the session's stream
+  expect_equal(attr(a, "draws"), attr(b, "draws"))
+  expect_identical(after, before)
 })
 
-test_that("boot_lmer() removes outliers of the response by Tukey's fences and reports how many", {
+test_that("boot_lmer() rescales named predictors to [0, 1] within each resample", {
   skip_if_not_installed("lme4")
   d <- boot_fixture()
-  d$y[c(3, 40)] <- c(500, -500)
-  d$y[7] <- NA
-  expect_identical(attr(boot_lmer(y ~ time + (1 | id), d, n_boot = 5, fence = "none", seed = 1), "n_removed"), 0L)
-  inner <- boot_lmer(y ~ time + (1 | id), d, n_boot = 5, fence = "inner", seed = 1)
-  outer <- boot_lmer(y ~ time + (1 | id), d, n_boot = 5, fence = "outer", seed = 1)
-  expect_identical(attr(inner, "n_removed"), 2L)
-  expect_identical(attr(outer, "n_removed"), 2L)
-  # with the two wild values removed the slope is back near the truth
-  expect_lt(abs(inner$estimate[2] - 2), 0.3)
-  expect_equal(attr(inner, "fence"), "inner")
+  raw <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 30, seed = 2)
+  scaled <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 30, normalize = "time", seed = 2)
+  # time runs 1..5 in every group, so one unit of the rescaled predictor is 4 units of time
+  expect_equal(scaled$mean, raw$mean * 4, tolerance = 1e-6)
+})
+
+test_that("boot_lmer() drops outlying estimates of each term by the chosen fence", {
+  skip_if_not_installed("lme4")
+  d <- boot_fixture(n_id = 10)
+  # two groups with wild responses make some replicates produce extreme slopes
+  d$y[d$id == "1"] <- d$y[d$id == "1"] + c(-400, 400, -400, 400, -400)
+  none <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 80, fence = "none", seed = 4)
+  outer <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 80, fence = "outer", seed = 4)
+  inner <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 80, fence = "inner", seed = 4)
+  expect_identical(attr(none, "draws")$kept, rep(TRUE, nrow(attr(none, "draws"))))
+  expect_lte(outer$n, none$n)
+  expect_lte(inner$n, outer$n)
+  # the kept flags are exactly the strict fences of calculate_fences(), term by term
+  for (res in list(outer = outer, inner = inner)) {
+    dr <- attr(res, "draws")
+    fn <- attr(res, "fence")
+    for (tm in unique(dr$term)) {
+      e <- dr$estimate[dr$term == tm]
+      f <- calculate_fences(e)
+      expect_identical(
+        dr$kept[dr$term == tm],
+        f[[paste0("lower_", fn, "_fence")]] < e & e < f[[paste0("upper_", fn, "_fence")]]
+      )
+    }
+  }
+  # the same draws underlie all three
+  expect_equal(attr(none, "draws")$estimate, attr(inner, "draws")$estimate)
+})
+
+test_that("boot_lmer() falls back to another formula, or counts the failure", {
+  skip_if_not_installed("lme4")
+  d <- boot_fixture(n_id = 8)
+  # a model that always fails: the variable does not exist
+  expect_warning(
+    none <- boot_lmer(y ~ missing_var + (1 | id), d, group = "id", n_boot = 5, seed = 1),
+    "No bootstrap replicate could be fitted"
+  )
+  expect_identical(attr(none, "n_failed"), 5L)
+  expect_identical(nrow(none), 0L)
+
+  fb <- boot_lmer(y ~ missing_var + (1 | id), d, group = "id", n_boot = 5,
+                  fallback_formula = y ~ time + (1 | id), seed = 1)
+  expect_identical(attr(fb, "n_failed"), 0L)
+  expect_identical(attr(fb, "n_fallback"), 5L)
+  expect_identical(fb$term, "time")
+  expect_true(all(attr(fb, "draws")$fallback))
 })
 
 test_that("boot_lmer() checks its arguments", {
   skip_if_not_installed("lme4")
   d <- boot_fixture(n_id = 6)
-  expect_error(boot_lmer("y ~ x", d), "must be a formula")
-  expect_error(boot_lmer(y ~ time, d), "random-effect term")
-  expect_error(boot_lmer(y ~ time + (1 | id), d[0, ]), "non-empty data frame")
-  expect_error(boot_lmer(y ~ time + (1 | id), d, n_boot = 0), "n_boot")
-  expect_error(boot_lmer(y ~ time + (1 | id), d, conf_level = 1), "conf_level")
-  expect_error(boot_lmer(y ~ time + (1 | id), d, fence = "wide"), "should be one of")
-  dd <- d
-  dd$grp <- "a"
-  expect_error(boot_lmer(nope ~ time + (1 | id), d, fence = "inner"), "single numeric response")
+  expect_error(boot_lmer("y ~ x", d, "id"), "must be a formula")
+  expect_error(boot_lmer(y ~ time, d, "id"), "random-effect term")
+  expect_error(boot_lmer(y ~ time + (1 | id), d[0, ], "id"), "non-empty data frame")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "nope"), "name of a column")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "id", n_boot = 0), "n_boot")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "id", conf_level = 1), "conf_level")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "id", fence = "wide"), "should be one of")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "id", normalize = "id"), "numeric columns")
+  expect_error(boot_lmer(y ~ time + (1 | id), d, "id", fallback_formula = "y ~ 1"), "fallback_formula")
 })
 
 test_that("print.boot_lmer() summarises the run", {
   skip_if_not_installed("lme4")
-  res <- boot_lmer(y ~ time + (1 | id), boot_fixture(n_id = 8), n_boot = 10, seed = 2)
-  expect_output(print(res), "Bootstrap of a mixed model: 2 fixed effect")
+  res <- boot_lmer(y ~ time + (1 | id), boot_fixture(n_id = 8), group = "id", n_boot = 10, seed = 2)
+  expect_output(print(res), "Cluster bootstrap of a mixed model: 10 replicate")
 })

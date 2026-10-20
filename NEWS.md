@@ -2,7 +2,7 @@
 
 ## New functions
 
-* `boot_lmer()`: fixed effects of a linear mixed model with parametric-bootstrap standard errors and percentile intervals, with an optional Tukey-fence outlier filter on the response (`fence = "inner"`/`"outer"`) that reports how many rows it removed. Replaces the copied bootstrap blocks in report templates.
+* `boot_lmer()` and `boot_p_value()`: a cluster bootstrap of a linear mixed model. Whole groups are resampled, each replicate is fitted (optionally with predictors rescaled to [0, 1] within the resample and a fallback formula when the fit fails), outlying bootstrap estimates of each fixed effect are dropped by Tukey's fences, and each term is summarised by mean, standard error, median, percentile limits and a two-tailed bootstrap p-value. Replaces the copied bootstrap blocks in report templates.
 
 # TempleCBE 0.6.0
 
