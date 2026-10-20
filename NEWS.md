@@ -1,3 +1,9 @@
+# TempleCBE (development version)
+
+## New functions
+
+* `audit_render_parity(pdf_path, docx_path)`: before a report goes out, compares the rendered PDF with the Word version and lists text that comes too close to the page edge, table and figure captions that are missing, skip a number or come in another order, a table caption above the table in one file and below it in the other, and percentages or decimals that occur in one file only (for example 98.9% in the PDF and 97% in Word). It reads text and positions only and points at places to look at.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
