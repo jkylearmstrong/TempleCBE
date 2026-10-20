@@ -1,3 +1,9 @@
+# TempleCBE (development version)
+
+## New functions
+
+* `render_variants()`: renders one parameterized Quarto or R Markdown template once per variant of its parameters (for example `use_imputed = FALSE` / `TRUE`), naming the outputs `<template>_<variant>.<ext>`. A parameter that the template does not declare under `params:` is an error before anything is rendered, so a copy of a report no longer has to be kept in step by hand.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
