@@ -1,3 +1,13 @@
+# TempleCBE (development version)
+
+## `clean_publish()` security review fixes (L3 review CP-L3-01 to CP-L3-04)
+
+* **CP-L3-02**: `clean_publish()` now refuses `HEAD`, and any other name `git check-ref-format --branch` rejects, as `publish_branch` or `private_branch` before anything is pushed or written. Before, `publish_branch = "HEAD"` passed the checks, force-pushed `refs/heads/HEAD` to the remote and only then failed.
+* **CP-L3-01**: `guard_public_remote()` no longer prints credentials: the error that lists the push URLs of the configured remotes, the "could not be normalized" error and the "matches no configured remote" message strip the `user:password@` part of every URL.
+* **CP-L3-03**: the pre-push hook no longer echoes credentials when it refuses a push to a guarded public remote.
+* **CP-L3-04**: `allow_ignored` now matches tracked-but-ignored files whose names contain non-ASCII characters (git printed them quoted, so they could never be allowed).
+* `.Rbuildignore` excludes `release-notes/`, which holds review records.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.

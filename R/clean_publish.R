@@ -388,8 +388,13 @@ clean_publish <- function(
     )
   }
   # Check for tracked files that match .gitignore patterns (A5-15)
-  ignored_res <- run_git(c("ls-files", "-ci", "--exclude-standard"))
+  # core.quotePath=false: git otherwise writes a path with non-ASCII characters as "caf\303\251",
+  # and `allow_ignored` could never match it. (`-z` would be the exact form, but system2() cannot
+  # carry the NUL bytes it prints.) A path with a tab, newline or quote is still quoted and so is
+  # reported, never silently allowed.
+  ignored_res <- run_git(c("-c", "core.quotePath=false", "ls-files", "-ci", "--exclude-standard"))
   tracked_ignored <- trimws(ignored_res$output[nzchar(ignored_res$output)])
+  Encoding(tracked_ignored) <- "UTF-8"
   if (length(tracked_ignored) > 0L) {
     norm_ti <- fs::path_norm(tracked_ignored)
     norm_allowed <- fs::path_norm(allow_ignored)
@@ -925,8 +930,12 @@ guard_public_remote <- function(public_url, repo_root = NULL, allow_unmatched = 
     fence <- c(public_url, unlist(push_urls[matched]))
     if (!length(matched) && !isTRUE(allow_unmatched)) {
       stop(
-        "`public_url` '", public_url, "' does not match the push URL of any configured remote (",
-        if (length(remotes)) paste0(remotes, ": ", vapply(push_urls, paste, "", collapse = ", "), collapse = "; ") else "there is none",
+        "`public_url` '", .cp_strip_credentials(public_url), "' does not match the push URL of any configured remote (",
+        if (length(remotes)) {
+          paste0(remotes, ": ", vapply(push_urls, function(u) paste(.cp_strip_credentials(u), collapse = ", "), ""), collapse = "; ")
+        } else {
+          "there is none"
+        },
         "), so the fence would guard nothing. Pass the name of the remote, or the URL as ",
         "`git remote get-url --push <name>` prints it; for a remote that will be added later pass ",
         "`allow_unmatched = TRUE`. Nothing was changed.",
@@ -936,7 +945,7 @@ guard_public_remote <- function(public_url, repo_root = NULL, allow_unmatched = 
   }
   fence <- unique(.cp_strip_credentials(fence))
   if (any(!nzchar(.cp_normalize_url(fence)))) {
-    stop("`public_url` could not be normalized: '", public_url, "'.", call. = FALSE)
+    stop("`public_url` could not be normalized: '", .cp_strip_credentials(public_url), "'.", call. = FALSE)
   }
   refuse_whitespace(fence)
 
@@ -953,7 +962,7 @@ guard_public_remote <- function(public_url, repo_root = NULL, allow_unmatched = 
   message("[GUARD] Pre-push hook ", hook_plan$action, ": ", hook_path)
   if (!length(matched)) {
     message(
-      "[GUARD] '", public_url, "' matches no configured remote: it guards pushes to that URL once a ",
+      "[GUARD] '", .cp_strip_credentials(public_url), "' matches no configured remote: it guards pushes to that URL once a ",
       "remote with it exists."
     )
   }
@@ -1192,8 +1201,11 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
 # A branch name as git will use it: valid as refs/heads/<name> (not `check-ref-format --branch`,
 # which expands `@{-1}` to the previous branch), and with no leading `@` and no `@{`
 .cp_check_branch_name <- function(run_git, name) {
-  ok <- !startsWith(name, "@") && !grepl("@{", name, fixed = TRUE) &&
-    run_git(c("check-ref-format", paste0("refs/heads/", name)), error_ok = TRUE)$status == 0L
+  # `HEAD` is valid as refs/heads/HEAD, but git refuses it as the name of a branch; checking
+  # --branch as well catches any other name that `git branch` would refuse after the push
+  ok <- !identical(name, "HEAD") && !startsWith(name, "@") && !grepl("@{", name, fixed = TRUE) &&
+    run_git(c("check-ref-format", paste0("refs/heads/", name)), error_ok = TRUE)$status == 0L &&
+    run_git(c("check-ref-format", "--branch", name), error_ok = TRUE)$status == 0L
   if (!ok) stop("'", name, "' is not a valid branch name.", call. = FALSE)
   invisible(name)
 }
@@ -1476,7 +1488,9 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
     r"---(      if [ -n "$_tcbe_n" ]; then)---",
     r"---(        case "$_tcbe_nl$_tcbe_nf$_tcbe_nl" in)---",
     r"---(          *"$_tcbe_nl$_tcbe_n$_tcbe_nl"*))---",
-    r"---(            _tcbe_say "push refused: direct push to public remote '$_tcbe_target' is guarded.")---",
+    r"---(            # same rule as .cp_strip_credentials() in R: no credentials in a message)---",
+    r"---(            _tcbe_show=$(printf '%s\n' "$_tcbe_target" | sed 's|^\([a-zA-Z0-9+_.-]*://\)[^/]*@|\1|'))---",
+    r"---(            _tcbe_say "push refused: direct push to public remote '$_tcbe_show' is guarded.")---",
     r"---(            _tcbe_say "Use clean_publish() (or scripts/clean_publish.R --push) to publish a clean snapshot, or re-point the remote.")---",
     r"---(            exit 1 ;;)---",
     r"---(        esac)---",
@@ -1552,7 +1566,7 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
     r"---(unset -f _tcbe_say _tcbe_norm_url _tcbe_spellings _tcbe_norm_lines _tcbe_is_id _tcbe_commits)---",
     r"---(unset _tcbe_in _tcbe_noglob _tcbe_nl _tcbe_protected _tcbe_clean _tcbe_tips _tcbe_public _tcbe_k _tcbe_v)---",
     r"---(unset _tcbe_not _tcbe_tipc _tcbe_roots _tcbe_b _tcbe_t _tcbe_nothing _tcbe_target _tcbe_nf _tcbe_p _tcbe_n)---",
-    r"---(unset _tcbe_lref _tcbe_loid _tcbe_rref _tcbe_roid _tcbe_hit _tcbe_c _tcbe_y _tcbe_a _tcbe_d _tcbe_u _tcbe_s _tcbe_l _tcbe_o _tcbe_key)---",
+    r"---(unset _tcbe_lref _tcbe_loid _tcbe_rref _tcbe_roid _tcbe_hit _tcbe_c _tcbe_y _tcbe_a _tcbe_d _tcbe_u _tcbe_s _tcbe_l _tcbe_o _tcbe_key _tcbe_show)---",
     .cp_marker_end
   )
 }
