@@ -1,3 +1,9 @@
+# TempleCBE (development version)
+
+## Fixes
+
+* `dedupe_pipeline(strategy = "rename")` no longer returns duplicate names when a numbered name already exists in the list (`c("a", "a", "a_2")` came back as `c("a", "a_2", "a_2")`); the new name skips every name in use.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
