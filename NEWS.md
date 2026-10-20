@@ -1,3 +1,27 @@
+# TempleCBE 0.5.12
+
+## Header Cleaning & Polymorphic Name Support (#12)
+
+* **Polymorphic `clean_names_keep_labels()` & Character Vector Cleaning (#12)**: `clean_names_keep_labels()` now seamlessly accepts both character vectors and data frames. Character vectors are cleaned directly with `janitor::make_clean_names()`, preventing the runtime error `"clean_names() requires that either names or dimnames be non-null"`.
+* **Multi-Header Excel Ingestion (#12)**: `read_excel_multiple_headers(clean_names = TRUE)` cleanly normalizes multi-row concatenated column headers without type errors.
+
+## Robust Deliverable Diffing on Production Reports (#6)
+
+* **Smart Quote & Whitespace Normalization (#6)**: `pair_paragraphs_by_similarity()` and `diff_deliverables()` normalize curly quotes (`‘’`, `“”`), em/en dashes (`–`, `—`), non-breaking spaces (`\u00a0`), zero-width spaces, and whitespace prior to comparison. Word XML quote conversions and indentation formatting variations no longer prevent exact $O(N)$ matching.
+* **Separation of Unpaired Paragraphs on Budget Expiry (#6)**: When the paragraph comparison time budget (`time_budget_sec = 6.0`) is reached on massive documents (e.g. 5,700+ paragraphs), remaining unmatched paragraphs are reported under `n_unpaired` and `budget_exceeded = TRUE`. They are cataloged separately in `section_summary` rather than falsely inflating `n_added` and `n_removed`.
+* **Divergence-Focused Excerpting (#6)**: Surfaced top changes (`largest_changes`) locate the point of character divergence via `excerpt_diff()`, displaying the actual edit site rather than truncated identical sentence prefixes.
+
+## Parallel Speedup Diagnostics & Optional Calibration (#10)
+
+* **Optional Calibration Argument (`calibrate = TRUE`) (#10)**: Added `calibrate = TRUE` argument to `tune_alpha_by_split()` and `summarize_tune_results()`. Setting `calibrate = FALSE` bypasses serial benchmarking and dispatches tasks immediately to parallel workers.
+* **Concise Benchmark Warm-Up (#10)**: Serial calibration benchmarks a tight sample of tasks (`min(2L, ...)`), minimizing serial delay before parallel execution.
+* **Isolated Calibration Timing (#10)**: Calibration duration is timed independently and reported as `calibration_sec` in `timing_breakdown` and printed progress messages (`"; calibration took X.XX s"`), preventing calibration from confounding reported parallel throughput.
+
+## Tag Immutability & Release History (#11)
+
+* **Tag History for `v0.5.9` (#11)**: Documented historical release note for tag `v0.5.9`, which was initially tagged at `3c4d7f2` and updated to `4be6191` to resolve installed package DESCRIPTION connection checks during R CMD check before tag immutability policies were codified.
+* **Strict Tag Immutability Policy (#11)**: Re-affirmed that all published release tags (`v0.5.8`, `v0.5.9`, `v0.5.10`, `v0.5.11`, `v0.5.12`) are permanently immutable and will never be moved or re-tagged. All bug fixes and enhancements strictly advance in new patch versions.
+
 # TempleCBE 0.5.11
 
 ## Fast Paragraph Pairing & Budgeted Deliverable Diffing (P1)

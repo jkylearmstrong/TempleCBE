@@ -14,6 +14,7 @@ tune_alpha_by_split(
   formulas = NULL,
   progress = FALSE,
   seed = NULL,
+  calibrate = TRUE,
   checkpoint_dir = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
   shard = NULL,
@@ -31,6 +32,7 @@ summarize_tune_results(
   formulas = NULL,
   progress = FALSE,
   seed = NULL,
+  calibrate = TRUE,
   checkpoint_dir = NULL,
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
   shard = NULL,
@@ -59,6 +61,9 @@ a list of one-sided formulas, each fit as a separate model (see
 \item{progress}{Show a progress bar.}
 
 \item{seed}{Optional integer seed for reproducible random draws across splits.}
+
+\item{calibrate}{Logical (default TRUE); whether to benchmark baseline serial execution.
+Set to FALSE to skip serial benchmarking and dispatch tasks directly to parallel workers.}
 
 \item{checkpoint_dir}{Optional directory path to save checkpoint files.
 Finished splits/tasks are loaded from disk on rerun when their fingerprint

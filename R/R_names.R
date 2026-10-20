@@ -17,6 +17,9 @@
 #' )
 #' clean_names_keep_labels(df)
 clean_names_keep_labels <- function(df) {
+  if (is.character(df)) {
+    return(janitor::make_clean_names(df))
+  }
   old_names <- colnames(df)
   df <- janitor::clean_names(df)
   labelled::var_label(df) <- old_names
