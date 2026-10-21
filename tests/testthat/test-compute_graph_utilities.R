@@ -70,12 +70,13 @@ test_that("dedupe_pipeline() rename keeps every object and numbers the repeats",
 })
 
 test_that("dedupe_pipeline() rename makes names unique even when a numbered name exists", {
-  skip("known bug: strategy = \"rename\" gives c(\"a\", \"a_2\", \"a_2\") for names c(\"a\", \"a\", \"a_2\")")
   got <- dedupe_pipeline(
     list(FilePath("a", "1.csv"), FilePath("a", "2.csv"), FilePath("a_2", "3.csv")),
     strategy = "rename"
   )
   expect_false(anyDuplicated(pipe_names(got)) > 0L)
+  expect_identical(pipe_names(got), c("a", "a_3", "a_2"))
+  expect_identical(vapply(got, function(o) o@path, ""), c("1.csv", "2.csv", "3.csv"))
 })
 
 test_that("dedupe_pipeline() says what it resolved only when verbose", {
@@ -227,4 +228,13 @@ test_that("print_pipeline() warns and writes nothing when every node is filtered
   )
   expect_null(res)
   expect_false(file.exists(out))
+})
+
+test_that("list_stage_data_artifacts() lists files whatever the case of the extension", {
+  d <- withr::local_tempdir()
+  for (f in c("DATA.RDS", "Table.CSV", "model.Xlsx", "notes.TXT")) writeLines("x", file.path(d, f))
+  res <- list_stage_data_artifacts(d)
+  expect_setequal(res$file_name, c("DATA.RDS", "Table.CSV", "model.Xlsx"))
+  expect_identical(res$artifact_role[res$file_name == "DATA.RDS"], "primary_data")
+  expect_identical(res$artifact_role[res$file_name == "Table.CSV"], "intermediate_data")
 })
