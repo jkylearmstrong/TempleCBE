@@ -15,7 +15,8 @@ docx_review_extract(
   documents_sheet_mode = NULL,
   manifest_path = NULL,
   verbose = FALSE,
-  docx_limits = NULL
+  docx_limits = NULL,
+  fork_mode = NULL
 )
 
 cbe_docx_review_extract(...)
@@ -55,6 +56,9 @@ appear in no fork workbook. Defaults to
 \item{manifest_path}{Optional character path to `reports_to_render.xlsx`. If `NULL`,
 the function looks for it in the folder set with
 `review_config(analysis_dir = )` (nothing is searched when none is set).
+`"auto"` also looks, when that finds nothing, for `reports_to_render.xlsx`
+in the input folder and its two parents (and in the working directory), in
+the folder itself and in `analysis/<folder>/`; the most recent one wins.
 Pipeline stages come from that manifest and from
 `review_config()$pipeline_catalog`; with neither, documents are not
 assigned to a stage (stage `"Unknown / Extra"`) and are listed by file name.}
@@ -73,6 +77,11 @@ in \code{$errors} instead of being read. \code{Inf} switches a limit off.
 The session-wide options \code{review.docx_max_entries},
 \code{review.docx_max_bytes} and \code{review.docx_max_xml_bytes} set the
 defaults.}
+
+\item{fork_mode}{\code{"redacted"} (default, \code{review_config()$fork_mode}) or
+\code{"collaborative"}; see \code{\link{review_config}}. In collaborative
+mode every fork workbook also carries the other fork reviewers' sign-off
+and note columns (read-only: only a reviewer's own columns are merged back).}
 
 \item{...}{Passed to \code{docx_review_extract()}.}
 }
