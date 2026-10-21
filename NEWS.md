@@ -2,6 +2,8 @@
 
 ## New functions
 
+* `render_variants()`: renders one parameterized Quarto or R Markdown template once per variant of its parameters (for example `use_imputed = FALSE` / `TRUE`), naming the outputs `<template>_<variant>.<ext>`. A parameter that the template does not declare under `params:` is an error before anything is rendered, so a copy of a report no longer has to be kept in step by hand.
+
 * `audit_render_parity(pdf_path, docx_path)`: before a report goes out, compares the rendered PDF with the Word version and lists text that comes too close to the page edge, table and figure captions that are missing, skip a number or come in another order, a table caption above the table in one file and below it in the other, and percentages or decimals that occur in one file only (for example 98.9% in the PDF and 97% in Word). It reads text and positions only and points at places to look at.
 
 * `boot_lmer()` and `boot_p_value()`: a cluster bootstrap of a linear mixed model. Whole groups are resampled, each replicate is fitted (optionally with predictors rescaled to [0, 1] within the resample and a fallback formula when the fit fails), outlying bootstrap estimates of each fixed effect are dropped by Tukey's fences, and each term is summarised by mean, standard error, median, percentile limits and a two-tailed bootstrap p-value. Replaces the copied bootstrap blocks in report templates.
