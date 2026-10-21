@@ -439,3 +439,41 @@ test_that("a big Word table is read in linear time", {
   expect_lt(elapsed, 10) # the per-paragraph search this replaced took ~3 s for 1500 rows and grew with the square
   expect_match(parsed$text, "S1500")
 })
+
+test_that("word paragraphs with TableCaption style lacking numbers are numbered sequentially", {
+  skip_if_not_installed("pdftools")
+  body <- paste0(
+    rp_p("Unnumbered Title One", "TableCaption"),
+    rp_tbl(c("A", "B"), c("1", "2")),
+    rp_p("Unnumbered Title Two", "TableCaption"),
+    rp_tbl(c("C", "D"), c("3", "4"))
+  )
+  d <- withr::local_tempdir()
+  docx <- file.path(d, "report.docx")
+  rp_docx(docx, body)
+  parsed <- .rp_read_docx(docx, NULL)
+  expect_identical(parsed$captions$label, c("Table 1", "Table 2"))
+  expect_identical(parsed$captions$placement, c("above", "above"))
+})
+
+test_that("multi-line contents/TOC pages in PDF are excluded from number comparison", {
+  skip_if_not_installed("pdftools")
+  items <- list(
+    list(page = 1, y = 10, text = "Table 1 ........... 1"),
+    list(page = 1, y = 9.5, text = "Long wrapped title from previous table"),
+    list(page = 1, y = 9.0, text = "Table 2 ........... 2"),
+    list(page = 2, y = 10, text = "Table 1: First"),
+    list(page = 2, y = 9, text = "A 10.5%"),
+    list(page = 3, y = 10, text = "Table 2: Second"),
+    list(page = 3, y = 9, text = "B 20.5%")
+  )
+  body <- paste0(
+    rp_p("Table 1: First"),
+    rp_p("A 10.5%"),
+    rp_p("Table 2: Second"),
+    rp_p("B 20.5%")
+  )
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_identical(nrow(res), 0L)
+})

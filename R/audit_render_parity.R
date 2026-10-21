@@ -254,6 +254,9 @@ print.render_parity <- function(x, ...) {
   }
   running <- repeated(trimws(lines$text)) | (n_digit_runs <= 2L & repeated(gsub("[0-9]+", "#", trimws(lines$text))))
   contents <- grepl(.rp_leader_pattern, lines$text, perl = TRUE)
+  leader_counts <- tapply(contents, lines$page, sum)
+  contents_pages <- as.integer(names(leader_counts)[leader_counts >= 2L])
+  contents <- contents | lines$page %in% contents_pages
   lines$body <- !running & !contents
 
   caps <- list()
@@ -411,13 +414,13 @@ print.render_parity <- function(x, ...) {
       row_cells <- trimws(row_cells[nzchar(trimws(row_cells))])
       list(type = "table", text = paste(ptxt[nzchar(ptxt)], collapse = "\n"), contents = FALSE, in_tbl = FALSE, heading = FALSE,
            anchor = if (length(row_cells)) row_cells[1] else NA_character_,
-           anchor2 = if (length(row_cells) > 1L) row_cells[2] else NA_character_, style_caption = FALSE)
+           anchor2 = if (length(row_cells) > 1L) row_cells[2] else NA_character_, style_caption = FALSE, style = "")
     } else {
       st <- style_of(nd)
       list(type = "paragraph", text = .rp_node_text(nd), contents = grepl("^(TOC|TableofFigures|TableofAuthorities)", st, ignore.case = TRUE),
            in_tbl = in_tbl[i], heading = grepl("^(Heading|Title)", st, ignore.case = TRUE),
            anchor = NA_character_, anchor2 = NA_character_,
-           style_caption = grepl("caption", st, ignore.case = TRUE))
+           style_caption = grepl("caption", st, ignore.case = TRUE), style = st)
     }
   })
   types <- vapply(blocks, function(b) b$type, character(1))
@@ -427,15 +430,41 @@ print.render_parity <- function(x, ...) {
   heading <- vapply(blocks, function(b) b$heading, logical(1))
   anchors <- vapply(blocks, function(b) b$anchor, character(1))
   anchors2 <- vapply(blocks, function(b) b$anchor2, character(1))
+  styles <- vapply(blocks, function(b) if (is.character(b[["style"]])) b[["style"]] else "", character(1))
 
   caps <- list()
   for (i in which(types == "paragraph" & !contents)) {
     cap <- .rp_parse_caption(texts[i], blocks[[i]]$style_caption)
     if (!is.null(cap) && !grepl(.rp_leader_pattern, texts[i], perl = TRUE)) {
       caps[[length(caps) + 1L]] <- tibble::tibble(kind = cap$kind, number = cap$number, label = cap$label, block = i)
+    } else if (grepl("^table\\s*caption$", styles[i], ignore.case = TRUE) && !grepl(.rp_leader_pattern, texts[i], perl = TRUE) && nzchar(trimws(texts[i]))) {
+      caps[[length(caps) + 1L]] <- tibble::tibble(kind = "Table", number = NA_character_, label = NA_character_, block = i)
     }
   }
-  caps <- if (length(caps)) dplyr::bind_rows(caps) else .rp_empty_captions("docx")[, c("kind", "number", "label", "block")]
+  if (length(caps)) {
+    caps <- dplyr::bind_rows(caps)
+    tbl_idx <- which(caps$kind == "Table")
+    if (length(tbl_idx) > 0L) {
+      missing_num <- is.na(caps$number[tbl_idx])
+      if (any(missing_num)) {
+        if (all(missing_num)) {
+          caps$number[tbl_idx] <- as.character(seq_along(tbl_idx))
+        } else {
+          known <- suppressWarnings(as.numeric(caps$number[tbl_idx[!missing_num]]))
+          known <- known[!is.na(known)]
+          curr <- 1L
+          for (idx in tbl_idx[missing_num]) {
+            while (curr %in% known) curr <- curr + 1L
+            caps$number[idx] <- as.character(curr)
+            curr <- curr + 1L
+          }
+        }
+        caps$label[tbl_idx] <- paste("Table", caps$number[tbl_idx])
+      }
+    }
+  } else {
+    caps <- .rp_empty_captions("docx")[, c("kind", "number", "label", "block")]
+  }
 
   # which side of its table each table caption is on, ignoring empty paragraphs between them
   nonempty <- which(types == "table" | (nzchar(texts) & !in_tbl_block))

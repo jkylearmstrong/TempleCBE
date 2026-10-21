@@ -23,6 +23,8 @@
 
 ## Fixes
 
+* `audit_render_parity()` calibration: Word table captions styled with `TableCaption` that omit a "Table <n>" prefix are now recognized as table captions and numbered sequentially, avoiding false missing-table warnings. In addition, multi-line contents and list-of-tables pages in the PDF are identified as front matter, preventing wrapped titles from leaking numbers into the text-comparison check.
+
 * `list_stage_data_artifacts()` now lists files whose extension is upper or mixed case (`DATA.RDS`); the primary-data patterns already ignored case.
 
 * `dedupe_pipeline(strategy = "rename")` no longer returns duplicate names when a numbered name already exists in the list (`c("a", "a", "a_2")` came back as `c("a", "a_2", "a_2")`); the new name skips every name in use.
