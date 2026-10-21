@@ -68,6 +68,10 @@ jobs:
         config:
           - {os: windows-latest,  r: 'release', locale: English_United States.utf8, check_args: 'c("--no-manual", "--ignore-vignettes")', build_args: 'c("--no-build-vignettes")'}
           - {os: macOS-latest,    r: 'release', locale: en_US.UTF-8,                check_args: 'c("--no-manual")',                          build_args: 'character()'}
+          # aarch64 Linux (same CPU architecture as DGX Spark / Grace). Posit Package
+          # Manager has no arm64 binaries, so first runs compile from source; the
+          # setup-r-dependencies cache makes later runs fast.
+          - {os: ubuntu-24.04-arm, r: 'release', locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()'}
 
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +97,7 @@ jobs:
   optional-deps-installed-tests:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 15
+    timeout-minutes: 45
     name: optional-tests-${{ matrix.config.os }}
     env:
       LANG: ${{ matrix.config.locale }}
@@ -107,6 +111,7 @@ jobs:
         config:
           - {os: ubuntu-latest,  locale: C.UTF-8}
           - {os: windows-latest, locale: English_United States.utf8}
+          - {os: ubuntu-24.04-arm, locale: C.UTF-8}
 
     steps:
       - uses: actions/checkout@v4
