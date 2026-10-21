@@ -317,7 +317,9 @@ docx_review_extract <- function(input_dir = NULL,
     existing_comments = existing_comments,
     existing_redlines = existing_redlines,
     fork_reviewers = fork_reviewers,
-    verbose = verbose
+    verbose = verbose,
+    fork_mode = fork_mode,
+    signoff_reviewers = signoff_reviewers
   )
   existing_comments <- fork_overlays$comments
   existing_redlines <- fork_overlays$redlines
@@ -537,7 +539,8 @@ docx_review_extract <- function(input_dir = NULL,
       paths = c(
         list(
           master = master_tracker_path,
-          forks = fork_paths
+          forks = fork_paths,
+          manifest = if (!is.null(manifest_path) && file.exists(manifest_path)) manifest_path else NA_character_
         ),
         csv_paths
       )
@@ -1261,23 +1264,30 @@ find_pipeline_manifest <- function(start_dir = NULL, analysis_dir = review_confi
   }
   if (!isTRUE(discover)) return(NULL)
   # Opt-in discovery (manifest_path = "auto"): per base folder, the folder itself and
-  # <base>/analysis/<one level>/. The first base that holds one wins; if it holds several,
-  # the most recently modified.
+  # <base>/analysis/<one level>/ (listed, not globbed: a base such as "Study [A]" is a
+  # glob pattern). The first base that holds one wins. The path used is always reported;
+  # if the base holds several, that is ambiguous and the most recently modified is used
+  # with a warning.
   for (base in unique(bases)) {
-    found <- c(
-      file.path(base, "reports_to_render.xlsx"),
-      Sys.glob(file.path(base, "analysis", "*", "reports_to_render.xlsx"))
-    )
+    subdirs <- if (dir.exists(file.path(base, "analysis"))) {
+      list.dirs(file.path(base, "analysis"), recursive = FALSE, full.names = TRUE)
+    } else {
+      character(0)
+    }
+    found <- file.path(c(base, subdirs), "reports_to_render.xlsx")
     found <- found[file.exists(found)]
     if (length(found) > 0) {
       found <- found[order(file.mtime(found), decreasing = TRUE)]
+      chosen <- normalizePath(found[1], mustWork = TRUE)
       if (length(found) > 1) {
-        message(sprintf(
-          "Several pipeline manifests were found; using the most recent: %s (others: %s)",
-          found[1], paste(found[-1], collapse = ", ")
-        ))
+        warning(sprintf(
+          "Several pipeline manifests were found under %s; using the most recently modified, %s (others: %s). Name the one you want with manifest_path.",
+          base, chosen, paste(found[-1], collapse = ", ")
+        ), call. = FALSE)
+      } else {
+        message(sprintf("Using the pipeline manifest %s (manifest_path = \"auto\").", chosen))
       }
-      return(normalizePath(found[1], mustWork = TRUE))
+      return(chosen)
     }
   }
   NULL
@@ -2570,12 +2580,12 @@ build_fork_baseline <- function(reviewer, comments_rows, redlines_rows) {
 #'   lists with \code{reviewer}, \code{row}, \code{cell}, \code{master} and
 #'   \code{fork}).
 #' @noRd
-overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe, add_general = FALSE) {
+overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe, add_general = FALSE, id_style = "neutral") {
   conflicts <- list()
   pairs <- match_rows_one_to_one(fork, master, key_tiers)
   fork_rows <- which(!is.na(pairs))
   if (length(fork_rows) == 0) {
-    if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers)
+    if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style)
     return(list(master = master, conflicts = conflicts))
   }
   master_rows <- pairs[fork_rows]
@@ -2612,7 +2622,7 @@ overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, desc
     raw[!nzchar(fork_cell)] <- NA_character_
     master[[col]][master_rows[take]] <- raw[take]
   }
-  if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers)
+  if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style)
   list(master = master, conflicts = conflicts)
 }
 
@@ -2625,17 +2635,25 @@ GENERAL_COMMENT_STATUS <- "General Comment"
 #' A fork row that pairs with no master row and was not in the fork as it was
 #' generated (the baseline) is a row the reviewer added: a comment that belongs
 #' to no Word comment, such as an overall remark on a document. It would be lost
-#' by the one-to-one overlay, so it is appended to the master with the id
-#' \code{gen_<reviewer>_<n>} and \code{doc_status = "General Comment"}. Only the
-#' row's text, location and the reviewer's own sign-off and note are taken. A row
-#' with nothing in any of those is blank and ignored, and a fork without a
-#' baseline (written by an earlier version) adds nothing, because without it a
-#' row a user removed from the master cannot be told from one the reviewer added.
+#' by the one-to-one overlay, so it is appended to the master with
+#' \code{doc_status = "General Comment"} and an id: \code{gen_<n>} when the forks
+#' are redacted (an id with the reviewer's name would tell the other reviewers
+#' who wrote it) or \code{gen_<reviewer>_<n>} when they are collaborative. Only the
+#' row's text, location and the reviewer's own sign-off and note are taken. The
+#' \code{file} is kept only when it names a document of the master (otherwise
+#' \code{(general)}). A row with nothing in any of those is blank and ignored; a
+#' row whose text is that of a general comment the master already holds (a fork
+#' that was sent back twice) and a row that carries a \code{gen_} id are not added
+#' again; and a fork without a baseline (written by an earlier version) adds
+#' nothing, because without it a row a user removed from the master cannot be told
+#' from one the reviewer added. Later edits to the text or file of a general
+#' comment in a fork are not merged back; only the reviewer's own sign-off and note.
 #' @param master,fork,reviewer,baseline,key_tiers As in \code{overlay_fork_table()}.
 #' @param pairs The pairing of the fork's rows with the master's.
+#' @param id_style \code{"neutral"} or \code{"reviewer"}.
 #' @return The master with the added rows at the end.
 #' @noRd
-append_general_comments <- function(master, fork, reviewer, pairs, baseline, key_tiers) {
+append_general_comments <- function(master, fork, reviewer, pairs, baseline, key_tiers, id_style = "neutral") {
   if (is.null(baseline) || nrow(fork) == 0) return(master)
   if (!"comment_id" %in% names(master)) return(master)
   in_baseline <- if (nrow(baseline) > 0) !is.na(match_rows_one_to_one(fork, baseline, key_tiers)) else rep(FALSE, nrow(fork))
@@ -2645,14 +2663,29 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
   own_flag <- cell(reviewer, normalize_flag_cell)
   own_note <- cell(paste0(reviewer, "_comment"), normalize_note_cell)
   text <- cell("comment_text")
-  candidates <- which(is.na(pairs) & !in_baseline & (nzchar(text) | nzchar(own_flag) | nzchar(own_note)))
-  if (length(candidates) == 0) return(master)
+  fork_id <- if ("comment_id" %in% names(fork)) trimws(as.character(fork$comment_id)) else rep("", nrow(fork))
+  fork_id[is.na(fork_id)] <- ""
 
   existing_ids <- as.character(master$comment_id)
-  taken <- suppressWarnings(as.integer(sub(
-    paste0("^gen_", reviewer, "_([0-9]+)$"), "\\1", existing_ids[grepl(paste0("^gen_", reviewer, "_[0-9]+$"), existing_ids)]
-  )))
+  is_general <- if ("doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
+  known_text <- review_text_key(master$comment_text[is_general])
+  known_text <- known_text[nzchar(known_text)]
+  repeated <- nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
+  has_gen_id <- grepl("^gen_", fork_id)
+  candidates <- which(is.na(pairs) & !in_baseline & !repeated & !has_gen_id & (nzchar(text) | nzchar(own_flag) | nzchar(own_note)))
+  if (length(candidates) == 0) return(master)
+
+  if (identical(id_style, "reviewer")) {
+    pat <- paste0("^gen_", reviewer, "_([0-9]+)$")
+    id_of <- function(n) paste0("gen_", reviewer, "_", n)
+  } else {
+    pat <- "^gen_([0-9]+)$"
+    id_of <- function(n) paste0("gen_", n)
+  }
+  taken <- suppressWarnings(as.integer(sub(pat, "\\1", existing_ids[grepl(pat, existing_ids)])))
   next_n <- if (length(taken) > 0) max(taken, na.rm = TRUE) + 1L else 1L
+  master_files <- unique(trimws(as.character(master$file)))
+  master_files <- master_files[!is.na(master_files) & nzchar(master_files)]
 
   keep_cols <- intersect(
     c("file", "comment_text", "selected_text", "paragraph_number", "end_paragraph_number", "paragraph_context",
@@ -2666,8 +2699,10 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
       v <- as.character(fork[[col]][i])
       if (!is.na(v) && nzchar(trimws(v))) row[[col]] <- v
     }
-    if (is.na(row$file)) row$file <- "(general)"
-    row$comment_id <- paste0("gen_", reviewer, "_", next_n + k - 1L)
+    f <- trimws(as.character(row$file))
+    hit <- if (is.na(f)) NA_integer_ else match(tolower(f), tolower(master_files))
+    row$file <- if (is.na(hit)) "(general)" else master_files[hit]
+    row$comment_id <- id_of(next_n + k - 1L)
     row$doc_status <- GENERAL_COMMENT_STATUS
     if ("is_reply" %in% names(row)) row$is_reply <- "FALSE"
     row
@@ -2694,14 +2729,16 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
 #' @param verbose Logical verbose flag
 #' @return Updated list of comments and redlines
 #' @noRd
-apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_comments, existing_redlines, fork_reviewers, verbose = FALSE) {
-  if (nrow(existing_comments) == 0 && nrow(existing_redlines) == 0) {
-    return(list(comments = existing_comments, redlines = existing_redlines))
-  }
-
+apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_comments, existing_redlines, fork_reviewers,
+                                         verbose = FALSE, fork_mode = "redacted", signoff_reviewers = NULL) {
   tracker_stem <- tools::file_path_sans_ext(tracker_basename)
   tracker_ext <- tools::file_ext(tracker_basename)
   if (nzchar(tracker_ext)) tracker_ext <- paste0(".", tracker_ext) else tracker_ext <- ".xlsx"
+  fork_files <- file.path(output_dir, sprintf("%s_%s%s", tracker_stem, fork_reviewers, tracker_ext))
+  if (nrow(existing_comments) == 0 && nrow(existing_redlines) == 0 && !any(file.exists(fork_files))) {
+    return(list(comments = existing_comments, redlines = existing_redlines))
+  }
+  id_style <- if (identical(fork_mode, "collaborative")) "reviewer" else "neutral"
 
   conflicts <- list()
   for (rev in fork_reviewers) {
@@ -2719,7 +2756,12 @@ apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_
     # Comments. A fork row is paired with one master row: by file, comment id
     # and text first (ids are not unique once a prior-round row and an active
     # row share one), then by file and comment id alone.
-    if (nrow(fork_data$comments) > 0 && nrow(existing_comments) > 0) {
+    if (nrow(fork_data$comments) > 0) {
+      if (!all(c("file", "comment_id") %in% names(existing_comments))) {
+        # a tracker with no comment rows: rows a reviewer added still need a table to go into
+        cols <- unique(c(names(existing_comments), canonical_columns(fork_reviewers, signoff_reviewers)))
+        existing_comments <- tibble::as_tibble(stats::setNames(rep(list(character()), length(cols)), cols))
+      }
       if (all(c("file", "comment_id") %in% names(fork_data$comments)) &&
           all(c("file", "comment_id") %in% names(existing_comments))) {
         out <- overlay_fork_table(
@@ -2727,7 +2769,7 @@ apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_
           key_tiers = list(c("file", "comment_id", "comment_text"), c("file", "comment_id")),
           baseline = baseline_of("Comments"),
           describe = function(df, i) sprintf("%s comment %s", df$file[i], df$comment_id[i]),
-          add_general = TRUE
+          add_general = TRUE, id_style = id_style
         )
         existing_comments <- out$master
         conflicts <- c(conflicts, out$conflicts)
@@ -3096,7 +3138,8 @@ merge_comments <- function(incoming_comments, existing_rows, existing_headers, c
       row <- as.list(available_existing[idx, ])
       rf <- trimws(as.character(row$file))
       has_fb <- has_review_feedback(row, ignored_cols)
-      if (!rf %in% scanned_files || has_fb) {
+      is_general <- !is.null(row$doc_status) && !is.na(row$doc_status) && identical(as.character(row$doc_status), GENERAL_COMMENT_STATUS)
+      if (!rf %in% scanned_files || has_fb || is_general) {
         if (is.null(row$doc_status) || is.na(row$doc_status) || !nzchar(as.character(row$doc_status)) || row$doc_status == "Active") {
           row$doc_status <- "Prior Round / Not in docx"
         }
@@ -4789,4 +4832,3 @@ validate_review_tracker <- function(tracker,
   class(res) <- "cbe_review_tracker_validation"
   res
 }
-

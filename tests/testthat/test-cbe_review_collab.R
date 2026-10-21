@@ -85,7 +85,7 @@ test_that("collaborative mode shows a colleague's notes next round but merges ba
 
 # ---- general comments added in a fork ------------------------------------------------------------
 
-test_that("a row a reviewer adds to their fork becomes a General Comment with a generated id", {
+test_that("a row a reviewer adds to their fork becomes a General Comment with a neutral id (redacted forks)", {
   s <- collab_setup()
   r1 <- docx_review_extract(s$dir, output_dir = s$out)
   collab_add_row(r1$paths$forks[["rev_a"]], list(
@@ -94,39 +94,103 @@ test_that("a row a reviewer adds to their fork becomes a General Comment with a 
   r2 <- docx_review_extract(s$dir, output_dir = s$out)
 
   expect_equal(nrow(r2$comments), 3L)
-  gen <- r2$comments[r2$comments$comment_id == "gen_rev_a_1", ]
+  gen <- r2$comments[r2$comments$comment_id == "gen_1", ]
   expect_equal(nrow(gen), 1L)
   expect_equal(gen$doc_status, "General Comment")
+  expect_equal(gen$file, "(general)")
   expect_equal(gen$comment_text, "Overall: please rerun all tables with the final cut.")
   expect_equal(gen$rev_a_comment, "applies to the whole report")
-  # real comments are untouched
   expect_equal(sum(r2$comments$doc_status == "Active"), 2L)
 
-  # it is in the master workbook and in every fork, and survives further rounds unchanged
-  master <- a6_sheet(r2$paths$master, "Comments")
-  expect_true("gen_rev_a_1" %in% master$comment_id)
-  expect_true("gen_rev_a_1" %in% a6_sheet(r2$paths$forks[["rev_b"]], "Comments")$comment_id)
+  # no id, column or file anywhere in the other reviewer's fork says who wrote it
+  fork_b <- a6_sheet(r2$paths$forks[["rev_b"]], "Comments")
+  expect_true("gen_1" %in% fork_b$comment_id)
+  expect_false(any(grepl("rev_a", unlist(fork_b[fork_b$comment_id == "gen_1", ]), fixed = TRUE)))
+  expect_false(any(c("rev_a", "rev_a_comment") %in% names(fork_b)))
+
+  # it survives further rounds unchanged, once
   r3 <- docx_review_extract(s$dir, output_dir = s$out)
-  expect_equal(sum(r3$comments$comment_id == "gen_rev_a_1"), 1L)
+  expect_equal(sum(r3$comments$comment_id == "gen_1"), 1L)
   expect_equal(nrow(r3$comments), 3L)
-  expect_equal(r3$comments$doc_status[r3$comments$comment_id == "gen_rev_a_1"], "General Comment")
+  expect_equal(r3$comments$doc_status[r3$comments$comment_id == "gen_1"], "General Comment")
 })
 
-test_that("general comments are numbered per reviewer and blank added rows are ignored", {
+test_that("in collaborative mode the id names the reviewer", {
+  s <- collab_setup()
+  r1 <- docx_review_extract(s$dir, output_dir = s$out, fork_mode = "collaborative")
+  collab_add_row(r1$paths$forks[["rev_a"]], list(comment_text = "A: remark"))
+  collab_add_row(r1$paths$forks[["rev_b"]], list(comment_text = "B: remark"))
+  r2 <- docx_review_extract(s$dir, output_dir = s$out, fork_mode = "collaborative")
+  expect_setequal(r2$comments$comment_id[r2$comments$doc_status == "General Comment"], c("gen_rev_a_1", "gen_rev_b_1"))
+})
+
+test_that("general comments are numbered across reviewers and blank added rows are ignored", {
   s <- collab_setup()
   r1 <- docx_review_extract(s$dir, output_dir = s$out)
   collab_add_row(r1$paths$forks[["rev_a"]], list(comment_text = "A: first general remark"))
   collab_add_row(r1$paths$forks[["rev_b"]], list(comment_text = "B: a remark", rev_b = "TRUE"))
   r2 <- docx_review_extract(s$dir, output_dir = s$out)
-  expect_setequal(r2$comments$comment_id[r2$comments$doc_status == "General Comment"], c("gen_rev_a_1", "gen_rev_b_1"))
+  expect_setequal(r2$comments$comment_id[r2$comments$doc_status == "General Comment"], c("gen_1", "gen_2"))
 
   collab_add_row(r2$paths$forks[["rev_a"]], list(comment_text = "A: second general remark"))
   collab_add_row(r2$paths$forks[["rev_a"]], list(file = "   ")) # nothing a reviewer wrote
   r3 <- docx_review_extract(s$dir, output_dir = s$out)
-  expect_setequal(
-    r3$comments$comment_id[r3$comments$doc_status == "General Comment"],
-    c("gen_rev_a_1", "gen_rev_a_2", "gen_rev_b_1")
-  )
+  expect_setequal(r3$comments$comment_id[r3$comments$doc_status == "General Comment"], c("gen_1", "gen_2", "gen_3"))
+})
+
+test_that("a text-only row that names a real document is kept, under that document", {
+  s <- collab_setup()
+  r1 <- docx_review_extract(s$dir, output_dir = s$out)
+  collab_add_row(r1$paths$forks[["rev_a"]], list(file = "EDA.docx ", comment_text = "A remark on the whole of eda"))
+  r2 <- docx_review_extract(s$dir, output_dir = s$out)
+  gen <- r2$comments[r2$comments$doc_status == "General Comment", ]
+  expect_equal(nrow(gen), 1L)
+  expect_equal(gen$file, "eda.docx") # spelled as the master spells it
+  # a file that is not a document of the tracker becomes (general), not a phantom document
+  collab_add_row(r2$paths$forks[["rev_a"]], list(file = "typo.docx", comment_text = "Another remark"))
+  r3 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(r3$comments$file[r3$comments$comment_text == "Another remark"], "(general)")
+  expect_false("typo.docx" %in% r3$documents$file)
+})
+
+test_that("a general comment is kept when the documents have no Word comments", {
+  skip_if_not_installed("openxlsx")
+  a6_options()
+  d <- a6_dir()
+  out <- file.path(d, "out")
+  a6_docx(file.path(d, "plain.docx"), a6_para("Only a tracked change.", ins = "added words"))
+  r1 <- docx_review_extract(d, output_dir = out)
+  expect_equal(nrow(r1$comments), 0L)
+  collab_add_row(r1$paths$forks[["rev_a"]], list(comment_text = "Overall remark on a document with no comments"))
+  r2 <- docx_review_extract(d, output_dir = out)
+  expect_equal(nrow(r2$comments), 1L)
+  expect_equal(r2$comments$doc_status, "General Comment")
+})
+
+test_that("sending the same fork back twice does not duplicate a general comment", {
+  s <- collab_setup()
+  r1 <- docx_review_extract(s$dir, output_dir = s$out)
+  fork <- r1$paths$forks[["rev_a"]]
+  keep <- file.path(dirname(fork), "first_round_fork.xlsx")
+  file.copy(fork, keep)
+  collab_add_row(fork, list(comment_text = "A general remark", rev_a_comment = "n1"))
+  r2 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(sum(r2$comments$doc_status == "General Comment"), 1L)
+  # the reviewer sends the earlier version of the fork again, with the same row added
+  file.copy(keep, fork, overwrite = TRUE)
+  collab_add_row(fork, list(comment_text = "A  general remark", rev_a_comment = "n1"))
+  r3 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(sum(r3$comments$doc_status == "General Comment"), 1L)
+})
+
+test_that("changing the file of one's own general comment in the fork does not add a copy", {
+  s <- collab_setup()
+  r1 <- docx_review_extract(s$dir, output_dir = s$out)
+  collab_add_row(r1$paths$forks[["rev_a"]], list(comment_text = "A general remark"))
+  r2 <- docx_review_extract(s$dir, output_dir = s$out)
+  a6_set_cells(r2$paths$forks[["rev_a"]], "Comments", "comment_text", "A general remark", list(file = "eda.docx"))
+  r3 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(sum(r3$comments$doc_status == "General Comment"), 1L)
 })
 
 test_that("a comment the master dropped is not brought back as a General Comment", {
@@ -159,21 +223,31 @@ test_that("manifest discovery is opt-in: without it nothing is searched, with it
   withr::defer(options(old))
 
   expect_null(find_pipeline_manifest(base, analysis_dir = character(0)))
-  msgs <- testthat::capture_messages(
-    got <- find_pipeline_manifest(base, analysis_dir = character(0), discover = TRUE)
+  # several manifests: ambiguous, so a warning names all of them and the newest is used
+  expect_warning(
+    got <- find_pipeline_manifest(base, analysis_dir = character(0), discover = TRUE),
+    "Several pipeline manifests were found.*Name the one you want with manifest_path"
   )
   expect_equal(normalizePath(got, winslash = "/"), normalizePath(newer, winslash = "/"))
-  expect_match(paste(msgs, collapse = ""), "Several pipeline manifests were found")
 
-  # a manifest next to the reviewed folder is found from a folder inside it
+  # exactly one: used, and said
+  unlink(file.path(base, "analysis", "run2"), recursive = TRUE)
+  expect_message(
+    got1 <- find_pipeline_manifest(base, analysis_dir = character(0), discover = TRUE),
+    "Using the pipeline manifest"
+  )
+  expect_equal(normalizePath(got1, winslash = "/"), normalizePath(older, winslash = "/"))
+
+  # a manifest next to the reviewed folder's parent is found from a folder inside it
   inner <- file.path(base, "reviews", "round1")
   dir.create(inner, recursive = TRUE)
   top <- file.path(base, "reports_to_render.xlsx")
   file.create(top)
-  expect_equal(
-    normalizePath(find_pipeline_manifest(inner, analysis_dir = character(0), discover = TRUE), winslash = "/"),
-    normalizePath(top, winslash = "/")
+  expect_warning(
+    got_top <- find_pipeline_manifest(inner, analysis_dir = character(0), discover = TRUE),
+    "Several pipeline manifests"
   )
+  expect_equal(normalizePath(got_top, winslash = "/"), normalizePath(top, winslash = "/"))
   # a configured analysis_dir still wins over discovery
   expect_equal(
     normalizePath(find_pipeline_manifest(inner, analysis_dir = "analysis/run1", discover = TRUE), winslash = "/"),
@@ -183,4 +257,27 @@ test_that("manifest discovery is opt-in: without it nothing is searched, with it
   empty <- withr::local_tempdir(pattern = "nomanifest_")
   withr::local_dir(empty)
   expect_null(find_pipeline_manifest(empty, analysis_dir = character(0), discover = TRUE))
+})
+
+test_that("manifest discovery works in a folder whose name holds glob characters", {
+  parent <- withr::local_tempdir(pattern = "manifest_")
+  base <- file.path(parent, "Study [A]")
+  dir.create(file.path(base, "analysis", "p"), recursive = TRUE)
+  target <- file.path(base, "analysis", "p", "reports_to_render.xlsx")
+  file.create(target)
+  withr::local_envvar(c(TEMPLECBE_ANALYSIS_ROOT = NA))
+  withr::local_dir(parent)
+  old <- review_options_reset()
+  withr::defer(options(old))
+  expect_message(got <- find_pipeline_manifest(base, analysis_dir = character(0), discover = TRUE))
+  expect_equal(normalizePath(got, winslash = "/"), normalizePath(target, winslash = "/"))
+})
+
+test_that("the result records which manifest was used", {
+  s <- collab_setup()
+  old <- review_options_reset()
+  withr::defer(options(old))
+  a6_options()
+  r <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_true(is.na(r$paths$manifest))
 })
