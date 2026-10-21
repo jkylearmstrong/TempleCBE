@@ -273,7 +273,7 @@ test_that("4. nested_survival_report_template() returns valid template with all 
 # ------------------------------------------------------------------------------
 
 test_that("5. G5: as_tuning_results() standardizes legacy and custom results", {
-  # Synthetic legacy Wolfson tuning results
+  # Synthetic legacy tuning results
   legacy_df <- data.frame(
     outer_fold = c(1, 1, 2, 2),
     IBS = c(0.12, 0.15, 0.11, 0.14),
@@ -559,7 +559,7 @@ test_that("H3: cv_coxnet() exposes checkpoint_dir, shard, and checkpoint_mismatc
   expect_equal(non_nulls, 2L)
 })
 
-test_that("H4: write_xlsx_file() is exported and functional; legacy masking names warn with 0.6.0 removal date", {
+test_that("H4: write_xlsx_file() is exported and functional; legacy masking names warn with 0.7.0 removal date", {
   skip_if_not_installed("writexl")
 
   tmp_file <- tempfile(fileext = ".xlsx")
@@ -570,13 +570,13 @@ test_that("H4: write_xlsx_file() is exported and functional; legacy masking name
   write_xlsx_file(test_df, tmp_file)
   expect_true(file.exists(tmp_file))
 
-  # Deprecation warnings mention removal in 0.6.0
-  expect_warning(TempleCBE::clean_names(test_df), "0\\.6\\.0")
-  expect_warning(TempleCBE::write_xlsx(test_df, tmp_file), "0\\.6\\.0")
-  expect_warning(TempleCBE::like("abc", "b"), "0\\.6\\.0")
-  expect_warning(TempleCBE::`%like%`("abc", "b"), "0\\.6\\.0")
+  # Deprecation warnings mention removal in 0.7.0
+  expect_warning(TempleCBE::clean_names(test_df), "0\\.7\\.0")
+  expect_warning(TempleCBE::write_xlsx(test_df, tmp_file), "0\\.7\\.0")
+  expect_warning(TempleCBE::like("abc", "b"), "0\\.7\\.0")
+  expect_warning(TempleCBE::`%like%`("abc", "b"), "0\\.7\\.0")
   expect_false("%notin%" %in% getNamespaceExports("TempleCBE"))
-  expect_warning(TempleCBE:::`%notin%`(1, 2:3), "0\\.6\\.0")
+  expect_warning(TempleCBE:::`%notin%`(1, 2:3), "0\\.7\\.0")
 })
 
 test_that("H5: workflow_map_checkpointed() accepts seed without unused argument warnings", {
