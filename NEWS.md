@@ -1,4 +1,4 @@
-# TempleCBE (development version)
+# TempleCBE 0.6.1.9000 (development version)
 
 ## `clean_publish()` security review fixes (L3 review CP-L3-01 to CP-L3-04)
 
