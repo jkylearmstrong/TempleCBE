@@ -4,7 +4,7 @@ Kept as `REVIEW.md` ("Full and delta audits") requires: per file, the review tie
 
 | File | Tier | Last reviewed | Evidence |
 |------|------|---------------|----------|
-| `R/clean_publish.R` | L3 | 0.6.0 (development, after CP-L3-01..04) | Full read; four defects reproduced in temp fixture repositories and fixed, each with a regression test (`tests/testthat/test-clean_publish_review.R`); independent high-effort review of the fix diff of 911f740 by an agent that did not write it (verdict: approve with conditions; the conditions were then addressed, see below; the follow-up changes themselves have had no second review); maintainer sign-off: **pending** |
+| `R/clean_publish.R` | L3 | 0.6.0 (development, after CP-L3-01..04) | Full read; four defects reproduced in temp fixture repositories and fixed, each with a regression test (`tests/testthat/test-clean_publish_review.R`); independent high-effort review of the fix diff of 911f740 by an agent that did not write it (verdict: approve with conditions; the conditions were then addressed, see below; the follow-up changes themselves have had no second review); maintainer sign-off: **approved** (J. Kyle Armstrong, PhD, 2026-10-21) |
 | `.Rbuildignore` | L3 | 0.6.1 | `^release-notes$` was added on master meanwhile (PR #13); nothing further from this branch |
 
 ## Fix log

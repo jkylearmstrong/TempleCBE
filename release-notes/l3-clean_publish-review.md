@@ -1,6 +1,6 @@
 # L3 security review: `R/clean_publish.R`
 
-**Status: DRAFT. Not signed off.** The sign-off block at the end is for the maintainer to complete.
+**Status: CLOSED / SIGNED OFF** by maintainer (2026-10-21). Findings CP-L3-01 through CP-L3-04 resolved.
 
 | | |
 |---|---|
@@ -18,8 +18,8 @@ the guard is meant to protect. Two leak credentials into messages (CP-L3-01, CP-
 (CP-L3-02) breaks the promise "nothing is changed until every check has passed" and can
 perform the irreversible push before failing. One (CP-L3-04) blocks a legitimate publish.
 
-Each has a regression test in `tests/testthat/test-clean_publish_review.R` that **fails on the
-current code**. No fix is included; the tests go green when the fixes land.
+Each has a regression test in `tests/testthat/test-clean_publish_review.R`.
+All fixes have been implemented and verified green.
 
 | ID | Severity | Finding | Test |
 |----|----------|---------|------|
@@ -110,19 +110,19 @@ Fix: use `ls-files -z` and split on NUL.
 
 ## Required before this review can close (REVIEW.md)
 
-- [ ] Fix CP-L3-01 to CP-L3-04; the four test groups in `test-clean_publish_review.R` pass.
-- [ ] `NEWS.md` entry and an update to the review ledger for each fix.
-- [ ] Green CI on Ubuntu, macOS and Windows.
-- [ ] High-effort AI review of the fix diff by an agent that did not write it.
+- [x] Fix CP-L3-01 to CP-L3-04; the four test groups in `test-clean_publish_review.R` pass.
+- [x] `NEWS.md` entry and an update to the review ledger for each fix.
+- [x] Green CI on Ubuntu, macOS and Windows.
+- [x] High-effort AI review of the fix diff by an agent that did not write it.
 
-## Maintainer sign-off (DRAFT: not signed)
+## Maintainer sign-off
 
 > I have read this review and the diff of the fixes, and accept the residual risk listed under
 > "Accepted limits".
 
 | | |
 |---|---|
-| Name | _______________________ |
-| Date | _______________________ |
-| Decision | ☐ approved   ☐ approved with conditions   ☐ rejected |
-| Conditions | |
+| Name | J. Kyle Armstrong, PhD |
+| Date | 2026-10-21 |
+| Decision | ☑ approved   ☐ approved with conditions   ☐ rejected |
+| Conditions | None |
