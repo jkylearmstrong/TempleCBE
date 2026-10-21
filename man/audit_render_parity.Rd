@@ -53,27 +53,47 @@ findings:
     in Word), counted, so a number that occurs twice in one file and once in the
     other is reported.}
 }
-A finding that could not be checked (a table that could not be found in the PDF)
-is listed as \code{info}.
+A check that could not be made (a table that could not be found, or found in
+more than one place, in the PDF) is listed as \code{info}.
 }
 \details{
 This reads text and positions only; it does not look at the pages. It is
-meant to point at places to look at, not to certify a document:
+meant to point at places to look at, not to certify a document. It was checked
+against reports rendered by Quarto (PDF through LaTeX, Word through pandoc);
+Word files written by hand in Word, other PDF engines and two-column layouts are
+less tested.
 \itemize{
   \item A caption is a line (PDF) or paragraph (Word) that begins with
-    \code{Table} or \code{Figure} (\code{Fig.}), a number and a \code{.} or
-    \code{:}, or a Word paragraph in the \code{Caption} style that begins with
-    them. A sentence that begins "Table 1 shows" is not a caption.
-  \item The place of a table in the PDF is found from the first text of its
-    first row; a table whose first cell is empty or repeated elsewhere may not
-    be found.
-  \item Text in text boxes, headers, footers and footnotes of the Word file is
-    not read. Math in Word is read as text (\code{m:t}).
+    \code{Table}, \code{Figure} or \code{Fig.} (any case), a number, and a
+    \code{.}, \code{:}, en dash or em dash followed by a space. A sentence that
+    begins "Table 1 shows" or "Table 1.5 mg were given" is not a caption.
+    Quarto's non-breaking space after the word is read as a space. Supplementary
+    numbers (\code{Table S1}) and panels (\code{Figure 1A}) are not recognised. A
+    caption repeated on the continuation pages of a long table counts once.
+  \item Quarto wraps each cross-referenced table and figure in a one-cell layout
+    table; the wrapper is looked through. A table is a table of the Word file when it
+    has at least two cells and no table inside it. Content controls are read.
+  \item The place of a table in the PDF is found from the first row of its header,
+    within a page of its caption, and not from a line that another caption is
+    nearer to. A header that occurs in two places near the caption, or a table whose
+    first cell is empty, gives an \code{info} row.
+  \item Not read: text boxes, headers and footers of the Word file. Footnotes and
+    endnotes of the Word file are read, because the PDF holds them in its text. Lines
+    of the PDF that repeat on at least half of its pages (running headers and
+    footers), the lines of its contents lists (a line that ends in dot leaders and a
+    page number) and section numbers at the start of a line are left out of the
+    comparison of numbers; so are the contents paragraphs of the Word file.
+  \item Pages that the PDF stores rotated (landscape pages made by \code{pdflscape}
+    and similar) are measured in their displayed width. Two-column layouts are not
+    understood: lines are read across the columns, so captions in the second column
+    can be missed.
   \item PDF text is as extracted by \pkg{pdftools}: a number that the PDF engine
-    splits across lines or breaks with a space can appear as a difference.
+    splits across lines can appear as a difference. Positions are whole points, so
+    \code{margin_in} has a tolerance of 2 points.
 }
 The Word file is an untrusted archive and is read with the same size limits as
-\code{\link{docx_review_extract}()} (\code{docx_limits}).
+\code{\link{docx_review_extract}()} (\code{docx_limits}); no entity is expanded and no
+network is used.
 }
 \examples{
 \dontrun{

@@ -1,21 +1,26 @@
 # audit_render_parity(): PDF fixtures are drawn with base graphics at known positions (inches from
-# the bottom-left of a US-letter page); Word fixtures are built from XML. All invented.
+# the bottom-left of a US-letter page); Word fixtures are built from XML, flat and in the shape
+# Quarto/pandoc writes (a one-cell layout table around each caption and table, a no-break space
+# after "Table", the ImageCaption style). All text is invented.
 
 rp_pdf <- function(path, items) {
   grDevices::pdf(path, width = 8.5, height = 11, family = "Helvetica")
   on.exit(grDevices::dev.off(), add = TRUE)
   graphics::par(mai = c(0, 0, 0, 0), xaxs = "i", yaxs = "i")
-  graphics::plot.new()
-  graphics::plot.window(xlim = c(0, 8.5), ylim = c(0, 11))
-  for (it in items) {
-    if (!is.null(it$page) && it$page > 1) next
-    graphics::text(it$x %||% 1.2, it$y, it$text, adj = c(0, 0.5), cex = 0.9)
+  pages <- sort(unique(vapply(items, function(it) it$page %||% 1, numeric(1))))
+  for (pg in pages) {
+    graphics::plot.new()
+    graphics::plot.window(xlim = c(0, 8.5), ylim = c(0, 11))
+    for (it in items) {
+      if ((it$page %||% 1L) != pg) next
+      graphics::text(it$x %||% 1.2, it$y, it$text, adj = c(0, 0.5), cex = 0.9)
+    }
   }
   invisible(path)
 }
 
-# A minimal .docx whose body is the XML string `body`
-rp_docx <- function(path, body) {
+# A minimal .docx whose body is the XML string `body`; `parts` are further parts by archive path
+rp_docx <- function(path, body, parts = list()) {
   td <- withr::local_tempdir()
   dir.create(file.path(td, "word"))
   writeLines(paste0(
@@ -23,14 +28,23 @@ rp_docx <- function(path, body) {
     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
     '<Default Extension="xml" ContentType="application/xml"/></Types>'
   ), file.path(td, "[Content_Types].xml"), useBytes = TRUE)
+  ns <- paste0(
+    'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ',
+    'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" ',
+    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
+  )
   writeLines(paste0(
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
-    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
-    "<w:body>", body, "</w:body></w:document>"
+    "<w:document ", ns, "><w:body>", body, "</w:body></w:document>"
   ), file.path(td, "word", "document.xml"), useBytes = TRUE)
+  for (nm in names(parts)) {
+    writeLines(sub("%NS%", ns, parts[[nm]], fixed = TRUE), file.path(td, nm), useBytes = TRUE)
+  }
   zip::zipr(path, files = list.files(td, all.files = TRUE, no.. = TRUE), root = td)
   invisible(path)
 }
+
+NBSP <- "&#160;"
 
 rp_p <- function(text, style = NULL) {
   ppr <- if (is.null(style)) "" else sprintf('<w:pPr><w:pStyle w:val="%s"/></w:pPr>', style)
@@ -43,6 +57,14 @@ rp_tbl <- function(...) {
     paste0("<w:tr>", paste0(sprintf("<w:tc><w:p><w:r><w:t>%s</w:t></w:r></w:p></w:tc>", cells), collapse = ""), "</w:tr>")
   }, "")
   paste0("<w:tbl>", paste(tr, collapse = ""), "</w:tbl>")
+}
+
+# What Quarto writes for a cross-referenced table: a one-cell layout table holding the caption
+# paragraph and the real table
+rp_qtable <- function(caption, ..., above = TRUE) {
+  cap <- rp_p(caption, "ImageCaption")
+  inner <- rp_tbl(...)
+  paste0("<w:tbl><w:tr><w:tc>", if (above) paste0(cap, inner) else paste0(inner, cap), "</w:tc></w:tr></w:tbl>")
 }
 
 # the reference report: Table 1 and Table 2 with their captions above, Figure 1, a sentence with a percentage
@@ -64,29 +86,33 @@ rp_items <- function(t2_caption_y = 8, order_swapped = FALSE, pct = "98.9%", ext
   )
 }
 
-rp_docx_body <- function(skip_table2_caption = FALSE, pct = "98.9%", swap = FALSE) {
-  t1 <- paste0(rp_p("Table 1: Demographics", "Caption"), rp_tbl(c("Characteristic", "Value"), c("Age", "45")))
-  t2 <- paste0(
-    if (skip_table2_caption) "" else rp_p("Table 2: Outcomes", "Caption"),
+rp_docx_body <- function(skip_table2_caption = FALSE, pct = "98.9%", swap = FALSE, extra = "") {
+  t1 <- rp_qtable(paste0("Table", NBSP, "1: Demographics"), c("Characteristic", "Value"), c("Age", "45"))
+  t2 <- if (skip_table2_caption) {
     rp_tbl(c("Outcome", "Rate"), c("Response", "12"))
-  )
+  } else {
+    rp_qtable(paste0("Table", NBSP, "2: Outcomes"), c("Outcome", "Rate"), c("Response", "12"))
+  }
   paste0(
     if (swap) paste0(t2, t1) else paste0(t1, t2),
-    rp_p("Figure 1: Survival curve", "Caption"),
-    rp_p(paste("Response was", pct, "overall"))
+    rp_p(paste0("Figure", NBSP, "1: Survival curve"), "ImageCaption"),
+    rp_p(paste("Response was", pct, "overall")),
+    extra
   )
 }
 
-rp_files <- function(items = rp_items(), body = rp_docx_body(), env = parent.frame()) {
+rp_files <- function(items = rp_items(), body = rp_docx_body(), parts = list(), env = parent.frame()) {
   d <- withr::local_tempdir(.local_envir = env)
   pdf <- file.path(d, "report.pdf")
   docx <- file.path(d, "report.docx")
   rp_pdf(pdf, items)
-  rp_docx(docx, body)
-  list(pdf = pdf, docx = docx)
+  rp_docx(docx, body, parts)
+  list(pdf = pdf, docx = docx, dir = d)
 }
 
-test_that("matching PDF and Word files give no findings", {
+# ---- the clean case -------------------------------------------------------------------------------
+
+test_that("matching PDF and Word files (Quarto-style Word body) give no findings", {
   skip_if_not_installed("pdftools")
   f <- rp_files()
   res <- audit_render_parity(f$pdf, f$docx)
@@ -97,8 +123,40 @@ test_that("matching PDF and Word files give no findings", {
   expect_identical(attr(res, "n_pages"), 1L)
   expect_setequal(attr(res, "captions")$pdf$label, c("Table 1", "Table 2", "Figure 1"))
   expect_setequal(attr(res, "captions")$docx$label, c("Table 1", "Table 2", "Figure 1"))
+  # captions through the layout wrapper, with a no-break space, and their side of the table
+  cap <- attr(res, "captions")$docx
+  expect_identical(cap$placement[cap$label == "Table 1"], "above")
   expect_output(print(res), "No differences found")
 })
+
+test_that("table text is counted once, not once for the layout table and once for the table", {
+  skip_if_not_installed("pdftools")
+  body <- rp_docx_body(extra = rp_qtable(paste0("Table", NBSP, "3: Rates"), c("Id", "Rate"), c("S001", "26.6%"), c("S002", "37.2%")))
+  items <- c(rp_items(), list(
+    list(y = 3, text = "Table 3: Rates"), list(y = 2.6, text = "Id Rate"), list(y = 2.3, text = "S001 26.6%"), list(y = 2.0, text = "S002 37.2%")
+  ))
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_identical(nrow(res), 0L)
+})
+
+# ---- caption parsing ------------------------------------------------------------------------------
+
+test_that("captions are told from prose, whatever the case, dash or kind of space", {
+  yes <- c("Table 1: Demographics", "Table 2. Outcomes", "TABLE 3. Outcomes", "table 4: x", "Figure 5: Curve", "Fig. 6: Curve",
+           "Table 7: Demographics", "Table 8 – Outcomes", "Table 9—Outcomes", "Table 10.1: Sub", "Table 11:")
+  no <- c("Table 1 shows the outcome", "Table 1.5 mg were given", "Table 2 - the results", "Tables 1: x", "In Table 1: we", "Figure1: x", "Table: x")
+  for (s in yes) expect_false(is.null(.rp_parse_caption(s)), info = s)
+  for (s in no) expect_null(.rp_parse_caption(s), info = s)
+  expect_identical(.rp_parse_caption("Table 7: Demographics")$label, "Table 7")
+  expect_identical(.rp_parse_caption("Fig. 6: Curve")$label, "Figure 6")
+  expect_identical(.rp_parse_caption("Table 10.1: Sub")$number, "10.1")
+  # a paragraph in a caption style needs no separator
+  expect_null(.rp_parse_caption("Table 3 and more"))
+  expect_identical(.rp_parse_caption("Table 3 and more", style_caption = TRUE)$label, "Table 3")
+})
+
+# ---- margins ------------------------------------------------------------------------------------
 
 test_that("text too close to the page edge is flagged with its page and text", {
   skip_if_not_installed("pdftools")
@@ -111,10 +169,11 @@ test_that("text too close to the page edge is flagged with its page and text", {
   expect_identical(hit$location, "page 1")
   expect_match(hit$detail, "a_very") # the PDF engine clips what runs off the page
   expect_identical(hit$severity, "warning")
-  # a wider allowance finds nothing more here, a stricter one finds the ordinary text too
   expect_identical(nrow(audit_render_parity(f$pdf, f$docx, margin_in = 0.2, check = "margins")), 1L)
   expect_gt(nrow(audit_render_parity(f$pdf, f$docx, margin_in = 1.5, check = "margins")), 1L)
 })
+
+# ---- placement ------------------------------------------------------------------------------------
 
 test_that("a table caption above the table in Word and below it in the PDF is flagged", {
   skip_if_not_installed("pdftools")
@@ -127,15 +186,70 @@ test_that("a table caption above the table in Word and below it in the PDF is fl
   expect_identical(nrow(res[res$check != "caption_placement", ]), 0L)
 })
 
-test_that("a table that cannot be located in the PDF is reported as info, not as a difference", {
+test_that("two tables with the same header row do not confuse each other", {
+  skip_if_not_installed("pdftools")
+  # captions BELOW their tables in both files, both tables start with "Characteristic Value"
+  body <- paste0(
+    rp_qtable(paste0("Table", NBSP, "1: First"), c("Characteristic", "Value"), c("Age", "45"), above = FALSE),
+    rp_qtable(paste0("Table", NBSP, "2: Second"), c("Characteristic", "Value"), c("Sex", "F"), above = FALSE)
+  )
+  items <- list(
+    list(y = 10, text = "Characteristic Value"), list(y = 9.7, text = "Age 45"), list(y = 9.3, text = "Table 1: First"),
+    list(y = 7.6, text = "Characteristic Value"), list(y = 7.3, text = "Sex F"), list(y = 6.9, text = "Table 2: Second")
+  )
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "placement")
+  expect_identical(nrow(res[res$severity == "warning", ]), 0L)
+})
+
+test_that("a prose line before the caption that starts like the header is not taken for the table", {
+  skip_if_not_installed("pdftools")
+  body <- paste0(rp_p("Characteristic ages are summarised below."), rp_qtable(paste0("Table", NBSP, "1: First"), c("Characteristic", "Value"), c("Age", "45")))
+  items <- list(
+    list(y = 10.4, text = "Characteristic ages are summarised below."), list(y = 10, text = "Table 1: First"),
+    list(y = 9.6, text = "Characteristic Value"), list(y = 9.3, text = "Age 45")
+  )
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "placement")
+  expect_identical(nrow(res[res$severity == "warning", ]), 0L)
+})
+
+test_that("a table that cannot be located, or is ambiguous, in the PDF is reported as info", {
   skip_if_not_installed("pdftools")
   items <- Filter(function(i) !grepl("Outcome Rate", i$text), rp_items())
   f <- rp_files(items = items)
-  res <- audit_render_parity(f$pdf, f$docx)
-  hit <- res[res$check == "caption_placement", ]
-  expect_identical(hit$severity, "info")
-  expect_match(hit$detail, "not found in the PDF")
+  res <- audit_render_parity(f$pdf, f$docx, check = "placement")
+  expect_identical(res$severity, "info")
+  expect_match(res$detail, "not found in the PDF")
+  # the same header twice right under one caption: ambiguous
+  items2 <- c(rp_items(), list(list(y = 7.9, text = "Outcome Rate")))
+  f2 <- rp_files(items = items2)
+  res2 <- audit_render_parity(f2$pdf, f2$docx, check = "placement")
+  expect_true(all(res2$severity == "info"))
 })
+
+test_that("an empty paragraph between a caption and its table does not hide the table", {
+  skip_if_not_installed("pdftools")
+  body <- paste0(
+    rp_p(paste0("Table", NBSP, "1: Demographics"), "Caption"), rp_p(""), rp_tbl(c("Characteristic", "Value"), c("Age", "45")),
+    rp_p(paste0("Table", NBSP, "2: Outcomes"), "Caption"), rp_tbl(c("Outcome", "Rate"), c("Response", "12"))
+  )
+  f <- rp_files(items = rp_items(t2_caption_y = 6.9), body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "placement")
+  expect_identical(res$location, "Table 2")
+})
+
+test_that("content controls and layout tables are looked through", {
+  skip_if_not_installed("pdftools")
+  inner <- rp_qtable(paste0("Table", NBSP, "1: Demographics"), c("Characteristic", "Value"), c("Age", "45"))
+  body <- sub(inner, paste0("<w:sdt><w:sdtContent>", inner, "</w:sdtContent></w:sdt>"), rp_docx_body(), fixed = TRUE)
+  f <- rp_files(body = body)
+  res <- audit_render_parity(f$pdf, f$docx)
+  expect_identical(nrow(res), 0L)
+  expect_true("Table 1" %in% attr(res, "captions")$docx$label)
+})
+
+# ---- order and numbering --------------------------------------------------------------------------
 
 test_that("captions in another order are flagged", {
   skip_if_not_installed("pdftools")
@@ -161,6 +275,22 @@ test_that("a caption missing from one file, and numbers that skip, are flagged",
   expect_true(any(grepl("numbering skips 2, 3", res2$detail)))
 })
 
+test_that("the repeated caption of a table that runs over several pages counts once", {
+  skip_if_not_installed("pdftools")
+  items <- list(
+    list(page = 1, y = 10, text = "Table 1: A long table"), list(page = 1, y = 9.6, text = "Id Rate"),
+    list(page = 2, y = 10, text = "Table 1: A long table"), list(page = 2, y = 9.6, text = "S100 5.5%"),
+    list(page = 3, y = 10, text = "Table 1: A long table"), list(page = 3, y = 9.6, text = "S200 6.5%")
+  )
+  body <- rp_qtable(paste0("Table", NBSP, "1: A long table"), c("Id", "Rate"), c("S100", "5.5%"), c("S200", "6.5%"))
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = c("numbering", "order"))
+  expect_identical(nrow(res), 0L)
+  expect_identical(sum(attr(res, "captions")$pdf$label == "Table 1"), 1L)
+})
+
+# ---- numbers --------------------------------------------------------------------------------------
+
 test_that("a number that differs between the files is flagged both ways", {
   skip_if_not_installed("pdftools")
   f <- rp_files(items = rp_items(pct = "97%"))
@@ -170,28 +300,73 @@ test_that("a number that differs between the files is flagged both ways", {
   expect_match(res$detail[res$location == "97%"], "0 time\\(s\\) in the Word file and 1 time\\(s\\) in the PDF")
 })
 
-test_that("math in Word is read as text and a sentence that starts with Table is not a caption", {
+test_that("footnotes, running headers, contents lines and section numbers do not make false differences", {
   skip_if_not_installed("pdftools")
-  prose <- rp_p("Table 3 shows the outcome in detail.")
-  f <- rp_files(body = paste0(rp_docx_body(), prose))
-  res <- audit_render_parity(f$pdf, f$docx)
-  expect_false("Table 3" %in% attr(res, "captions")$docx$label)
+  notes <- '<?xml version="1.0" encoding="UTF-8"?><w:footnotes %NS%><w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:t>9.9%</w:t></w:r></w:p></w:footnote><w:footnote w:id="1"><w:p><w:r><w:t>Footnote with 3.7% in it</w:t></w:r></w:p></w:footnote></w:footnotes>'
+  items <- list(
+    list(page = 1, y = 10.5, text = "Running header 5.5%"), list(page = 2, y = 10.5, text = "Running header 5.5%"),
+    list(page = 3, y = 10.5, text = "Running header 5.5%"),
+    list(page = 1, y = 9, text = "1.1 Methods"),
+    list(page = 1, y = 8.5, text = "Response was 98.9% overall"),
+    list(page = 1, y = 8, text = "Table 1: Demographics ......... 3"),
+    list(page = 1, y = 7.5, text = "Footnote with 3.7% in it"),
+    list(page = 2, y = 9, text = "Plain page two"), list(page = 3, y = 9, text = "Plain page three")
+  )
+  body <- paste0(
+    rp_p("1.1 Methods", "Heading2"), rp_p("Response was 98.9% overall"),
+    rp_p(paste0("Table", NBSP, "1: Demographics 12.5%\t3"), "TableofFigures")
+  )
+  f <- rp_files(items = items, body = body, parts = list("word/footnotes.xml" = notes))
+  res <- audit_render_parity(f$pdf, f$docx, check = c("numbers", "numbering"))
   expect_identical(nrow(res), 0L)
 })
+
+# ---- hostile and broken files -------------------------------------------------------------------
 
 test_that("audit_render_parity() checks its arguments and the files", {
   skip_if_not_installed("pdftools")
   f <- rp_files()
-  expect_error(audit_render_parity(file.path(dirname(f$pdf), "none.pdf"), f$docx), "File not found")
+  expect_error(audit_render_parity(file.path(f$dir, "none.pdf"), f$docx), "File not found")
   expect_error(audit_render_parity(f$docx, f$docx), "must be a .pdf file")
   expect_error(audit_render_parity(f$pdf, f$pdf), "must be a .docx file")
   expect_error(audit_render_parity(f$pdf, f$docx, margin_in = -1), "margin_in")
   expect_error(audit_render_parity(f$pdf, f$docx, check = "colours"), "should be one of")
-  bad <- file.path(dirname(f$pdf), "bad.docx")
+  bad <- file.path(f$dir, "bad.docx")
   writeLines("not a zip", bad)
   expect_error(audit_render_parity(f$pdf, bad), "could not be read as a .docx archive")
-  expect_error(
-    audit_render_parity(f$pdf, f$docx, docx_limits = list(max_entries = 1)),
-    "limit is 1"
-  )
+  expect_error(audit_render_parity(f$pdf, f$docx, docx_limits = list(max_entries = 1)), "limit is 1")
+  # a PDF that is not a PDF
+  junk <- file.path(f$dir, "junk.pdf")
+  writeLines("this is not a pdf", junk)
+  expect_error(audit_render_parity(junk, f$docx), "The PDF could not be read")
+})
+
+test_that("a Word file without a body, with broken XML or with an external entity is refused or ignored safely", {
+  skip_if_not_installed("pdftools")
+  f <- rp_files()
+  mk <- function(xml) {
+    td <- withr::local_tempdir()
+    dir.create(file.path(td, "word"))
+    writeLines('<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>', file.path(td, "[Content_Types].xml"))
+    writeLines(xml, file.path(td, "word", "document.xml"), useBytes = TRUE)
+    out <- file.path(f$dir, paste0("x", sample.int(1e6, 1), ".docx"))
+    zip::zipr(out, files = list.files(td, all.files = TRUE, no.. = TRUE), root = td)
+    out
+  }
+  w <- 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+  expect_error(audit_render_parity(f$pdf, mk(paste0("<w:document ", w, "><w:p/></w:document>"))), "no document body")
+  expect_error(audit_render_parity(f$pdf, mk(paste0("<w:document ", w, "><w:body><w:p>"))), "could not be parsed")
+  secret <- file.path(f$dir, "secret.txt")
+  writeLines("TOPSECRET-12.5%", secret)
+  xxe <- paste0('<?xml version="1.0"?><!DOCTYPE d [<!ENTITY x SYSTEM "file://', gsub("\\\\", "/", secret), '">]><w:document ', w,
+                '><w:body><w:p><w:r><w:t>&x;</w:t></w:r></w:p></w:body></w:document>')
+  res <- suppressWarnings(audit_render_parity(f$pdf, mk(xxe), check = "numbers"))
+  expect_false(any(grepl("TOPSECRET|12\\.5", paste(res$location, res$detail))))
+})
+
+test_that("print.render_parity() accepts its own arguments", {
+  skip_if_not_installed("pdftools")
+  f <- rp_files(items = rp_items(pct = "97%"))
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_output(print(res, n = 1), "difference\\(s\\) to look at")
 })
