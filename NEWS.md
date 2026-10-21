@@ -1,5 +1,9 @@
 # TempleCBE 0.6.1.9000 (development version)
 
+## New functions
+
+* `boot_lmer()` and `boot_p_value()`: a cluster bootstrap of a linear mixed model. Whole groups are resampled, each replicate is fitted (optionally with predictors rescaled to [0, 1] within the resample and a fallback formula when the fit fails), outlying bootstrap estimates of each fixed effect are dropped by Tukey's fences, and each term is summarised by mean, standard error, median, percentile limits and a two-tailed bootstrap p-value. Replaces the copied bootstrap blocks in report templates.
+
 ## Review extraction
 
 * `docx_review_extract()` and `review_config()` gain `fork_mode = c("redacted", "collaborative")`. The default, `"redacted"`, is the behaviour so far: a reviewer's fork holds only their own sign-off and note columns. `"collaborative"` also shows the other fork reviewers' columns (sign-off reviewers' columns and Word authors still never go into a fork). Only a reviewer's own columns are merged back, so editing a colleague's column in a fork changes nothing.
