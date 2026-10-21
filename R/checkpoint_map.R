@@ -79,7 +79,7 @@ checkpoint_map <- function(.x,
   }
 
   # Derive fingerprints
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+  ckpt_schema <- checkpoint_schema_version()
   fps <- if (!is.null(fingerprint)) {
     if (is.function(fingerprint)) {
       vapply(seq_len(n), function(i) as.character(fingerprint(.x[[i]], ...)), character(1))
@@ -93,7 +93,7 @@ checkpoint_map <- function(.x,
   } else {
     vapply(seq_len(n), function(i) {
       payload <- list(
-        version = pkg_ver,
+        schema = ckpt_schema,
         seed_scheme = current_seed_scheme(),
         item = .x[[i]],
         dots = dots
@@ -203,7 +203,7 @@ compute_tidymodels_split_fingerprint <- function(object,
                                                  metrics = NULL,
                                                  eval_time = NULL,
                                                  control = NULL) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+  ckpt_schema <- checkpoint_schema_version()
   in_id <- if (inherits(split, "rsplit")) split$in_id else NULL
   out_id <- if (inherits(split, "rsplit")) {
     tryCatch(rsample::complement(split), error = function(e) split$out_id)
@@ -245,7 +245,7 @@ compute_tidymodels_split_fingerprint <- function(object,
   }
 
   payload <- list(
-    version = pkg_ver,
+    schema = ckpt_schema,
     seed_scheme = current_seed_scheme(),
     object = object_repr,
     split_in = in_id,
