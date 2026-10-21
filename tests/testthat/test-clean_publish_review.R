@@ -104,16 +104,31 @@ test_that("CP-L3-04: allow_ignored accepts a tracked-but-ignored file whose name
 
 # ---- follow-ups from the independent review of the fixes ---------------------------------------
 
-test_that("CP-L3-02: ordinary branch names are still accepted, and HEAD in any case is not", {
+test_that("CP-L3-02: branch names are validated and compared as git does (one repository for all cases)", {
   skip_if_no_git()
   fx <- cp_fixture()
   run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
+  # ordinary names are accepted, HEAD in any case is not
   for (ok in c("main", "master", "private-history", "feature/x", "a/b/c", "release-1.0", "caf\u00e9")) {
     expect_no_error(.cp_check_branch_name(run_git, ok))
   }
   for (bad in c("HEAD", "head", "Head", "@", "@{-1}", "a b", "x..y", "foo.lock")) {
     expect_error(.cp_check_branch_name(run_git, bad), "is not a valid branch name")
   }
+  # a tag with the name of a branch does not hide a collision
+  cp_git(fx$repo, "branch", "tagged")
+  cp_git(fx$repo, "tag", "tagged")
+  expect_error(.cp_check_branch_conflicts(run_git, c("tagged/x", "private-history")), "collides with 'tagged'")
+  # names are compared ignoring case; unrelated names do not collide
+  cp_git(fx$repo, "branch", "Feat")
+  cp_git(fx$repo, "branch", "feature")
+  cp_git(fx$repo, "branch", "feat-x")
+  expect_error(.cp_check_branch_conflicts(run_git, c("feat/y", "private-history")), "collides with 'Feat'")
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("featx", "private-history")))
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("other/x", "feature-y")))
+  # an existing branch that is itself one of the two names is not a collision (it is being updated)
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("master", "feature")))
+  expect_no_error(.cp_check_branch_conflicts(run_git, "master"))
 })
 
 test_that("CP-L3-02: a branch name that collides with an existing branch is refused before the push", {
@@ -155,7 +170,8 @@ test_that("CP-L3-03: credentials are stripped from other URL shapes in the hook"
     c("https://example.invalid/o/r.git", "https://example.invalid/o/r.git")
   )
   # the fenced URL is matched after normalising, so these spellings are all refused
-  for (sh in cp_hook_shells()) {
+  # (one shell: the shells are compared in the CP-L3-03 test above)
+  for (sh in cp_hook_shells()[1]) {
     for (case in cases) {
       res <- cp_run_hook(sh, fx$repo, remote = "", url = case[1])
       expect_false(res$status == 0L, info = case[1])
@@ -215,27 +231,3 @@ test_that("CP-L3-04: a tracked-but-ignored name that is not valid UTF-8 is repor
   expect_identical(cp_state(fx$repo), before)
 })
 
-test_that("CP-L3-02: a tag with the name of a branch does not hide a branch-name collision", {
-  skip_if_no_git()
-  fx <- cp_fixture()
-  cp_git(fx$repo, "branch", "feat")
-  cp_git(fx$repo, "tag", "feat")
-  run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
-  expect_error(.cp_check_branch_conflicts(run_git, c("feat/x", "private-history")), "collides with 'feat'")
-})
-
-test_that("CP-L3-02: branch names are compared ignoring case, and unrelated names do not collide", {
-  skip_if_no_git()
-  fx <- cp_fixture()
-  cp_git(fx$repo, "branch", "Feat")
-  cp_git(fx$repo, "branch", "feature")
-  cp_git(fx$repo, "branch", "feat-x")
-  run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
-  expect_error(.cp_check_branch_conflicts(run_git, c("feat/y", "private-history")), "collides with 'Feat'")
-  # none of these shares a path prefix with an existing branch or with the other name
-  expect_no_error(.cp_check_branch_conflicts(run_git, c("featx", "private-history")))
-  expect_no_error(.cp_check_branch_conflicts(run_git, c("other/x", "feature-y")))
-  # an existing branch that is itself one of the two names is not a collision (it is being updated)
-  expect_no_error(.cp_check_branch_conflicts(run_git, c("master", "feature")))
-  expect_no_error(.cp_check_branch_conflicts(run_git, "master"))
-})
