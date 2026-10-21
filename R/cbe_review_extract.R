@@ -2580,12 +2580,12 @@ build_fork_baseline <- function(reviewer, comments_rows, redlines_rows) {
 #'   lists with \code{reviewer}, \code{row}, \code{cell}, \code{master} and
 #'   \code{fork}).
 #' @noRd
-overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe, add_general = FALSE, id_style = "neutral") {
+overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe, add_general = FALSE, id_style = "neutral", general_kind = "comments") {
   conflicts <- list()
   pairs <- match_rows_one_to_one(fork, master, key_tiers)
   fork_rows <- which(!is.na(pairs))
   if (length(fork_rows) == 0) {
-    if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style)
+    if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style, general_kind)
     return(list(master = master, conflicts = conflicts))
   }
   master_rows <- pairs[fork_rows]
@@ -2622,7 +2622,7 @@ overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, desc
     raw[!nzchar(fork_cell)] <- NA_character_
     master[[col]][master_rows[take]] <- raw[take]
   }
-  if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style)
+  if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style, general_kind)
   list(master = master, conflicts = conflicts)
 }
 
@@ -2653,24 +2653,25 @@ GENERAL_COMMENT_STATUS <- "General Comment"
 #' @param id_style \code{"neutral"} or \code{"reviewer"}.
 #' @return The master with the added rows at the end.
 #' @noRd
-append_general_comments <- function(master, fork, reviewer, pairs, baseline, key_tiers, id_style = "neutral") {
+append_general_comments <- function(master, fork, reviewer, pairs, baseline, key_tiers, id_style = "neutral", kind = "comments") {
   if (is.null(baseline) || nrow(fork) == 0) return(master)
-  if (!"comment_id" %in% names(master)) return(master)
+  if (!"file" %in% names(master) || (kind == "comments" && !"comment_id" %in% names(master))) return(master)
   in_baseline <- if (nrow(baseline) > 0) !is.na(match_rows_one_to_one(fork, baseline, key_tiers)) else rep(FALSE, nrow(fork))
   cell <- function(col, normalize = clean_review_text) {
     if (col %in% names(fork)) normalize(fork[[col]]) else rep("", nrow(fork))
   }
   own_flag <- cell(reviewer, normalize_flag_cell)
   own_note <- cell(paste0(reviewer, "_comment"), normalize_note_cell)
-  text <- cell("comment_text")
-  fork_id <- if ("comment_id" %in% names(fork)) trimws(as.character(fork$comment_id)) else rep("", nrow(fork))
+  text <- if (kind == "comments") cell("comment_text") else paste(cell("original_text"), cell("accepted_text"))
+  text <- trimws(text)
+  fork_id <- if (kind == "comments" && "comment_id" %in% names(fork)) trimws(as.character(fork$comment_id)) else rep("", nrow(fork))
   fork_id[is.na(fork_id)] <- ""
 
-  existing_ids <- as.character(master$comment_id)
-  is_general <- if ("doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
-  known_text <- review_text_key(master$comment_text[is_general])
+  existing_ids <- if (kind == "comments") as.character(master$comment_id) else character()
+  is_general <- if (kind == "comments" && "doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
+  known_text <- if (kind == "comments") review_text_key(master$comment_text[is_general]) else character()
   known_text <- known_text[nzchar(known_text)]
-  repeated <- nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
+  repeated <- kind == "comments" & nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
   has_gen_id <- grepl("^gen_", fork_id)
   candidates <- which(is.na(pairs) & !in_baseline & !repeated & !has_gen_id & (nzchar(text) | nzchar(own_flag) | nzchar(own_note)))
   if (length(candidates) == 0) return(master)
@@ -2688,8 +2689,12 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
   master_files <- master_files[!is.na(master_files) & nzchar(master_files)]
 
   keep_cols <- intersect(
-    c("file", "comment_text", "selected_text", "paragraph_number", "end_paragraph_number", "paragraph_context",
-      reviewer, paste0(reviewer, "_comment")),
+    if (kind == "comments") {
+      c("file", "comment_text", "selected_text", "paragraph_number", "end_paragraph_number", "paragraph_context",
+        reviewer, paste0(reviewer, "_comment"))
+    } else {
+      c("file", "paragraph_number", "original_text", "accepted_text", reviewer, paste0(reviewer, "_comment"))
+    },
     c(names(fork), names(master))
   )
   new_rows <- lapply(seq_along(candidates), function(k) {
@@ -2702,9 +2707,11 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
     f <- trimws(as.character(row$file))
     hit <- if (is.na(f)) NA_integer_ else match(tolower(f), tolower(master_files))
     row$file <- if (is.na(hit)) "(general)" else master_files[hit]
-    row$comment_id <- id_of(next_n + k - 1L)
+    if (kind == "comments") {
+      row$comment_id <- id_of(next_n + k - 1L)
+      if ("is_reply" %in% names(row)) row$is_reply <- "FALSE"
+    }
     row$doc_status <- GENERAL_COMMENT_STATUS
-    if ("is_reply" %in% names(row)) row$is_reply <- "FALSE"
     row
   })
   added <- tibble::as_tibble(lapply(
@@ -2777,15 +2784,20 @@ apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_
     }
 
     # SuggestedChanges / Redlines
-    if (nrow(fork_data$redlines) > 0 && nrow(existing_redlines) > 0) {
+    if (nrow(fork_data$redlines) > 0) {
       redline_key <- c("file", "paragraph_number", "original_text")
+      if (!all(redline_key %in% names(existing_redlines))) {
+        cols <- unique(c(names(existing_redlines), redline_canonical_columns(fork_reviewers, signoff_reviewers)))
+        existing_redlines <- tibble::as_tibble(stats::setNames(rep(list(character()), length(cols)), cols))
+      }
       if (all(redline_key %in% names(fork_data$redlines)) &&
           all(redline_key %in% names(existing_redlines))) {
         out <- overlay_fork_table(
           existing_redlines, fork_data$redlines, rev,
           key_tiers = list(redline_key),
           baseline = baseline_of("SuggestedChanges"),
-          describe = function(df, i) sprintf("%s suggested change at paragraph %s", df$file[i], df$paragraph_number[i])
+          describe = function(df, i) sprintf("%s suggested change at paragraph %s", df$file[i], df$paragraph_number[i]),
+          add_general = TRUE, id_style = id_style, general_kind = "redlines"
         )
         existing_redlines <- out$master
         conflicts <- c(conflicts, out$conflicts)
@@ -3328,7 +3340,8 @@ merge_redlines <- function(incoming_redlines, existing_rows, existing_headers, c
       row <- as.list(available_existing[idx, ])
       rf <- trimws(as.character(row$file))
       has_fb <- has_review_feedback(row, ignored_cols)
-      if (!rf %in% scanned_files || has_fb) {
+      is_general <- !is.null(row$doc_status) && !is.na(row$doc_status) && identical(as.character(row$doc_status), GENERAL_COMMENT_STATUS)
+      if (!rf %in% scanned_files || has_fb || is_general) {
         if (is.null(row$doc_status) || is.na(row$doc_status) || !nzchar(as.character(row$doc_status)) || row$doc_status == "Active") {
           row$doc_status <- "Prior Round / Not in docx"
         }

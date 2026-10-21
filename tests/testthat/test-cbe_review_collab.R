@@ -281,3 +281,39 @@ test_that("the result records which manifest was used", {
   r <- docx_review_extract(s$dir, output_dir = s$out)
   expect_true(is.na(r$paths$manifest))
 })
+
+# ---- general rows in SuggestedChanges ------------------------------------------------------------
+
+test_that("a row a reviewer adds to the SuggestedChanges sheet of their fork is kept as a General Comment", {
+  skip_if_not_installed("openxlsx")
+  a6_options()
+  d <- a6_dir()
+  out <- file.path(d, "out")
+  a6_docx(file.path(d, "eda.docx"), paste0(a6_commented_para(0, "alpha text"), a6_para("Gamma.", ins = "added gamma")),
+          comments = a6_comment(0, "first comment"))
+  r1 <- docx_review_extract(d, output_dir = out)
+  expect_equal(nrow(r1$redlines), 1L)
+  collab_add_row(r1$paths$forks[["rev_a"]], list(original_text = "Rewrite the abstract as a whole", rev_a_comment = "overall"),
+                 sheet = "SuggestedChanges")
+  r2 <- docx_review_extract(d, output_dir = out)
+  expect_equal(nrow(r2$redlines), 2L)
+  gen <- r2$redlines[r2$redlines$doc_status == "General Comment", ]
+  expect_equal(nrow(gen), 1L)
+  expect_equal(gen$original_text, "Rewrite the abstract as a whole")
+  expect_equal(gen$file, "(general)")
+  expect_equal(gen$rev_a_comment, "overall")
+  # kept, once, in later rounds
+  r3 <- docx_review_extract(d, output_dir = out)
+  expect_equal(sum(r3$redlines$doc_status == "General Comment"), 1L)
+  expect_equal(nrow(r3$redlines), 2L)
+})
+
+test_that("a general suggested change is kept when the documents have no tracked changes", {
+  s <- collab_setup()
+  r1 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(nrow(r1$redlines), 0L)
+  collab_add_row(r1$paths$forks[["rev_a"]], list(original_text = "Check every table title"), sheet = "SuggestedChanges")
+  r2 <- docx_review_extract(s$dir, output_dir = s$out)
+  expect_equal(nrow(r2$redlines), 1L)
+  expect_equal(r2$redlines$doc_status, "General Comment")
+})
