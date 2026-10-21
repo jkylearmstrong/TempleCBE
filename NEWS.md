@@ -4,6 +4,11 @@
 
 * `list_stage_data_artifacts()` now lists files whose extension is upper or mixed case (`DATA.RDS`); the primary-data patterns already ignored case.
 
+
+## Fixes
+
+* `dedupe_pipeline(strategy = "rename")` no longer returns duplicate names when a numbered name already exists in the list (`c("a", "a", "a_2")` came back as `c("a", "a_2", "a_2")`); the new name skips every name in use.
+
 # TempleCBE 0.6.1
 
 A corrective release that makes the 0.6.0 notes accurate and removes a release-time maintenance hazard.

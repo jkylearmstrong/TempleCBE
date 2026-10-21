@@ -70,12 +70,13 @@ test_that("dedupe_pipeline() rename keeps every object and numbers the repeats",
 })
 
 test_that("dedupe_pipeline() rename makes names unique even when a numbered name exists", {
-  skip("known bug: strategy = \"rename\" gives c(\"a\", \"a_2\", \"a_2\") for names c(\"a\", \"a\", \"a_2\")")
   got <- dedupe_pipeline(
     list(FilePath("a", "1.csv"), FilePath("a", "2.csv"), FilePath("a_2", "3.csv")),
     strategy = "rename"
   )
   expect_false(anyDuplicated(pipe_names(got)) > 0L)
+  expect_identical(pipe_names(got), c("a", "a_3", "a_2"))
+  expect_identical(vapply(got, function(o) o@path, ""), c("1.csv", "2.csv", "3.csv"))
 })
 
 test_that("dedupe_pipeline() says what it resolved only when verbose", {
