@@ -264,3 +264,33 @@ test_that("print.boot_lmer() summarises the run", {
   res <- boot_lmer(y ~ time + (1 | id), boot_fixture(n_id = 8), group = "id", n_boot = 10, seed = 2)
   expect_output(print(res), "Cluster bootstrap of a mixed model: 10 replicate")
 })
+
+test_that(".boot_groups() ignores unused factor levels", {
+  d <- data.frame(id = factor(c("a", "a", "b"), levels = c("a", "b", "unused")))
+  g <- .boot_groups(d, "id")
+  expect_named(g, c("a", "b"))
+  expect_identical(unname(lengths(g)), c(2L, 1L))
+})
+
+test_that("a grouping term the formula parse cannot read does not stop the run", {
+  skip_if_not_installed("lme4")
+  d <- boot_fixture(n_id = 8)
+  # (lme4 itself may be unable to fit such a term on resampled data; the check is that our own parse does not stop the run)
+  expect_no_error(suppressWarnings(boot_lmer(y ~ time + (1 | factor(id)), d, group = "id", n_boot = 5, seed = 1)))
+})
+
+test_that("boot_lmer() warns when many replicates are not comparable, and returns terms in model order", {
+  skip_if_not_installed("lme4")
+  withr::local_seed(5)
+  # each group sees one factor level only: most resamples lose a level
+  d <- do.call(rbind, lapply(1:3, function(i) {
+    data.frame(id = as.character(i), f = factor(c("A", "B", "C")[i], levels = c("A", "B", "C")), y = c(0, 10, 30)[i] + stats::rnorm(6, sd = 0.3))
+  }))
+  expect_warning(
+    res <- boot_lmer(y ~ f + (1 | id), d, group = "id", n_boot = 30, seed = 3, fence = "none"),
+    "lack a fixed-effect column"
+  )
+  expect_gt(attr(res, "n_incomparable"), 0L)
+  expect_identical(res$term, c("fB", "fC")) # model order, not the order of the first draw
+  expect_output(print(res), "not comparable")
+})

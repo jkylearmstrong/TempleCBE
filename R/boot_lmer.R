@@ -113,8 +113,12 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
   # grouping factors: the variables after the "|" of each random-effect term
   ftxt <- paste(deparse(formula), collapse = "")
   bars <- regmatches(ftxt, gregexpr("[|]+[^)]+[)]", ftxt))[[1]]
-  grouping <- unique(unlist(lapply(sub("[)]$", "", sub("^[|]+", "", bars)), function(b) all.vars(stats::as.formula(paste("~", b))))))
-  if (!group %in% grouping) {
+  # the parse only serves the warning below: a grouping term it cannot read (`factor(id)`) skips it
+  grouping <- tryCatch(
+    unique(unlist(lapply(sub("[)]$", "", sub("^[|]+", "", bars)), function(b) all.vars(stats::as.formula(paste("~", b)))))),
+    error = function(e) NULL
+  )
+  if (!is.null(grouping) && !group %in% grouping) {
     warning("`group` ('", group, "') is not a grouping factor of the random effects in `formula` (",
             paste(grouping, collapse = ", "), "); resampling by it may not mimic the clustering.", call. = FALSE)
   }
@@ -128,7 +132,7 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     set.seed(seed)
   }
 
-  rows_of <- split(seq_len(nrow(data)), droplevels(factor(data[[group]])))
+  rows_of <- .boot_groups(data, group)
   n_groups <- length(rows_of)
   reference <- tryCatch(
     names(lme4::fixef(suppressMessages(suppressWarnings(lme4::lmer(formula, data = data, ...))))),
@@ -175,6 +179,12 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
   }
   if (n_failed == n_boot) {
     warning("No bootstrap replicate could be fitted; the result is empty.", call. = FALSE)
+  } else if (n_incomparable > 0.1 * (n_boot - n_failed)) {
+    warning(
+      n_incomparable, " of ", n_boot - n_failed, " fitted replicates lack a fixed-effect column the whole-data model has ",
+      "(a factor level missing from the resample?) and are left out; some terms rest on fewer estimates (see `n` and attr 'n_incomparable').",
+      call. = FALSE
+    )
   } else if (n_failed > 0.1 * n_boot) {
     warning(n_failed, " of ", n_boot, " bootstrap replicates could not be fitted (too few groups?).", call. = FALSE)
   }
@@ -188,7 +198,9 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     }
   }
 
-  terms <- unique(draws$term)
+  # model order: the terms of the whole-data fit, else the order of the comparable draws
+  terms <- unique(draws$term[draws$comparable])
+  if (!is.null(reference)) terms <- intersect(reference, terms)
   if (!include_intercept) terms <- setdiff(terms, "(Intercept)")
   alpha <- (1 - conf_level) / 2
   rows <- lapply(terms, function(tm) {
@@ -254,12 +266,17 @@ boot_p_value <- function(estimates, null_value = 0, epsilon = 1e-5) {
 #' @export
 print.boot_lmer <- function(x, ...) {
   cat(sprintf(
-    "Cluster bootstrap of a mixed model: %d replicate(s), %d failed, %d refitted with the fallback; '%s' fence kept %d of %d estimate(s).\n",
-    attr(x, "n_boot"), attr(x, "n_failed"), attr(x, "n_fallback"), attr(x, "fence"),
+    "Cluster bootstrap of a mixed model: %d replicate(s), %d failed, %d refitted with the fallback, %d not comparable; '%s' fence kept %d of %d estimate(s).\n",
+    attr(x, "n_boot"), attr(x, "n_failed"), attr(x, "n_fallback"), attr(x, "n_incomparable"), attr(x, "fence"),
     sum(attr(x, "draws")$kept), nrow(attr(x, "draws"))
   ))
   print(tibble::as_tibble(x), ...)
   invisible(x)
+}
+
+# Row indices of each group; levels of a factor that no row has are not groups
+.boot_groups <- function(data, group) {
+  split(seq_len(nrow(data)), droplevels(factor(data[[group]])))
 }
 
 # One bootstrap resample: whole groups drawn with replacement (a group keeps its identifier),
