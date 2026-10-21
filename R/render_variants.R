@@ -168,12 +168,18 @@ render_variants <- function(input,
 
   if (is.null(renderer)) renderer <- .rv_default_renderer(ext)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-  run_id <- paste0("rv", format(Sys.time(), "%H%M%S"), "_", paste(sample(c(letters, 0:9), 6, replace = TRUE), collapse = ""))
-  same_dir <- identical(tolower(output_dir), tolower(in_dir))
+  # a private name for each rendering (no random numbers: the session's random stream is not touched)
+  run_id <- paste0("rv", Sys.getpid(), format(Sys.time(), "%H%M%OS3"))
+  run_id <- gsub("[^A-Za-z0-9]", "", run_id)
+  # whatever a rendering leaves behind is removed, an interrupt included
+  leftovers <- character()
+  on.exit(unlink(leftovers, recursive = FALSE, force = TRUE), add = TRUE)
   for (i in seq_len(nrow(out))) {
     work_name <- paste0(run_id, "_", plan$file[i]) # private name in the template's folder
     work_path <- file.path(in_dir, work_name)
     if (file.exists(work_path)) stop("The private file ", work_name, " already exists; remove it and run again.", call. = FALSE)
+    if (dir.exists(out$output[i])) stop("The final name ", out$output[i], " is a folder.", call. = FALSE)
+    leftovers <- c(leftovers, work_path)
     metadata <- if (identical(ext, "qmd") && isTRUE(self_contained) && tolower(out$format[i]) %in% c("html", "revealjs")) {
       list(`embed-resources` = TRUE)
     } else {
@@ -184,15 +190,27 @@ render_variants <- function(input,
         input = input, output_format = out$format[i], output_file = work_name,
         execute_params = out$params[[i]], quiet = quiet, metadata = metadata
       )
-      if (!file.exists(work_path)) stop("the renderer did not write ", work_name, call. = FALSE)
-      if (file.exists(out$output[i]) && !file.remove(out$output[i])) stop("could not replace ", out$output[i], call. = FALSE)
-      moved <- file.rename(work_path, out$output[i])
-      if (!moved) {
-        if (!file.copy(work_path, out$output[i], overwrite = TRUE)) stop("could not move the output to ", output_dir, call. = FALSE)
+      # a Quarto project may send the output to its output-dir
+      produced <- .rv_find_output(work_name, in_dir)
+      if (is.na(produced)) stop("the renderer did not write ", work_name, call. = FALSE)
+      leftovers <- c(leftovers, produced)
+      # the old file is set aside, not deleted, until the new one is in place
+      backup <- NULL
+      if (file.exists(out$output[i])) {
+        backup <- paste0(out$output[i], ".", run_id, ".old")
+        leftovers <- c(leftovers, backup)
+        if (!file.rename(out$output[i], backup)) stop("could not replace ", out$output[i], call. = FALSE)
+      }
+      placed <- file.rename(produced, out$output[i]) ||
+        suppressWarnings(file.copy(produced, out$output[i], overwrite = TRUE))
+      if (!placed) {
+        if (!is.null(backup)) file.rename(backup, out$output[i])
+        stop("could not move the output to ", output_dir, call. = FALSE)
       }
       NULL
     }, error = function(e) conditionMessage(e))
-    unlink(work_path) # whatever is left of the private file, rendered or not
+    unlink(leftovers) # the private file, rendered or not, and the set-aside copy of an old output
+    leftovers <- character()
     if (is.null(res)) {
       out$status[i] <- "rendered"
     } else {
@@ -261,5 +279,30 @@ render_variants <- function(input,
       input = input, output_format = fmt, output_file = output_file,
       params = execute_params, quiet = quiet, envir = new.env(parent = globalenv())
     )
+  }
+}
+
+# Where the renderer put the file called `work_name`: next to the template or, in a Quarto project,
+# below its `output-dir`. NA when it is nowhere.
+.rv_find_output <- function(work_name, in_dir) {
+  direct <- file.path(in_dir, work_name)
+  if (file.exists(direct)) return(direct)
+  dir <- in_dir
+  repeat {
+    for (cfg in c("_quarto.yml", "_quarto.yaml")) {
+      f <- file.path(dir, cfg)
+      if (!file.exists(f)) next
+      lines <- readLines(f, warn = FALSE)
+      od <- sub("^\\s+output-dir:\\s*[\"']?([^\"'#]+?)[\"']?\\s*(#.*)?$", "\\1", grep("^\\s+output-dir:", lines, value = TRUE)[1])
+      if (!is.na(od) && nzchar(od)) {
+        root <- file.path(dir, od)
+        hits <- list.files(root, pattern = paste0("^", gsub("([.])", "\\\\\\1", work_name), "$"), recursive = TRUE, full.names = TRUE)
+        if (length(hits)) return(hits[1])
+      }
+      return(NA_character_)
+    }
+    parent <- dirname(dir)
+    if (identical(parent, dir)) return(NA_character_)
+    dir <- parent
   }
 }

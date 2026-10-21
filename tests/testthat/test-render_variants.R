@@ -224,3 +224,54 @@ test_that("render_variants() works on an .Rmd with the default renderer", {
   expect_match(paste(readLines(res$output[1]), collapse = " "), "imputed = FALSE")
   expect_identical(sort(list.files(dirname(tpl))), sort(c("analysis.Rmd", basename(res$output))))
 })
+
+# ---- second review ---------------------------------------------------------------------------------
+
+test_that("the output of a Quarto project that sends renderings to its output-dir is found and moved", {
+  tpl <- rv_template()
+  proj <- dirname(tpl)
+  writeLines(c("project:", "  output-dir: _site"), file.path(proj, "_quarto.yml"))
+  # a renderer that behaves as a project does: the file appears below the output-dir
+  proj_renderer <- function(input, output_format, output_file, execute_params, quiet, metadata = NULL) {
+    dir.create(file.path(dirname(input), "_site"), showWarnings = FALSE)
+    writeLines("rendered in the project", file.path(dirname(input), "_site", output_file))
+    invisible(NULL)
+  }
+  out_dir <- file.path(proj, "reports")
+  res <- render_variants(tpl, list(a = list(label = "x")), output_dir = out_dir, renderer = proj_renderer)
+  expect_identical(res$status, "rendered")
+  expect_identical(readLines(res$output), "rendered in the project")
+  expect_identical(list.files(file.path(proj, "_site")), character()) # the private file is gone
+})
+
+test_that("an interrupted rendering leaves nothing next to the template and keeps the old output", {
+  tpl <- rv_template()
+  out_dir <- file.path(dirname(tpl), "out")
+  dir.create(out_dir)
+  writeLines("previous output", file.path(out_dir, "analysis_a.html"))
+  aborting <- function(input, output_format, output_file, execute_params, quiet, metadata = NULL) {
+    writeLines("partial", file.path(dirname(input), output_file))
+    stop(structure(class = c("rv_test_interrupt", "condition"), list(message = "interrupted", call = NULL)))
+  }
+  caught <- tryCatch(
+    render_variants(tpl, list(a = list(label = "x")), output_dir = out_dir, renderer = aborting),
+    rv_test_interrupt = function(c) "interrupted"
+  )
+  expect_identical(caught, "interrupted")
+  expect_identical(list.files(dirname(tpl), all.files = TRUE, no.. = TRUE), c("analysis.qmd", "out"))
+  expect_identical(readLines(file.path(out_dir, "analysis_a.html")), "previous output")
+})
+
+test_that("a final name that is a folder is refused, and the session's random numbers are untouched", {
+  tpl <- rv_template()
+  out_dir <- file.path(dirname(tpl), "out")
+  dir.create(file.path(out_dir, "analysis_a.html"), recursive = TRUE)
+  expect_error(render_variants(tpl, list(a = list(label = "x")), output_dir = out_dir, renderer = rv_recorder()$f), "is a folder")
+  expect_true(dir.exists(file.path(out_dir, "analysis_a.html")))
+
+  set.seed(1)
+  expected <- stats::runif(1)
+  set.seed(1)
+  render_variants(tpl, list(b = list(label = "x")), renderer = rv_recorder()$f)
+  expect_identical(stats::runif(1), expected)
+})
