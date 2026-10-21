@@ -1191,14 +1191,19 @@ dedupe_pipeline <- function(all_objects,
 
   if (strategy == "rename") {
     res <- all_objects
-    seen_counts <- list()
+    # a new name must also avoid every name in the list, later ones included
+    # (c("a", "a", "a_2") must not become c("a", "a_2", "a_2"))
+    taken <- unique(node_names)
+    seen <- character()
     for (i in seq_along(res)) {
       nm <- res[[i]]@name
-      if (is.null(seen_counts[[nm]])) {
-        seen_counts[[nm]] <- 1L
+      if (!nm %in% seen) {
+        seen <- c(seen, nm)
       } else {
-        seen_counts[[nm]] <- seen_counts[[nm]] + 1L
-        res[[i]]@name <- paste0(nm, "_", seen_counts[[nm]])
+        k <- 2L
+        while (paste0(nm, "_", k) %in% c(taken, seen)) k <- k + 1L
+        res[[i]]@name <- paste0(nm, "_", k)
+        seen <- c(seen, res[[i]]@name)
       }
     }
     return(res)
@@ -2893,6 +2898,7 @@ list_stage_data_artifacts <- function(
   files <- list.files(
     stage_dir,
     pattern = "\\.(rds|xlsx|csv)$",
+    ignore.case = TRUE,
     full.names = TRUE,
     recursive = FALSE
   )

@@ -1863,7 +1863,7 @@ test_that("a git call that fails in a gate stops the run: ls-files -ci and diff-
   # what `git <subcommand>` does when it fails with status 128, as .cp_git() reports it
   failing <- function(subcommand) {
     function(repo_root, args, error_ok = FALSE) {
-      if (identical(args[1], subcommand)) {
+      if (subcommand %in% args) { # (not only args[1]: ls-files runs after `-c core.quotePath=false`)
         if (error_ok) return(list(output = character(), stderr = "fatal: simulated", status = 128L))
         stop("git ", subcommand, " failed (status 128): simulated", call. = FALSE)
       }

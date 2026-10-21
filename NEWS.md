@@ -4,6 +4,27 @@
 
 * `audit_render_parity(pdf_path, docx_path)`: before a report goes out, compares the rendered PDF with the Word version and lists text that comes too close to the page edge, table and figure captions that are missing, skip a number or come in another order, a table caption above the table in one file and below it in the other, and percentages or decimals that occur in one file only (for example 98.9% in the PDF and 97% in Word). It reads text and positions only and points at places to look at.
 
+* `boot_lmer()` and `boot_p_value()`: a cluster bootstrap of a linear mixed model. Whole groups are resampled, each replicate is fitted (optionally with predictors rescaled to [0, 1] within the resample and a fallback formula when the fit fails), outlying bootstrap estimates of each fixed effect are dropped by Tukey's fences, and each term is summarised by mean, standard error, median, percentile limits and a two-tailed bootstrap p-value. Replaces the copied bootstrap blocks in report templates.
+
+## Review extraction
+
+* `docx_review_extract()` and `review_config()` gain `fork_mode = c("redacted", "collaborative")`. The default, `"redacted"`, is the behaviour so far: a reviewer's fork holds only their own sign-off and note columns. `"collaborative"` also shows the other fork reviewers' columns (sign-off reviewers' columns and Word authors still never go into a fork). Only a reviewer's own columns are merged back, so editing a colleague's column in a fork changes nothing.
+* A row a reviewer adds to their fork workbook, which matches no master row, is no longer dropped: it is kept as a general comment with `doc_status = "General Comment"`, in the master and in every fork. Its id is `gen_<n>` (with redacted forks, so the id does not tell the other reviewers who wrote it) or `gen_<reviewer>_<n>` (collaborative forks). Its `file` is kept if it names a document of the tracker and is otherwise `(general)`, which shows up as a pseudo-document in the Documents sheet. A copy of the same row sent back again is not added twice. Later edits to the text or file of a general comment in a fork are not merged back, only the reviewer's own sign-off and note. Rows added to the SuggestedChanges sheet of a fork are kept the same way (without an id; the file, paragraph, original and accepted text and the reviewer's own sign-off and note are taken). Forks written by an earlier version (no baseline sheet) add nothing.
+* `docx_review_extract(manifest_path = "auto")` looks for `reports_to_render.xlsx` in the input folder, its two parents and the working directory (also `TEMPLECBE_ANALYSIS_ROOT`), in the folder itself and in `analysis/<folder>/`, when `review_config(analysis_dir =)` finds none. The file used is reported and returned in `$paths$manifest`; several candidates in one place give a warning and the most recent is used. Nothing is searched by default.
+
+## `clean_publish()` security review fixes (L3 review CP-L3-01 to CP-L3-04)
+
+* **CP-L3-02**: `clean_publish()` now refuses `HEAD` (in any case), any other name `git check-ref-format --branch` rejects, and a `publish_branch` or `private_branch` that collides with an existing branch or with each other (`feat` and `feat/x`), before anything is pushed or written. Before, `publish_branch = "HEAD"` or `"feat/x"` next to a branch `feat` passed the checks, force-pushed to the remote and only then failed.
+* **CP-L3-01**: `guard_public_remote()` no longer prints credentials: the error that lists the push URLs of the configured remotes, the "could not be normalized" error and the "matches no configured remote" message strip the `user:password@` part of every URL.
+* **CP-L3-03**: the pre-push hook no longer echoes credentials when it refuses a push to a guarded public remote. An already installed hook keeps the old message until `guard_public_remote()` or `clean_publish()` is run again in that repository, which rewrites the managed block.
+* **CP-L3-04**: `allow_ignored` now matches tracked-but-ignored files whose names contain non-ASCII characters (git printed them quoted, so they could never be allowed). A name that is not valid UTF-8, or that git still quotes (tab, newline, quote), is reported and never allowed.
+
+## Fixes
+
+* `list_stage_data_artifacts()` now lists files whose extension is upper or mixed case (`DATA.RDS`); the primary-data patterns already ignored case.
+
+* `dedupe_pipeline(strategy = "rename")` no longer returns duplicate names when a numbered name already exists in the list (`c("a", "a", "a_2")` came back as `c("a", "a_2", "a_2")`); the new name skips every name in use.
+
 # TempleCBE 0.6.1
 
 A corrective release that makes the 0.6.0 notes accurate and removes a release-time maintenance hazard.
@@ -407,7 +428,6 @@ Audit packet C5 findings in release distribution, incremental history, and push 
 * **Remote refs check (A5-15), replaced:** the first version warned, after the push, about other branches and tags of the remote (`git ls-remote --heads --tags`), and never saw `refs/pull/*` or notes. Since the stage 2 hardening below, standalone mode lists all refs of the remote before anything changes and stops unless `allow_other_refs = TRUE`.
 * **Force-with-lease push isolation:** In standalone mode, `clean_publish()` pushes with `--force-with-lease`, so that it does not overwrite a remote branch that moved without its knowledge; since the stage 2 hardening below the lease names the branch and the id the listing of the remote showed (`--force-with-lease=refs/heads/<branch>:<id>`) and no longer depends on a remote-tracking ref.
 
-
 ## Behaviour change: `clean_publish()` first round of the pre-0.5.0 review (R-CP-01, 02, 03, 06, 10, 12)
 
 The first fixes of the independent review of the publish path (commit 6cf87a5). Later rounds, below, changed some of them; each bullet says how it stands now. Pinned by tests in `tests/testthat/test-clean_publish.R` that use real git and local bare repositories.
@@ -464,7 +484,6 @@ Independent review of the publish path, stage 3 (the command line and what is wr
 * **Expanded Census surname pool:** Packaged `inst/extdata/last_names.csv` containing the top 250 US Census surnames, augmented with existing diverse investigator surnames (total pool: 252 surnames). `generate_pi_names(format = "synthetic")` in both R (`R/pi_anonymizer.R`, `scripts/pi_anonymizer.R`) and Python (`scripts/pi_anonymizer.py`) now samples from this expanded pool, dramatically reducing birthday-bound pseudonym collision rates for investigator cohorts of $k = 20\text{--}50$ PIs.
 * **Synthetic full name generation (`format = "full_name"`):** Added a curated pool of 256 diverse top first names (from SSA baby names). Setting `format = "full_name"` (or alias `format = "full"`) generates realistic synthetic full names (`"Sarah Jenkins"`, `"Marcus Chen"`) by sampling unique pairs without replacement across a combinatorial space of over 64,500 distinct full names.
 * **Exclusions and alias support:** `generate_pi_names()` accepts `exclude` across all implementations to ensure real investigator names/surnames are never generated, and accepts `format = "surname"` as an alias for `"synthetic"`.
-
 
 ## Hardening: Standalone Pseudonymization Scripts (`scripts/pi_anonymizer.py`, `scripts/pi_anonymizer.R`)
 
