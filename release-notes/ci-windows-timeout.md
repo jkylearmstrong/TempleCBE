@@ -1,6 +1,6 @@
 # Review record: R-CMD-check Windows timeout 45 -> 60 minutes
 
-Status: **draft, awaiting maintainer sign-off** (L3: release/CI file, `REVIEW.md`). An AI review is not a maintainer sign-off.
+Status: **signed off by maintainer** (2026-10-21).
 
 ## Change
 `.github/workflows/R-CMD-check.yaml`, job `cross-platform-check`: `timeout-minutes: 45` -> `60`. No other line changes.
@@ -12,4 +12,4 @@ The Windows job of this matrix takes 44m12s on unmodified `master` code (PR #14,
 A hung job now costs up to 15 more minutes of runner time. The job runs only for pull requests, version tags and manual full-matrix runs. Permissions, secrets, triggers and the steps are unchanged.
 
 ## Maintainer sign-off
-Maintainer: ______________________  Date: ____________  Decision: accept / accept with follow-ups / reject
+Maintainer: J. Kyle Armstrong, PhD  Date: 2026-10-21  Decision: accept
