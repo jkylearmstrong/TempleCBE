@@ -182,7 +182,7 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 
   manifest <- list(
     timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-    templecbe_version = as.character(utils::packageVersion("TempleCBE")),
+    templecbe_version = templecbe_version(),
     git_sha = git_sha,
     future_plan = plan_name,
     seed = if (!is.null(seed)) seed else if (exists(".Random.seed", envir = .GlobalEnv)) .GlobalEnv$.Random.seed[1:min(2, length(.GlobalEnv$.Random.seed))] else NA,
@@ -877,13 +877,13 @@ render_pipeline <- function(path,
 #' @rdname render_pipeline
 #' @export
 render <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027) to avoid masking rmarkdown::render().")
+  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.7.0 to avoid masking rmarkdown::render().")
   render_pipeline(...)
 }
 
 #' @rdname render_pipeline
 #' @export
 render_me <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.6.0 (Q1 2027). Use render_pipeline().")
+  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.7.0. Use render_pipeline().")
   render_pipeline(...)
 }

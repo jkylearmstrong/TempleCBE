@@ -2952,7 +2952,7 @@ save_pipeline <- function(pipeline, file = "pipeline.rds") {
 
   payload <- list(
     saved_at = Sys.time(),
-    templecbe_version = as.character(utils::packageVersion("TempleCBE")),
+    templecbe_version = templecbe_version(),
     pipeline = pipeline
   )
   saveRDS(payload, file = file)
