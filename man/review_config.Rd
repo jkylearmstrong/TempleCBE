@@ -13,6 +13,7 @@ review_config(
   stem_aliases = NULL,
   analysis_dir = NULL,
   input_dirs = NULL,
+  fork_mode = NULL,
   reset = FALSE
 )
 }
@@ -74,6 +75,15 @@ directory or \code{TEMPLECBE_ANALYSIS_ROOT}, or absolute) in which
 \code{\link{cbe_docx_review_extract}} looks, in order, for \code{.docx}
 files when \code{input_dir} is not given. Defaults to none, so the working
 directory is used. Use \code{character(0)} to clear.}
+
+\item{fork_mode}{Who sees whom in the fork workbooks. \code{"redacted"}
+(default) gives each reviewer a fork without the other fork reviewers'
+sign-off and note columns (single-blind review). \code{"collaborative"}
+keeps every fork reviewer's columns in every fork, so reviewers can read
+each other's notes and confirm consensus. Either way the sign-off
+reviewers' columns and the Word \code{author} never go into a fork, and a
+reviewer's edits to another reviewer's columns are not merged back: only
+the fork's own columns are.}
 
 \item{reset}{If \code{TRUE}, forget everything set earlier (every argument
 above) and return to the defaults before applying any other argument given

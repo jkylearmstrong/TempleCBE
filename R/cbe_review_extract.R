@@ -51,6 +51,9 @@
 #' @param manifest_path Optional character path to `reports_to_render.xlsx`. If `NULL`,
 #'   the function looks for it in the folder set with
 #'   `review_config(analysis_dir = )` (nothing is searched when none is set).
+#'   `"auto"` also looks, when that finds nothing, for `reports_to_render.xlsx`
+#'   in the input folder and its two parents (and in the working directory), in
+#'   the folder itself and in `analysis/<folder>/`; the most recent one wins.
 #'   Pipeline stages come from that manifest and from
 #'   `review_config()$pipeline_catalog`; with neither, documents are not
 #'   assigned to a stage (stage `"Unknown / Extra"`) and are listed by file name.
@@ -67,6 +70,10 @@
 #'   The session-wide options \code{review.docx_max_entries},
 #'   \code{review.docx_max_bytes} and \code{review.docx_max_xml_bytes} set the
 #'   defaults.
+#' @param fork_mode \code{"redacted"} (default, \code{review_config()$fork_mode}) or
+#'   \code{"collaborative"}; see \code{\link{review_config}}. In collaborative
+#'   mode every fork workbook also carries the other fork reviewers' sign-off
+#'   and note columns (read-only: only a reviewer's own columns are merged back).
 #' @param ... Passed to \code{docx_review_extract()}.
 #'
 #' @details
@@ -133,7 +140,8 @@ docx_review_extract <- function(input_dir = NULL,
                                 documents_sheet_mode = NULL,
                                 manifest_path = NULL,
                                 verbose = FALSE,
-                                docx_limits = NULL) {
+                                docx_limits = NULL,
+                                fork_mode = NULL) {
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
     stop("Package 'openxlsx' is required for docx_review_extract(). Please install it.", call. = FALSE)
   }
@@ -144,6 +152,8 @@ docx_review_extract <- function(input_dir = NULL,
   if (is.null(signoff_reviewers)) signoff_reviewers <- cfg$signoff_reviewers
   if (is.null(documents_sheet_mode)) documents_sheet_mode <- cfg$documents_sheet_mode
   documents_sheet_mode <- match.arg(documents_sheet_mode, c("columns", "per_reviewer"))
+  if (is.null(fork_mode)) fork_mode <- cfg$fork_mode
+  fork_mode <- match.arg(fork_mode, c("redacted", "collaborative"))
 
   # Reviewer ids end up in column, sheet and file names: reject unusable ones
   # before anything is read or written
@@ -249,6 +259,8 @@ docx_review_extract <- function(input_dir = NULL,
   # 3. Pipeline catalog and compute graph order
   if (is.null(manifest_path)) {
     manifest_path <- find_pipeline_manifest(scan_dir)
+  } else if (identical(manifest_path, "auto")) {
+    manifest_path <- find_pipeline_manifest(scan_dir, discover = TRUE)
   }
   catalog <- load_pipeline_catalog(manifest_path)
   if (verbose) {
@@ -305,7 +317,9 @@ docx_review_extract <- function(input_dir = NULL,
     existing_comments = existing_comments,
     existing_redlines = existing_redlines,
     fork_reviewers = fork_reviewers,
-    verbose = verbose
+    verbose = verbose,
+    fork_mode = fork_mode,
+    signoff_reviewers = signoff_reviewers
   )
   existing_comments <- fork_overlays$comments
   existing_redlines <- fork_overlays$redlines
@@ -474,7 +488,8 @@ docx_review_extract <- function(input_dir = NULL,
       signoff_reviewers = signoff_reviewers,
       documents_sheet_mode = documents_sheet_mode,
       reviewer_view = rev,
-      prepared = prepared
+      prepared = prepared,
+      fork_mode = fork_mode
     )
     fork_paths[[rev]] <- fork_path
   }
@@ -524,7 +539,8 @@ docx_review_extract <- function(input_dir = NULL,
       paths = c(
         list(
           master = master_tracker_path,
-          forks = fork_paths
+          forks = fork_paths,
+          manifest = if (!is.null(manifest_path) && file.exists(manifest_path)) manifest_path else NA_character_
         ),
         csv_paths
       )
@@ -649,6 +665,14 @@ print.cbe_review_extract <- print.docx_review_extract
 #'   reviewer carrying just that reviewer's status/comment columns). This
 #'   applies to the master workbook; a fork workbook always has one plain
 #'   "Documents" sheet.
+#' @param fork_mode Who sees whom in the fork workbooks. \code{"redacted"}
+#'   (default) gives each reviewer a fork without the other fork reviewers'
+#'   sign-off and note columns (single-blind review). \code{"collaborative"}
+#'   keeps every fork reviewer's columns in every fork, so reviewers can read
+#'   each other's notes and confirm consensus. Either way the sign-off
+#'   reviewers' columns and the Word \code{author} never go into a fork, and a
+#'   reviewer's edits to another reviewer's columns are not merged back: only
+#'   the fork's own columns are.
 #' @param csv_reviewer_columns Which reviewer columns the CSV exports
 #'   (\code{comments.csv}, \code{tracked_changes.csv},
 #'   \code{suggested_changes.csv}) contain. \code{"fork"} (default) keeps the
@@ -697,6 +721,7 @@ review_config <- function(
   stem_aliases = NULL,
   analysis_dir = NULL,
   input_dirs = NULL,
+  fork_mode = NULL,
   reset = FALSE
 ) {
   # Validate everything before setting anything, so a rejected call changes nothing
@@ -706,6 +731,9 @@ review_config <- function(
   }
   if (!is.null(csv_reviewer_columns)) {
     csv_reviewer_columns <- match.arg(csv_reviewer_columns, c("fork", "all", "none"))
+  }
+  if (!is.null(fork_mode)) {
+    fork_mode <- match.arg(fork_mode, c("redacted", "collaborative"))
   }
   if (!is.null(pipeline_catalog)) pipeline_catalog <- validate_pipeline_catalog(pipeline_catalog)
   if (!is.null(stem_aliases)) stem_aliases <- validate_stem_aliases(stem_aliases)
@@ -719,6 +747,7 @@ review_config <- function(
       review.signoff_reviewers = NULL,
       review.documents_sheet_mode = NULL,
       review.csv_reviewer_columns = NULL,
+      review.fork_mode = NULL,
       review.pipeline_catalog = NULL,
       review.stem_aliases = NULL,
       review.analysis_dir = NULL,
@@ -738,6 +767,9 @@ review_config <- function(
   if (!is.null(csv_reviewer_columns)) {
     options(review.csv_reviewer_columns = csv_reviewer_columns)
   }
+  if (!is.null(fork_mode)) {
+    options(review.fork_mode = fork_mode)
+  }
   if (!is.null(pipeline_catalog)) {
     options(review.pipeline_catalog = pipeline_catalog)
   }
@@ -756,6 +788,7 @@ review_config <- function(
     signoff_reviewers = getOption("review.signoff_reviewers", character(0)),
     documents_sheet_mode = getOption("review.documents_sheet_mode", "columns"),
     csv_reviewer_columns = getOption("review.csv_reviewer_columns", "fork"),
+    fork_mode = getOption("review.fork_mode", "redacted"),
     pipeline_catalog = getOption("review.pipeline_catalog", list()),
     stem_aliases = getOption("review.stem_aliases", character(0)),
     analysis_dir = getOption("review.analysis_dir", NULL),
@@ -1217,16 +1250,45 @@ review_dir_bases <- function() {
 #' @param analysis_dir Folder that holds the manifest, relative to a base folder or absolute
 #' @return File path or NULL
 #' @noRd
-find_pipeline_manifest <- function(start_dir = NULL, analysis_dir = review_config()$analysis_dir) {
-  if (length(analysis_dir) == 0 || !nzchar(analysis_dir)) return(NULL)
+find_pipeline_manifest <- function(start_dir = NULL, analysis_dir = review_config()$analysis_dir, discover = FALSE) {
   bases <- character(0)
   if (!is.null(start_dir) && nzchar(start_dir)) {
     bases <- c(start_dir, dirname(start_dir), dirname(dirname(start_dir)))
   }
   bases <- c(bases, review_dir_bases())
-  candidates <- if (is_absolute_dir(analysis_dir)) analysis_dir else file.path(bases, analysis_dir)
-  for (cand in file.path(candidates, "reports_to_render.xlsx")) {
-    if (file.exists(cand)) return(normalizePath(cand, mustWork = TRUE))
+  if (length(analysis_dir) > 0 && nzchar(analysis_dir)) {
+    candidates <- if (is_absolute_dir(analysis_dir)) analysis_dir else file.path(bases, analysis_dir)
+    for (cand in file.path(candidates, "reports_to_render.xlsx")) {
+      if (file.exists(cand)) return(normalizePath(cand, mustWork = TRUE))
+    }
+  }
+  if (!isTRUE(discover)) return(NULL)
+  # Opt-in discovery (manifest_path = "auto"): per base folder, the folder itself and
+  # <base>/analysis/<one level>/ (listed, not globbed: a base such as "Study [A]" is a
+  # glob pattern). The first base that holds one wins. The path used is always reported;
+  # if the base holds several, that is ambiguous and the most recently modified is used
+  # with a warning.
+  for (base in unique(bases)) {
+    subdirs <- if (dir.exists(file.path(base, "analysis"))) {
+      list.dirs(file.path(base, "analysis"), recursive = FALSE, full.names = TRUE)
+    } else {
+      character(0)
+    }
+    found <- file.path(c(base, subdirs), "reports_to_render.xlsx")
+    found <- found[file.exists(found)]
+    if (length(found) > 0) {
+      found <- found[order(file.mtime(found), decreasing = TRUE)]
+      chosen <- normalizePath(found[1], mustWork = TRUE)
+      if (length(found) > 1) {
+        warning(sprintf(
+          "Several pipeline manifests were found under %s; using the most recently modified, %s (others: %s). Name the one you want with manifest_path.",
+          base, chosen, paste(found[-1], collapse = ", ")
+        ), call. = FALSE)
+      } else {
+        message(sprintf("Using the pipeline manifest %s (manifest_path = \"auto\").", chosen))
+      }
+      return(chosen)
+    }
   }
   NULL
 }
@@ -2518,11 +2580,14 @@ build_fork_baseline <- function(reviewer, comments_rows, redlines_rows) {
 #'   lists with \code{reviewer}, \code{row}, \code{cell}, \code{master} and
 #'   \code{fork}).
 #' @noRd
-overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe) {
+overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, describe, add_general = FALSE, id_style = "neutral", general_kind = "comments") {
   conflicts <- list()
   pairs <- match_rows_one_to_one(fork, master, key_tiers)
   fork_rows <- which(!is.na(pairs))
-  if (length(fork_rows) == 0) return(list(master = master, conflicts = conflicts))
+  if (length(fork_rows) == 0) {
+    if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style, general_kind)
+    return(list(master = master, conflicts = conflicts))
+  }
   master_rows <- pairs[fork_rows]
 
   base_rows <- rep(NA_integer_, length(fork_rows))
@@ -2557,7 +2622,112 @@ overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, desc
     raw[!nzchar(fork_cell)] <- NA_character_
     master[[col]][master_rows[take]] <- raw[take]
   }
+  if (add_general) master <- append_general_comments(master, fork, reviewer, pairs, baseline, key_tiers, id_style, general_kind)
   list(master = master, conflicts = conflicts)
+}
+
+#' Doc status of a comment a reviewer added in their fork
+#' @noRd
+GENERAL_COMMENT_STATUS <- "General Comment"
+
+#' Keep the rows a reviewer added to their fork
+#'
+#' A fork row that pairs with no master row and was not in the fork as it was
+#' generated (the baseline) is a row the reviewer added: a comment that belongs
+#' to no Word comment, such as an overall remark on a document. It would be lost
+#' by the one-to-one overlay, so it is appended to the master with
+#' \code{doc_status = "General Comment"} and an id: \code{gen_<n>} when the forks
+#' are redacted (an id with the reviewer's name would tell the other reviewers
+#' who wrote it) or \code{gen_<reviewer>_<n>} when they are collaborative. Only the
+#' row's text, location and the reviewer's own sign-off and note are taken. The
+#' \code{file} is kept only when it names a document of the master (otherwise
+#' \code{(general)}). A row with nothing in any of those is blank and ignored; a
+#' row whose text is that of a general comment the master already holds (a fork
+#' that was sent back twice) and a row that carries a \code{gen_} id are not added
+#' again; and a fork without a baseline (written by an earlier version) adds
+#' nothing, because without it a row a user removed from the master cannot be told
+#' from one the reviewer added. Later edits to the text or file of a general
+#' comment in a fork are not merged back; only the reviewer's own sign-off and note.
+#' @param master,fork,reviewer,baseline,key_tiers As in \code{overlay_fork_table()}.
+#' @param pairs The pairing of the fork's rows with the master's.
+#' @param id_style \code{"neutral"} or \code{"reviewer"}.
+#' @return The master with the added rows at the end.
+#' @noRd
+append_general_comments <- function(master, fork, reviewer, pairs, baseline, key_tiers, id_style = "neutral", kind = "comments") {
+  if (is.null(baseline) || nrow(fork) == 0) return(master)
+  if (!"file" %in% names(master) || (kind == "comments" && !"comment_id" %in% names(master))) return(master)
+  in_baseline <- if (nrow(baseline) > 0) !is.na(match_rows_one_to_one(fork, baseline, key_tiers)) else rep(FALSE, nrow(fork))
+  cell <- function(col, normalize = clean_review_text) {
+    if (col %in% names(fork)) normalize(fork[[col]]) else rep("", nrow(fork))
+  }
+  own_flag <- cell(reviewer, normalize_flag_cell)
+  own_note <- cell(paste0(reviewer, "_comment"), normalize_note_cell)
+  text <- if (kind == "comments") cell("comment_text") else paste(cell("original_text"), cell("accepted_text"))
+  text <- trimws(text)
+  fork_id <- if (kind == "comments" && "comment_id" %in% names(fork)) trimws(as.character(fork$comment_id)) else rep("", nrow(fork))
+  fork_id[is.na(fork_id)] <- ""
+
+  existing_ids <- if (kind == "comments") as.character(master$comment_id) else character()
+  is_general <- if ("doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
+  # a row whose text is that of a general row the master already holds is a resent copy, whatever its file
+  master_text <- function(col) {
+    v <- if (col %in% names(master)) as.character(master[[col]]) else rep("", nrow(master))
+    v[is.na(v)] <- ""
+    v
+  }
+  known_text <- review_text_key(
+    if (kind == "comments") master_text("comment_text") else paste(master_text("original_text"), master_text("accepted_text"))
+  )[is_general]
+  known_text <- known_text[nzchar(known_text)]
+  repeated <- nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
+  has_gen_id <- grepl("^gen_", fork_id)
+  candidates <- which(is.na(pairs) & !in_baseline & !repeated & !has_gen_id & (nzchar(text) | nzchar(own_flag) | nzchar(own_note)))
+  if (length(candidates) == 0) return(master)
+
+  if (identical(id_style, "reviewer")) {
+    pat <- paste0("^gen_", reviewer, "_([0-9]+)$")
+    id_of <- function(n) paste0("gen_", reviewer, "_", n)
+  } else {
+    pat <- "^gen_([0-9]+)$"
+    id_of <- function(n) paste0("gen_", n)
+  }
+  taken <- suppressWarnings(as.integer(sub(pat, "\\1", existing_ids[grepl(pat, existing_ids)])))
+  next_n <- if (length(taken) > 0) max(taken, na.rm = TRUE) + 1L else 1L
+  master_files <- unique(trimws(as.character(master$file)))
+  master_files <- master_files[!is.na(master_files) & nzchar(master_files)]
+
+  keep_cols <- intersect(
+    if (kind == "comments") {
+      c("file", "comment_text", "selected_text", "paragraph_number", "end_paragraph_number", "paragraph_context",
+        reviewer, paste0(reviewer, "_comment"))
+    } else {
+      c("file", "paragraph_number", "original_text", "accepted_text", reviewer, paste0(reviewer, "_comment"))
+    },
+    c(names(fork), names(master))
+  )
+  new_rows <- lapply(seq_along(candidates), function(k) {
+    row <- stats::setNames(as.list(rep(NA_character_, length(names(master)))), names(master))
+    i <- candidates[k]
+    for (col in intersect(keep_cols, names(fork))) {
+      v <- as.character(fork[[col]][i])
+      if (!is.na(v) && nzchar(trimws(v))) row[[col]] <- v
+    }
+    f <- trimws(as.character(row$file))
+    hit <- if (is.na(f)) NA_integer_ else match(tolower(f), tolower(master_files))
+    row$file <- if (is.na(hit)) "(general)" else master_files[hit]
+    if (kind == "comments") {
+      row$comment_id <- id_of(next_n + k - 1L)
+      if ("is_reply" %in% names(row)) row$is_reply <- "FALSE"
+    }
+    row$doc_status <- GENERAL_COMMENT_STATUS
+    row
+  })
+  added <- tibble::as_tibble(lapply(
+    stats::setNames(names(master), names(master)),
+    function(col) vapply(new_rows, function(r) { v <- r[[col]]; if (is.null(v) || length(v) == 0) NA_character_ else as.character(v) }, character(1))
+  ))
+  master_chr <- dplyr::mutate(master, dplyr::across(dplyr::everything(), as.character))
+  dplyr::bind_rows(master_chr, added)
 }
 
 #' Apply Reviewer Fork Overlays
@@ -2574,14 +2744,16 @@ overlay_fork_table <- function(master, fork, reviewer, key_tiers, baseline, desc
 #' @param verbose Logical verbose flag
 #' @return Updated list of comments and redlines
 #' @noRd
-apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_comments, existing_redlines, fork_reviewers, verbose = FALSE) {
-  if (nrow(existing_comments) == 0 && nrow(existing_redlines) == 0) {
-    return(list(comments = existing_comments, redlines = existing_redlines))
-  }
-
+apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_comments, existing_redlines, fork_reviewers,
+                                         verbose = FALSE, fork_mode = "redacted", signoff_reviewers = NULL) {
   tracker_stem <- tools::file_path_sans_ext(tracker_basename)
   tracker_ext <- tools::file_ext(tracker_basename)
   if (nzchar(tracker_ext)) tracker_ext <- paste0(".", tracker_ext) else tracker_ext <- ".xlsx"
+  fork_files <- file.path(output_dir, sprintf("%s_%s%s", tracker_stem, fork_reviewers, tracker_ext))
+  if (nrow(existing_comments) == 0 && nrow(existing_redlines) == 0 && !any(file.exists(fork_files))) {
+    return(list(comments = existing_comments, redlines = existing_redlines))
+  }
+  id_style <- if (identical(fork_mode, "collaborative")) "reviewer" else "neutral"
 
   conflicts <- list()
   for (rev in fork_reviewers) {
@@ -2599,14 +2771,20 @@ apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_
     # Comments. A fork row is paired with one master row: by file, comment id
     # and text first (ids are not unique once a prior-round row and an active
     # row share one), then by file and comment id alone.
-    if (nrow(fork_data$comments) > 0 && nrow(existing_comments) > 0) {
+    if (nrow(fork_data$comments) > 0) {
+      if (!all(c("file", "comment_id") %in% names(existing_comments))) {
+        # a tracker with no comment rows: rows a reviewer added still need a table to go into
+        cols <- unique(c(names(existing_comments), canonical_columns(fork_reviewers, signoff_reviewers)))
+        existing_comments <- tibble::as_tibble(stats::setNames(rep(list(character()), length(cols)), cols))
+      }
       if (all(c("file", "comment_id") %in% names(fork_data$comments)) &&
           all(c("file", "comment_id") %in% names(existing_comments))) {
         out <- overlay_fork_table(
           existing_comments, fork_data$comments, rev,
           key_tiers = list(c("file", "comment_id", "comment_text"), c("file", "comment_id")),
           baseline = baseline_of("Comments"),
-          describe = function(df, i) sprintf("%s comment %s", df$file[i], df$comment_id[i])
+          describe = function(df, i) sprintf("%s comment %s", df$file[i], df$comment_id[i]),
+          add_general = TRUE, id_style = id_style
         )
         existing_comments <- out$master
         conflicts <- c(conflicts, out$conflicts)
@@ -2614,15 +2792,20 @@ apply_reviewer_fork_overlays <- function(output_dir, tracker_basename, existing_
     }
 
     # SuggestedChanges / Redlines
-    if (nrow(fork_data$redlines) > 0 && nrow(existing_redlines) > 0) {
+    if (nrow(fork_data$redlines) > 0) {
       redline_key <- c("file", "paragraph_number", "original_text")
+      if (!all(redline_key %in% names(existing_redlines))) {
+        cols <- unique(c(names(existing_redlines), redline_canonical_columns(fork_reviewers, signoff_reviewers)))
+        existing_redlines <- tibble::as_tibble(stats::setNames(rep(list(character()), length(cols)), cols))
+      }
       if (all(redline_key %in% names(fork_data$redlines)) &&
           all(redline_key %in% names(existing_redlines))) {
         out <- overlay_fork_table(
           existing_redlines, fork_data$redlines, rev,
           key_tiers = list(redline_key),
           baseline = baseline_of("SuggestedChanges"),
-          describe = function(df, i) sprintf("%s suggested change at paragraph %s", df$file[i], df$paragraph_number[i])
+          describe = function(df, i) sprintf("%s suggested change at paragraph %s", df$file[i], df$paragraph_number[i]),
+          add_general = TRUE, id_style = id_style, general_kind = "redlines"
         )
         existing_redlines <- out$master
         conflicts <- c(conflicts, out$conflicts)
@@ -2975,7 +3158,8 @@ merge_comments <- function(incoming_comments, existing_rows, existing_headers, c
       row <- as.list(available_existing[idx, ])
       rf <- trimws(as.character(row$file))
       has_fb <- has_review_feedback(row, ignored_cols)
-      if (!rf %in% scanned_files || has_fb) {
+      is_general <- !is.null(row$doc_status) && !is.na(row$doc_status) && identical(as.character(row$doc_status), GENERAL_COMMENT_STATUS)
+      if (!rf %in% scanned_files || has_fb || is_general) {
         if (is.null(row$doc_status) || is.na(row$doc_status) || !nzchar(as.character(row$doc_status)) || row$doc_status == "Active") {
           row$doc_status <- "Prior Round / Not in docx"
         }
@@ -3164,7 +3348,8 @@ merge_redlines <- function(incoming_redlines, existing_rows, existing_headers, c
       row <- as.list(available_existing[idx, ])
       rf <- trimws(as.character(row$file))
       has_fb <- has_review_feedback(row, ignored_cols)
-      if (!rf %in% scanned_files || has_fb) {
+      is_general <- !is.null(row$doc_status) && !is.na(row$doc_status) && identical(as.character(row$doc_status), GENERAL_COMMENT_STATUS)
+      if (!rf %in% scanned_files || has_fb || is_general) {
         if (is.null(row$doc_status) || is.na(row$doc_status) || !nzchar(as.character(row$doc_status)) || row$doc_status == "Active") {
           row$doc_status <- "Prior Round / Not in docx"
         }
@@ -3205,13 +3390,17 @@ FORK_EXCLUDED_METADATA_COLUMNS <- "author"
 #' @param reviewer Current reviewer
 #' @param fork_reviewers Vector of all fork reviewers
 #' @param signoff_reviewers Vector of sign-off reviewers (always hidden from every fork)
-#' @return Vector of column names to omit: the other fork reviewers' and every
-#'   sign-off reviewer's columns, plus the Word \code{author} column
+#' @param fork_mode \code{"redacted"} drops the other fork reviewers' columns;
+#'   \code{"collaborative"} keeps them
+#' @return Vector of column names to omit: the other fork reviewers' (redacted
+#'   mode only) and every sign-off reviewer's columns, plus the Word
+#'   \code{author} column
 #' @noRd
-reviewer_fork_drop_columns <- function(reviewer, fork_reviewers, signoff_reviewers = character(0)) {
+reviewer_fork_drop_columns <- function(reviewer, fork_reviewers, signoff_reviewers = character(0),
+                                       fork_mode = "redacted") {
   drop <- unlist(lapply(signoff_reviewers, function(r) c(r, paste0(r, "_comment"))))
   for (other in fork_reviewers) {
-    if (other != reviewer) {
+    if (other != reviewer && !identical(fork_mode, "collaborative")) {
       drop <- c(drop, other, paste0(other, "_comment"))
     }
   }
@@ -3569,7 +3758,8 @@ write_review_tracker_excel <- function(columns,
                                        signoff_reviewers = NULL,
                                        documents_sheet_mode = NULL,
                                        reviewer_view = NULL,
-                                       prepared = NULL) {
+                                       prepared = NULL,
+                                       fork_mode = "redacted") {
   if (is.null(fork_reviewers)) fork_reviewers <- review_config()$fork_reviewers
   if (is.null(signoff_reviewers)) signoff_reviewers <- review_config()$signoff_reviewers
   if (is.null(documents_sheet_mode)) documents_sheet_mode <- review_config()$documents_sheet_mode
@@ -3593,11 +3783,11 @@ write_review_tracker_excel <- function(columns,
   # reviewers' document-level status and notes, not the Word authors' names.
   fork_view <- !is.null(reviewer_view)
   if (fork_view) {
-    drop_cols <- reviewer_fork_drop_columns(reviewer_view, fork_reviewers, signoff_reviewers)
+    drop_cols <- reviewer_fork_drop_columns(reviewer_view, fork_reviewers, signoff_reviewers, fork_mode)
     sheet_columns <- columns[!columns %in% drop_cols]
     sheet_redline_columns <- redline_columns[!redline_columns %in% drop_cols]
     # The Documents sheet's per-reviewer rollup columns, and its sign-off columns
-    doc_fork_reviewers <- reviewer_view
+    doc_fork_reviewers <- if (identical(fork_mode, "collaborative")) fork_reviewers else reviewer_view
     doc_signoff_reviewers <- character(0)
     existing_docs <- list()
   } else {
@@ -4663,4 +4853,3 @@ validate_review_tracker <- function(tracker,
   class(res) <- "cbe_review_tracker_validation"
   res
 }
-
