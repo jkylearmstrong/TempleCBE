@@ -104,6 +104,7 @@ review_options_reset <- function() {
     review.signoff_reviewers = NULL,
     review.documents_sheet_mode = NULL,
     review.csv_reviewer_columns = NULL,
+    review.fork_mode = NULL,
     review.pipeline_catalog = NULL,
     review.stem_aliases = NULL,
     review.analysis_dir = NULL,

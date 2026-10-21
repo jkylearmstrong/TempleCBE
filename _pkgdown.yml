@@ -167,6 +167,8 @@ reference:
       - plot_outer_importance
       - fit_ibs_mixed_model
       - fit_lmer_safely
+      - boot_lmer
+      - boot_p_value
       - plot_tune_alpha_ibs
       - plot_tune_lambda_ibs
       - plot_tune_coef_boxplot
@@ -485,6 +487,7 @@ reference:
       - package_deliverables
       - diff_deliverables
       - audit_report_deliverables
+      - audit_render_parity
       - extract_yaml_formats
       - cbe_docx_review_extract
       - cbe_review_tracker
