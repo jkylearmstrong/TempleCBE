@@ -1,3 +1,14 @@
+# TempleCBE 0.6.3.9000
+
+## Docker image
+
+* The image now installs the Suggested packages that features need at run time (`lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx`, `zip`) and `pandoc`. Found by running the package on a DGX Spark (aarch64): `boot_lmer()`, `tune_alpha_by_split()`, the Word review exports and `audit_render_parity()` could not run in the image, because `renv.lock` records only Imports. Rendering R Markdown inside the image also failed for want of a pandoc that R could see.
+
+## Tests
+
+* Tests that cannot run in the Docker image now skip instead of failing: `deploy_release()` needs a git working tree (the image has no `.git`), and the checkpoint-message test needs `furrr`.
+* The `check_renv_guard()` test no longer depends on whether renv happens to be active in the test session; renv detection is a small internal function the test replaces.
+
 # TempleCBE 0.6.3
 
 A CI and packaging release; no R code changed.

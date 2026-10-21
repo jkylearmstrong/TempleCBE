@@ -378,6 +378,9 @@ test_that("check_renv_guard warns when renv.lock exists but renv is inactive", {
   lock_file <- file.path(tmp_dir, "renv.lock")
   writeLines(c("{\"Packages\": {}}"), lock_file)
 
+  # renv is genuinely active when the suite runs from a project with an
+  # activated renv (the Docker image, a local checkout): state "inactive" here.
+  testthat::local_mocked_bindings(renv_project_active = function() FALSE)
   withr::local_envvar(list(RENV_PROJECT = ""))
   withr::local_options(templecbe_suppress_renv_warning = FALSE)
   expect_warning(

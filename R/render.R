@@ -58,6 +58,14 @@ extract_yaml_formats <- function(file_path) {
   unique(tolower(fmts[nzchar(fmts)]))
 }
 
+# TRUE when an renv project is active in this session (kept apart so tests can
+# state "renv is inactive" without depending on how the test run was started).
+renv_project_active <- function() {
+  if (!requireNamespace("renv", quietly = TRUE)) return(FALSE)
+  proj <- tryCatch(renv::project(), error = function(e) NULL)
+  !is.null(proj) && nzchar(proj)
+}
+
 #' Guard Against Inactive renv or Lockfile Disagreements
 #'
 #' Checks whether an `renv.lock` exists in the project root or ancestors and
@@ -86,11 +94,7 @@ check_renv_guard <- function(project_root = NULL) {
 
   if (is.null(lock_path)) return(invisible(TRUE))
 
-  renv_active <- FALSE
-  if (requireNamespace("renv", quietly = TRUE)) {
-    proj <- tryCatch(renv::project(), error = function(e) NULL)
-    renv_active <- !is.null(proj) && nzchar(proj)
-  }
+  renv_active <- renv_project_active()
   if (!renv_active && nzchar(Sys.getenv("RENV_PROJECT"))) {
     renv_active <- TRUE
   }

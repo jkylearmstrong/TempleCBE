@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     xz-utils \
+    pandoc \
   && rm -rf /var/lib/apt/lists/*
 
 # Quarto CLI (bundles its own pandoc) — arch picked up from buildx's TARGETARCH
@@ -80,6 +81,13 @@ COPY renv/activate.R renv/settings.json ./renv/
 
 # Use the specified cache directory for renv to speed restores across builds
 RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); renv::restore(prompt = FALSE)'
+
+# Packages that are Suggests of TempleCBE (so renv.lock does not record them) but that its
+# features need at run time: boot_lmer() (lme4), tune_alpha_by_split() (furrr, glmnet, rsample),
+# the Word review exports (openxlsx) and the Word/zip helpers (zip). Installed at the versions
+# current on the package repository when the image is built, after the lockfile restore so
+# that layer stays cached.
+RUN Rscript -e 'renv::install(c("lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip"), prompt = FALSE)'
 
 COPY . .
 
