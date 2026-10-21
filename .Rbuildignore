@@ -40,3 +40,4 @@
 ^CLAUDE\.md$
 ^release-notes$
 ^\.git$
+^task$

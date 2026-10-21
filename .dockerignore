@@ -9,3 +9,4 @@ _freeze
 renv/library
 renv/staging
 renv/sandbox
+task/
