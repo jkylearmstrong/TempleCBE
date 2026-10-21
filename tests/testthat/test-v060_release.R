@@ -1,6 +1,8 @@
-test_that("v0.6.0: Package version and metadata fallbacks are synchronized", {
+test_that("package version helper tracks DESCRIPTION and NEWS without hardcoded versions", {
   ver <- as.character(utils::packageVersion("TempleCBE"))
-  expect_equal(ver, "0.6.0")
+  expect_equal(templecbe_version(), ver)
+  expect_match(ver, "^[0-9]+\\.[0-9]+\\.[0-9]+")
+  expect_true(is.character(checkpoint_schema_version()) && length(checkpoint_schema_version()) == 1L)
 
   news_candidates <- c(
     system.file("NEWS.md", package = "TempleCBE"),
@@ -10,7 +12,8 @@ test_that("v0.6.0: Package version and metadata fallbacks are synchronized", {
   found_news <- news_candidates[file.exists(news_candidates) & nzchar(news_candidates)]
   if (length(found_news) > 0L) {
     news_lines <- readLines(found_news[1], n = 5)
-    expect_true(any(grepl("^# TempleCBE 0\\.6\\.0", news_lines)))
+    base_ver <- sub("^([0-9]+\\.[0-9]+\\.[0-9]+).*$", "\\1", ver)
+    expect_true(any(startsWith(news_lines, paste0("# TempleCBE ", base_ver))))
   }
 })
 
