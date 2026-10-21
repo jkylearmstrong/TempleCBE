@@ -12,8 +12,13 @@ skip_if_no_git_tree <- function() {
   root <- dirname(dirname(deploy_script))
   status <- suppressWarnings(system2(git, c("-C", shQuote(root), "rev-parse", "--is-inside-work-tree"),
                                      stdout = FALSE, stderr = FALSE))
-  testthat::skip_if_not(identical(as.integer(status), 0L),
-                        "the source tree is not a git working tree (for example in a Docker image)")
+  if (!identical(as.integer(status), 0L)) {
+    msg <- "the source tree is not a git working tree"
+    # on CI a checkout is always a git tree: a failure there (dubious ownership, a broken
+    # checkout) is a real problem, not something to skip
+    if (identical(Sys.getenv("CI"), "true")) stop(msg, call. = FALSE)
+    testthat::skip(paste0(msg, " (for example in a Docker image)"))
+  }
 }
 
 test_that("deploy_release validates version_tag strictly (A5-11)", {

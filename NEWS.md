@@ -2,7 +2,7 @@
 
 ## Docker image
 
-* The image now installs the Suggested packages that features need at run time (`lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx`, `zip`) and `pandoc`. Found by running the package on a DGX Spark (aarch64): `boot_lmer()`, `tune_alpha_by_split()`, the Word review exports and `audit_render_parity()` could not run in the image, because `renv.lock` records only Imports. Rendering R Markdown inside the image also failed for want of a pandoc that R could see.
+* The image now installs the Suggested packages that features need at run time (`lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx`, `zip`, pinned to exact versions) and `pandoc`, and the build fails if that changes any package pinned in `renv.lock`. Found by running the package on a DGX Spark (aarch64): `boot_lmer()`, `tune_alpha_by_split()` and the Word review exports could not run in the image, because `renv.lock` records only Imports, and about 30 tests that need `zip` or `openxlsx` errored. Rendering R Markdown inside the image also failed for want of a pandoc that R could see. The `pandoc` is the distribution's, not the one Quarto bundles.
 
 ## Tests
 
