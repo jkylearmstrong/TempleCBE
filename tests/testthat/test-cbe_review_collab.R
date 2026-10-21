@@ -317,3 +317,32 @@ test_that("a general suggested change is kept when the documents have no tracked
   expect_equal(nrow(r2$redlines), 1L)
   expect_equal(r2$redlines$doc_status, "General Comment")
 })
+
+test_that("a resent or re-filed general suggested change is not added twice, and a text-only one with a real file is kept", {
+  skip_if_not_installed("openxlsx")
+  a6_options()
+  d <- a6_dir()
+  out <- file.path(d, "out")
+  a6_docx(file.path(d, "eda.docx"), paste0(a6_commented_para(0, "alpha text"), a6_para("Gamma.", ins = "added gamma")),
+          comments = a6_comment(0, "first comment"))
+  r1 <- docx_review_extract(d, output_dir = out)
+  fork <- r1$paths$forks[["rev_a"]]
+  keep <- file.path(d, "round1_fork.xlsx")
+  file.copy(fork, keep)
+  collab_add_row(fork, list(original_text = "Rewrite the abstract", rev_a_comment = "n1"), sheet = "SuggestedChanges")
+  r2 <- docx_review_extract(d, output_dir = out)
+  expect_equal(sum(r2$redlines$doc_status == "General Comment"), 1L)
+  # the first-round fork is sent again with the same row added (file blank, the master says "(general)")
+  file.copy(keep, fork, overwrite = TRUE)
+  collab_add_row(fork, list(original_text = "Rewrite  the abstract", rev_a_comment = "n1"), sheet = "SuggestedChanges")
+  r3 <- docx_review_extract(d, output_dir = out)
+  expect_equal(sum(r3$redlines$doc_status == "General Comment"), 1L)
+
+  # a row with a real file name and only text, no sign-off or note, survives the rounds that follow
+  collab_add_row(r3$paths$forks[["rev_a"]], list(file = "eda.docx", original_text = "Reword the conclusion"), sheet = "SuggestedChanges")
+  r4 <- docx_review_extract(d, output_dir = out)
+  expect_true("Reword the conclusion" %in% r4$redlines$original_text)
+  r5 <- docx_review_extract(d, output_dir = out)
+  expect_true("Reword the conclusion" %in% r5$redlines$original_text)
+  expect_equal(sum(r5$redlines$doc_status == "General Comment"), 2L)
+})

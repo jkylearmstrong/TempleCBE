@@ -2668,10 +2668,18 @@ append_general_comments <- function(master, fork, reviewer, pairs, baseline, key
   fork_id[is.na(fork_id)] <- ""
 
   existing_ids <- if (kind == "comments") as.character(master$comment_id) else character()
-  is_general <- if (kind == "comments" && "doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
-  known_text <- if (kind == "comments") review_text_key(master$comment_text[is_general]) else character()
+  is_general <- if ("doc_status" %in% names(master)) !is.na(master$doc_status) & master$doc_status == GENERAL_COMMENT_STATUS else rep(FALSE, nrow(master))
+  # a row whose text is that of a general row the master already holds is a resent copy, whatever its file
+  master_text <- function(col) {
+    v <- if (col %in% names(master)) as.character(master[[col]]) else rep("", nrow(master))
+    v[is.na(v)] <- ""
+    v
+  }
+  known_text <- review_text_key(
+    if (kind == "comments") master_text("comment_text") else paste(master_text("original_text"), master_text("accepted_text"))
+  )[is_general]
   known_text <- known_text[nzchar(known_text)]
-  repeated <- kind == "comments" & nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
+  repeated <- nzchar(review_text_key(text)) & review_text_key(text) %in% known_text
   has_gen_id <- grepl("^gen_", fork_id)
   candidates <- which(is.na(pairs) & !in_baseline & !repeated & !has_gen_id & (nzchar(text) | nzchar(own_flag) | nzchar(own_note)))
   if (length(candidates) == 0) return(master)
