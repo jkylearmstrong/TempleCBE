@@ -26,9 +26,6 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      images: ${{ steps.images.outputs.images }}
-    env:
-      DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
     steps:
       - name: Select platforms
         id: matrix
@@ -40,16 +37,6 @@ jobs:
           else
             echo "matrix={\"include\":[${AMD}]}" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Configure Docker image targets
-        id: images
-        run: |
-          if [ -n "$DOCKERHUB_USER" ]; then
-            IMAGES="${DOCKERHUB_USER}/templecbe"
-          else
-            IMAGES="ghcr.io/${{ github.repository_owner }}/templecbe"
-          fi
-          echo "images=${IMAGES}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -87,10 +74,22 @@ jobs:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_PASS }}
 
+      # Computed per job: a job output containing the Docker Hub user name would be
+      # dropped by GitHub as a possible secret.
+      - name: Configure Docker image targets
+        id: images
+        run: |
+          if [ -n "$DOCKERHUB_USER" ]; then
+            IMAGES="${DOCKERHUB_USER}/templecbe"
+          else
+            IMAGES="ghcr.io/${{ github.repository_owner }}/templecbe"
+          fi
+          echo "images=${IMAGES}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ needs.prepare.outputs.images }}
+          images: ${{ steps.images.outputs.images }}
 
       - uses: docker/build-push-action@v6
         id: build
@@ -98,7 +97,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ needs.prepare.outputs.images }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ steps.images.outputs.images }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.pair }}
           cache-to: type=gha,mode=max,scope=${{ matrix.pair }}
 
@@ -150,10 +149,22 @@ jobs:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_PASS }}
 
+      # Computed per job: a job output containing the Docker Hub user name would be
+      # dropped by GitHub as a possible secret.
+      - name: Configure Docker image targets
+        id: images
+        run: |
+          if [ -n "$DOCKERHUB_USER" ]; then
+            IMAGES="${DOCKERHUB_USER}/templecbe"
+          else
+            IMAGES="ghcr.io/${{ github.repository_owner }}/templecbe"
+          fi
+          echo "images=${IMAGES}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ needs.prepare.outputs.images }}
+          images: ${{ steps.images.outputs.images }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -164,8 +175,8 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ needs.prepare.outputs.images }}@sha256:%s ' *)
+            $(printf '${{ steps.images.outputs.images }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect "${{ needs.prepare.outputs.images }}:${{ steps.meta.outputs.version }}"
+          docker buildx imagetools inspect "${{ steps.images.outputs.images }}:${{ steps.meta.outputs.version }}"
