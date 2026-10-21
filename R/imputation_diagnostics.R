@@ -218,7 +218,7 @@ tune_impute_numeric <- function(data,
     dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
   }
 
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+  ckpt_schema <- checkpoint_schema_version()
   active_mask <- if (!is.null(shard)) {
     ((seq_along(target_cols) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
   } else {
@@ -232,7 +232,7 @@ tune_impute_numeric <- function(data,
     safe_col <- gsub("[^A-Za-z0-9._-]", "_", col)
     cf <- if (!is.null(checkpoint_dir)) file.path(checkpoint_dir, sprintf("impute_%s.rds", safe_col)) else NULL
     exp_fp <- if (!is.null(cf)) {
-      payload <- list(version = pkg_ver, col = col, methods = methods, prop_mask = prop_mask, seed = seed, dim = dim(complete_df))
+      payload <- list(schema = ckpt_schema, col = col, methods = methods, prop_mask = prop_mask, seed = seed, dim = dim(complete_df))
       paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
     } else NULL
 

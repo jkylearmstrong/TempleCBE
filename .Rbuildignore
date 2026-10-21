@@ -36,4 +36,7 @@
 ^figure$
 ^audit$
 ^REVIEW\.md$
+^AGENTS\.md$
+^CLAUDE\.md$
 ^release-notes$
+^\.git$
