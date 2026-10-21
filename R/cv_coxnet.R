@@ -450,7 +450,7 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
     if (!dir.exists(checkpoint_dir)) {
       dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     }
-    pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+    ckpt_schema <- checkpoint_schema_version()
     metrics_repr <- if (!is.null(metrics)) {
       m_attr <- attr(metrics, "metrics", exact = TRUE)
       if (!is.null(m_attr)) {
@@ -470,7 +470,7 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
         NULL
       }
       payload <- list(
-        version = pkg_ver,
+        schema = ckpt_schema,
         seed_scheme = current_seed_scheme(),
         seed = seed,
         data = data_repr,

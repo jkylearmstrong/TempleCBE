@@ -4,6 +4,25 @@
 
 * `render_variants()`: renders one parameterized Quarto or R Markdown template once per variant of its parameters (for example `use_imputed = FALSE` / `TRUE`), naming the outputs `<template>_<variant>.<ext>`. A parameter that the template does not declare under `params:` is an error before anything is rendered, so a copy of a report no longer has to be kept in step by hand.
 
+# TempleCBE 0.6.1
+
+A corrective release that makes the 0.6.0 notes accurate and removes a release-time maintenance hazard.
+
+## Corrections to 0.6.0
+
+* **0.6.0 was a consolidation release, not a code milestone.** Relative to 0.5.12 it changed the version number, release notes and one test; the performance, diffing and migration features described under 0.6.0 shipped in 0.5.9 to 0.5.12.
+* **Deprecated wrappers were not removed in 0.6.0.** They were announced for removal in 0.6.0 and remain available. Removal is re-scheduled for **0.7.0**, and the deprecation messages, documentation and tests now say so.
+
+## Checkpoints
+
+* **Checkpoint fingerprints no longer include the package version.** They include an explicit `checkpoint_schema_version()`, bumped by hand only when a change alters what a cached checkpoint contains. Upgrading the package therefore no longer invalidates cached long-running work. Provenance is unchanged: the package version is still recorded in `checkpoint_meta$version`.
+* **One-time effect:** because the fingerprint payload changed, checkpoints written by 0.6.0 or earlier are treated as stale on first use and recomputed once.
+
+## Internal
+
+* All package-version lookups go through one helper, `templecbe_version()`; hardcoded fallback versions were removed and the version test no longer pins a version.
+* `AGENTS.md` and `CLAUDE.md` are excluded from the built package; a legacy-data reference was removed from `as_tuning_results()` documentation.
+
 # TempleCBE 0.6.0
 
 TempleCBE 0.6.0 is a major milestone release promoting the accumulated performance, deliverable management, codebase modernization, and developer productivity enhancements developed across recent cycles into a stable, production-grade foundation for analytical and clinical workflows.
@@ -222,7 +241,7 @@ TempleCBE 0.6.0 is a major milestone release promoting the accumulated performan
 * **G2 (Repeated Censoring Notice)**: Muffled repeated "no censored subjects" notices inside parallel workers and emitted once per run in the main orchestrating session.
 * **G3 (Checkpoint Proliferation)**: Consolidated checkpoints into fold-level files.
 * **G4 (Censoring Comparison Checkpointing)**: Added checkpointing and sharding arguments to `compare_censoring_weights()`.
-* **G5 (Historical Tuning Results Adapter)**: Added `as_tuning_results()` to adapt legacy Wolfson tuning files and tidymodels objects into standardized `cbe_tuning_results` compatible with `compare_tuning_runs()`.
+* **G5 (Historical Tuning Results Adapter)**: Added `as_tuning_results()` to adapt legacy tuning files and tidymodels objects into standardized `cbe_tuning_results` compatible with `compare_tuning_runs()`.
 
 # TempleCBE 0.5.7
 

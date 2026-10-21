@@ -856,9 +856,9 @@ compute_checkpoint_fingerprint <- function(split = NULL,
                                            seed = NULL,
                                            extra = list(),
                                            seed_scheme = current_seed_scheme()) {
-  pkg_ver <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+  ckpt_schema <- checkpoint_schema_version()
   payload <- list(
-    version = pkg_ver,
+    schema = ckpt_schema,
     seed_scheme = as.character(seed_scheme),
     split = if (!is.null(split)) canonicalize_split_for_hash(split) else NULL,
     settings = canonicalize_dots_for_hash(dots),
@@ -949,7 +949,7 @@ write_verified_checkpoint <- function(obj,
   meta$task_fingerprint <- as.character(fingerprint)
   meta$run_fingerprint <- as.character(run_fingerprint)
   meta$seed_scheme <- as.character(seed_scheme)
-  meta$version <- tryCatch(as.character(utils::packageVersion("TempleCBE")), error = function(e) "0.6.0")
+  meta$version <- templecbe_version()
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
     tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)

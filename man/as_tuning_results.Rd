@@ -15,7 +15,7 @@ as_tuning_results(x, ...)
 A standardized [tibble::tibble()] guaranteed to contain `alpha` and `IBS` columns.
 }
 \description{
-Adapts older Wolfson tuning outputs (`tuning_results_df_*.rds`), tidymodels
+Adapts older legacy tuning outputs (`tuning_results_df_*.rds`), tidymodels
 tuning results, or generic hyperparameter evaluation tables to the standardized
 schema required by [compare_tuning_runs()], [select_candidate_models()], and
 [plot.cbe_nested_survival_run()].
@@ -32,7 +32,7 @@ Maps historical and tidymodels column synonyms to canonical names:
 }
 }
 \examples{
-# Historical Wolfson format with lowercase column names
+# Historical legacy format with lowercase column names
 old_df <- data.frame(alphas = c(0.1, 0.5), ibs = c(0.12, 0.10), penalty = c(0.01, 0.02))
 standardized <- as_tuning_results(old_df)
 names(standardized)
