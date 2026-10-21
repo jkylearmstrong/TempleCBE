@@ -24,8 +24,8 @@
      ```
    * Open a Pull Request targeting `master` on `jkylearmstrong/TempleCBE`.
 3. **Continuous Integration (GitHub Actions):**
-   * **Pull Requests (Full Gate):** Run the complete cross-platform test matrix (`ubuntu-latest`, `windows-latest`, `macOS-latest`) and `test-coverage`. On Windows, vignette building is skipped during check to reduce check times from 35+ min to ~12 min.
-   * **Push to Master (Fast Sanity & Deploy):** Runs a fast 5-minute sanity check on `ubuntu-latest` with documentation (`pkgdown`) deploying concurrently. Container images (`docker-publish`) deploy to Docker Hub upon successful completion of the sanity check (`workflow_run`), while tagged releases (`v*`) publish multi-arch images (`linux/amd64,linux/arm64`) directly.
+   * **Pull Requests (Full Gate):** Run the complete cross-platform test matrix (`ubuntu-latest`, `windows-latest`, `macOS-latest`, `ubuntu-24.04-arm` for aarch64 / DGX Spark) and `test-coverage`. On Windows, vignette building is skipped during check to reduce check times from 35+ min to ~12 min.
+   * **Push to Master (Fast Sanity & Deploy):** Runs a fast 5-minute sanity check on `ubuntu-latest` with documentation (`pkgdown`) deploying concurrently. Container images (`docker-publish`) deploy to Docker Hub upon successful completion of the sanity check (`workflow_run`), while tagged releases (`v*`) publish multi-arch images (`linux/amd64,linux/arm64`) directly, each architecture built on a native runner and merged into one manifest.
    * Workflows automatically cancel superseded in-progress runs when new commits are pushed (`cancel-in-progress: true`).
 
 ---
