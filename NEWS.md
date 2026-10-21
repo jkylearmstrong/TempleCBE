@@ -2,6 +2,8 @@
 
 ## Fixes
 
+* `list_stage_data_artifacts()` now lists files whose extension is upper or mixed case (`DATA.RDS`); the primary-data patterns already ignored case.
+
 * `dedupe_pipeline(strategy = "rename")` no longer returns duplicate names when a numbered name already exists in the list (`c("a", "a", "a_2")` came back as `c("a", "a_2", "a_2")`); the new name skips every name in use.
 
 # TempleCBE 0.6.1
@@ -407,7 +409,6 @@ Audit packet C5 findings in release distribution, incremental history, and push 
 * **Remote refs check (A5-15), replaced:** the first version warned, after the push, about other branches and tags of the remote (`git ls-remote --heads --tags`), and never saw `refs/pull/*` or notes. Since the stage 2 hardening below, standalone mode lists all refs of the remote before anything changes and stops unless `allow_other_refs = TRUE`.
 * **Force-with-lease push isolation:** In standalone mode, `clean_publish()` pushes with `--force-with-lease`, so that it does not overwrite a remote branch that moved without its knowledge; since the stage 2 hardening below the lease names the branch and the id the listing of the remote showed (`--force-with-lease=refs/heads/<branch>:<id>`) and no longer depends on a remote-tracking ref.
 
-
 ## Behaviour change: `clean_publish()` first round of the pre-0.5.0 review (R-CP-01, 02, 03, 06, 10, 12)
 
 The first fixes of the independent review of the publish path (commit 6cf87a5). Later rounds, below, changed some of them; each bullet says how it stands now. Pinned by tests in `tests/testthat/test-clean_publish.R` that use real git and local bare repositories.
@@ -464,7 +465,6 @@ Independent review of the publish path, stage 3 (the command line and what is wr
 * **Expanded Census surname pool:** Packaged `inst/extdata/last_names.csv` containing the top 250 US Census surnames, augmented with existing diverse investigator surnames (total pool: 252 surnames). `generate_pi_names(format = "synthetic")` in both R (`R/pi_anonymizer.R`, `scripts/pi_anonymizer.R`) and Python (`scripts/pi_anonymizer.py`) now samples from this expanded pool, dramatically reducing birthday-bound pseudonym collision rates for investigator cohorts of $k = 20\text{--}50$ PIs.
 * **Synthetic full name generation (`format = "full_name"`):** Added a curated pool of 256 diverse top first names (from SSA baby names). Setting `format = "full_name"` (or alias `format = "full"`) generates realistic synthetic full names (`"Sarah Jenkins"`, `"Marcus Chen"`) by sampling unique pairs without replacement across a combinatorial space of over 64,500 distinct full names.
 * **Exclusions and alias support:** `generate_pi_names()` accepts `exclude` across all implementations to ensure real investigator names/surnames are never generated, and accepts `format = "surname"` as an alias for `"synthetic"`.
-
 
 ## Hardening: Standalone Pseudonymization Scripts (`scripts/pi_anonymizer.py`, `scripts/pi_anonymizer.R`)
 
