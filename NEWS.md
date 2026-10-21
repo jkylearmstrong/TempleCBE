@@ -1,3 +1,9 @@
+# TempleCBE 0.6.1.9000 (development version)
+
+## Fixes
+
+* `list_stage_data_artifacts()` now lists files whose extension is upper or mixed case (`DATA.RDS`); the primary-data patterns already ignored case.
+
 # TempleCBE 0.6.1
 
 A corrective release that makes the 0.6.0 notes accurate and removes a release-time maintenance hazard.

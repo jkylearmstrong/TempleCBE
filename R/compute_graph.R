@@ -2893,6 +2893,7 @@ list_stage_data_artifacts <- function(
   files <- list.files(
     stage_dir,
     pattern = "\\.(rds|xlsx|csv)$",
+    ignore.case = TRUE,
     full.names = TRUE,
     recursive = FALSE
   )
