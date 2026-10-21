@@ -67,6 +67,16 @@
 #'   `FALSE`).
 #' @param seed Optional integer. With it the result is reproducible, and the random
 #'   number generator state of the session is restored afterwards.
+#' @param parallel If `TRUE`, the replicates are fitted with `furrr::future_map()` under the
+#'   current future plan (set it with `future::plan()`, for example `future::plan("multisession")`;
+#'   under the default sequential plan nothing runs in parallel). Default `FALSE`, the
+#'   sequential loop. In parallel mode each replicate has its own random-number stream, so the
+#'   result for a given `seed` is the same under any plan and any number of workers, but it is
+#'   not the result of the sequential loop for that `seed`. `seed` must be a single number
+#'   in this mode. The same version of TempleCBE must be installed on the workers (they load
+#'   the installed package, not a `load_all()` source tree, and resolve its helper functions
+#'   from it), and the arguments in `...` are evaluated before fitting (they cannot name
+#'   columns of `data`, such as `weights = n`).
 #' @param ... Passed to [lme4::lmer()].
 #' @return A tibble of class `boot_lmer`, one row per fixed effect: `term`, `n` (kept
 #'   estimates), `mean`, `sd`, `std.error`, `median`, `lower`, `upper`, `p.value`.
@@ -82,7 +92,7 @@
 #' }
 boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
                       fence = c("outer", "inner", "none"), fallback_formula = NULL,
-                      conf_level = 0.95, include_intercept = FALSE, seed = NULL, ...) {
+                      conf_level = 0.95, include_intercept = FALSE, seed = NULL, parallel = FALSE, ...) {
   if (!requireNamespace("lme4", quietly = TRUE)) {
     stop("Package 'lme4' is required for boot_lmer(). Please install it.", call. = FALSE)
   }
@@ -107,6 +117,17 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
   if (!is.null(normalize)) {
     bad <- normalize[!normalize %in% names(data) | !vapply(normalize, function(v) v %in% names(data) && is.numeric(data[[v]]), logical(1))]
     if (length(bad)) stop("`normalize` must name numeric columns of `data`: ", paste(bad, collapse = ", "), ".", call. = FALSE)
+  }
+  if (!is.logical(parallel) || length(parallel) != 1L || is.na(parallel)) {
+    stop("`parallel` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (parallel) {
+    if (!requireNamespace("furrr", quietly = TRUE) || !requireNamespace("future", quietly = TRUE)) {
+      stop("Packages 'furrr' and 'future' are required for boot_lmer(parallel = TRUE). Please install them.", call. = FALSE)
+    }
+    if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed))) {
+      stop("`seed` must be a single number when `parallel = TRUE`.", call. = FALSE)
+    }
   }
   n_boot <- as.integer(n_boot)
   if (anyNA(data[[group]])) stop("`group` has missing values; remove those rows first.", call. = FALSE)
@@ -138,42 +159,45 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     names(lme4::fixef(suppressMessages(suppressWarnings(lme4::lmer(formula, data = data, ...))))),
     error = function(e) NULL
   )
-  fit_one <- function(f, df) {
-    tryCatch(suppressMessages(suppressWarnings(lme4::lmer(f, data = df, ...))), error = function(e) NULL)
-  }
 
-  draws <- vector("list", n_boot)
-  n_failed <- 0L
-  n_fallback <- 0L
-  n_incomparable <- 0L
-  n_singular <- 0L
-  n_nonconverged <- 0L
-  for (b in seq_len(n_boot)) {
-    df <- .boot_resample(data, rows_of, normalize)
-    fit <- fit_one(formula, df)
-    used_fallback <- FALSE
-    if (is.null(fit) && !is.null(fallback_formula)) {
-      fit <- fit_one(fallback_formula, df)
-      used_fallback <- !is.null(fit)
-    }
-    if (is.null(fit)) {
-      n_failed <- n_failed + 1L
-      next
-    }
-    if (used_fallback) n_fallback <- n_fallback + 1L
-    if (isTRUE(tryCatch(lme4::isSingular(fit), error = function(e) FALSE))) n_singular <- n_singular + 1L
-    if (length(fit@optinfo$conv$lme4$messages) > 0L) n_nonconverged <- n_nonconverged + 1L
-    est <- lme4::fixef(fit)
-    # the columns lme4 kept must be those of the model fitted to the whole data
-    comparable <- used_fallback || is.null(reference) || identical(names(est), reference)
-    if (!comparable) n_incomparable <- n_incomparable + 1L
-    if (length(est)) {
-      draws[[b]] <- tibble::tibble(
-        boot = b, term = names(est), estimate = unname(est), fallback = used_fallback, comparable = comparable
-      )
+  reps <- vector("list", n_boot)
+  if (parallel) {
+    # furrr hands the arguments to the workers as values, so an argument that names a column of
+    # `data` (weights = n) cannot be forwarded the way the sequential loop forwards it
+    dots <- tryCatch(
+      withCallingHandlers(
+        list(...),
+        warning = function(w) {
+          if (grepl("restarting interrupted promise", conditionMessage(w), fixed = TRUE)) invokeRestart("muffleWarning")
+        }
+      ),
+      error = function(e) {
+        stop("Evaluating the arguments in `...` failed (", conditionMessage(e), "). With `parallel = TRUE` they are ",
+             "evaluated before fitting, so they cannot refer to columns of `data` (as in `weights = n`).", call. = FALSE)
+      }
+    )
+    # one L'Ecuyer random-number stream per replicate: the result depends on `seed` and `n_boot`,
+    # not on the future plan or the number of workers (but differs from the sequential result)
+    furrr_seed <- if (is.null(seed)) TRUE else as.integer(seed)
+    reps <- furrr::future_map(
+      seq_len(n_boot),
+      function(b) {
+        do.call(.boot_lmer_replicate, c(list(b, data, rows_of, normalize, formula, fallback_formula, reference), dots))
+      },
+      .options = furrr::furrr_options(seed = furrr_seed, packages = "lme4")
+    )
+  } else {
+    for (b in seq_len(n_boot)) {
+      reps[[b]] <- .boot_lmer_replicate(b, data, rows_of, normalize, formula, fallback_formula, reference, ...)
     }
   }
-  draws <- dplyr::bind_rows(draws)
+  flag <- function(name) sum(vapply(reps, function(r) isTRUE(r[[name]]), logical(1)))
+  n_failed <- flag("failed")
+  n_fallback <- flag("fallback")
+  n_incomparable <- flag("incomparable")
+  n_singular <- flag("singular")
+  n_nonconverged <- flag("nonconverged")
+  draws <- dplyr::bind_rows(lapply(reps, function(r) r$draw))
   if (nrow(draws) == 0L) {
     draws <- tibble::tibble(boot = integer(), term = character(), estimate = double(), fallback = logical(), comparable = logical())
   }
@@ -272,6 +296,35 @@ print.boot_lmer <- function(x, ...) {
   ))
   print(tibble::as_tibble(x), ...)
   invisible(x)
+}
+
+# One bootstrap replicate: resample, fit (or fall back), and report what happened; `...` goes to
+# lme4::lmer(). Shared by the sequential loop and the furrr workers of boot_lmer().
+.boot_lmer_replicate <- function(b, data, rows_of, normalize, formula, fallback_formula, reference, ...) {
+  fit_one <- function(f, df) {
+    tryCatch(suppressMessages(suppressWarnings(lme4::lmer(f, data = df, ...))), error = function(e) NULL)
+  }
+  df <- .boot_resample(data, rows_of, normalize)
+  fit <- fit_one(formula, df)
+  used_fallback <- FALSE
+  if (is.null(fit) && !is.null(fallback_formula)) {
+    fit <- fit_one(fallback_formula, df)
+    used_fallback <- !is.null(fit)
+  }
+  if (is.null(fit)) return(list(failed = TRUE))
+  est <- lme4::fixef(fit)
+  # the columns lme4 kept must be those of the model fitted to the whole data
+  comparable <- used_fallback || is.null(reference) || identical(names(est), reference)
+  list(
+    failed = FALSE,
+    fallback = used_fallback,
+    incomparable = !comparable,
+    singular = isTRUE(tryCatch(lme4::isSingular(fit), error = function(e) FALSE)),
+    nonconverged = length(fit@optinfo$conv$lme4$messages) > 0L,
+    draw = if (length(est)) {
+      tibble::tibble(boot = b, term = names(est), estimate = unname(est), fallback = used_fallback, comparable = comparable)
+    }
+  )
 }
 
 # Row indices of each group; levels of a factor that no row has are not groups

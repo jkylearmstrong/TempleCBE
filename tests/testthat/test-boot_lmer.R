@@ -294,3 +294,130 @@ test_that("boot_lmer() warns when many replicates are not comparable, and return
   expect_identical(res$term, c("fB", "fC")) # model order, not the order of the first draw
   expect_output(print(res), "not comparable")
 })
+
+# ---- parallel = TRUE ----------------------------------------------------------------------------
+
+# furrr workers load the installed TempleCBE, which a load_all() session does not have
+boot_workers_available <- function() {
+  !(isNamespaceLoaded("pkgload") && pkgload::is_dev_package("TempleCBE"))
+}
+
+# set a future plan for one test and put the caller's plan back afterwards
+local_plan <- function(strategy, ..., env = parent.frame()) {
+  old <- future::plan()
+  withr::defer(future::plan(old), envir = env)
+  future::plan(strategy, ...)
+}
+
+test_that("boot_lmer(parallel = TRUE) returns the same kind of result and is reproducible with a seed", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  withr::local_options(lifecycle_verbosity = "quiet")
+  local_plan(future::sequential)
+  d <- boot_fixture()
+  a <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 5, parallel = TRUE)
+  b <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 5, parallel = TRUE)
+  expect_s3_class(a, "boot_lmer")
+  expect_identical(a$term, "time")
+  expect_equal(attr(a, "n_boot"), 12L)
+  expect_equal(a, b)
+  expect_equal(attr(a, "draws")$boot, sort(attr(a, "draws")$boot)) # replicates come back in order
+  expect_equal(attr(a, "n_failed") + length(unique(attr(a, "draws")$boot)), 12L)
+  # a different seed gives different estimates
+  other <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 6, parallel = TRUE)
+  expect_false(isTRUE(all.equal(a$mean, other$mean)))
+})
+
+test_that("boot_lmer(parallel = TRUE) leaves the session's random numbers alone", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  local_plan(future::sequential)
+  d <- boot_fixture()
+  set.seed(99)
+  before <- .Random.seed
+  boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 6, seed = 1, parallel = TRUE)
+  expect_identical(.Random.seed, before)
+})
+
+test_that("boot_lmer(parallel = TRUE) gives the same result under another plan and number of workers", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  skip_on_cran()
+  skip_if_not(boot_workers_available(), "TempleCBE is not installed (load_all session): workers cannot load it")
+  d <- boot_fixture()
+  local_plan(future::sequential)
+  one <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 3, parallel = TRUE)
+  future::plan(future::multisession, workers = 2)
+  two <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 3, parallel = TRUE)
+  future::plan(future::multisession, workers = 3)
+  three <- boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 12, seed = 3, parallel = TRUE)
+  expect_equal(one, two)
+  expect_equal(one, three)
+})
+
+test_that("boot_lmer(parallel = TRUE) counts fallbacks and failures like the sequential loop", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  local_plan(future::sequential)
+  d <- boot_fixture(n_id = 6, n_t = 3)
+  # `nonexistent` is not a column: every fit fails, with and without the fallback
+  expect_warning(
+    r <- boot_lmer(y ~ nonexistent + (1 | id), d, group = "id", n_boot = 4, seed = 1, parallel = TRUE),
+    "No bootstrap replicate could be fitted"
+  )
+  expect_equal(attr(r, "n_failed"), 4L)
+  expect_equal(nrow(r), 0L)
+})
+
+test_that("boot_lmer(parallel = TRUE) says when an argument for lmer names a column of the data", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  d <- boot_fixture()
+  d$w <- 1
+  expect_error(
+    boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 2, weights = w, parallel = TRUE),
+    "cannot refer to columns of `data`"
+  )
+})
+
+test_that("boot_lmer() without parallel gives the values recorded from the version before parallel existed", {
+  skip_if_not_installed("lme4")
+  r <- boot_lmer(y ~ time + (1 | id), boot_fixture(), group = "id", n_boot = 10, seed = 2)
+  dr <- attr(r, "draws")
+  expect_equal(dr$estimate[dr$term == "time"][1:3], c(2.000627278886, 2.022252633321, 2.046688424904), tolerance = 1e-8)
+  expect_equal(r$mean, 2.013988056354, tolerance = 1e-8)
+  expect_equal(r$sd, 0.023397027696, tolerance = 1e-8)
+  expect_equal(r$n, 10L)
+  expect_equal(
+    c(attr(r, "n_failed"), attr(r, "n_fallback"), attr(r, "n_incomparable"), attr(r, "n_singular"), attr(r, "n_nonconverged")),
+    rep(0L, 5)
+  )
+})
+
+test_that("boot_lmer(parallel = TRUE) counts the replicates that used the fallback, as the draws show", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  local_plan(future::sequential)
+  d <- boot_fixture()
+  # a level held by two groups only: a resample without them cannot fit `g`, and falls back
+  d$g <- factor(ifelse(as.integer(d$id) <= 2, "b", "a"))
+  r <- boot_lmer(y ~ time + g + (1 | id), d, group = "id", n_boot = 40, seed = 11, parallel = TRUE,
+                 fallback_formula = y ~ time + (1 | id))
+  dr <- attr(r, "draws")
+  expect_gt(attr(r, "n_fallback"), 0L)
+  expect_equal(attr(r, "n_fallback"), length(unique(dr$boot[dr$fallback])))
+  expect_equal(attr(r, "n_incomparable"), length(unique(dr$boot[!dr$comparable])))
+  expect_equal(attr(r, "n_failed"), 0L)
+  expect_lt(r$n[r$term == "gb"], r$n[r$term == "time"]) # the fallback has no `g` estimate
+})
+
+test_that("boot_lmer(parallel = ) must be TRUE or FALSE, and a seed a single number when parallel", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("furrr")
+  d <- boot_fixture()
+  for (bad in list("yes", 4, NA, NULL, c(TRUE, FALSE))) {
+    expect_error(boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 2, parallel = bad), "must be TRUE or FALSE")
+  }
+  expect_error(boot_lmer(y ~ time + (1 | id), d, group = "id", n_boot = 2, seed = c(1, 2), parallel = TRUE),
+               "single number")
+})
