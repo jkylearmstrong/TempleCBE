@@ -486,6 +486,7 @@ reference:
       - package_deliverables
       - diff_deliverables
       - audit_report_deliverables
+      - audit_render_parity
       - extract_yaml_formats
       - cbe_docx_review_extract
       - cbe_review_tracker
