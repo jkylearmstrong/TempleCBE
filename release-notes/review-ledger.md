@@ -34,3 +34,14 @@ Not checked by the reviewer or by me: macOS/BSD and Debian/Ubuntu shells, a non-
 ## Existing suite on the fixed code
 
 `tests/testthat/test-clean_publish.R` (130 tests, Windows, git 2.51.0, run from a clean copy of commit 234f4d1): 129 passed. One test failed, "a git call that fails in a gate stops the run ... (CPC-06, CPA-13)": its mock recognised `ls-files` only as the first git argument, and CP-L3-04 now runs it after `-c core.quotePath=false`. The code still stops on a failing `ls-files`; the mock now matches the subcommand anywhere in the arguments, and the test passes. Not yet run on Ubuntu or macOS.
+
+## Second independent review (commits 911f740..7c1b566): approve with conditions
+
+| # | Finding | Action |
+|---|---------|--------|
+| 1 | `trimws()` ran before the `validUTF8()` guard, so a non-UTF-8 name crashed with "input string is invalid UTF-8" in a UTF-8 locale instead of being reported (the ledger and NEWS claims were not true there) | Fixed: only valid names are trimmed; mocked-git test added (OS independent) |
+| 2 | `%(refname:short)` prints `heads/<name>` when a tag has the same name, hiding a collision | Fixed: `%(refname)` with the prefix removed; test added |
+| 3 | Collision check was case sensitive | Fixed: prefixes compared ignoring case; test added |
+| 4 | Remote branches are not checked | Accepted: that failure comes from the push itself, not after it |
+| 5 | `head`/`Head` rejection is stricter than git | Kept as a conservative choice; comment corrected |
+| 6 | No negative tests for the collision check | Added (`featx`, `feature-y`, a branch being updated) |

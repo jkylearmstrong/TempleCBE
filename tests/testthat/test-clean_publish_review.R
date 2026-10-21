@@ -194,3 +194,48 @@ test_that("CP-L3-04: a tracked-but-ignored file whose name git still quotes is r
   expect_match(err, "match .gitignore patterns")
   expect_identical(cp_state(fx$repo), before)
 })
+
+test_that("CP-L3-04: a tracked-but-ignored name that is not valid UTF-8 is reported with escaped bytes and never allowed", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  before <- cp_state(fx$repo)
+  real_git <- .cp_git
+  # what git prints for a Latin-1 file name on a file system that allows one
+  latin1_listing <- function(repo_root, args, error_ok = FALSE) {
+    if ("ls-files" %in% args) return(list(output = "caf\xe9 notes.txt", stderr = character(), status = 0L))
+    real_git(repo_root, args, error_ok = error_ok)
+  }
+  testthat::local_mocked_bindings(.cp_git = latin1_listing)
+  err <- tryCatch(
+    cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, allow_ignored = "caf\u00e9 notes.txt")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "match .gitignore patterns")
+  expect_match(err, "<e9>", fixed = TRUE)
+  expect_identical(cp_state(fx$repo), before)
+})
+
+test_that("CP-L3-02: a tag with the name of a branch does not hide a branch-name collision", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  cp_git(fx$repo, "branch", "feat")
+  cp_git(fx$repo, "tag", "feat")
+  run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
+  expect_error(.cp_check_branch_conflicts(run_git, c("feat/x", "private-history")), "collides with 'feat'")
+})
+
+test_that("CP-L3-02: branch names are compared ignoring case, and unrelated names do not collide", {
+  skip_if_no_git()
+  fx <- cp_fixture()
+  cp_git(fx$repo, "branch", "Feat")
+  cp_git(fx$repo, "branch", "feature")
+  cp_git(fx$repo, "branch", "feat-x")
+  run_git <- function(args, error_ok = FALSE) .cp_git(fx$repo, args, error_ok = error_ok)
+  expect_error(.cp_check_branch_conflicts(run_git, c("feat/y", "private-history")), "collides with 'Feat'")
+  # none of these shares a path prefix with an existing branch or with the other name
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("featx", "private-history")))
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("other/x", "feature-y")))
+  # an existing branch that is itself one of the two names is not a collision (it is being updated)
+  expect_no_error(.cp_check_branch_conflicts(run_git, c("master", "feature")))
+  expect_no_error(.cp_check_branch_conflicts(run_git, "master"))
+})

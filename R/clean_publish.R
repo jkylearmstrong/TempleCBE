@@ -394,8 +394,10 @@ clean_publish <- function(
   # carry the NUL bytes it prints.) A path with a tab, newline or quote is still quoted and so is
   # reported, never silently allowed.
   ignored_res <- run_git(c("-c", "core.quotePath=false", "ls-files", "-ci", "--exclude-standard"))
-  tracked_ignored <- trimws(ignored_res$output[nzchar(ignored_res$output)])
+  tracked_ignored <- ignored_res$output[nzchar(ignored_res$output)]
   Encoding(tracked_ignored) <- "UTF-8"
+  # trimws() fails on bytes that are not valid UTF-8, so only valid names are trimmed
+  tracked_ignored[validUTF8(tracked_ignored)] <- trimws(tracked_ignored[validUTF8(tracked_ignored)])
   if (length(tracked_ignored) > 0L) {
     # a name whose bytes are not UTF-8 (a Latin-1 name on ext4) cannot be compared: it is never
     # allowed, and is shown with its bytes escaped
@@ -1207,9 +1209,9 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
 }
 # A branch name as git will use it: valid as refs/heads/<name>, with no leading `@` and no `@{`
 # (those are rejected first, so the `@{-1}` expansion of `check-ref-format --branch` cannot be
-# reached). `HEAD` is valid as refs/heads/HEAD but git refuses it as a branch name, in any case
-# (`head` makes `HEAD` ambiguous on a case-insensitive file system); --branch as well catches
-# whatever else `git branch` would refuse after the push.
+# reached). `HEAD` is valid as refs/heads/HEAD but git refuses it as a branch name. `head` and
+# `Head` are refused here as well, as a conservative choice (git accepts them); --branch as well
+# catches whatever else `git branch` would refuse after the push.
 .cp_check_branch_name <- function(run_git, name) {
   ok <- !identical(toupper(name), "HEAD") && !startsWith(name, "@") && !grepl("@{", name, fixed = TRUE) &&
     run_git(c("check-ref-format", paste0("refs/heads/", name)), error_ok = TRUE)$status == 0L &&
@@ -1221,9 +1223,13 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
 # hold both, and the failure would come after the push. Checked for the two branches that are
 # written, against each other and against the local branches that exist.
 .cp_check_branch_conflicts <- function(run_git, names) {
-  existing <- trimws(run_git(c("for-each-ref", "--format=%(refname:short)", "refs/heads"))$output)
-  existing <- existing[nzchar(existing)]
-  clash <- function(a, b) !identical(a, b) && (startsWith(a, paste0(b, "/")) || startsWith(b, paste0(a, "/")))
+  # not %(refname:short): a tag of the same name makes that "heads/<name>"
+  existing <- trimws(run_git(c("for-each-ref", "--format=%(refname)", "refs/heads"))$output)
+  existing <- sub("^refs/heads/", "", existing[nzchar(existing)])
+  # prefixes are compared ignoring case: on a case-insensitive file system Feat and feat/x collide too
+  clash <- function(a, b) {
+    !identical(a, b) && (startsWith(tolower(a), paste0(tolower(b), "/")) || startsWith(tolower(b), paste0(tolower(a), "/")))
+  }
   names <- unique(names)
   for (i in seq_along(names)) {
     for (other in c(existing, names[-i])) {
