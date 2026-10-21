@@ -215,6 +215,7 @@ test_that("render_variants() checks its arguments", {
 
 test_that("render_variants() works on an .Rmd with the default renderer", {
   skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("jquerylib") # html_document needs it
   skip_if(!rmarkdown::pandoc_available(), "pandoc is not available")
   tpl <- rv_template(ext = "Rmd", params = c("use_imputed: false"))
   writeLines(c("---", "title: T", "params:", "  use_imputed: false", "---", "", "```{r}", "cat('imputed =', params$use_imputed)", "```"), tpl)
