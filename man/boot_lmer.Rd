@@ -24,8 +24,10 @@ boot_lmer(
 
 \item{data}{A data frame.}
 
-\item{group}{Name of the column that identifies the groups to resample (usually
-the grouping factor of the random effect).}
+\item{group}{Name of the column that identifies the groups to resample (the
+grouping factor of the random effect; a warning is given when it is not one of
+the formula's grouping factors). Missing values are an error; unused factor levels
+are ignored.}
 
 \item{n_boot}{Number of bootstrap replicates (default 1000).}
 
@@ -50,7 +52,8 @@ number generator state of the session is restored afterwards.}
 A tibble of class `boot_lmer`, one row per fixed effect: `term`, `n` (kept
   estimates), `mean`, `sd`, `std.error`, `median`, `lower`, `upper`, `p.value`.
   Attributes: `draws` (every bootstrap estimate: `boot`, `term`, `estimate`,
-  `kept`, `fallback`), `n_boot`, `n_failed`, `n_fallback`, `fence`, `conf_level`.
+  `fallback`, `comparable`, `kept`), `n_boot`, `n_failed`, `n_fallback`,
+  `n_incomparable`, `n_singular`, `n_nonconverged`, `fence`, `conf_level`.
 }
 \description{
 Refits a linear mixed model ([lme4::lmer()]) on bootstrap resamples of whole
@@ -71,16 +74,37 @@ fitted, so the estimates are per full range of the predictor.
 
 A replicate whose model cannot be fitted is refitted with `fallback_formula`, if
 one is given (for example the intercept-only `y ~ -1 + (1 | id)`); a fallback
-model contributes only the fixed effects it has. A replicate that cannot be
-fitted at all is counted in `n_failed` and contributes nothing. Warnings and
-messages from the fits (singular fits, convergence notes) are not shown.
+model contributes only the fixed effects it has, and those estimates come from
+another model than the rest (they are flagged `fallback` in `draws`). A replicate
+that cannot be fitted at all is counted in `n_failed` and contributes nothing.
+Warnings and messages from the fits are not shown; the number of singular and of
+non-converged fits is returned in `n_singular` and `n_nonconverged`.
+
+\strong{Rank-deficient resamples.} When a resample lacks a level of a factor (or a
+predictor is constant in it), `lme4` drops the columns it cannot estimate, and the
+remaining contrasts then mean something else (with level A absent, `fC` estimates
+C - B and not C - A). The columns of the model fitted to the whole data are the
+reference: a replicate whose columns differ is not comparable, contributes to no
+term and is counted in `n_incomparable`. A predictor named in `normalize` that is
+constant in a resample is mapped to 0 and dropped by `lme4` in the same way.
 
 The fences are applied to the bootstrap estimates of each term separately: an
 estimate is kept when it lies strictly between the lower and upper fence (the
-inner fences at 1.5 x IQR, the outer at 3 x IQR). `std.error` is the standard
-deviation of the kept estimates divided by the square root of their number, and
-the p-value uses it as the tolerance `epsilon` around the null value, which is
-what the report templates did. Percentile limits use all kept estimates.
+inner fences at 1.5 x IQR, the outer at 3 x IQR); when the interquartile range is 0
+the fences coincide with the bulk value and the bulk is kept, so that only the
+values off it are dropped. `fence = "none"` keeps every estimate.
+
+\strong{`std.error`} is the standard deviation of the kept estimates divided by the
+square root of their number. That is the Monte Carlo error of the bootstrap mean,
+not the standard error of the estimate (which is `sd`), and it shrinks as
+`n_boot` grows. It is kept because the report templates used it, and because the
+p-value uses it as the tolerance `epsilon` around the null value. Percentile limits
+use all kept estimates. Terms are returned in model order. A p-value of 0 means no
+kept estimate lay on the other side of the null; it is not exact (see [boot_p_value()]).
+
+A group drawn twice keeps its identifier and so counts as one level of the random
+effect, which slightly inflates the random-effect variance; fixed effects are not
+affected in practice.
 }
 \examples{
 \dontrun{

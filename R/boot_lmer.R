@@ -18,22 +18,45 @@
 #'
 #' A replicate whose model cannot be fitted is refitted with `fallback_formula`, if
 #' one is given (for example the intercept-only `y ~ -1 + (1 | id)`); a fallback
-#' model contributes only the fixed effects it has. A replicate that cannot be
-#' fitted at all is counted in `n_failed` and contributes nothing. Warnings and
-#' messages from the fits (singular fits, convergence notes) are not shown.
+#' model contributes only the fixed effects it has, and those estimates come from
+#' another model than the rest (they are flagged `fallback` in `draws`). A replicate
+#' that cannot be fitted at all is counted in `n_failed` and contributes nothing.
+#' Warnings and messages from the fits are not shown; the number of singular and of
+#' non-converged fits is returned in `n_singular` and `n_nonconverged`.
+#'
+#' \strong{Rank-deficient resamples.} When a resample lacks a level of a factor (or a
+#' predictor is constant in it), `lme4` drops the columns it cannot estimate, and the
+#' remaining contrasts then mean something else (with level A absent, `fC` estimates
+#' C - B and not C - A). The columns of the model fitted to the whole data are the
+#' reference: a replicate whose columns differ is not comparable, contributes to no
+#' term and is counted in `n_incomparable`. A predictor named in `normalize` that is
+#' constant in a resample is mapped to 0 and dropped by `lme4` in the same way.
 #'
 #' The fences are applied to the bootstrap estimates of each term separately: an
 #' estimate is kept when it lies strictly between the lower and upper fence (the
-#' inner fences at 1.5 x IQR, the outer at 3 x IQR). `std.error` is the standard
-#' deviation of the kept estimates divided by the square root of their number, and
-#' the p-value uses it as the tolerance `epsilon` around the null value, which is
-#' what the report templates did. Percentile limits use all kept estimates.
+#' inner fences at 1.5 x IQR, the outer at 3 x IQR); when the interquartile range is 0
+#' the fences coincide with the bulk value and the bulk is kept, so that only the
+#' values off it are dropped. `fence = "none"` keeps every estimate.
+#'
+#' \strong{`std.error`} is the standard deviation of the kept estimates divided by the
+#' square root of their number. That is the Monte Carlo error of the bootstrap mean,
+#' not the standard error of the estimate (which is `sd`), and it shrinks as
+#' `n_boot` grows. It is kept because the report templates used it, and because the
+#' p-value uses it as the tolerance `epsilon` around the null value. Percentile limits
+#' use all kept estimates. Terms are returned in model order. A p-value of 0 means no
+#' kept estimate lay on the other side of the null; it is not exact (see [boot_p_value()]).
+#'
+#' A group drawn twice keeps its identifier and so counts as one level of the random
+#' effect, which slightly inflates the random-effect variance; fixed effects are not
+#' affected in practice.
 #'
 #' @param formula A mixed-model formula with a random-effect term, for example
 #'   `y ~ x1 + x2 + (1 | id)`.
 #' @param data A data frame.
-#' @param group Name of the column that identifies the groups to resample (usually
-#'   the grouping factor of the random effect).
+#' @param group Name of the column that identifies the groups to resample (the
+#'   grouping factor of the random effect; a warning is given when it is not one of
+#'   the formula's grouping factors). Missing values are an error; unused factor levels
+#'   are ignored.
 #' @param n_boot Number of bootstrap replicates (default 1000).
 #' @param normalize `NULL` or the names of numeric columns to rescale to
 #'   \[0, 1\] within each resample.
@@ -48,7 +71,8 @@
 #' @return A tibble of class `boot_lmer`, one row per fixed effect: `term`, `n` (kept
 #'   estimates), `mean`, `sd`, `std.error`, `median`, `lower`, `upper`, `p.value`.
 #'   Attributes: `draws` (every bootstrap estimate: `boot`, `term`, `estimate`,
-#'   `kept`, `fallback`), `n_boot`, `n_failed`, `n_fallback`, `fence`, `conf_level`.
+#'   `fallback`, `comparable`, `kept`), `n_boot`, `n_failed`, `n_fallback`,
+#'   `n_incomparable`, `n_singular`, `n_nonconverged`, `fence`, `conf_level`.
 #' @seealso [fit_lmer_safely()], [calculate_fences()], [boot_p_value()]
 #' @export
 #' @examples
@@ -85,6 +109,15 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     if (length(bad)) stop("`normalize` must name numeric columns of `data`: ", paste(bad, collapse = ", "), ".", call. = FALSE)
   }
   n_boot <- as.integer(n_boot)
+  if (anyNA(data[[group]])) stop("`group` has missing values; remove those rows first.", call. = FALSE)
+  # grouping factors: the variables after the "|" of each random-effect term
+  ftxt <- paste(deparse(formula), collapse = "")
+  bars <- regmatches(ftxt, gregexpr("[|]+[^)]+[)]", ftxt))[[1]]
+  grouping <- unique(unlist(lapply(sub("[)]$", "", sub("^[|]+", "", bars)), function(b) all.vars(stats::as.formula(paste("~", b))))))
+  if (!group %in% grouping) {
+    warning("`group` ('", group, "') is not a grouping factor of the random effects in `formula` (",
+            paste(grouping, collapse = ", "), "); resampling by it may not mimic the clustering.", call. = FALSE)
+  }
 
   if (!is.null(seed)) {
     had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
@@ -95,8 +128,12 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     set.seed(seed)
   }
 
-  rows_of <- split(seq_len(nrow(data)), data[[group]])
+  rows_of <- split(seq_len(nrow(data)), droplevels(factor(data[[group]])))
   n_groups <- length(rows_of)
+  reference <- tryCatch(
+    names(lme4::fixef(suppressMessages(suppressWarnings(lme4::lmer(formula, data = data, ...))))),
+    error = function(e) NULL
+  )
   fit_one <- function(f, df) {
     tryCatch(suppressMessages(suppressWarnings(lme4::lmer(f, data = df, ...))), error = function(e) NULL)
   }
@@ -104,10 +141,11 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
   draws <- vector("list", n_boot)
   n_failed <- 0L
   n_fallback <- 0L
+  n_incomparable <- 0L
+  n_singular <- 0L
+  n_nonconverged <- 0L
   for (b in seq_len(n_boot)) {
-    drawn <- sample.int(n_groups, n_groups, replace = TRUE)
-    df <- data[unlist(rows_of[drawn], use.names = FALSE), , drop = FALSE]
-    for (v in normalize) df[[v]] <- as.numeric(min_max_norm(df[[v]]))
+    df <- .boot_resample(data, rows_of, normalize)
     fit <- fit_one(formula, df)
     used_fallback <- FALSE
     if (is.null(fit) && !is.null(fallback_formula)) {
@@ -119,27 +157,34 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
       next
     }
     if (used_fallback) n_fallback <- n_fallback + 1L
+    if (isTRUE(tryCatch(lme4::isSingular(fit), error = function(e) FALSE))) n_singular <- n_singular + 1L
+    if (length(fit@optinfo$conv$lme4$messages) > 0L) n_nonconverged <- n_nonconverged + 1L
     est <- lme4::fixef(fit)
+    # the columns lme4 kept must be those of the model fitted to the whole data
+    comparable <- used_fallback || is.null(reference) || identical(names(est), reference)
+    if (!comparable) n_incomparable <- n_incomparable + 1L
     if (length(est)) {
-      draws[[b]] <- tibble::tibble(boot = b, term = names(est), estimate = unname(est), fallback = used_fallback)
+      draws[[b]] <- tibble::tibble(
+        boot = b, term = names(est), estimate = unname(est), fallback = used_fallback, comparable = comparable
+      )
     }
   }
   draws <- dplyr::bind_rows(draws)
   if (nrow(draws) == 0L) {
-    draws <- tibble::tibble(boot = integer(), term = character(), estimate = double(), fallback = logical())
+    draws <- tibble::tibble(boot = integer(), term = character(), estimate = double(), fallback = logical(), comparable = logical())
   }
   if (n_failed == n_boot) {
     warning("No bootstrap replicate could be fitted; the result is empty.", call. = FALSE)
+  } else if (n_failed > 0.1 * n_boot) {
+    warning(n_failed, " of ", n_boot, " bootstrap replicates could not be fitted (too few groups?).", call. = FALSE)
   }
 
-  draws$kept <- TRUE
+  draws$kept <- draws$comparable
   if (fence != "none" && nrow(draws) > 0L) {
     for (tm in unique(draws$term)) {
-      i <- which(draws$term == tm)
-      f <- calculate_fences(draws$estimate[i])
-      lo <- f[[paste0("lower_", fence, "_fence")]]
-      hi <- f[[paste0("upper_", fence, "_fence")]]
-      if (!is.na(lo)) draws$kept[i] <- lo < draws$estimate[i] & draws$estimate[i] < hi
+      i <- which(draws$term == tm & draws$comparable)
+      if (length(i) == 0L) next
+      draws$kept[i] <- .boot_fence_keep(draws$estimate[i], fence)
     }
   }
 
@@ -171,6 +216,7 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     out,
     class = c("boot_lmer", class(out)),
     draws = draws, n_boot = n_boot, n_failed = n_failed, n_fallback = n_fallback,
+    n_incomparable = n_incomparable, n_singular = n_singular, n_nonconverged = n_nonconverged,
     fence = fence, conf_level = conf_level
   )
 }
@@ -186,7 +232,10 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
 #' @param estimates Numeric vector of bootstrap estimates.
 #' @param null_value The value under the null hypothesis (default 0).
 #' @param epsilon Tolerance around the null value (default `1e-5`).
-#' @return A number between 0 and 1; `NA` when there are no estimates.
+#' @return A number between 0 and 1; `NA` when there are no estimates. Estimates that equal the
+#'   null value exactly count on both sides when `epsilon` is 0, and the result is capped at 1.
+#'   A p-value of 0 means no estimate lies on the other side of the null: it says the p-value
+#'   is below about 2 / (n + 1), not that it is zero.
 #' @export
 #' @examples
 #' boot_p_value(c(0.5, 0.7, 0.9, 1.1, -0.2))
@@ -199,7 +248,7 @@ boot_p_value <- function(estimates, null_value = 0, epsilon = 1e-5) {
   if (n == 0L) return(NA_real_)
   lower <- sum(estimates <= (null_value - epsilon)) / n
   upper <- sum(estimates >= (null_value + epsilon)) / n
-  2 * min(lower, upper)
+  min(1, 2 * min(lower, upper))
 }
 
 #' @export
@@ -211,4 +260,24 @@ print.boot_lmer <- function(x, ...) {
   ))
   print(tibble::as_tibble(x), ...)
   invisible(x)
+}
+
+# One bootstrap resample: whole groups drawn with replacement (a group keeps its identifier),
+# then the named numeric columns rescaled to [0, 1] within the resample
+.boot_resample <- function(data, rows_of, normalize = NULL) {
+  drawn <- sample.int(length(rows_of), length(rows_of), replace = TRUE)
+  df <- data[unlist(rows_of[drawn], use.names = FALSE), , drop = FALSE]
+  for (v in normalize) df[[v]] <- as.numeric(min_max_norm(df[[v]]))
+  df
+}
+# Which estimates lie strictly inside the fences; with no spread (IQR 0) the fences sit on the
+# bulk, which is kept, and what is off it is dropped
+.boot_fence_keep <- function(estimate, fence = "outer") {
+  if (identical(fence, "none")) return(rep(TRUE, length(estimate)))
+  f <- calculate_fences(estimate)
+  lo <- f[[paste0("lower_", fence, "_fence")]]
+  hi <- f[[paste0("upper_", fence, "_fence")]]
+  if (is.na(lo)) return(rep(TRUE, length(estimate)))
+  if (lo == hi) return(estimate == lo)
+  lo < estimate & estimate < hi
 }

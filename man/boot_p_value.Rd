@@ -14,7 +14,10 @@ boot_p_value(estimates, null_value = 0, epsilon = 1e-05)
 \item{epsilon}{Tolerance around the null value (default `1e-5`).}
 }
 \value{
-A number between 0 and 1; `NA` when there are no estimates.
+A number between 0 and 1; `NA` when there are no estimates. Estimates that equal the
+  null value exactly count on both sides when `epsilon` is 0, and the result is capped at 1.
+  A p-value of 0 means no estimate lies on the other side of the null: it says the p-value
+  is below about 2 / (n + 1), not that it is zero.
 }
 \description{
 The share of bootstrap estimates on the far side of a null value, doubled: with
