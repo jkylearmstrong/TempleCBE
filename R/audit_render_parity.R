@@ -155,8 +155,8 @@ print.render_parity <- function(x, ...) {
 
 # Table / Figure / Fig. (any case), a number, "." ":" or a dash, then white space (the no-break
 # space Quarto writes included). "Table 1.5 mg" and "Table 1 shows" do not match.
-.rp_caption_pattern <- "^[\\s ]*(?i:(Table|Figure|Fig\\.?))[\\s ]+([0-9]+(?:\\.[0-9]+)?)[\\s ]*(?:[.:](?=[\\s ]|$)|[–—])"
-.rp_caption_pattern_loose <- "^[\\s ]*(?i:(Table|Figure|Fig\\.?))[\\s ]+([0-9]+(?:\\.[0-9]+)?)(?![0-9.])"
+.rp_caption_pattern <- "^[\\s\u00a0]*(?i:(Table|Figure|Fig\\.?))[\\s\u00a0]+([0-9]+(?:\\.[0-9]+)?)[\\s\u00a0]*(?:[.:](?=[\\s\u00a0]|$)|[\u2013\u2014])"
+.rp_caption_pattern_loose <- "^[\\s\u00a0]*(?i:(Table|Figure|Fig\\.?))[\\s\u00a0]+([0-9]+(?:\\.[0-9]+)?)(?![0-9.])"
 
 # list(kind, number, label) or NULL
 .rp_parse_caption <- function(text, style_caption = FALSE) {
@@ -182,7 +182,7 @@ print.render_parity <- function(x, ...) {
 
 # ---- PDF ----------------------------------------------------------------------------------------
 
-.rp_leader_pattern <- "(\\.[\\s.]{2,}|…)[\\s]*[0-9ivxlcIVXLC]+[\\s]*$" # dot leaders and a page number
+.rp_leader_pattern <- "(\\.[\\s.]{2,}|\u2026)[\\s]*[0-9ivxlcIVXLC]+[\\s]*$" # dot leaders and a page number
 # "1.1 Methods": a section number and a capitalised title ("2.5 mg daily" is not one)
 .rp_section_number_pattern <- "^\\s*[0-9]+(\\.[0-9]+)+\\s+(?=[A-Z])"
 
@@ -345,7 +345,7 @@ print.render_parity <- function(x, ...) {
   nm <- xml2::xml_name(parts)
   txt <- ifelse(nm %in% c("t"), xml2::xml_text(parts), ifelse(nm == "noBreakHyphen", "-", " "))
   out <- paste(txt, collapse = sep)
-  trimws(gsub("[ ]", " ", out))
+  trimws(gsub("[\u00a0]", " ", out))
 }
 
 .rp_read_docx <- function(path, docx_limits) {
@@ -554,7 +554,7 @@ print.render_parity <- function(x, ...) {
   res
 }
 
-.rp_squish <- function(x) gsub("[[:space:] ]+", " ", trimws(x))
+.rp_squish <- function(x) gsub("[[:space:]\u00a0]+", " ", trimws(x))
 
 # TRUE for the lines that start with `anchor` as a whole word (and, if given, contain `anchor2`)
 .rp_header_hits <- function(squished, anchor, anchor2) {
