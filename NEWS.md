@@ -9,6 +9,12 @@
 * Tests that cannot run in the Docker image now skip instead of failing: `deploy_release()` needs a git working tree (the image has no `.git`), and the checkpoint-message test needs `furrr`.
 * The `check_renv_guard()` test no longer depends on whether renv happens to be active in the test session; renv detection is a small internal function the test replaces.
 
+## `boot_lmer()`
+
+* New argument `parallel = FALSE`. With `parallel = TRUE` the bootstrap replicates are fitted with `furrr::future_map()` under the current future plan (`future::plan("multisession")`, a cluster, ...), each replicate with its own random-number stream. The result for a given `seed` is the same under any plan and any number of workers, but it is not the result of the sequential loop for that `seed`. The default is unchanged and gives the same results as before. The per-replicate work moved into an internal function shared by both paths.
+* Found by running the package on a DGX Spark (20 cores): the sequential loop used one core. On a 20-core Windows workstation, 200 replicates of a random-intercept model took 2.5 s sequentially and 1.4 / 0.9 / 0.5 s on 2 / 4 / 8 workers.
+* In parallel mode the arguments in `...` are evaluated before fitting. An argument that names a column of `data` (`weights = n`) is refused with a message that says so. (It does not work in the sequential loop either: every replicate fails and the result is empty. That is how it behaved before this change and is not changed here.)
+
 # TempleCBE 0.6.3
 
 A CI and packaging release; no R code changed.
