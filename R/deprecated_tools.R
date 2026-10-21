@@ -6,7 +6,7 @@
 #'
 #' @description
 #' `find_deprecated_calls()` inspects code files and reports all occurrences of
-#' deprecated TempleCBE functions scheduled for removal in TempleCBE 0.6.0.
+#' deprecated TempleCBE functions scheduled for removal in TempleCBE 0.7.0.
 #'
 #' `update_deprecated_calls()` previews or applies in-place renames to update
 #' both package-qualified calls (`TempleCBE::old()`, `TempleCBE:::old()`) and
