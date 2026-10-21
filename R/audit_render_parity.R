@@ -183,7 +183,8 @@ print.render_parity <- function(x, ...) {
 # ---- PDF ----------------------------------------------------------------------------------------
 
 .rp_leader_pattern <- "(\\.[\\s.]{2,}|…)[\\s]*[0-9ivxlcIVXLC]+[\\s]*$" # dot leaders and a page number
-.rp_section_number_pattern <- "^\\s*[0-9]+(\\.[0-9]+)+\\s+(?=[A-Za-z])"
+# "1.1 Methods": a section number and a capitalised title ("2.5 mg daily" is not one)
+.rp_section_number_pattern <- "^\\s*[0-9]+(\\.[0-9]+)+\\s+(?=[A-Z])"
 
 .rp_read_pdf <- function(path) {
   pages <- tryCatch(pdftools::pdf_data(path), error = function(e) {
@@ -239,11 +240,19 @@ print.render_parity <- function(x, ...) {
   # table repeat in shape, and the caption of a table that runs over several pages repeats, too
   edge <- lines$y < 0.07 * lines$page_height | lines$y > 0.9 * lines$page_height
   is_caption_line <- grepl(.rp_caption_pattern, lines$text, perl = TRUE)
-  key <- gsub("[0-9]+", "#", trimws(lines$text))
-  key[!edge | is_caption_line] <- NA_character_
-  pages_with <- tapply(lines$page, key, function(p) length(unique(p)))
-  running <- n_pages >= 3L & !is.na(key) & nzchar(key) & pages_with[key] >= max(3L, ceiling(n_pages / 2))
-  running[is.na(running)] <- FALSE
+  # A running line repeats as it is ("Draft report 5.5%") or differs only in a page number ("Page 3 of 9",
+  # at most two runs of digits). A table row such as "S017 11.7%" has three, so a long table that
+  # puts a row in the strip of every page is not mistaken for a header.
+  n_digit_runs <- vapply(gregexpr("[0-9]+", lines$text), function(m) sum(m > 0), integer(1))
+  threshold <- max(3L, ceiling(n_pages / 2))
+  repeated <- function(key) {
+    key[!edge | is_caption_line] <- NA_character_
+    pages_with <- tapply(lines$page, key, function(p) length(unique(p)))
+    r <- n_pages >= 3L & !is.na(key) & nzchar(key) & pages_with[key] >= threshold
+    r[is.na(r)] <- FALSE
+    r
+  }
+  running <- repeated(trimws(lines$text)) | (n_digit_runs <= 2L & repeated(gsub("[0-9]+", "#", trimws(lines$text))))
   contents <- grepl(.rp_leader_pattern, lines$text, perl = TRUE)
   lines$body <- !running & !contents
 
@@ -372,14 +381,19 @@ print.render_parity <- function(x, ...) {
     cells <- length(xml2::xml_find_all(nd, ".//w:tc", .rp_ns))
     is_data_tbl[i] <- !nested && cells >= 2L
   }
+  # the paragraphs of a data table follow it in document order: mark them (one pass, no per-paragraph search)
   in_data_tbl <- rep(FALSE, length(nodes))
-  for (i in which(!is_tbl)) {
-    anc <- xml2::xml_find_first(nodes[[i]], "ancestor::w:tbl[not(.//w:tbl)][count(.//w:tc) >= 2]", .rp_ns)
-    in_data_tbl[i] <- !inherits(anc, "xml_missing")
+  for (i in which(is_data_tbl)) {
+    k <- length(xml2::xml_find_all(
+      nodes[[i]], ".//w:p[not(ancestor::mc:Fallback) and not(ancestor::w:txbxContent)]", .rp_ns
+    ))
+    if (k > 0L) in_data_tbl[seq(i + 1L, min(i + k, length(nodes)))] <- TRUE
   }
-  keep <- (!is_tbl & !in_data_tbl) | is_data_tbl
+  # layout wrappers (a table with a table in it, or a single cell) are looked through
+  keep <- !is_tbl | is_data_tbl
   nodes <- nodes[keep]
   is_tbl <- is_tbl[keep]
+  in_tbl <- in_data_tbl[keep]
 
   style_of <- function(nd) {
     s <- xml2::xml_attr(xml2::xml_find_first(nd, "./w:pPr/w:pStyle", .rp_ns), "w:val", ns = .rp_ns)
@@ -395,12 +409,13 @@ print.render_parity <- function(x, ...) {
         vapply(xml2::xml_find_all(first_row, "./w:tc", .rp_ns), .rp_node_text, character(1))
       }
       row_cells <- trimws(row_cells[nzchar(trimws(row_cells))])
-      list(type = "table", text = paste(ptxt[nzchar(ptxt)], collapse = "\n"), contents = FALSE,
+      list(type = "table", text = paste(ptxt[nzchar(ptxt)], collapse = "\n"), contents = FALSE, in_tbl = FALSE, heading = FALSE,
            anchor = if (length(row_cells)) row_cells[1] else NA_character_,
            anchor2 = if (length(row_cells) > 1L) row_cells[2] else NA_character_, style_caption = FALSE)
     } else {
       st <- style_of(nd)
       list(type = "paragraph", text = .rp_node_text(nd), contents = grepl("^(TOC|TableofFigures|TableofAuthorities)", st, ignore.case = TRUE),
+           in_tbl = in_tbl[i], heading = grepl("^(Heading|Title)", st, ignore.case = TRUE),
            anchor = NA_character_, anchor2 = NA_character_,
            style_caption = grepl("caption", st, ignore.case = TRUE))
     }
@@ -408,6 +423,8 @@ print.render_parity <- function(x, ...) {
   types <- vapply(blocks, function(b) b$type, character(1))
   texts <- vapply(blocks, function(b) b$text, character(1))
   contents <- vapply(blocks, function(b) b$contents, logical(1))
+  in_tbl_block <- vapply(blocks, function(b) b$in_tbl, logical(1))
+  heading <- vapply(blocks, function(b) b$heading, logical(1))
   anchors <- vapply(blocks, function(b) b$anchor, character(1))
   anchors2 <- vapply(blocks, function(b) b$anchor2, character(1))
 
@@ -421,12 +438,13 @@ print.render_parity <- function(x, ...) {
   caps <- if (length(caps)) dplyr::bind_rows(caps) else .rp_empty_captions("docx")[, c("kind", "number", "label", "block")]
 
   # which side of its table each table caption is on, ignoring empty paragraphs between them
-  nonempty <- which(types == "table" | nzchar(texts))
+  nonempty <- which(types == "table" | (nzchar(texts) & !in_tbl_block))
   placement <- rep(NA_character_, nrow(caps))
   table_of <- rep(NA_integer_, nrow(caps))
   for (k in seq_len(nrow(caps))) {
     if (caps$kind[k] != "Table") next
     pos <- match(caps$block[k], nonempty)
+    if (is.na(pos)) next # a caption inside a table: no side to compare
     next_tbl <- pos < length(nonempty) && types[nonempty[pos + 1L]] == "table"
     prev_tbl <- pos > 1L && types[nonempty[pos - 1L]] == "table"
     if (next_tbl && !prev_tbl) { placement[k] <- "above"; table_of[k] <- nonempty[pos + 1L] }
@@ -461,8 +479,9 @@ print.render_parity <- function(x, ...) {
   }
   # pandoc writes the number of a numbered section into its heading as text; the PDF does too (and
   # its section numbers are removed from the comparison), so they are removed here as well
-  all_text <- paste(c(texts[!contents], notes), collapse = "\n")
-  all_text <- gsub("(?m)^[ \t]*[0-9]+(\\.[0-9]+)+[ \t]+(?=[A-Za-z])", "", all_text, perl = TRUE)
+  num_text <- texts
+  num_text[heading] <- sub(.rp_section_number_pattern, "", num_text[heading], perl = TRUE)
+  all_text <- paste(c(num_text[!contents & !in_tbl_block], notes), collapse = "\n")
   list(captions = caps, text = all_text)
 }
 
@@ -582,7 +601,7 @@ print.render_parity <- function(x, ...) {
     }
     if (length(hits) == 0L) {
       res[[length(res) + 1L]] <- list(severity = "info", location = label,
-                                       detail = sprintf("the table was not found in the PDF (looked for \"%s\"), so the caption placement was not compared", substr(anchor, 1, 40)))
+                                       detail = sprintf("no line starting with \"%s\" was found near its caption in the PDF, so the caption placement was not compared", substr(anchor, 1, 40)))
       next
     }
     dist <- abs(lines$position[hits] - cap_pos)

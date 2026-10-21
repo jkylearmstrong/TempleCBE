@@ -220,12 +220,14 @@ test_that("a table that cannot be located, or is ambiguous, in the PDF is report
   f <- rp_files(items = items)
   res <- audit_render_parity(f$pdf, f$docx, check = "placement")
   expect_identical(res$severity, "info")
-  expect_match(res$detail, "not found in the PDF")
+  expect_match(res$detail, "no line starting with")
   # the same header twice right under one caption: ambiguous
-  items2 <- c(rp_items(), list(list(y = 7.9, text = "Outcome Rate")))
+  items2 <- c(rp_items(), list(list(y = 7.72, text = "Outcome Rate"), list(y = 8.28, text = "Outcome Rate")))
   f2 <- rp_files(items = items2)
   res2 <- audit_render_parity(f2$pdf, f2$docx, check = "placement")
-  expect_true(all(res2$severity == "info"))
+  expect_identical(nrow(res2), 1L)
+  expect_identical(res2$severity, "info")
+  expect_match(paste(res2$detail, collapse = " "), "more than one place")
 })
 
 test_that("an empty paragraph between a caption and its table does not hide the table", {
@@ -369,4 +371,71 @@ test_that("print.render_parity() accepts its own arguments", {
   f <- rp_files(items = rp_items(pct = "97%"))
   res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
   expect_output(print(res, n = 1), "difference\\(s\\) to look at")
+})
+
+# ---- second review ---------------------------------------------------------------------------------
+
+test_that("rows of a long table in the page strips are not taken for running headers", {
+  skip_if_not_installed("pdftools")
+  # every page has a row of the same shape at its top and bottom edge, as a long table does
+  items <- list()
+  for (pg in 1:6) {
+    items <- c(items, list(
+      list(page = pg, y = 10.6, text = sprintf("S%03d %.1f%%", pg * 10, 10 + pg + 0.7)),
+      list(page = pg, y = 5, text = "Body text of the page"),
+      list(page = pg, y = 0.8, text = sprintf("S%03d %.1f%%", pg * 10 + 5, 20 + pg + 0.3))
+    ))
+  }
+  rows <- lapply(1:6, function(pg) list(c(sprintf("S%03d", pg * 10), sprintf("%.1f%%", 10 + pg + 0.7)),
+                                         c(sprintf("S%03d", pg * 10 + 5), sprintf("%.1f%%", 20 + pg + 0.3))))
+  body <- do.call(rp_tbl, c(list(c("Id", "Rate")), unlist(rows, recursive = FALSE)))
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_identical(nrow(res), 0L)
+})
+
+test_that("a page number in a running footer is still recognised as one", {
+  skip_if_not_installed("pdftools")
+  items <- list()
+  for (pg in 1:4) items <- c(items, list(list(page = pg, y = 0.6, text = sprintf("Page %d of 4", pg)), list(page = pg, y = 6, text = "Body")))
+  items <- c(items, list(list(page = 1, y = 8, text = "Rate was 12.5%")))
+  f <- rp_files(items = items, body = rp_p("Rate was 12.5%"))
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_identical(nrow(res), 0L)
+})
+
+test_that("decimals in table cells, and a wrapped line that starts with one, are not mistaken for section numbers", {
+  skip_if_not_installed("pdftools")
+  body <- paste0(rp_p("The daily dose was 2.5 mg daily as planned."), rp_tbl(c("Drug", "Low", "High"), c("Drug A", "0.5 mg", "1.2 mg")))
+  items <- list(
+    list(y = 10, text = "The daily dose was"), list(y = 9.7, text = "2.5 mg daily as planned."),
+    list(y = 9, text = "Drug Low High"), list(y = 8.7, text = "Drug A 0.5 mg 1.2 mg")
+  )
+  f <- rp_files(items = items, body = body)
+  res <- audit_render_parity(f$pdf, f$docx, check = "numbers")
+  expect_identical(nrow(res), 0L)
+})
+
+test_that("a caption inside a two-cell layout table is found, and its text is counted once", {
+  skip_if_not_installed("pdftools")
+  panel <- paste0("<w:tbl><w:tr><w:tc>", rp_p(paste0("Figure", NBSP, "1: Left panel 12.5%"), "ImageCaption"),
+                  "</w:tc><w:tc>", rp_p("Right"), "</w:tc></w:tr></w:tbl>")
+  items <- list(list(y = 10, text = "Figure 1: Left panel 12.5%"), list(y = 9.5, text = "Right"))
+  f <- rp_files(items = items, body = panel)
+  res <- audit_render_parity(f$pdf, f$docx, check = c("numbering", "numbers", "placement"))
+  expect_identical(nrow(res), 0L)
+  expect_true("Figure 1" %in% attr(res, "captions")$docx$label)
+})
+
+test_that("a big Word table is read in linear time", {
+  skip_if_not_installed("pdftools")
+  skip_on_cran()
+  rows <- lapply(seq_len(1500), function(i) c(sprintf("S%04d", i), "1.5%"))
+  body <- do.call(rp_tbl, c(list(c("Id", "Rate")), rows))
+  d <- withr::local_tempdir()
+  docx <- file.path(d, "big.docx")
+  rp_docx(docx, body)
+  elapsed <- system.time(parsed <- .rp_read_docx(docx, NULL))[["elapsed"]]
+  expect_lt(elapsed, 10) # the per-paragraph search this replaced took ~3 s for 1500 rows and grew with the square
+  expect_match(parsed$text, "S1500")
 })
