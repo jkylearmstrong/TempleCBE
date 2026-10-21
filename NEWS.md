@@ -1,3 +1,12 @@
+# TempleCBE 0.6.3
+
+A CI and packaging release; no R code changed.
+
+## Continuous integration
+
+* **aarch64 Linux is now checked.** `R-CMD-check` runs the full check and the optional-dependency (`future` multisession) tests on `ubuntu-24.04-arm`, the CPU architecture of DGX Spark, in addition to Ubuntu x86-64, Windows and macOS.
+* **Container images are built natively per architecture.** The `v0.6.2` tag build was cancelled at the 60-minute limit because the arm64 half ran under QEMU emulation. Tag builds now compile `linux/amd64` and `linux/arm64` on native runners, push each by digest, and merge them into one multi-architecture manifest. Other builds publish `linux/amd64` only. No `0.6.2` image was published from the tag; `0.6.3` is the first multi-architecture release image.
+
 # TempleCBE 0.6.2
 
 ## New functions
