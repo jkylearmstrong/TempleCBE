@@ -310,6 +310,7 @@ reference:
       - rossi_data
       - render
       - render_me
+      - render_variants
       - zip_reports
       - write_run_manifest
       - repro_appendix
