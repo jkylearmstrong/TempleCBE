@@ -11,6 +11,8 @@ render_variants(
   output_dir = NULL,
   stop_on_error = TRUE,
   dry_run = FALSE,
+  self_contained = TRUE,
+  check_params = TRUE,
   renderer = NULL,
   quiet = TRUE
 )
@@ -25,27 +27,34 @@ Names must be unique and consist of letters, digits, \code{_}, \code{.} or
 \code{-}.}
 
 \item{formats}{Output formats to render for each variant (default \code{"html"}),
-for example \code{c("html", "docx")}.}
+for example \code{c("html", "docx")}. Letters, digits, \code{_} and \code{-} only.}
 
 \item{output_dir}{Folder for the outputs. Defaults to the folder of the template.}
 
 \item{stop_on_error}{If \code{TRUE} (default), the first failed rendering stops
-the run; if \code{FALSE}, failures are recorded in the result and the other
-variants are still rendered.}
+the run with an error of class \code{render_variants_error} that carries the
+results so far in \code{$results}; if \code{FALSE}, failures are recorded in the
+result and the other variants are still rendered.}
 
 \item{dry_run}{If \code{TRUE}, nothing is rendered; the plan is returned.}
 
+\item{self_contained}{For \code{.qmd} HTML output, ask for one self-contained file;
+see Details. Default \code{TRUE}.}
+
+\item{check_params}{If \code{TRUE} (default), check the variants' parameters against
+the template's \code{params:}; see Details.}
+
 \item{renderer}{The function that renders one document, with the arguments of
 \code{quarto::quarto_render()} (\code{input}, \code{output_format},
-\code{output_file}, \code{execute_params}, \code{quiet}). Defaults to
-\code{quarto::quarto_render} for a \code{.qmd} and to
+\code{output_file}, \code{execute_params}, \code{quiet}, \code{metadata}).
+Defaults to \code{quarto::quarto_render} for a \code{.qmd} and to
 \code{rmarkdown::render} (with \code{params}) for an \code{.Rmd}.}
 
 \item{quiet}{Passed on to the renderer.}
 }
 \value{
 A tibble with one row per variant and format: \code{variant}, \code{format},
-  \code{params} (a list column), \code{output} (the file the rendering writes),
+  \code{params} (a list column), \code{output} (the final file),
   \code{status} (\code{"rendered"}, \code{"failed"} or \code{"planned"}) and
   \code{error}.
 }
@@ -58,14 +67,29 @@ list of parameters; the output files are named
 \code{<template>_<variant>.<extension>}.
 }
 \details{
-Every parameter a variant sets must be declared under \code{params:} in the
-template's YAML header: a misspelled parameter is an error before anything is
-rendered (Quarto would otherwise ignore it and silently render the default).
-A parameter that no variant sets keeps the template's default.
+\strong{Parameters are checked.} Every parameter a variant sets must be declared
+under \code{params:} in the template's YAML header: a misspelled parameter is an
+error before anything is rendered (Quarto would otherwise ignore it and silently
+render the default). The keys are read from the header as written, so parameters
+such as \code{n}, \code{y} or \code{on} are not mistaken for YAML booleans. A
+parameter that no variant sets keeps the template's default. The check is skipped,
+with a warning, when the header cannot be read; \code{check_params = FALSE} switches it off
+(needed for a Jupyter notebook template whose parameters are declared in a
+\code{parameters}-tagged cell).
 
-The template is rendered in its own folder, as Quarto does, and the outputs are
-then moved to \code{output_dir}. A file of that name that already exists there is
-replaced.
+\strong{Your files are not touched.} Each rendering is written to a file with a
+private name in the template's folder and then renamed or moved to its final
+name, so a file that already exists next to the template (a hand-made
+\code{analysis_final.html}, say) is never overwritten, moved or deleted. A file at the
+final name \emph{in \code{output_dir}} is replaced. The private file is removed
+if the rendering fails.
+
+\strong{HTML.} Quarto's default HTML needs a folder of support files named after the
+template, shared by every variant and not moved with the output. \code{self_contained = TRUE}
+(default) therefore asks for a single self-contained HTML file
+(\code{embed-resources: true}); with \code{FALSE} you must keep the support folder
+yourself and variants overwrite each other's figures. For an R Markdown template
+the setting is not applied (\code{html_document} is self-contained by default).
 }
 \examples{
 \dontrun{
