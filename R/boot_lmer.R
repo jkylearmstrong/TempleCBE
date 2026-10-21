@@ -72,8 +72,10 @@
 #'   under the default sequential plan nothing runs in parallel). Default `FALSE`, the
 #'   sequential loop. In parallel mode each replicate has its own random-number stream, so the
 #'   result for a given `seed` is the same under any plan and any number of workers, but it is
-#'   not the result of the sequential loop for that `seed`. TempleCBE must be installed on
-#'   the workers, and the arguments in `...` are evaluated before fitting (they cannot name
+#'   not the result of the sequential loop for that `seed`. `seed` must be a single number
+#'   in this mode. The same version of TempleCBE must be installed on the workers (they load
+#'   the installed package, not a `load_all()` source tree, and resolve its helper functions
+#'   from it), and the arguments in `...` are evaluated before fitting (they cannot name
 #'   columns of `data`, such as `weights = n`).
 #' @param ... Passed to [lme4::lmer()].
 #' @return A tibble of class `boot_lmer`, one row per fixed effect: `term`, `n` (kept
@@ -116,6 +118,17 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
     bad <- normalize[!normalize %in% names(data) | !vapply(normalize, function(v) v %in% names(data) && is.numeric(data[[v]]), logical(1))]
     if (length(bad)) stop("`normalize` must name numeric columns of `data`: ", paste(bad, collapse = ", "), ".", call. = FALSE)
   }
+  if (!is.logical(parallel) || length(parallel) != 1L || is.na(parallel)) {
+    stop("`parallel` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (parallel) {
+    if (!requireNamespace("furrr", quietly = TRUE) || !requireNamespace("future", quietly = TRUE)) {
+      stop("Packages 'furrr' and 'future' are required for boot_lmer(parallel = TRUE). Please install them.", call. = FALSE)
+    }
+    if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed))) {
+      stop("`seed` must be a single number when `parallel = TRUE`.", call. = FALSE)
+    }
+  }
   n_boot <- as.integer(n_boot)
   if (anyNA(data[[group]])) stop("`group` has missing values; remove those rows first.", call. = FALSE)
   # grouping factors: the variables after the "|" of each random-effect term
@@ -148,10 +161,7 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
   )
 
   reps <- vector("list", n_boot)
-  if (isTRUE(parallel)) {
-    if (!requireNamespace("furrr", quietly = TRUE)) {
-      stop("Package 'furrr' is required for boot_lmer(parallel = TRUE). Please install it.", call. = FALSE)
-    }
+  if (parallel) {
     # furrr hands the arguments to the workers as values, so an argument that names a column of
     # `data` (weights = n) cannot be forwarded the way the sequential loop forwards it
     dots <- tryCatch(
@@ -162,8 +172,8 @@ boot_lmer <- function(formula, data, group, n_boot = 1000L, normalize = NULL,
         }
       ),
       error = function(e) {
-        stop("With `parallel = TRUE` the arguments in `...` are evaluated before fitting, so they cannot name ",
-             "columns of `data` (", conditionMessage(e), "). Use `parallel = FALSE`.", call. = FALSE)
+        stop("Evaluating the arguments in `...` failed (", conditionMessage(e), "). With `parallel = TRUE` they are ",
+             "evaluated before fitting, so they cannot refer to columns of `data` (as in `weights = n`).", call. = FALSE)
       }
     )
     # one L'Ecuyer random-number stream per replicate: the result depends on `seed` and `n_boot`,

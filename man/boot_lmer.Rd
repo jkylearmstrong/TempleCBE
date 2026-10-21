@@ -52,8 +52,10 @@ current future plan (set it with `future::plan()`, for example `future::plan("mu
 under the default sequential plan nothing runs in parallel). Default `FALSE`, the
 sequential loop. In parallel mode each replicate has its own random-number stream, so the
 result for a given `seed` is the same under any plan and any number of workers, but it is
-not the result of the sequential loop for that `seed`. TempleCBE must be installed on
-the workers, and the arguments in `...` are evaluated before fitting (they cannot name
+not the result of the sequential loop for that `seed`. `seed` must be a single number
+in this mode. The same version of TempleCBE must be installed on the workers (they load
+the installed package, not a `load_all()` source tree, and resolve its helper functions
+from it), and the arguments in `...` are evaluated before fitting (they cannot name
 columns of `data`, such as `weights = n`).}
 
 \item{...}{Passed to [lme4::lmer()].}
