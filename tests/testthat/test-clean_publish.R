@@ -1133,6 +1133,42 @@ test_that("clean commits and private tips are used only as full object ids (CPB-
   expect_push_accepted(fx$repo, "master")
 })
 
+test_that("a full object id is lower-case hex in every shell and locale (CPB-06)", {
+  skip_if_no_git()
+  shells <- cp_hook_shells()
+  skip_if(!length(shells), "no POSIX shell found")
+  fx <- cp_fixture(published = TRUE)
+  # the hook's own definition of an id, run alone
+  hook <- readLines(cp_hook_file(fx$repo), warn = FALSE)
+  start <- grep("^_tcbe_is_id\\(\\) \\{", hook)
+  expect_length(start, 1L)
+  end <- start + which(hook[start:length(hook)] == "}")[1L] - 1L
+  script <- withr::local_tempfile(fileext = ".sh")
+  # line feeds only (a text-mode file would get a carriage return as well on Windows)
+  writeBin(charToRaw(paste0(paste(c(hook[start:end], "if _tcbe_is_id \"$1\"; then echo yes; else echo no; fi"), collapse = "\n"), "\n")), script)
+  is_id <- function(shell, id) {
+    # standard output only: a shell prints a warning on standard error when the locale is not installed
+    out <- suppressWarnings(system2(shell, shQuote(c(script, id)), stdout = TRUE, stderr = FALSE))
+    paste(out, collapse = "")
+  }
+  lower <- paste(rep("0123456789abcdef", 3L), collapse = "")
+  lower40 <- substr(lower, 1L, 40L)
+  # upper-case ids are not full ids. Without an F they would be accepted by a range such as
+  # 0-9a-f that follows the collation order (macOS bash in en_US.UTF-8): a commit whose id has
+  # no F then made the whole private history count as clean, in one run of about thirteen
+  uppers <- c(toupper(lower40), strrep("ABCDE", 8L), paste0("A", strrep("1", 39L)))
+  for (shell in shells) {
+    for (locale in c("C", "en_US.UTF-8", "en_US")) {
+      withr::local_envvar(c(LC_ALL = locale, LANG = locale))
+      info <- paste(basename(shell), locale)
+      expect_identical(is_id(shell, lower40), "yes", info = info)
+      expect_identical(is_id(shell, paste(rep("0", 64L), collapse = "")), "yes", info = info)
+      for (u in uppers) expect_identical(is_id(shell, u), "no", info = paste(info, u))
+      expect_identical(is_id(shell, substr(lower40, 1L, 12L)), "no", info = info)
+    }
+  }
+})
+
 test_that("a stale or mistyped private tip is ignored with a note and disables nothing (CPB-06)", {
   skip_if_no_git()
   fx <- cp_fixture(published = TRUE)
