@@ -4,7 +4,25 @@ if (!file.exists(deploy_script) || !file.exists(file.path(dirname(dirname(deploy
 }
 source(deploy_script, local = TRUE)
 
+# deploy_release() refuses a directory that is not a git working tree; a Docker image holds the
+# source without .git, so these tests cannot run there.
+skip_if_no_git_tree <- function() {
+  git <- Sys.which("git")
+  testthat::skip_if(!nzchar(git), "git is not available")
+  root <- dirname(dirname(deploy_script))
+  status <- suppressWarnings(system2(git, c("-C", shQuote(root), "rev-parse", "--is-inside-work-tree"),
+                                     stdout = FALSE, stderr = FALSE))
+  if (!identical(as.integer(status), 0L)) {
+    msg <- "the source tree is not a git working tree"
+    # on CI a checkout is always a git tree: a failure there (dubious ownership, a broken
+    # checkout) is a real problem, not something to skip
+    if (identical(Sys.getenv("CI"), "true")) stop(msg, call. = FALSE)
+    testthat::skip(paste0(msg, " (for example in a Docker image)"))
+  }
+}
+
 test_that("deploy_release validates version_tag strictly (A5-11)", {
+  skip_if_no_git_tree()
   # Invalid versions must throw an error, not just a warning
   expect_error(
     deploy_release(version_tag = "1.0 && cmd", dry_run = TRUE),
@@ -21,12 +39,14 @@ test_that("deploy_release validates version_tag strictly (A5-11)", {
 })
 
 test_that("deploy_release generates valid datetime version tags with %H%M (A5-25)", {
+  skip_if_no_git_tree()
   res <- deploy_release(version_tag = "auto", base_version = "0.4.45", dry_run = TRUE)
   expect_true(grepl("^0\\.4\\.45\\.\\d{4}\\.\\d{2}\\.\\d{2}\\.\\d{4}$", res))
   expect_s3_class(package_version(res), "package_version")
 })
 
 test_that("deploy_release refuses execution off expected branch (A5-05)", {
+  skip_if_no_git_tree()
   expect_error(
     deploy_release(
       version_tag = "0.4.45.1",
@@ -39,6 +59,7 @@ test_that("deploy_release refuses execution off expected branch (A5-05)", {
 })
 
 test_that("deploy_release dry_run mode executes cleanly without modifying files", {
+  skip_if_no_git_tree()
   desc_path <- file.path(dirname(dirname(deploy_script)), "DESCRIPTION")
   desc_before <- readLines(desc_path)
   res <- deploy_release(version_tag = "0.4.45.9999", dry_run = TRUE)

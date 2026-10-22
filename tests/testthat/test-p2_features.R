@@ -670,6 +670,9 @@ test_that("write_run_manifest handles non-git directory quietly", {
 })
 
 test_that("checkpoint skipping message is emitted when progress is TRUE", {
+  # summarize_tune_results() wraps tune_alpha_by_split(), which needs furrr; the
+  # tryCatch below would otherwise hide that error and fail on the message.
+  skip_if_not_installed("furrr")
   tmp <- tempfile("ckpt_msg_")
   dir.create(tmp)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)

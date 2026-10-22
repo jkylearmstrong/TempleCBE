@@ -1,5 +1,14 @@
 # TempleCBE 0.6.3.9000
 
+## Docker image
+
+* The image now installs the Suggested packages that features need at run time (`lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx`, `zip`, pinned to exact versions) and `pandoc`, and the build fails if that changes any package pinned in `renv.lock`. Found by running the package on a DGX Spark (aarch64): `boot_lmer()`, `tune_alpha_by_split()` and the Word review exports could not run in the image, because `renv.lock` records only Imports, and about 30 tests that need `zip` or `openxlsx` errored. Rendering R Markdown inside the image also failed for want of a pandoc that R could see. The `pandoc` is the distribution's, not the one Quarto bundles.
+
+## Tests
+
+* Tests that cannot run in the Docker image now skip instead of failing: `deploy_release()` needs a git working tree (the image has no `.git`), and the checkpoint-message test needs `furrr`.
+* The `check_renv_guard()` test no longer depends on whether renv happens to be active in the test session; renv detection is a small internal function the test replaces.
+
 ## `boot_lmer()`
 
 * New argument `parallel = FALSE`. With `parallel = TRUE` the bootstrap replicates are fitted with `furrr::future_map()` under the current future plan (`future::plan("multisession")`, a cluster, ...), each replicate with its own random-number stream. The result for a given `seed` is the same under any plan and any number of workers, but it is not the result of the sequential loop for that `seed`. The default is unchanged and gives the same results as before. The per-replicate work moved into an internal function shared by both paths.
