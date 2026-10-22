@@ -97,6 +97,9 @@ jobs:
     if: ${{ needs.prepare.outputs.run == 'true' }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
+    # the environment holds DOCKERHUB_TOKEN and only master and v* tags may use it; a build that
+    # does not publish (a manual run from another branch) uses no environment and no token
+    environment: ${{ needs.prepare.outputs.publish == 'true' && 'dockerhub' || '' }}
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
@@ -120,8 +123,9 @@ jobs:
         env:
           DOCKERHUB_USER: ${{ vars.DOCKERHUB_USERNAME || secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
+          PUBLISH: ${{ needs.prepare.outputs.publish }}
         run: |
-          if [ -n "$DOCKERHUB_USER" ] && [ -z "$DOCKERHUB_PASS" ]; then
+          if [ "$PUBLISH" = true ] && [ -n "$DOCKERHUB_USER" ] && [ -z "$DOCKERHUB_PASS" ]; then
             echo "::error::A Docker Hub user name is set but DOCKERHUB_TOKEN is not"; exit 1
           fi
           if [ -z "$DOCKERHUB_USER" ] && [ -n "$DOCKERHUB_PASS" ]; then
@@ -189,6 +193,7 @@ jobs:
     if: ${{ needs.prepare.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: dockerhub
     permissions:
       contents: read
       packages: write
