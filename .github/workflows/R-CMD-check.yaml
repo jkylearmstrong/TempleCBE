@@ -37,7 +37,7 @@ jobs:
       TESTTHAT_PARALLEL: "FALSE"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -82,7 +82,7 @@ jobs:
           - {os: ubuntu-24.04-arm, r: 'release', locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()'}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -124,7 +124,7 @@ jobs:
           - {os: ubuntu-24.04-arm, locale: C.UTF-8}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 

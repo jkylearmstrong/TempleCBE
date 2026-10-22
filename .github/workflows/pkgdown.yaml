@@ -25,7 +25,7 @@ jobs:
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -57,7 +57,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         # the site is built from master or a published release only (a manual run from another
         # branch would otherwise replace the public site)
         if: github.ref == 'refs/heads/master' || github.event_name == 'release'
