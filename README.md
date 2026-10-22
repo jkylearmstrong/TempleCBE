@@ -36,11 +36,11 @@ areas:
 | \# | Methodology Gap Area | The Clinical & Modeling Problem | How `TempleCBE` Fills the Gap | Dedicated Vignette |
 |:---|:---|:---|:---|:---|
 | **1** | **Start/Stop Counting-Process Data** | Time-varying longitudinal covariates (`Surv(tstart, tstop, status)`) suffer interval leakage when events occur between scheduled visits; standard tools flatten or crash on counting-process matrices. | `tidy_tmerge_cox()` constructs verified counting intervals; `get_dataset_info()` audits counting-process duration and events without matrix flattening; `cv_coxnet()` enforces subject-grouped partitioning to prevent cross-fold leakage. | [Nested Survival CV](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html) & [SAS Survival](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html) |
-| **2** | **Tidymodels & Survival ML** | `tidymodels` and `censored` lack specialized clinical recipes (supervised likelihood encoding for survival, mixed-data FAMD) and calibrated multi-paradigm ensembles for complex clinical risk prediction. | S3 `hardhat` engines (`coxnet()`, `cv_coxnet()`), custom recipe steps (`step_lencode_coxnet()`, `step_famd()`), a `coxnet` engine for `parsnip::proportional_hazards()` that also accepts start/stop outcomes, LOCO mini-patch inference (`cbe_loco_mp_coxnet()`), and stacked joint ensembles (`joint_model()`). | [Nested Survival CV](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html) |
-| **3** | **SAS Regulatory Parity & Validation** | Migrating FDA/regulatory trials between SAS and R leads to discrepancies in `PROC PHREG`, `PROC COMPARE`, `PROC PRINCOMP`, zero-cell Fisher exact conservatism, and non-standard missing codes (`999`, `-99`). | `cbe_compare_df()` gives a tidy cell-level comparison that agrees with SAS `PROC COMPARE` on a committed SAS 9.4 benchmark (differences are listed in `?cbe_compare_df`); `proc_pca()` reproduces exact `PROC PRINCOMP` eigenvalue tables; `cbe_exact2x2()` provides automatic mid-p exact testing; automated SAS macro bridges (`run_sas_script()`). | [R to SAS](https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html) & [PCA Analysis](https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html) |
+| **2** | **Tidymodels & Survival ML** | `tidymodels` and `censored` lack specialized clinical recipes (supervised likelihood encoding for survival, mixed-data FAMD) and calibrated multi-paradigm ensembles for complex clinical risk prediction. | S3 `hardhat` engines (`coxnet()`, `cv_coxnet()`), custom recipe steps (`step_lencode_coxnet()`, `step_famd()`), a `coxnet` engine for `parsnip::proportional_hazards()` that also accepts start/stop outcomes, LOCO mini-patch inference (`loco_mp_coxnet()`), and stacked joint ensembles (`joint_model()`). | [Nested Survival CV](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html) |
+| **3** | **SAS Regulatory Parity & Validation** | Migrating FDA/regulatory trials between SAS and R leads to discrepancies in `PROC PHREG`, `PROC COMPARE`, `PROC PRINCOMP`, zero-cell Fisher exact conservatism, and non-standard missing codes (`999`, `-99`). | `compare_df()` gives a tidy cell-level comparison that agrees with SAS `PROC COMPARE` on a committed SAS 9.4 benchmark (differences are listed in `?cbe_compare_df`); `run_pca()` reproduces exact `PROC PRINCOMP` eigenvalue tables; `exact2x2()` provides automatic mid-p exact testing; automated SAS macro bridges (`run_sas_script()`). | [R to SAS](https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html) & [PCA Analysis](https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html) |
 | **4** | **Python & Reticulate Cross-Language ML** | Advanced survival ML, SHAP explanations, and deep learning live in Python, while clinical data wrangling and biostatistical models live in R. | Seamless two-way `reticulate` serialization, exporting fitted R models, survival components, and data dictionaries directly into Python environments (`DALEXtra`, `survex`, `scikit-learn`). | [Reticulate Export](https://jkylearmstrong.github.io/TempleCBE/articles/reticulate_export.html) |
-| **5** | **Multi-Table Clinical Databases & ER Graphs** | Clinical datasets arrive as multi-table relational lists (`inputs`, `ABG`, `Cardiovascular`, `survival_data`). Managing consolidated dictionaries, Excel sheets, variable roles, and cohort overlap requires tedious boilerplate. | Consolidated multi-table `get_dataset_info.list()`, multi-sheet Excel export/import (`write_database_to_excel()`, `read_database_from_excel()`), in-place metadata sync (`apply_database_metadata()`), variable role management (`cbe_variable_roles()`), and Entity-Relationship graph analysis (`cbe_database_relationships()`, `cbe_database_venn()`). | [EDA & Missingness](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html) |
-| **6** | **Pipeline DAGs & Reproducible Reporting** | Multi-report analytical deliverables lack lightweight dependency tracking without configuring heavyweight workflow managers like Make or Snakemake. | `compute_graph()` tracks script, data, and report dependencies as typed DAGs; `as_tbl_graph()` / `as_igraph()` converts to standard networks; `render()` executes staleness-aware compilation of Quarto/Rmd deliverables. | [Compute Graph](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html) |
+| **5** | **Multi-Table Clinical Databases & ER Graphs** | Clinical datasets arrive as multi-table relational lists (`inputs`, `ABG`, `Cardiovascular`, `survival_data`). Managing consolidated dictionaries, Excel sheets, variable roles, and cohort overlap requires tedious boilerplate. | Consolidated multi-table `get_dataset_info.list()`, multi-sheet Excel export/import (`write_database_to_excel()`, `read_database_from_excel()`), in-place metadata sync (`apply_database_metadata()`), variable role management (`variable_roles()`), and Entity-Relationship graph analysis (`database_relationships()`, `cbe_database_venn()`). | [EDA & Missingness](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html) |
+| **6** | **Pipeline DAGs & Reproducible Reporting** | Multi-report analytical deliverables lack lightweight dependency tracking without configuring heavyweight workflow managers like Make or Snakemake. | `compute_graph()` tracks script, data, and report dependencies as typed DAGs; `as_tbl_graph()` / `as_igraph()` converts to standard networks; `render_pipeline()` executes staleness-aware compilation of Quarto/Rmd deliverables. | [Compute Graph](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html) |
 
 ------------------------------------------------------------------------
 
@@ -97,8 +97,8 @@ clinical_db <- list(
 )
 
 # 2. Assign database metadata and dataset descriptions
-cbe_database_name(clinical_db) <- "CardioPulmonaryTrial"
-clinical_db <- cbe_set_dataset_labels(clinical_db, list(
+database_name(clinical_db) <- "CardioPulmonaryTrial"
+clinical_db <- set_dataset_labels(clinical_db, list(
   inputs = "Baseline Demographics",
   ABG = "Serial Arterial Blood Gas",
   survival_data = "Time-to-Event Clinical Followup"
@@ -111,7 +111,7 @@ get_dataset_info(clinical_db, subject_id = "patient_id")
 write_database_to_excel(clinical_db, "Clinical_Trial_Database.xlsx")
 
 # 5. Entity-Relationship graph & cohort overlap analysis
-rel <- cbe_database_relationships(clinical_db)
+rel <- database_relationships(clinical_db)
 as_tbl_graph(rel) # Convert directly to tidygraph
 cbe_database_venn(clinical_db, id_col = "patient_id") # Visual Venn overlap
 ```
@@ -133,7 +133,7 @@ df_base <- data.frame(id = 1:5, age = c(45, 52, 60, 65, 70), stage = c("I", "II"
 df_comp <- data.frame(id = 1:5, age = c(45, 52, 62, 65, 70), stage = c("I", "II", "II", "III", "IV"))
 
 # Cell-level comparison, modelled on SAS PROC COMPARE
-cmp <- cbe_compare_df(df_base, df_comp, by = "id", base_name = "Base", compare_name = "Audit")
+cmp <- compare_df(df_base, df_comp, by = "id", base_name = "Base", compare_name = "Audit")
 print(cmp)
 
 # Visual diagnostic: Observation and Variable Venn diagrams
@@ -205,12 +205,12 @@ predict(jm_fit, lung_clean[1:5, ], eval_time = c(180, 365))
 
 ### 5. Principal Component Analysis (SAS `PROC PRINCOMP` Parity)
 
-`proc_pca()` executes standardized PCA and outputs the exact eigenvalue
+`run_pca()` executes standardized PCA and outputs the exact eigenvalue
 variance table produced by SAS `PROC PRINCOMP`:
 
 ``` r
 # Standardized PCA on continuous variables
-iris_pca <- proc_pca(iris[, 1:4], scale = TRUE)
+iris_pca <- run_pca(iris[, 1:4], scale = TRUE)
 
 # 1. Scree plot with Kaiser-Guttman threshold (Eigenvalue >= 1)
 pca_scree_plot(iris_pca, metric = "eigenvalue", kaiser = TRUE)
@@ -253,7 +253,7 @@ and clinical workflows:
 | **01** | [Exploratory Data Analysis, Missingness Auditing, and Normalization](https://jkylearmstrong.github.io/TempleCBE/articles/eda_and_missingness.html) | Multi-code missing sentinels, missingness maps, IQR fences, and multi-table clinical database dictionaries. |
 | **02** | [Penalized Cox Models and Nested Cross-Validation](https://jkylearmstrong.github.io/TempleCBE/articles/nested_survival_cv.html) | Start/stop counting process data, subject-level partitioning, `step_lencode_coxnet`, and yardstick survival scoring. |
 | **03** | [Visualizing Computational Pipeline Dependencies](https://jkylearmstrong.github.io/TempleCBE/articles/compute_graph.html) | Directed acyclic graphs (DAGs), multi-report orchestration, and reproducible analysis plans. |
-| **04** | [Validation Guide for SAS Users: Cox Models](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html) | Cross-validating `cbe_cox_single()`, `cbe_cox_multi()`, and `tidy_tmerge_cox()` against SAS `PROC PHREG`. |
+| **04** | [Validation Guide for SAS Users: Cox Models](https://jkylearmstrong.github.io/TempleCBE/articles/sas_survival.html) | Cross-validating `cox_single()`, `cox_multi()`, and `tidy_tmerge_cox()` against SAS `PROC PHREG`. |
 | **05** | [Cross-Validating Advanced Survival Models: R to SAS](https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html) | Automated macro exports, macro validation suites, `cbe_compare_df` verification, and numerical concordance benchmarks. |
 | **06** | [Multi-Language Interoperability and Python Pipelines](https://jkylearmstrong.github.io/TempleCBE/articles/reticulate_export.html) | Reticulate bridges, exporting survival matrices and models to Python (`DALEXtra`, `survex`), and cross-language artifact transfer. |
 | **07** | [Principal Component Analysis in R and SAS](https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html) | SAS `PROC PRINCOMP` eigenvalue parity, Kaiser-Guttman scree plots, biplots, and clinical TAS dimension reduction. |
@@ -302,7 +302,7 @@ cross-platform containment, and survival methodology:
   well-formed output. SAS parity is checked against committed reference
   numbers printed by SAS 9.4 for `PROC PHREG` (the counting-process
   tumor data and the `lung` cohort), `PROC PRINCOMP` (the eigenvalue
-  table of `proc_pca()` on `iris`), `PROC COMPARE` (`cbe_compare_df()` on
+  table of `run_pca()` on `iris`), `PROC COMPARE` (`compare_df()` on
   nine small comparisons) and the IPCW Brier score and
   integrated Brier score macro; re-running SAS itself is opt-in
   (`TEMPLECBE_RUN_SAS_TESTS`) and needs a SAS installation.

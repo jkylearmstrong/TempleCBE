@@ -1,10 +1,10 @@
 /*==============================================================================
-  TempleCBE SAS Validation Benchmark: PROC COMPARE against cbe_compare_df()
+  TempleCBE SAS Validation Benchmark: PROC COMPARE against compare_df()
 
   Nine small comparisons, each on data typed into this program (so R and SAS see
   the very same numbers; a test in test-sas_parity_reference.R checks the
   datalines). All use METHOD=ABSOLUTE and a CRITERION that is the tolerance given
-  to cbe_compare_df(): 1E-7 (its default), except s4_edge (0.25) and s9_trap (0.1).
+  to compare_df(): 1E-7 (its default), except s4_edge (0.25) and s9_trap (0.1).
 
     s1_id       ID id. Identical variables, a difference inside and beyond the
                 criterion, a missing value on one side only, a missing value on
@@ -13,7 +13,7 @@
                 variable only in BASE and one only in COMPARE, a character
                 variable with different lengths, two observations only in BASE
                 and one only in COMPARE. COMPARE is typed unsorted and sorted
-                here, because PROC COMPARE needs sorted data; cbe_compare_df()
+                here, because PROC COMPARE needs sorted data; compare_df()
                 does not.
     s2_rows     No ID: observations are compared by position; BASE has two more.
     s3_dup      ID values that occur more than once (paired in order).
@@ -34,7 +34,7 @@
 
   Can be executed directly from R:
     TempleCBE::run_sas_script(
-      TempleCBE::cbe_sas_macro_path("benchmark_proc_compare.sas")
+      TempleCBE::sas_macro_path("benchmark_proc_compare.sas")
     )
 ==============================================================================*/
 

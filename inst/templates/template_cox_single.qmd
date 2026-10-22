@@ -5,7 +5,7 @@
 
 # Feature evaluation using TempleCBE standard engine
 feature_txt <- as.character(deparse(substitute({{feature}})))
-res <- TempleCBE::cbe_cox_single(survival_data, outcome = "outcome", feature = feature_txt)
+res <- TempleCBE::cox_single(survival_data, outcome = "outcome", feature = feature_txt)
 ```
 
 \clearpage

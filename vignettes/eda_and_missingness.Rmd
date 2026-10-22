@@ -72,7 +72,7 @@ clinical biostatisticians and data managers.
 `TempleCBE` was built specifically for the constraints of institutional
 biostatistics core facilities:
 
-1. **Zero-mutation non-standard code auditing**: `SumNa()` and
+1. **Zero-mutation non-standard code auditing**: `count_na()` and
    `features_percent_miss()` natively accept vectors of custom missing codes
    (`na_list = c("999", "-99", "", "Unknown", "NA")`). They compute exact
    missingness counts and percentages *without altering or coercing the underlying
@@ -145,7 +145,7 @@ cohort_clean <- tibble::tibble(
 head(cohort_clean, 6)
 
 # Verify complete data integrity (zero missingness)
-SumNa(cohort_clean)
+count_na(cohort_clean)
 ```
 
 The dataset contains:
@@ -239,19 +239,19 @@ number of masked cells per feature.
 Now that missingness has been induced, we audit the dataset using `TempleCBE`'s
 non-destructive auditing suite.
 
-### Total missingness with `SumNa()`
+### Total missingness with `count_na()`
 
-`SumNa()` evaluates total missing cells across an entire vector, data frame, or
+`count_na()` evaluates total missing cells across an entire vector, data frame, or
 matrix. When working with raw hospital extracts containing non-standard placeholders,
 specify custom sentinel codes in `na_list`:
 
 ```{r sum_na_demo}
 # Total missing cells in our amputed cohort (18 rows * 7 features = 126 cells)
-SumNa(amputed)
+count_na(amputed)
 
 # Demonstrating multi-sentinel code auditing without modifying data types
 vec_raw <- c(12, 14, NA, 999, 18, "", "Unknown", -99)
-SumNa(vec_raw, na_list = c("999", "-99", "", "Unknown"))
+count_na(vec_raw, na_list = c("999", "-99", "", "Unknown"))
 ```
 
 ### Feature-level completeness table with `features_percent_miss()`
@@ -429,7 +429,7 @@ Notice that:
 head(res_forest$imp_data, 6)
 
 # Verify that all missing values have been successfully resolved
-SumNa(res_forest$imp_data)
+count_na(res_forest$imp_data)
 ```
 
 ---
@@ -703,7 +703,7 @@ flagged_patients <- cohort_clean |>
 
 `TempleCBE` delivers a clean, auditable, and non-destructive exploratory workflow
 engineered specifically for the realities of clinical data. By combining
-`SumNa()`, `features_percent_miss()`, `missmap()`, `detect_outliers()`, and `add_missing()` with
+`count_na()`, `features_percent_miss()`, `missmap()`, `detect_outliers()`, and `add_missing()` with
 downstream tuned imputation (`missforest_sweep_mtry()` and `missranger_sweep_mtry()`),
 biostatisticians can uphold rigorous data governance standards from initial data
 intake through regulatory delivery.

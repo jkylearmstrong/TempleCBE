@@ -12,7 +12,7 @@
 
   Can be executed directly from R:
     TempleCBE::run_sas_script(
-      TempleCBE::cbe_sas_macro_path("benchmark_brier_lung_full.sas")
+      TempleCBE::sas_macro_path("benchmark_brier_lung_full.sas")
     )
 ==============================================================================*/
 

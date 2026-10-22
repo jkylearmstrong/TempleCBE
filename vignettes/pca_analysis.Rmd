@@ -44,7 +44,7 @@ PCA reduces the dimensionality of multivariate continuous datasets by transformi
 2. Each subsequent component ($PC_2, PC_3, \dots$) captures the maximum possible remaining variance under the mathematical constraint that it is orthogonal (uncorrelated) to all preceding components.
 3. The total variance across all principal components equals the total variance of the original variables.
 
-While principal components themselves are linear combinations and may not have a single physical unit of measurement, analyzing their **loadings** (eigenvectors) and **eigenvalues** reveals underlying data structures, detects clustering, and helps researchers select representative covariates for downstream multivariable survival modeling (such as `cbe_cox_multi()`).
+While principal components themselves are linear combinations and may not have a single physical unit of measurement, analyzing their **loadings** (eigenvectors) and **eigenvalues** reveals underlying data structures, detects clustering, and helps researchers select representative covariates for downstream multivariable survival modeling (such as `cox_multi()`).
 
 ---
 
@@ -101,7 +101,7 @@ The mathematical execution of PCA proceeds through five fundamental steps:
 
 ## SAS and R Equivalence: The Iris Benchmark
 
-To validate numerical equivalence between SAS `PROC PRINCOMP` and `TempleCBE::proc_pca()`, we evaluate Fisher's Iris dataset (150 observations across 4 morphometric variables: `Sepal.Length`, `Sepal.Width`, `Petal.Length`, `Petal.Width`).
+To validate numerical equivalence between SAS `PROC PRINCOMP` and `TempleCBE::run_pca()`, we evaluate Fisher's Iris dataset (150 observations across 4 morphometric variables: `Sepal.Length`, `Sepal.Width`, `Petal.Length`, `Petal.Width`).
 
 ### SAS PROC PRINCOMP Implementation
 
@@ -116,17 +116,17 @@ run;
 
 ### TempleCBE proc_pca Implementation
 
-In R using `TempleCBE`, the equivalent workflow is executed via `proc_pca()`:
+In R using `TempleCBE`, the equivalent workflow is executed via `run_pca()`:
 
 ```{r iris_pca}
 # Execute standardized PCA with TempleCBE
-iris_pca <- proc_pca(iris, scale = TRUE)
+iris_pca <- run_pca(iris, scale = TRUE)
 iris_pca
 ```
 
 ### Numerical Concordance: SAS vs. TempleCBE
 
-`TempleCBE::proc_pca()` mirrors the exact output table produced by SAS `PROC PRINCOMP`. The listing SAS 9.4 produced for these 150 rows is committed (`inst/sas/benchmark_princomp_iris.sas` and `inst/sas/list/benchmark_princomp_iris.lst`), and the package tests compare `proc_pca()` with it: eigenvalues and differences to the 8 decimals SAS prints, proportions to its 4.
+`TempleCBE::run_pca()` mirrors the exact output table produced by SAS `PROC PRINCOMP`. The listing SAS 9.4 produced for these 150 rows is committed (`inst/sas/benchmark_princomp_iris.sas` and `inst/sas/list/benchmark_princomp_iris.lst`), and the package tests compare `run_pca()` with it: eigenvalues and differences to the 8 decimals SAS prints, proportions to its 4.
 
 | Principal Component | Eigenvalue ($\lambda$) | Difference | Proportion of Variance | Cumulative Variance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -210,7 +210,7 @@ head(clinical_data)
 ### Performing Clinical PCA
 
 ```{r clinical_pca}
-clin_pca <- proc_pca(clinical_data, scale = TRUE)
+clin_pca <- run_pca(clinical_data, scale = TRUE)
 clin_pca
 ```
 
@@ -231,9 +231,9 @@ rotation_matrix(attr(clin_pca, "prcomp"))[, c("feature", "PC1", "PC2", "PC3")]
 
 In Darina Chudnovskaya's applied research, univariable Cox regression showed that physiological indicators (`tas_baseline`, `tas_min`, `tas_max`, `tas_ave`, `age`) were statistically significant predictors of survival, whereas length of stay metrics (`los_icu`, `los_hosp`) primarily reflected post-admission hospital course:
 
-1. **Collinearity Identification**: `tas_min`, `tas_max`, and `tas_ave` cluster tightly in loading space. Entering all three simultaneously into a multivariable Cox model (`cbe_cox_multi()`) inflates variance and causes coefficient instability.
+1. **Collinearity Identification**: `tas_min`, `tas_max`, and `tas_ave` cluster tightly in loading space. Entering all three simultaneously into a multivariable Cox model (`cox_multi()`) inflates variance and causes coefficient instability.
 2. **Dimension Separation**: PCA isolates the hospital stay duration axis ($PC_1$) from acute physiological thermal volatility ($PC_2$ and $PC_3$).
-3. **Model Selection Guidance**: In conjunction with univariable tables (`cbe_cox_single()`) and baseline summaries (`my_summary_table()`), PCA provides empirical justification for retaining a single representative metric (such as `tas_ave` or `tas_baseline`) or constructing an orthogonal composite score.
+3. **Model Selection Guidance**: In conjunction with univariable tables (`cox_single()`) and baseline summaries (`summary_table()`), PCA provides empirical justification for retaining a single representative metric (such as `tas_ave` or `tas_baseline`) or constructing an orthogonal composite score.
 
 ---
 
@@ -243,8 +243,8 @@ The table below summarizes common SAS `PROC PRINCOMP` statements and options alo
 
 | Task / Feature | SAS `PROC PRINCOMP` Syntax | `TempleCBE` Syntax |
 | :--- | :--- | :--- |
-| **Fit Standardized PCA** | `proc princomp data=mydata; var x1-x10; run;` | `proc_pca(mydata, scale = TRUE)` |
-| **Unstandardized (Covariance) PCA** | `proc princomp data=mydata cov; run;` | `proc_pca(mydata, scale = FALSE)` |
+| **Fit Standardized PCA** | `proc princomp data=mydata; var x1-x10; run;` | `run_pca(mydata, scale = TRUE)` |
+| **Unstandardized (Covariance) PCA** | `proc princomp data=mydata cov; run;` | `run_pca(mydata, scale = FALSE)` |
 | **Output PC Scores to Dataset** | `proc princomp data=mydata out=pca_scores; run;` | `predict(attr(res, "prcomp"), mydata)` |
 | **Scree Plot** | `proc princomp plots=scree; run;` | `pca_scree_plot(res, kaiser = TRUE)` |
 | **Biplot** | `proc princomp plots=biplot; run;` | `pca_biplot(res, group = group_vec, ellipse = TRUE)` |
