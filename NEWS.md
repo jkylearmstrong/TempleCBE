@@ -1,5 +1,9 @@
 # TempleCBE 0.6.3.9000
 
+## `clean_publish()` pre-push hook
+
+* **A value of `cleanpublish.cleancommit` or `cleanpublish.privatetip` is a full object id only when it is lower-case hex, in every shell and locale.** The hook checked this with the range `[!0-9a-f]`. In some shells a range follows the locale's collation order (macOS bash in `en_US.UTF-8`), where it also matches `A` to `E`, so an upper-case id without an `F` counted as an id. The hook then used it as a clean commit, and a push of the private tip that it was meant to refuse went through (in a test, one macOS run in about thirteen). The hook now lists the characters, and the two checks of remote names and tokens do the same. Found as a flaky macOS test (CPB-06). An already installed hook keeps the old check until `guard_public_remote()` or `clean_publish()` is run again in that repository, which rewrites the managed block.
+
 ## Docker image
 
 * The image now installs the Suggested packages that features need at run time (`lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx`, `zip`, pinned to exact versions) and `pandoc`, and the build fails if that changes any package pinned in `renv.lock`. Found by running the package on a DGX Spark (aarch64): `boot_lmer()`, `tune_alpha_by_split()` and the Word review exports could not run in the image, because `renv.lock` records only Imports, and about 30 tests that need `zip` or `openxlsx` errored. Rendering R Markdown inside the image also failed for want of a pandoc that R could see. The `pandoc` is the distribution's, not the one Quarto bundles.
