@@ -49,6 +49,12 @@ A statistical change with nothing on rungs 1 or 2 is treated as unverified and i
 * Version in `DESCRIPTION`: Semantic versioning `MAJOR.MINOR.PATCH` (e.g., `0.5.0`), with development builds using timestamped sub-versions if necessary. Set it to the release version in a pull request before the first publication.
 * Git tags: see "Tags" below; the tags of the private repository and of the public repository follow different schemes.
 * Branch protection rules on `master` enforce PR reviews, status checks passing, and prevent force pushes. They must also be set up so that the exceptions in the next section cannot do more than they are meant to (see there); that is a setting of the hosting service and cannot be checked from the repository, so check it in the repository settings.
+* **Settings in force on `jkylearmstrong/TempleCBE`, read back from GitHub on 2026-10-21** (plan and steps: `release-notes/master-branch-protection-plan.md`):
+  * Ruleset `master` (active): deletion and force-pushes refused; a pull request is required (0 approvals, there is one maintainer); eight status checks required (`ubuntu-latest (release)`, `ubuntu-24.04-arm (release)`, `macOS-latest (release)`, `windows-latest (release)`, `optional-tests-ubuntu-latest`, `optional-tests-ubuntu-24.04-arm`, `optional-tests-windows-latest`, `test-coverage`); repository administrators may bypass for pull requests only, so nobody pushes to `master` directly.
+  * Ruleset `release tags` (active): creating, updating, deleting and force-pushing `v*` tags refused; repository administrators bypass, so only the maintainer creates a release tag.
+  * Actions: the default workflow token is read-only and may not approve pull requests; first-time contributors need approval. The Docker Hub token is an environment secret of `dockerhub` (deployment branches and tags: `master`, `v*`); the user name is a repository variable.
+  * Not covered: `gh-pages` (written by the site deployment), and the scripted pushes in the next section: `release.yaml` with `commit_and_push` and `scripts/deploy_release.R --push` push `master` directly, which the `master` ruleset now refuses. Until they are changed to open a pull request, prepare releases in a pull request as the bullet above says.
+  * Dependabot proposes updates of the GitHub Actions weekly (`.github/dependabot.yml`); each is a change to a workflow file (L3).
 
 ## Pushes that do not go through a pull request
 
