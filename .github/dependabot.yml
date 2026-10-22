@@ -1,4 +1,6 @@
 # Keeps the GitHub Actions used by the workflows up to date (they are pinned by major version tag).
+# All updates arrive as one weekly pull request, so that the actions are tested together and the
+# changelogs read once; each bump changes workflow files and is L3 in REVIEW.md.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -6,3 +8,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
