@@ -44,7 +44,7 @@ on:
         default: false
         type: boolean
       commit_and_push:
-        description: 'Steps 8-10 - Commit, Tag, and Push to master (pushes without a pull request; default off)'
+        description: 'Steps 8 and 10 - Commit to a branch release/<tag> and push it, for a pull request (nothing is pushed to master, no tag is made; default off)'
         required: true
         default: false
         type: boolean
@@ -85,6 +85,11 @@ jobs:
             RELEASE_TAG="${BASE_VER}.${DATE_STAMP}"
           else
             RELEASE_TAG="$INPUT_VERSION_TAG"
+          fi
+          # used in a sed expression, a commit message and a branch name: a version number only
+          if ! printf '%s' "$RELEASE_TAG" | grep -Eq '^[0-9]+([.][0-9]+)*$'; then
+            echo "::error::The release version '$RELEASE_TAG' is not a numeric version (digits and dots)"
+            exit 1
           fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
           echo "Computed Release Tag: $RELEASE_TAG"
@@ -131,15 +136,35 @@ jobs:
         if: ${{ inputs.run_check }}
         uses: r-lib/actions/check-r-package@v2
 
-      - name: Steps 8, 9, 10 - Commit, Tag, and Push
+      # master is protected (a pull request is required), so the release commit goes to a branch of its
+      # own, release/v<tag>, and the maintainer opens the pull request. No tag is made here: it belongs on
+      # the merge commit, and only the maintainer creates release tags.
+      - name: Steps 8 and 10 - Commit and push a release branch
         if: ${{ inputs.commit_and_push }}
         run: |
+          set -euo pipefail
+          BRANCH="release/v${RELEASE_TAG}"
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
           for f in DESCRIPTION README.md README.qmd man NAMESPACE NEWS.md; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
-          git diff --cached --quiet || git commit -m "Automated release and build for $RELEASE_TAG"
-          git tag "$RELEASE_TAG"
-          git push origin master
-          git push origin "$RELEASE_TAG"
+          if git diff --cached --quiet; then
+            echo "Nothing to commit: no release branch was pushed."
+            exit 0
+          fi
+          git commit -m "Automated release and build for $RELEASE_TAG"
+          git push origin "$BRANCH"
+          {
+            echo "### Release branch pushed: \`$BRANCH\`"
+            echo
+            echo "Open the pull request: https://github.com/${GITHUB_REPOSITORY}/compare/master...${BRANCH}?expand=1"
+            echo
+            echo "After it is merged, tag the merge commit (only the maintainer creates release tags):"
+            echo
+            echo '```'
+            echo "git fetch origin && git tag -a v${RELEASE_TAG} -m \"Release ${RELEASE_TAG}\" origin/master"
+            echo "git push origin v${RELEASE_TAG}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

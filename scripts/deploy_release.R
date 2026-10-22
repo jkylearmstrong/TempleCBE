@@ -12,9 +12,12 @@
 #   - Defensive git state validation (clean working tree, branch checks,
 #     discrete argument vectors, rollback on failure, CRLF protection).
 #   - Nothing is pushed unless asked: push = TRUE (--push) names the remote
-#     (remote = , --remote NAME; default "origin"), and branch and tag go in
-#     one atomic push. When that push fails, the local release commit and tag
-#     are rolled back.
+#     (remote = , --remote NAME; default "origin"). The release commit goes to a
+#     branch of its own, release/<tag> (push_branch = , --push-branch NAME), for a
+#     pull request: master is protected, and the tag is made on the merge commit
+#     afterwards. Naming the expected branch as push_branch pushes branch and tag
+#     to it directly in one atomic push (for a repository that does not protect
+#     it). When a push fails, the local release commit and tag are rolled back.
 #   - CLI and interactive R support.
 # ==============================================================================
 
@@ -35,6 +38,7 @@ deploy_release <- function(
   tag = TRUE,
   push = FALSE,
   remote = "origin",
+  push_branch = NULL,
   expected_branch = "master",
   dry_run = FALSE
 ) {
@@ -93,6 +97,12 @@ deploy_release <- function(
     }
     # never print credentials that are part of the URL
     push_url <- sub("^([a-zA-Z0-9+_.-]+://)[^/]*@", "\\1", trimws(url_res[1L]))
+    if (!is.null(push_branch) &&
+        (!is.character(push_branch) || length(push_branch) != 1L || is.na(push_branch) || !nzchar(push_branch) ||
+         startsWith(push_branch, "-") ||
+         run_git_status(c("check-ref-format", "--branch", push_branch)) != 0L)) {
+      stop("`push_branch` is not a valid branch name: '", paste(push_branch, collapse = " "), "'.", call. = FALSE)
+    }
   }
 
   # Check current branch matches expected release branch (A5-05)
@@ -169,6 +179,18 @@ deploy_release <- function(
     commit_msg <- paste("Automated release for", version_tag)
   }
 
+  # Where a pushed release goes. `master` is protected (pull request, no direct pushes), so by default the
+  # release commit goes to a branch of its own, `release/<tag>`, for a pull request, and the tag is left
+  # for after the merge. Naming the expected branch (push_branch = "master", --push-branch master) keeps
+  # the direct push of branch and tag for a repository that does not protect it.
+  tag_name <- if (grepl("^v", version_tag)) version_tag else paste0("v", version_tag)
+  target_branch <- if (is.null(push_branch)) paste0("release/", tag_name) else push_branch
+  pr_mode <- push && !identical(target_branch, expected_branch)
+  if (pr_mode && commit && !dry_run &&
+      run_git_status(c("show-ref", "--verify", "--quiet", paste0("refs/heads/", target_branch))) == 0L) {
+    stop("A local branch '", target_branch, "' exists already. Delete or rename it, or name another with --push-branch.", call. = FALSE)
+  }
+
   # ----------------------------------------------------------------------------
   # Banner & Step Summary
   # ----------------------------------------------------------------------------
@@ -189,10 +211,12 @@ deploy_release <- function(
   message("  Step 6b: Build Site      : ", if (build_site) "ENABLED (pkgdown::build_site)" else "SKIPPED")
   message("  Step 7: R CMD Check      : ", if (run_check) "ENABLED (devtools::check)" else "SKIPPED")
   message("  Step 8: Git Commit       : ", if (commit) "ENABLED" else "SKIPPED")
-  message("  Step 9: Git Tag          : ", if (tag) "ENABLED" else "SKIPPED")
+  message("  Step 9: Git Tag          : ", if (!tag) "SKIPPED" else if (pr_mode) "SKIPPED (tag the merge commit after the pull request is merged)" else "ENABLED")
   message(
     "  Step 10: Git Push        : ",
-    if (push) paste0("ENABLED (to '", remote, "': ", push_url, ")") else "SKIPPED (add --push to push)"
+    if (!push) "SKIPPED (add --push to push)"
+    else if (pr_mode) paste0("ENABLED (branch '", target_branch, "' to '", remote, "': ", push_url, ", for a pull request)")
+    else paste0("ENABLED (to '", remote, "': ", push_url, ", directly to '", target_branch, "')")
   )
   message("=================================================================")
 
@@ -284,7 +308,6 @@ deploy_release <- function(
   head_before <- trimws(run_git(c("rev-parse", "HEAD"))[1L])
   commit_created <- FALSE
   tag_created <- FALSE
-  tag_name <- if (grepl("^v", version_tag)) version_tag else paste0("v", version_tag)
   # Undo what this run did to the local repository, so that a release that did not go out leaves
   # no commit and no tag behind: the working tree was clean when the run started (checked above).
   roll_back <- function() {
@@ -323,7 +346,11 @@ deploy_release <- function(
     committed_successfully <- TRUE
   }
 
-  if (tag) {
+  if (tag && pr_mode) {
+    message("\nℹ️ Step 9: No tag yet: the release commit goes through a pull request, and the tag belongs on the merge commit.")
+  }
+
+  if (tag && !pr_mode) {
     message(sprintf("\n🏷️ Step 9: Creating git tag '%s'...", tag_name))
     tag_status <- run_git_status(c("tag", "-a", tag_name, "-m", commit_msg))
     if (tag_status != 0L) {
@@ -335,10 +362,10 @@ deploy_release <- function(
   }
 
   if (push) {
-    message("\n🚀 Step 10: Pushing branch and tag to '", remote, "' (", push_url, ")...")
+    message("\n🚀 Step 10: Pushing ", if (pr_mode) paste0("branch '", target_branch, "'") else "branch and tag", " to '", remote, "' (", push_url, ")...")
     # One atomic push: the branch and the tag both reach the remote or neither does, so a tag is never
     # pushed without its branch (A5-05). When it fails, the local commit and tag are rolled back.
-    refs <- c(paste0("HEAD:refs/heads/", expected_branch), if (tag) paste0("refs/tags/", tag_name))
+    refs <- c(paste0("HEAD:refs/heads/", target_branch), if (tag && !pr_mode) paste0("refs/tags/", tag_name))
     push_res <- run_git_status(c("push", "--atomic", "--", remote, refs))
     if (push_res != 0L) {
       roll_back()
@@ -348,7 +375,24 @@ deploy_release <- function(
         call. = FALSE
       )
     }
-    message("✅ Branch '", expected_branch, "'", if (tag) paste0(" and tag '", tag_name, "'"), " pushed to '", remote, "'.")
+    message("✅ Branch '", target_branch, "'", if (tag && !pr_mode) paste0(" and tag '", tag_name, "'"), " pushed to '", remote, "'.")
+    if (pr_mode) {
+      if (commit_created) {
+        # the release commit stays on a local branch of the same name, and the current branch goes back to
+        # where it was, so that it can follow the remote after the pull request is merged
+        if (run_git_status(c("branch", "--", target_branch, "HEAD")) == 0L) {
+          run_git_status(c("reset", "--hard", head_before))
+          message("ℹ️ The release commit is on the local branch '", target_branch, "'; '", expected_branch, "' is as it was.")
+        }
+      }
+      message(
+        "\nNext: open a pull request from '", target_branch, "' into '", expected_branch, "', for example\n",
+        "  gh pr create --base ", expected_branch, " --head ", target_branch, " --title \"Release ", version_tag, "\"\n",
+        "and, once it is merged, tag the merge commit:\n",
+        "  git fetch ", remote, " && git tag -a ", tag_name, " -m \"Release ", version_tag, "\" ", remote, "/", expected_branch, "\n",
+        "  git push ", remote, " ", tag_name
+      )
+    }
   } else {
     message("\nℹ️ Nothing was pushed (add --push, or push = TRUE, to push to a remote).")
   }
@@ -378,9 +422,13 @@ if (sys.nframe() == 0L && !interactive()) {
         "  --run-check           Run devtools::check (disabled by default)\n",
         "  --no-commit           Skip git commit\n",
         "  --no-tag              Skip git tag\n",
-        "  --push                Push the branch and the tag in one atomic push; without it nothing is\n",
-        "                        pushed (the commit and the tag stay local). If the push fails, the\n",
-        "                        local commit and tag are rolled back\n",
+        "  --push                Push the release commit to a branch of its own, release/<tag>, for a pull\n",
+        "                        request (no tag yet: tag the merge commit after the merge). Without it\n",
+        "                        nothing is pushed (the commit and the tag stay local). If the push fails,\n",
+        "                        the local commit is rolled back\n",
+        "  --push-branch <NAME>  Branch that --push pushes to (default: release/<tag>). Naming the --branch\n",
+        "                        branch (for example master) pushes branch and tag to it directly, in one\n",
+        "                        atomic push: only for a repository that does not protect that branch\n",
         "  --remote <NAME>       Remote that --push pushes to (default: origin)\n",
         "  --no-push             Do not push; already the default, accepted for old command lines\n",
         "  --dry-run             Preview actions without making changes\n",
@@ -404,6 +452,11 @@ if (sys.nframe() == 0L && !interactive()) {
 
   cli_branch <- get_arg_val("--branch")
   if (is.null(cli_branch)) cli_branch <- "master"
+
+  cli_push_branch <- get_arg_val("--push-branch")
+  if (is.null(cli_push_branch) && "--push-branch" %in% args) {
+    stop("'--push-branch' needs a value: the name of the branch to push to.", call. = FALSE)
+  }
 
   cli_remote <- get_arg_val("--remote")
   if (is.null(cli_remote)) {
@@ -429,6 +482,7 @@ if (sys.nframe() == 0L && !interactive()) {
     tag = !("--no-tag" %in% args),
     push = ("--push" %in% args),
     remote = cli_remote,
+    push_branch = cli_push_branch,
     expected_branch = cli_branch,
     dry_run = ("--dry-run" %in% args)
   )

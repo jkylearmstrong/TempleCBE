@@ -53,7 +53,7 @@ A statistical change with nothing on rungs 1 or 2 is treated as unverified and i
   * Ruleset `master` (active): deletion and force-pushes refused; a pull request is required (0 approvals, there is one maintainer); eight status checks required (`ubuntu-latest (release)`, `ubuntu-24.04-arm (release)`, `macOS-latest (release)`, `windows-latest (release)`, `optional-tests-ubuntu-latest`, `optional-tests-ubuntu-24.04-arm`, `optional-tests-windows-latest`, `test-coverage`); repository administrators may bypass for pull requests only, so nobody pushes to `master` directly.
   * Ruleset `release tags` (active): creating, updating, deleting and force-pushing `v*` tags refused; repository administrators bypass, so only the maintainer creates a release tag.
   * Actions: the default workflow token is read-only and may not approve pull requests; first-time contributors need approval. The Docker Hub token is an environment secret of `dockerhub` (deployment branches and tags: `master`, `v*`); the user name is a repository variable.
-  * Not covered: `gh-pages` (written by the site deployment), and the scripted pushes in the next section: `release.yaml` with `commit_and_push` and `scripts/deploy_release.R --push` push `master` directly, which the `master` ruleset now refuses. Until they are changed to open a pull request, prepare releases in a pull request as the bullet above says.
+  * Not covered: `gh-pages` (written by the site deployment). The scripted pushes in the next section no longer push `master`: `release.yaml` with `commit_and_push` and `scripts/deploy_release.R --push` push a branch `release/<tag>` for a pull request and make no tag; the maintainer tags the merge commit (the `release tags` ruleset allows only administrators to create `v*` tags). `deploy_release.R --push-branch master` still pushes `master` and the tag directly, which the ruleset refuses.
   * Dependabot proposes updates of the GitHub Actions weekly (`.github/dependabot.yml`); each is a change to a workflow file (L3).
 
 ## Pushes that do not go through a pull request
@@ -62,14 +62,14 @@ These push to a branch or tag with no review step. Each one has to be started by
 
 | What | When | Pushes |
 |------|------|--------|
-| `.github/workflows/release.yaml` (`permissions: contents: write`) | Manual run; only with the input `commit_and_push` switched on, which is **off by default** | Commits `DESCRIPTION`, `README`, `man/`, `NAMESPACE` and `NEWS.md`, then pushes `master` and a tag with the workflow's token |
+| `.github/workflows/release.yaml` (`permissions: contents: write`) | Manual run; only with the input `commit_and_push` switched on, which is **off by default** | Commits `DESCRIPTION`, `README`, `man/`, `NAMESPACE` and `NEWS.md` to a new branch `release/v<version>` and pushes that branch with the workflow's token (a pull request follows; no push to `master`, no tag) |
 | `.github/workflows/pkgdown.yaml` (`peaceiris/actions-gh-pages`) | Every push to `master`, a published release, or a manual run | The built site to the `gh-pages` branch |
-| `scripts/deploy_release.R` | Only with `--push`, which is off by default; `--remote NAME` names the remote (default `origin`) | `HEAD` to the branch given by `--branch` (default `master`) and the tag, in one atomic push; if it fails, the local release commit and tag are rolled back |
+| `scripts/deploy_release.R` | Only with `--push`, which is off by default; `--remote NAME` names the remote (default `origin`) | `HEAD` to a branch of its own, `release/<tag>` (`--push-branch NAME`), for a pull request, with no tag; the local branch stays where it was and keeps the commit on `release/<tag>`. `--push-branch master` (the `--branch` branch) pushes that branch and the tag in one atomic push, as before. If a push fails, the local release commit and tag are rolled back |
 | `clean_publish()` / `scripts/clean_publish.R --push` | When called in R (`push = TRUE` is its default) or with `--push` on the command line, and only with a remote that is named | The `master` of the **public** repository: a force-push into the empty repository the first time, fast-forward pushes afterwards (see "Publishing to the public repository") |
 
 Branch protection has to cover them. Whether it does cannot be seen from the repository, so the maintainer checks, in the settings of each repository:
 
-* `master` of the private repository: pull requests required, force-pushes and deletion refused, and the workflow's token and administrators not on the bypass list (otherwise `release.yaml` and `deploy_release.R --push` can write to `master`). Protection of a branch does not cover **tags**: add a tag rule for the release tags.
+* `master` of the private repository: pull requests required, force-pushes and deletion refused, and the workflow's token and administrators not on the bypass list (otherwise `deploy_release.R --push-branch master` can write to `master`). Protection of a branch does not cover **tags**: add a tag rule for the release tags.
 * `gh-pages`: it is written by the site deployment only; nobody should push to it by hand.
 * `master` of the public repository: see the runbook below. It is the one branch that is pushed to directly on purpose.
 

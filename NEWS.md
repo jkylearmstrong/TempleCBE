@@ -19,6 +19,12 @@
 * Found by running the package on a DGX Spark (20 cores): the sequential loop used one core. On a 20-core Windows workstation, 200 replicates of a random-intercept model took 2.5 s sequentially and 1.4 / 0.9 / 0.5 s on 2 / 4 / 8 workers.
 * In parallel mode the arguments in `...` are evaluated before fitting. An argument that names a column of `data` (`weights = n`) is refused with a message that says so. (It does not work in the sequential loop either: every replicate fails and the result is empty. That is how it behaved before this change and is not changed here.)
 
+## Release scripts
+
+* **`scripts/deploy_release.R --push` no longer pushes `master`.** `master` is protected (a pull request is required), so the release commit now goes to a branch of its own, `release/<tag>` (`--push-branch NAME`, `push_branch =`), and no tag is made: the script prints the `gh pr create` command and the commands that tag the merge commit afterwards. The local branch is put back where it was; the commit stays on a local `release/<tag>` branch. `--push-branch master` (the `--branch` branch) keeps the direct atomic push of branch and tag, for a repository that does not protect it. An existing local branch of that name, or an invalid name, is refused before anything changes.
+* **`release.yaml` (`commit_and_push`) pushes a branch `release/v<version>` instead of `master` and a tag**, and writes the link for the pull request and the tagging commands into the run summary. The version it is given must be numeric (digits and dots), since it is used in a `sed` expression, a commit message and a branch name.
+* `REVIEW.md` describes both. (`release.yaml` was not registered by GitHub as a workflow until PR 42 touched it, on 2026-10-22; it has never run.)
+
 # TempleCBE 0.6.3
 
 A CI and packaging release; no R code changed.
