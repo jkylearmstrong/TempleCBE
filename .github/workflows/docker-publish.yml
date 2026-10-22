@@ -151,7 +151,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # only for the version label of the image; the tags are set by the merge job
-      - uses: docker/metadata-action@v5
+      - uses: docker/metadata-action@v6
         id: meta
         with:
           images: ${{ steps.registry.outputs.images }}
@@ -239,7 +239,7 @@ jobs:
 
       # `latest` only from master (the newest commit), never from a tag: tagging an older release
       # must not move it back. A release tag publishes its version only.
-      - uses: docker/metadata-action@v5
+      - uses: docker/metadata-action@v6
         id: meta
         with:
           images: ${{ steps.registry.outputs.images }}
