@@ -5,8 +5,12 @@ on:
   pull_request:
     branches: [master, dev]
 
+# Read-only token; one group per pull request number (not per branch name).
+permissions:
+  contents: read
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 name: test-coverage
@@ -24,6 +28,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: r-lib/actions/setup-pandoc@v2
 

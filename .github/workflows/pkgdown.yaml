@@ -26,6 +26,8 @@ jobs:
       LANGUAGE: en_US:en
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -56,7 +58,9 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.event_name != 'pull_request'
+        # the site is built from master or a published release only (a manual run from another
+        # branch would otherwise replace the public site)
+        if: github.ref == 'refs/heads/master' || github.event_name == 'release'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
