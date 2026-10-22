@@ -1,4 +1,5 @@
-# Keeps the GitHub Actions used by the workflows up to date (they are pinned by major version tag).
+# Keeps the GitHub Actions used by the workflows up to date. They are pinned by full commit SHA with the
+# version in a comment (`uses: owner/repo@<sha> # v7`); Dependabot updates both.
 # All updates arrive as one weekly pull request, so that the actions are tested together and the
 # changelogs read once; each bump changes workflow files and is L3 in REVIEW.md.
 version: 2
@@ -8,6 +9,9 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # a release must be a week old before it is proposed
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
