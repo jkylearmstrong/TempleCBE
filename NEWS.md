@@ -13,6 +13,10 @@
 * Tests that cannot run in the Docker image now skip instead of failing: `deploy_release()` needs a git working tree (the image has no `.git`), and the checkpoint-message test needs `furrr`.
 * The `check_renv_guard()` test no longer depends on whether renv happens to be active in the test session; renv detection is a small internal function the test replaces.
 
+## `clean_publish()` pre-push hook: what an id is
+
+* **A value of `cleanpublish.cleancommit` or `cleanpublish.privatetip` counts only if git resolves it to that same commit.** The hook checked the shape only (40 or 64 lower-case hex digits). A branch or tag named like an id, or a 40-digit abbreviation in a SHA-256 repository, passes that check and resolves to another object, so a `cleancommit` value like that could make the private tip count as a clean commit. The hook now sends each value to `git cat-file --batch-check` as `<id> <id>` and uses it only when the object name git prints equals the second copy and is a commit. Found by the independent review of the locale fix (CPB-06); needs a hand-made config value or a branch named like an id, so the exposure was small. An already installed hook keeps the old check until `guard_public_remote()` or `clean_publish()` is run again in that repository.
+
 ## `boot_lmer()`
 
 * New argument `parallel = FALSE`. With `parallel = TRUE` the bootstrap replicates are fitted with `furrr::future_map()` under the current future plan (`future::plan("multisession")`, a cluster, ...), each replicate with its own random-number stream. The result for a given `seed` is the same under any plan and any number of workers, but it is not the result of the sequential loop for that `seed`. The default is unchanged and gives the same results as before. The per-replicate work moved into an internal function shared by both paths.

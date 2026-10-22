@@ -1169,6 +1169,23 @@ test_that("a full object id is lower-case hex in every shell and locale (CPB-06)
   }
 })
 
+test_that("a branch named like a full id, or an abbreviation of an id, is not taken for that id (CPB-06)", {
+  skip_if_no_git()
+  fx <- cp_fixture(published = TRUE)
+  tip <- cp_rev(fx$repo, "private-history")
+  # 64 lower-case hex digits pass for an id by their shape, but in a SHA-1 repository git resolves them
+  # as a branch name: the private tip, under a name that looks like an id
+  lookalike <- strrep("ab", 32L)
+  expect_identical(cp_git(fx$repo, "branch", lookalike, tip)$status, 0L)
+  cp_git(fx$repo, "config", "--add", "cleanpublish.cleancommit", lookalike)
+  # an abbreviation of the tip (40 digits it is not; 40 of the 64 would be a prefix of a longer id)
+  cp_git(fx$repo, "config", "--add", "cleanpublish.cleancommit", strrep("0", 40L))
+
+  expect_push_refused(fx$repo, paste0(tip, ":refs/heads/by-lookalike"))
+  expect_identical(cp_remote_refs(fx), character())
+  expect_push_accepted(fx$repo, "master")
+})
+
 test_that("a stale or mistyped private tip is ignored with a note and disables nothing (CPB-06)", {
   skip_if_no_git()
   fx <- cp_fixture(published = TRUE)
