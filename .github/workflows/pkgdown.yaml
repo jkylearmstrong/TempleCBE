@@ -14,7 +14,6 @@ name: pkgdown
 
 permissions:
   contents: write
-  pages: write
 
 jobs:
   pkgdown:
@@ -64,5 +63,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-          single_commit: true
+          # one commit on gh-pages (single_commit is not an input of the action and was ignored)
+          force_orphan: true
           keep_files: false
