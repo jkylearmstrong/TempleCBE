@@ -8,7 +8,7 @@
 
 lung31_data <- function() {
   lung <- sas_datalines(
-    cbe_sas_macro_path("benchmark_brier_lung.sas"),
+    sas_macro_path("benchmark_brier_lung.sas"),
     c("inst", "time", "status", "age", "sex", "ph_ecog", "ph_karno", "pat_karno", "meal_cal", "wt_loss"),
     csv = TRUE
   )
@@ -24,7 +24,7 @@ brier_quantities_of <- function(ref) {
 
 test_that("tumor_wide() holds the data typed into the SAS Example 85.7 program", {
   sas <- sas_datalines(
-    cbe_sas_macro_path("example_85_7.sas"),
+    sas_macro_path("example_85_7.sas"),
     c("ID", "Time", "Dead", "Dose", paste0("P", 1:15))
   )
   r <- as.data.frame(tumor_wide())
@@ -33,7 +33,7 @@ test_that("tumor_wide() holds the data typed into the SAS Example 85.7 program",
 })
 
 test_that("cbe_cox_multi reproduces SAS's PROC PHREG output for the counting-process tumor data", {
-  fit <- cbe_cox_multi(
+  fit <- cox_multi(
     tumor_long(), survival::Surv(T1, T2, Status) ~ Dose + NPap,
     id = ID, ties = "breslow"
   )
@@ -76,7 +76,7 @@ test_that("R reproduces SAS's Brier scores and IBS on the 31-subject lung benchm
 
 test_that("benchmark_brier_lung_full.sas holds the rows of survival::lung", {
   sas <- sas_datalines(
-    cbe_sas_macro_path("benchmark_brier_lung_full.sas"),
+    sas_macro_path("benchmark_brier_lung_full.sas"),
     c("inst", "time", "status", "age", "sex", "ph.ecog", "ph.karno", "pat.karno", "meal.cal", "wt.loss"),
     csv = TRUE
   )
@@ -132,7 +132,7 @@ test_that("expect_matches_sas fails on a wrong, a missing or an unreferenced num
 })
 
 test_that("the reference files hold what the committed SAS listings show", {
-  lst_dir <- file.path(cbe_sas_macro_dir(), "list")
+  lst_dir <- file.path(sas_macro_dir(), "list")
   tumor <- readLines(file.path(lst_dir, "example_85_7.lst"))
   ref <- sas_reference("sas_phreg_tumor_counting_process.csv")
   expect_matches_sas(parse_phreg_lst(tumor, c("Dose", "NPap")), ref)
@@ -158,7 +158,7 @@ test_that("the reference files hold what the committed SAS listings show", {
 })
 
 test_that("the committed SAS logs of the Brier programs have no error and no unset-variable warning", {
-  log_dir <- file.path(cbe_sas_macro_dir(), "logs")
+  log_dir <- file.path(sas_macro_dir(), "logs")
   for (stem in c("benchmark_brier_lung", "benchmark_brier_lung_full")) {
     log <- readLines(file.path(log_dir, paste0(stem, ".log")))
     expect_false(any(grepl("^ERROR", log)), info = stem)
@@ -170,7 +170,7 @@ test_that("the committed SAS logs of the Brier programs have no error and no uns
 
 test_that("benchmark_princomp_iris.sas holds the rows of datasets::iris", {
   sas <- sas_datalines(
-    cbe_sas_macro_path("benchmark_princomp_iris.sas"),
+    sas_macro_path("benchmark_princomp_iris.sas"),
     c("sepal_length", "sepal_width", "petal_length", "petal_width", "species"),
     csv = TRUE
   )
@@ -187,16 +187,16 @@ test_that("proc_pca reproduces the eigenvalue table of SAS PROC PRINCOMP on the 
   # four components, the last without a difference
   expect_equal(c(table(ref$quantity)), c(cumulative = 4L, difference = 3L, eigenvalue = 4L, proportion = 4L))
   expect_false(anyNA(ref$value))
-  res <- proc_pca(datasets::iris, scale = TRUE)
+  res <- run_pca(datasets::iris, scale = TRUE)
   expect_matches_sas_princomp(princomp_quantities(res), ref)
 })
 
 test_that("the PROC PRINCOMP reference file holds what the committed listing shows, and the log is clean", {
-  lst_dir <- file.path(cbe_sas_macro_dir(), "list")
+  lst_dir <- file.path(sas_macro_dir(), "list")
   lst <- readLines(file.path(lst_dir, "benchmark_princomp_iris.lst"))
   expect_matches_sas(parse_princomp_lst(lst), sas_reference("sas_princomp_iris.csv"))
 
-  log <- readLines(file.path(cbe_sas_macro_dir(), "logs", "benchmark_princomp_iris.log"))
+  log <- readLines(file.path(sas_macro_dir(), "logs", "benchmark_princomp_iris.log"))
   expect_false(any(grepl("^(ERROR|WARNING)", log)))
   expect_true(any(grepl("WORK.IRIS has 150 observations", log)))
 })
@@ -221,7 +221,7 @@ test_that("the PROC PRINCOMP tolerances catch a number that is off by more than 
 
 # --- PROC COMPARE (benchmark_proc_compare.sas) vs cbe_compare_df() ---------------------
 
-compare_sas_path <- function() cbe_sas_macro_path("benchmark_proc_compare.sas")
+compare_sas_path <- function() sas_macro_path("benchmark_proc_compare.sas")
 
 # one number of the reference
 compare_ref <- function(scenario, statistic) {
@@ -229,7 +229,7 @@ compare_ref <- function(scenario, statistic) {
   ref$value[ref$term == scenario & ref$quantity == statistic]
 }
 
-test_that("benchmark_proc_compare.sas holds the data of the R fixtures and calls PROC COMPARE as cbe_compare_df() is called", {
+test_that("benchmark_proc_compare.sas holds the data of the R fixtures and calls PROC COMPARE as compare_df() is called", {
   path <- compare_sas_path()
   fixtures <- compare_fixtures()
   for (name in names(fixtures)) {
@@ -264,7 +264,7 @@ test_that("cbe_compare_df agrees with SAS PROC COMPARE on every statistic they b
   expect_matches_sas_compare(r, sas)
 })
 
-test_that("every statistic of the PROC COMPARE reference is mapped to cbe_compare_df() or listed as unmapped", {
+test_that("every statistic of the PROC COMPARE reference is mapped to compare_df() or listed as unmapped", {
   ref <- sas_compare_reference()
   expect_setequal(compare_family(ref$quantity), compare_statistic_map$statistic)
   expect_false(anyDuplicated(compare_statistic_map$statistic) > 0)
@@ -286,7 +286,7 @@ test_that("the SYSINFO bits PROC COMPARE sets, where cbe_compare_df has a counte
 })
 
 test_that("the PROC COMPARE reference file holds what the committed listing shows, and the log is clean", {
-  lst <- readLines(file.path(cbe_sas_macro_dir(), "list", "benchmark_proc_compare.lst"))
+  lst <- readLines(file.path(sas_macro_dir(), "list", "benchmark_proc_compare.lst"))
   expect_matches_sas(parse_compare_lst(lst), sas_compare_reference())
   # a count SAS leaves out is read as 0, and so is a whole Values Comparison Summary
   # when all values are exactly equal
@@ -295,7 +295,7 @@ test_that("the PROC COMPARE reference file holds what the committed listing show
   expect_false(any(grepl("Values Comparison Summary|Maximum Difference", s6)))
   expect_false(any(grepl("but not in", s6)))
 
-  log <- readLines(file.path(cbe_sas_macro_dir(), "logs", "benchmark_proc_compare.log"))
+  log <- readLines(file.path(sas_macro_dir(), "logs", "benchmark_proc_compare.log"))
   expect_false(any(grepl("^ERROR", log)))
   # PROC COMPARE's own warnings about the duplicate ID values of s3_dup (and nothing else)
   warnings <- grep("^WARNING", log, value = TRUE)
@@ -361,8 +361,8 @@ test_that("a variable of different types is compared as text by cbe_compare_df, 
 
 test_that("types are R classes: identical values of class integer and numeric, or factor and character, are no match", {
   # SAS has only numeric and character, so PROC COMPARE would report both pairs as equal (not run).
-  cmp <- cbe_compare_df(data.frame(id = 1:2, n = 1:2), data.frame(id = 1:2, n = c(1, 2)), by = "id")
-  fct <- cbe_compare_df(
+  cmp <- compare_df(data.frame(id = 1:2, n = 1:2), data.frame(id = 1:2, n = c(1, 2)), by = "id")
+  fct <- compare_df(
     data.frame(id = 1:2, s = c("a", "b")), data.frame(id = 1:2, s = factor(c("a", "b"))), by = "id"
   )
   for (res in list(cmp, fct)) {
@@ -392,7 +392,7 @@ test_that("a trailing blank is a difference to cbe_compare_df and none to PROC C
 test_that("cbe_compare_df has no missing character value other than NA, and compares nothing but type and values", {
   # SAS's missing character value is the blank; a blank is equal to a blank (s1_id, id 9) and
   # different from a value (id 5 and 8: SAS lists them). R: "" is a value; NA differs from "".
-  cmp <- cbe_compare_df(
+  cmp <- compare_df(
     data.frame(id = 1:3, s = c(NA, "", "a")), data.frame(id = 1:3, s = c("", "", "a")), by = "id"
   )
   expect_equal(cmp$diffs$id, 1)
@@ -408,7 +408,7 @@ test_that("cbe_compare_df has no missing character value other than NA, and comp
   y <- x
   attr(x$v, "label") <- "Weight"
   attr(y$v, "label") <- "Mass"
-  expect_true(cbe_compare_df(x, y, by = "id")$is_concordant)
+  expect_true(compare_df(x, y, by = "id")$is_concordant)
 })
 
 test_that("rows with the same ID are paired in order, with a warning, as PROC COMPARE does (s3_dup)", {
@@ -429,7 +429,7 @@ test_that("rows with the same ID are paired in order, with a warning, as PROC CO
 test_that("cbe_compare_df needs no sorted data, PROC COMPARE does (s1_id)", {
   fixtures <- compare_fixtures()
   sorted <- fixtures$s1_comp[order(fixtures$s1_comp$id), ]
-  cmp <- cbe_compare_df(fixtures$s1_base, sorted, by = "id", base_name = "base", compare_name = "compare")
+  cmp <- compare_df(fixtures$s1_base, sorted, by = "id", base_name = "base", compare_name = "compare")
   expect_equal(cmp$summary, compare_run("s1_id")$cmp$summary)
   expect_equal(cmp$observations, compare_run("s1_id")$cmp$observations)
 })

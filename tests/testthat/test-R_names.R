@@ -3,7 +3,7 @@ test_that("R_names cleans column names and preserves originals as labels", {
     `name with spaces` = 1:3,
     `special * characters` = c("a", "b", "c")
   )
-  res <- R_names(df)
+  res <- clean_names_keep_labels(df)
 
   expect_equal(colnames(res), janitor::clean_names(df) |> colnames())
   labels <- labelled::var_label(res)

@@ -2,7 +2,7 @@ test_that("cbe_km_single works on a numeric predictor, binning it into quartiles
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res <- cbe_km_single(lung, outcome = "outcome", feature = "age")
+  res <- km_single(lung, outcome = "outcome", feature = "age")
 
   expect_s3_class(res, "cbe_km")
   expect_s3_class(res$cox, "cbe_cox")
@@ -22,7 +22,7 @@ test_that("cbe_km_single works on a factor predictor, using its levels directly 
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
 
-  res <- cbe_km_single(lung, outcome = "outcome", feature = "sex_f")
+  res <- km_single(lung, outcome = "outcome", feature = "sex_f")
 
   expect_false(res$cox$is_numeric)
   expect_equal(length(res$km_fit$strata), 2)
@@ -35,8 +35,8 @@ test_that("cbe_km_single does not refit the Cox model separately from cbe_cox_si
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res_km <- cbe_km_single(lung, outcome = "outcome", feature = "age")
-  res_cox <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res_km <- km_single(lung, outcome = "outcome", feature = "age")
+  res_cox <- cox_single(lung, outcome = "outcome", feature = "age")
 
   expect_equal(stats::coef(res_km$cox$model), stats::coef(res_cox$model))
 })

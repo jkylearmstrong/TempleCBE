@@ -18,7 +18,7 @@ test_that("cbe_loco_mp_coxnet errors clearly on a single eval_time instead of si
   )
 
   expect_error(
-    cbe_loco_mp_coxnet(
+    loco_mp_coxnet(
       survival::Surv(time, status) ~ x1 + x2 + x3,
       data = df,
       eval_time = 5,
@@ -49,7 +49,7 @@ test_that("cbe_loco_mp_coxnet's OOB survival reshape keeps patches on the right 
     x3 = stats::rnorm(n)
   )
 
-  fit <- cbe_loco_mp_coxnet(
+  fit <- loco_mp_coxnet(
     survival::Surv(time, status) ~ x1 + x2 + x3,
     data = df,
     eval_time = c(2, 8),
@@ -77,7 +77,7 @@ test_that("cbe_loco_mp_coxnet works with 2-parameter Surv data via formula", {
     x3 = stats::rnorm(n)
   )
 
-  fit <- cbe_loco_mp_coxnet(
+  fit <- loco_mp_coxnet(
     survival::Surv(time, status) ~ x1 + x2 + x3,
     data = df,
     B = 15,
@@ -115,7 +115,7 @@ test_that("cbe_loco_mp_coxnet works with x and y matrix interface", {
   x_mat <- matrix(stats::rnorm(n * 3), nrow = n, dimnames = list(NULL, c("feat_a", "feat_b", "feat_c")))
   y_surv <- survival::Surv(stats::rexp(n, 0.1) + 0.2, stats::rbinom(n, 1, 0.7))
 
-  fit <- cbe_loco_mp_coxnet(
+  fit <- loco_mp_coxnet(
     x = x_mat,
     y = y_surv,
     B = 10,
@@ -147,7 +147,7 @@ test_that("cbe_loco_mp_coxnet works with start/stop data and subject_id", {
     )
   }))
 
-  fit <- cbe_loco_mp_coxnet(
+  fit <- loco_mp_coxnet(
     survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3,
     data = long,
     subject_id = "subject_id",
@@ -221,8 +221,8 @@ test_that("cbe_loco_mp_coxnet doesn't depend on the order of the rows or subject
   shuffled <- do.call(rbind, split(d, factor(d$subject_id, levels = sample(unique(d$subject_id)))))
   shuffled <- shuffled[sample(nrow(shuffled)), ]
 
-  a <- cbe_loco_mp_coxnet(f, sorted, subject_id = "subject_id", B = 25, seed = 9, penalty = 0.02)
-  b <- cbe_loco_mp_coxnet(f, shuffled, subject_id = "subject_id", B = 25, seed = 9, penalty = 0.02)
+  a <- loco_mp_coxnet(f, sorted, subject_id = "subject_id", B = 25, seed = 9, penalty = 0.02)
+  b <- loco_mp_coxnet(f, shuffled, subject_id = "subject_id", B = 25, seed = 9, penalty = 0.02)
   expect_equal(a$results, b$results, tolerance = 1e-6)
 })
 
@@ -235,7 +235,7 @@ test_that("cbe_loco_mp_coxnet's covariates = 'path' and 'baseline' agree for rig
   d <- loco_start_stop_data()
   f <- survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3 + x4 + x5
   run <- function(data, covariates, formula = f, ...) {
-    cbe_loco_mp_coxnet(formula, data, B = 20, seed = 3, penalty = 0.02, covariates = covariates, ...)
+    loco_mp_coxnet(formula, data, B = 20, seed = 3, penalty = 0.02, covariates = covariates, ...)
   }
   ss_path <- run(d, "path", subject_id = "subject_id")
   ss_base <- run(d, "baseline", subject_id = "subject_id")
@@ -260,7 +260,7 @@ test_that("cbe_loco_mp_coxnet finds the covariate that drives the hazard, with x
   x <- matrix(stats::rnorm(n * 4), n, dimnames = list(NULL, paste0("x", 1:4)))
   time <- stats::rexp(n, exp(1.5 * x[, "x1"]) / 10)
   status <- stats::rbinom(n, 1, 0.85)
-  fit <- cbe_loco_mp_coxnet(x = x, y = survival::Surv(time, status), B = 40, seed = 1, penalty = 0.02)
+  fit <- loco_mp_coxnet(x = x, y = survival::Surv(time, status), B = 40, seed = 1, penalty = 0.02)
   expect_equal(fit$results$term[1], "x1")
   expect_lt(fit$results$p_adjusted[fit$results$term == "x1"], 0.01)
   expect_true(all(fit$results$importance[fit$results$term != "x1"] < fit$results$importance[1]))
@@ -279,10 +279,10 @@ test_that("cbe_loco_mp_coxnet keeps two predictors per patch and validates the s
     x1 = stats::rnorm(n), x2 = stats::rnorm(n), x3 = stats::rnorm(n)
   )
   # m_ratio * 3 rounds to 1 predictor, which coxnet() can't fit; patches keep two.
-  fit <- cbe_loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2 + x3, df, B = 12, m_ratio = 0.1, seed = 1)
+  fit <- loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2 + x3, df, B = 12, m_ratio = 0.1, seed = 1)
   expect_gte(fit$B, 3)
   expect_error(
-    cbe_loco_mp_coxnet(x = as.matrix(df[3:5])[1:3, ], y = survival::Surv(df$time[1:3], df$status[1:3])),
+    loco_mp_coxnet(x = as.matrix(df[3:5])[1:3, ], y = survival::Surv(df$time[1:3], df$status[1:3])),
     "at least 4 subjects"
   )
 })
@@ -336,11 +336,11 @@ test_that("cbe_loco_mp_coxnet needs at least 3 predictors and says so, also insi
     x1 = stats::rnorm(n), x2 = stats::rnorm(n), x3 = stats::rnorm(n)
   )
   expect_error(
-    cbe_loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2, df, B = 10, seed = 1, penalty = 0.05),
+    loco_mp_coxnet(survival::Surv(time, status) ~ x1 + x2, df, B = 10, seed = 1, penalty = 0.05),
     "At least 3 predictors are required"
   )
   expect_error(
-    cbe_loco_mp_coxnet(x = as.matrix(df[c("x1", "x2")]), y = survival::Surv(df$time, df$status), B = 10),
+    loco_mp_coxnet(x = as.matrix(df[c("x1", "x2")]), y = survival::Surv(df$time, df$status), B = 10),
     "At least 3 predictors are required"
   )
 
@@ -370,20 +370,20 @@ test_that("cbe_loco_mp_coxnet validates x and y up front and reports the minipat
 
   with_na <- x
   with_na[5, 2] <- NA
-  expect_error(cbe_loco_mp_coxnet(x = with_na, y = y, B = 40, seed = 1), "missing values")
+  expect_error(loco_mp_coxnet(x = with_na, y = y, B = 40, seed = 1), "missing values")
   with_inf <- x
   with_inf[5, 2] <- Inf
-  expect_error(cbe_loco_mp_coxnet(x = with_inf, y = y, B = 40, seed = 1), "finite.*b")
+  expect_error(loco_mp_coxnet(x = with_inf, y = y, B = 40, seed = 1), "finite.*b")
   expect_error(
-    cbe_loco_mp_coxnet(x = data.frame(x, g = rep(c("u", "v"), n / 2)), y = y, B = 10),
+    loco_mp_coxnet(x = data.frame(x, g = rep(c("u", "v"), n / 2)), y = y, B = 10),
     "`x` must be numeric"
   )
-  expect_error(cbe_loco_mp_coxnet(x = x, y = y, B = 10, weights = rep(1, n)), "Don't pass `weights`")
-  expect_error(cbe_loco_mp_coxnet(x = x, y = stats::rnorm(n), B = 10), "Surv")
+  expect_error(loco_mp_coxnet(x = x, y = y, B = 10, weights = rep(1, n)), "Don't pass `weights`")
+  expect_error(loco_mp_coxnet(x = x, y = stats::rnorm(n), B = 10), "Surv")
 
   # Every patch failing: the first error is in the message.
   expect_error(
-    cbe_loco_mp_coxnet(x = x, y = y, B = 10, seed = 1, cox.ties = "nonsense"),
+    loco_mp_coxnet(x = x, y = y, B = 10, seed = 1, cox.ties = "nonsense"),
     "Fewer than 3 minipatches succeeded \\(10 of 10 failed; the first error was: .*should be one of"
   )
 
@@ -393,7 +393,7 @@ test_that("cbe_loco_mp_coxnet validates x and y up front and reports the minipat
     x1 = stats::rnorm(40), x2 = stats::rnorm(40), x3 = stats::rnorm(40)
   )
   few$status[c(5, 17)] <- 1L
-  got <- collect_warnings(cbe_loco_mp_coxnet(
+  got <- collect_warnings(loco_mp_coxnet(
     survival::Surv(time, status) ~ x1 + x2 + x3, few, B = 40, seed = 1, penalty = 0.05
   ))
   dropped <- grep("minipatches failed and were dropped", got$warnings, value = TRUE)
@@ -414,7 +414,7 @@ test_that("LOCO-MP p-values are one-sided and its intervals two-sided, as the do
   n <- 60
   x <- matrix(stats::rnorm(n * 4), n, dimnames = list(NULL, paste0("x", 1:4)))
   y <- survival::Surv(stats::rexp(n, exp(x[, 1]) / 10), stats::rbinom(n, 1, 0.8))
-  fit <- cbe_loco_mp_coxnet(x = x, y = y, B = 30, seed = 2, penalty = 0.02, alpha = 0.1, p_adjust = "none")
+  fit <- loco_mp_coxnet(x = x, y = y, B = 30, seed = 2, penalty = 0.02, alpha = 0.1, p_adjust = "none")
   res <- fit$results
   ok <- !is.na(res$statistic)
   expect_equal(res$p_value[ok], 1 - stats::pnorm(res$statistic[ok]))
@@ -460,8 +460,8 @@ test_that("cbe_loco_mp_coxnet honours the subject a recipe's id role names, as c
   rec <- recipes::recipe(surv ~ x1 + x2 + x3 + x4 + x5 + subject_id, data = d)
   rec <- recipes::update_role(rec, "subject_id", new_role = "id")
 
-  by_recipe <- cbe_loco_mp_coxnet(rec, data = d, B = 15, seed = 3, penalty = 0.02)
-  by_formula <- cbe_loco_mp_coxnet(
+  by_recipe <- loco_mp_coxnet(rec, data = d, B = 15, seed = 3, penalty = 0.02)
+  by_formula <- loco_mp_coxnet(
     survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3 + x4 + x5, data = d,
     subject_id = "subject_id", B = 15, seed = 3, penalty = 0.02
   )

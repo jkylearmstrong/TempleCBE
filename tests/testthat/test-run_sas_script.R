@@ -101,41 +101,41 @@ test_that("run_sas_script validates its timeout", {
 })
 
 test_that("cbe_sas_macro_dir returns existing macro folder", {
-  dir <- cbe_sas_macro_dir()
+  dir <- sas_macro_dir()
   expect_true(dir.exists(dir))
   expect_true(file.exists(file.path(dir, "cbe_macros.sas")))
 })
 
 test_that("cbe_sas_macro_path locates bundled macros and errors gracefully on unknown", {
-  path_all <- cbe_sas_macro_path("cbe_macros")
+  path_all <- sas_macro_path("cbe_macros")
   expect_true(file.exists(path_all))
   expect_match(path_all, "cbe_macros\\.sas$")
 
-  path_brier <- cbe_sas_macro_path("cbe_brier_score.sas")
+  path_brier <- sas_macro_path("cbe_brier_score.sas")
   expect_true(file.exists(path_brier))
 
-  path_cox <- cbe_sas_macro_path("cbe_cox_phreg.sas")
+  path_cox <- sas_macro_path("cbe_cox_phreg.sas")
   expect_true(file.exists(path_cox))
 
-  path_cp <- cbe_sas_macro_path("cbe_counting_process.sas")
+  path_cp <- sas_macro_path("cbe_counting_process.sas")
   expect_true(file.exists(path_cp))
 
-  path_coxtvc <- cbe_sas_macro_path("coxtvc.sas")
+  path_coxtvc <- sas_macro_path("coxtvc.sas")
   expect_true(file.exists(path_coxtvc))
 
-  path_cpdata <- cbe_sas_macro_path("cpdata.sas")
+  path_cpdata <- sas_macro_path("cpdata.sas")
   expect_true(file.exists(path_cpdata))
 
-  expect_error(cbe_sas_macro_path("non_existent_macro.sas"), "was not found")
+  expect_error(sas_macro_path("non_existent_macro.sas"), "was not found")
 })
 
 test_that("SAS macros use explicit blank delimiter for countw/scan to handle decimal times", {
-  cp_lines <- readLines(cbe_sas_macro_path("cbe_counting_process.sas"), warn = FALSE)
+  cp_lines <- readLines(sas_macro_path("cbe_counting_process.sas"), warn = FALSE)
   countw_cp <- grep("countw\\s*\\(", cp_lines, value = TRUE)
   expect_true(length(countw_cp) > 0)
   expect_true(all(grepl("%str\\(\\s*\\)", countw_cp)))
 
-  bs_lines <- readLines(cbe_sas_macro_path("cbe_brier_score.sas"), warn = FALSE)
+  bs_lines <- readLines(sas_macro_path("cbe_brier_score.sas"), warn = FALSE)
   countw_bs <- grep("countw\\s*\\(", bs_lines, value = TRUE)
   expect_true(length(countw_bs) > 0)
   expect_true(all(grepl("%str\\(\\s*\\)", countw_bs)))

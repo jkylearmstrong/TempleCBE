@@ -4,7 +4,7 @@ test_that("keep_only removes every object except the ones named", {
     a <- 1
     b <- 2
     c <- 3
-    keep_only("a", .dontask = TRUE)
+    rm_all_except("a", .dontask = TRUE)
   }, envir = e)
 
   expect_equal(ls(e), "a")
@@ -15,7 +15,7 @@ test_that("keep_only does nothing if every object is already in the keep list", 
   local({
     a <- 1
     b <- 2
-    keep_only(c("a", "b"), .dontask = TRUE)
+    rm_all_except(c("a", "b"), .dontask = TRUE)
   }, envir = e)
 
   expect_setequal(ls(e), c("a", "b"))
@@ -25,7 +25,7 @@ test_that("keep_only stops before removing anything when a kept name is not ther
   # keep_only("reslt") used to remove every object, "result" included.
   e <- new.env()
   expect_error(
-    local({ result <- 1; big <- 2; keep_only("reslt", .dontask = TRUE) }, envir = e),
+    local({ result <- 1; big <- 2; rm_all_except("reslt", .dontask = TRUE) }, envir = e),
     "Nothing was removed: 'reslt' is not in the calling environment"
   )
   expect_setequal(ls(e), c("result", "big"))
@@ -33,14 +33,14 @@ test_that("keep_only stops before removing anything when a kept name is not ther
   # One good name among misspelt ones does not save the call.
   e <- new.env()
   expect_error(
-    local({ result <- 1; big <- 2; keep_only(c("result", "bigg", "bg"), .dontask = TRUE) }, envir = e),
+    local({ result <- 1; big <- 2; rm_all_except(c("result", "bigg", "bg"), .dontask = TRUE) }, envir = e),
     "'bigg', 'bg' are not in the calling environment"
   )
   expect_setequal(ls(e), c("result", "big"))
 
   # Only the calling environment counts: `pi` is in base, not here.
   e <- new.env()
-  expect_error(local({ a <- 1; keep_only("pi", .dontask = TRUE) }, envir = e), "'pi' is not in the calling environment")
+  expect_error(local({ a <- 1; rm_all_except("pi", .dontask = TRUE) }, envir = e), "'pi' is not in the calling environment")
   expect_equal(ls(e), "a")
 })
 
@@ -48,15 +48,15 @@ test_that("keep_only wants quoted names", {
   e <- new.env()
   # Unquoted, c(result, big) is the two numbers 1 and 2.
   expect_error(
-    local({ result <- 1; big <- 2; keep_only(c(result, big), .dontask = TRUE) }, envir = e),
+    local({ result <- 1; big <- 2; rm_all_except(c(result, big), .dontask = TRUE) }, envir = e),
     "must be a character vector of object names"
   )
   expect_setequal(ls(e), c("result", "big"))
 
   # An unquoted name that is not an object is R's own error, and nothing is removed.
-  expect_error(local({ a <- 1; keep_only(no_such_object, .dontask = TRUE) }, envir = e), "no_such_object")
-  expect_error(local({ a <- 1; keep_only(NULL, .dontask = TRUE) }, envir = e), "must be a character vector")
-  expect_error(local({ a <- 1; keep_only(NA_character_, .dontask = TRUE) }, envir = e), "must be a character vector")
+  expect_error(local({ a <- 1; rm_all_except(no_such_object, .dontask = TRUE) }, envir = e), "no_such_object")
+  expect_error(local({ a <- 1; rm_all_except(NULL, .dontask = TRUE) }, envir = e), "must be a character vector")
+  expect_error(local({ a <- 1; rm_all_except(NA_character_, .dontask = TRUE) }, envir = e), "must be a character vector")
   expect_setequal(ls(e), c("result", "big", "a"))
 })
 
@@ -66,7 +66,7 @@ test_that("keep_only keeps names that start with a dot, and removes nothing it w
     .hidden <- 1
     a <- 1
     b <- 2
-    keep_only(c(".hidden", "a"), .dontask = TRUE)
+    rm_all_except(c(".hidden", "a"), .dontask = TRUE)
   }, envir = e)
   expect_equal(ls(e, all.names = TRUE), c(".hidden", "a"))
 })
@@ -75,14 +75,14 @@ test_that("inside a function keep_only works on that function's environment, arg
   # Documented behaviour: the function's own frame is the calling environment.
   f <- function(x) {
     y <- 1
-    keep_only("y", .dontask = TRUE)
+    rm_all_except("y", .dontask = TRUE)
     exists("x", inherits = FALSE)
   }
   expect_false(f(3))
 
   g <- function(x) {
     y <- 1
-    keep_only(c("x", "y"), .dontask = TRUE)
+    rm_all_except(c("x", "y"), .dontask = TRUE)
     exists("x", inherits = FALSE)
   }
   expect_true(g(3))
@@ -90,7 +90,7 @@ test_that("inside a function keep_only works on that function's environment, arg
   # A misspelt name inside a function stops the call and leaves the arguments alone.
   h <- function(x) {
     y <- 1
-    tryCatch(keep_only("yy", .dontask = TRUE), error = function(e) NULL)
+    tryCatch(rm_all_except("yy", .dontask = TRUE), error = function(e) NULL)
     exists("x", inherits = FALSE) && exists("y", inherits = FALSE)
   }
   expect_true(h(3))

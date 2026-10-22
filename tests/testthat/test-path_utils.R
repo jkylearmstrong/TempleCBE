@@ -1,5 +1,5 @@
 test_that("normalize_safely turns blanks into NA and never fails", {
-  out <- normalize_safely(c("", NA, "a/../b.txt"))
+  out <- normalize_path_safely(c("", NA, "a/../b.txt"))
   expect_length(out, 3)
   expect_true(all(is.na(out[1:2])))
   expect_equal(unname(out[3]), normalizePath("a/../b.txt", winslash = "/", mustWork = FALSE))
@@ -35,7 +35,7 @@ test_that("file_meta_fs returns one row per file, and a typed empty tibble for n
 
 test_that("extract_win_posix_paths splits Windows and POSIX .xlsx paths", {
   x <- c("C:\\data\\r\\table_1.xlsx", "/home/kyle/a.b/c/table-2.xlsx", "none")
-  df <- extract_win_posix_paths(x)
+  df <- extract_xlsx_paths(x)
   expect_equal(df$file, c("table_1.xlsx", "table-2.xlsx", NA))
   expect_equal(df$dir[1], "C:\\data\\r")
   expect_equal(df$full_path[2], "/home/kyle/a.b/c/table-2.xlsx")
@@ -65,7 +65,7 @@ test_that("extract_win_posix_paths handles repeated separators and rejects relat
     "write_xlsx(df, 'output/tables/t1.xlsx')",
     "read_excel('C:\\data\\t3.xlsx')"
   )
-  df <- extract_win_posix_paths(x)
+  df <- extract_xlsx_paths(x)
   expect_equal(df$file, c("t2.xlsx", NA, "t3.xlsx"))
   expect_equal(df$full_path[1], "C:/data/r/t2.xlsx")
   expect_true(is.na(df$full_path[2]))

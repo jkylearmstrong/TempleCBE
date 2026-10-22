@@ -128,7 +128,7 @@ test_that("C1: score_outer() invalidates checkpoints when censoring_weights, fea
   expect_false("x3" %in% coefs_reduced$term)
 })
 
-test_that("C1: summarize_tune_results() invalidates checkpoints when feature set changes", {
+test_that("C1: tune_alpha_by_split() invalidates checkpoints when feature set changes", {
   for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes", "furrr")) {
     skip_if_not_installed(pkg)
   }
@@ -142,7 +142,7 @@ test_that("C1: summarize_tune_results() invalidates checkpoints when feature set
   ckpt_dir <- file.path(tempdir(), paste0("ckpt_c1_tune_", floor(stats::runif(1, 1e5, 9e5))))
   on.exit(unlink(ckpt_dir, recursive = TRUE), add = TRUE)
 
-  res_3feat <- summarize_tune_results(
+  res_3feat <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.2, 0.8),
     recipe = rec,
@@ -156,7 +156,7 @@ test_that("C1: summarize_tune_results() invalidates checkpoints when feature set
 
   # Rerunning with reduced features must error when checkpoint_mismatch = "error"
   expect_error(
-    summarize_tune_results(
+    tune_alpha_by_split(
       object = splits,
       alphas = c(0.2, 0.8),
       recipe = rec,
@@ -172,7 +172,7 @@ test_that("C1: summarize_tune_results() invalidates checkpoints when feature set
 
   # And warn + recompute by default, no longer returning x3
   expect_warning(
-    res_2feat <- summarize_tune_results(
+    res_2feat <- tune_alpha_by_split(
       object = splits,
       alphas = c(0.2, 0.8),
       recipe = rec,
@@ -191,7 +191,7 @@ test_that("C1: summarize_tune_results() invalidates checkpoints when feature set
 # C2: All-failed tuning stops with an informative error
 # ------------------------------------------------------------------------------
 
-test_that("C2: summarize_tune_results() stops when features do not exist or all IBS are NA", {
+test_that("C2: tune_alpha_by_split() stops when features do not exist or all IBS are NA", {
   for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes", "furrr")) {
     skip_if_not_installed(pkg)
   }
@@ -203,7 +203,7 @@ test_that("C2: summarize_tune_results() stops when features do not exist or all 
   times <- unique(long[, c("tstart", "tstop")])
 
   expect_error(
-    summarize_tune_results(
+    tune_alpha_by_split(
       object = splits,
       alphas = c(0.2, 0.8),
       recipe = rec,
@@ -332,13 +332,13 @@ test_that("N2: shard = c(i, n) and collect_checkpoints() split and merge work ac
   ckpt_tune <- file.path(tempdir(), paste0("ckpt_n2_tune_", floor(stats::runif(1, 1e5, 9e5))))
   on.exit(unlink(ckpt_tune, recursive = TRUE), add = TRUE)
 
-  s1 <- summarize_tune_results(
+  s1 <- tune_alpha_by_split(
     object = splits, alphas = c(0.2, 0.8),
     recipe = rec, feature_names = c("x1", "x2", "x3"),
     time_data = times, internal_folds = 3,
     checkpoint_dir = ckpt_tune, shard = c(1, 2), seed = 77
   )
-  s2 <- summarize_tune_results(
+  s2 <- tune_alpha_by_split(
     object = splits, alphas = c(0.2, 0.8),
     recipe = rec, feature_names = c("x1", "x2", "x3"),
     time_data = times, internal_folds = 3,
@@ -346,7 +346,7 @@ test_that("N2: shard = c(i, n) and collect_checkpoints() split and merge work ac
   )
 
   merged_tune <- collect_checkpoints(ckpt_tune, type = "tune")
-  full_tune <- summarize_tune_results(
+  full_tune <- tune_alpha_by_split(
     object = splits, alphas = c(0.2, 0.8),
     recipe = rec, feature_names = c("x1", "x2", "x3"),
     time_data = times, internal_folds = 3,
@@ -393,7 +393,7 @@ test_that("N2: shard = c(i, n) and collect_checkpoints() split and merge work ac
 # N3: Flat split x alpha parallelism in summarize_tune_results()
 # ------------------------------------------------------------------------------
 
-test_that("N3: summarize_tune_results() flat task execution is deterministic for the same seed", {
+test_that("N3: tune_alpha_by_split() flat task execution is deterministic for the same seed", {
   for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes", "furrr")) {
     skip_if_not_installed(pkg)
   }
@@ -404,12 +404,12 @@ test_that("N3: summarize_tune_results() flat task execution is deterministic for
   splits <- rsample::group_vfold_cv(long, group = id, v = 2)
   times <- unique(long[, c("tstart", "tstop")])
 
-  run1 <- summarize_tune_results(
+  run1 <- tune_alpha_by_split(
     object = splits, num_alpha_values = 4, num_fixed = 2,
     recipe = rec, feature_names = c("x1", "x2", "x3"),
     time_data = times, internal_folds = 3, seed = 1234
   )
-  run2 <- summarize_tune_results(
+  run2 <- tune_alpha_by_split(
     object = splits, num_alpha_values = 4, num_fixed = 2,
     recipe = rec, feature_names = c("x1", "x2", "x3"),
     time_data = times, internal_folds = 3, seed = 1234
@@ -548,7 +548,7 @@ test_that("N7: estimate_runtime() times sample fits and projects total and per-m
 # N8: cbe_review_tracker() and validate_review_tracker()
 # ------------------------------------------------------------------------------
 
-test_that("N8: cbe_review_tracker() and validate_review_tracker() enforce location and rationale", {
+test_that("N8: review_tracker() and validate_review_tracker() enforce location and rationale", {
   extracted <- list(
     comments = tibble::tibble(
       file = c("stage01.docx", "stage02.docx", "stage03.docx"),
@@ -564,7 +564,7 @@ test_that("N8: cbe_review_tracker() and validate_review_tracker() enforce locati
     )
   )
 
-  tracker <- cbe_review_tracker(extracted)
+  tracker <- review_tracker(extracted)
   expect_s3_class(tracker, "tbl_df")
   expect_equal(tracker$status, c("open", "open", "open"))
   expect_equal(tracker$trivial, c(FALSE, FALSE, TRUE))

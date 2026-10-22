@@ -2,7 +2,7 @@ test_that("cbe_exact2x2 automatically triggers mid-p adjustment when a zero-cell
   tab_zero <- matrix(c(0, 10, 5, 15), nrow = 2,
                      dimnames = list(c("Treated", "Control"), c("Event", "No Event")))
 
-  res <- cbe_exact2x2(tab_zero)
+  res <- exact2x2(tab_zero)
   expect_s3_class(res, "tbl_df")
   expect_true(res$has_zero)
   expect_true(res$midp)
@@ -20,7 +20,7 @@ test_that("cbe_exact2x2 defaults to standard Central Fisher's exact test when no
   tab_nonzero <- matrix(c(14, 6, 4, 16), nrow = 2,
                         dimnames = list(c("Treated", "Control"), c("Event", "No Event")))
 
-  res <- cbe_exact2x2(tab_nonzero)
+  res <- exact2x2(tab_nonzero)
   expect_false(res$has_zero)
   expect_false(res$midp)
   expect_match(res$method, "Central Fisher's Exact Test")
@@ -34,13 +34,13 @@ test_that("cbe_exact2x2 defaults to standard Central Fisher's exact test when no
 test_that("cbe_exact2x2 respects explicit midp overrides", {
   tab_zero <- matrix(c(0, 10, 5, 15), nrow = 2)
   # Override with midp = FALSE even with 0 cell
-  res_override <- cbe_exact2x2(tab_zero, midp = FALSE)
+  res_override <- exact2x2(tab_zero, midp = FALSE)
   expect_false(res_override$midp)
   expect_false(grepl("mid-p", res_override$method))
 
   tab_nonzero <- matrix(c(14, 6, 4, 16), nrow = 2)
   # Override with midp = TRUE even without 0 cell
-  res_midp <- cbe_exact2x2(tab_nonzero, midp = TRUE)
+  res_midp <- exact2x2(tab_nonzero, midp = TRUE)
   expect_true(res_midp$midp)
   expect_match(res_midp$method, "mid-p")
 })
@@ -51,8 +51,8 @@ test_that("cbe_exact2x2 accepts vector and gtsummary (data, variable, by) inputs
     out = factor(c("Yes", "Yes", "No", "No", "No", "No", "No", "No"))
   )
 
-  res_vec <- cbe_exact2x2(df$out, df$trt)
-  res_df <- cbe_exact2x2(data = df, variable = "out", by = "trt")
+  res_vec <- exact2x2(df$out, df$trt)
+  res_df <- exact2x2(data = df, variable = "out", by = "trt")
 
   expect_equal(res_vec$p.value, res_df$p.value)
   expect_equal(res_vec$estimate, res_df$estimate)
@@ -62,7 +62,7 @@ test_that("cbe_exact2x2 accepts vector and gtsummary (data, variable, by) inputs
 
 test_that("cbe_exact2x2 rejects non-2x2 tables with clear message", {
   tab_3x2 <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3)
-  expect_error(cbe_exact2x2(tab_3x2), "requires a 2x2 contingency table")
+  expect_error(exact2x2(tab_3x2), "requires a 2x2 contingency table")
 })
 
 test_that("cbe_exact2x2_ci formats odds ratios and confidence intervals", {
@@ -82,21 +82,21 @@ test_that("cbe_test_categorical dispatches 2x2 and RxC tables according to CBE h
   )
 
   # 2x2 with zero cell -> Central Fisher mid-p
-  res_bz <- cbe_test_categorical(df, "bin_zero", "group")
+  res_bz <- test_categorical(df, "bin_zero", "group")
   expect_match(res_bz$method, "mid-p")
   expect_true(res_bz$p.value < 0.05)
 
   # 2x2 without zero cell -> Central Fisher standard
-  res_bnz <- cbe_test_categorical(df, "bin_nonzero", "group")
+  res_bnz <- test_categorical(df, "bin_nonzero", "group")
   expect_match(res_bnz$method, "Central Fisher's Exact Test")
   expect_false(grepl("mid-p", res_bnz$method))
 
   # RxC with sparse counts -> Fisher's exact test (expected < 5)
-  res_ms <- cbe_test_categorical(df, "multi_sparse", "group")
+  res_ms <- test_categorical(df, "multi_sparse", "group")
   expect_match(res_ms$method, "Fisher's exact test")
 
   # RxC with dense counts -> Pearson's Chi-squared test
-  res_md <- cbe_test_categorical(df, "multi_dense", "group")
+  res_md <- test_categorical(df, "multi_dense", "group")
   expect_match(res_md$method, "Pearson's Chi-squared test")
 })
 
@@ -166,7 +166,7 @@ test_that("cbe_pairwise_combos generates all pairwise combinations", {
     num_x = c(10, 20)
   )
 
-  combos <- cbe_pairwise_combos(df)
+  combos <- pairwise_combos(df)
   expect_s3_class(combos, "tbl_df")
   expect_equal(nrow(combos), 3) # 3 choose 2 = 3
   expect_setequal(names(combos), c("id", "var1", "var2", "label1", "label2", "comparison_label"))
@@ -227,7 +227,7 @@ test_that("cbe_contingency_plot and cbe_four_quadrant_report support test = 'chi
     group = factor(rep(c("A", "B"), each = 25)),
     status = factor(c(rep("Yes", 12), rep("No", 13), rep("Yes", 5), rep("No", 20)))
   )
-  res_chi <- cbe_test_categorical(df, "status", "group", test = "chisq")
+  res_chi <- test_categorical(df, "status", "group", test = "chisq")
   expect_equal(res_chi$method, "Pearson's Chi-squared test")
   expect_true(is.numeric(res_chi$p.value))
 })
@@ -253,7 +253,7 @@ test_that("cbe_test_categorical supports custom B and simulate.p.value", {
   )
 
   # Custom B passed directly
-  res_b <- cbe_test_categorical(df, "feature", "outcome", test = "fisher", B = 5000L, simulate.p.value = TRUE)
+  res_b <- test_categorical(df, "feature", "outcome", test = "fisher", B = 5000L, simulate.p.value = TRUE)
   expect_equal(res_b$method, "Fisher's exact test (simulated)")
   expect_true(is.numeric(res_b$p.value))
   expect_gte(res_b$p.value, 0)
@@ -268,14 +268,14 @@ test_that("cbe_test_categorical performs batch testing across multiple variables
   )
 
   # Explicit vector of variables
-  res_batch <- cbe_test_categorical(df, variable = c("var1", "var2"), by = "group")
+  res_batch <- test_categorical(df, variable = c("var1", "var2"), by = "group")
   expect_s3_class(res_batch, "tbl_df")
   expect_equal(nrow(res_batch), 2L)
   expect_equal(res_batch$variable, c("var1", "var2"))
   expect_true(all(c("p.value", "p.formatted", "method") %in% names(res_batch)))
 
   # Auto-discovery with variable = NULL
-  res_auto <- cbe_test_categorical(df, variable = NULL, by = "group")
+  res_auto <- test_categorical(df, variable = NULL, by = "group")
   expect_s3_class(res_auto, "tbl_df")
   expect_equal(nrow(res_auto), 2L)
 })
@@ -291,7 +291,7 @@ test_that("cbe_test_categorical supports parallel execution via furrr", {
   )
 
   future::plan(future::sequential) # safe testing plan
-  res_par <- cbe_test_categorical(df, variable = c("var1", "var2"), by = "group", parallel = TRUE)
+  res_par <- test_categorical(df, variable = c("var1", "var2"), by = "group", parallel = TRUE)
   expect_s3_class(res_par, "tbl_df")
   expect_equal(nrow(res_par), 2L)
 
@@ -300,7 +300,7 @@ test_that("cbe_test_categorical supports parallel execution via furrr", {
     stage = factor(rep(c("I", "II", "III"), c(10, 15, 25))),
     group = factor(rep(c("Ctrl", "Treat"), 25))
   )
-  res_chunk <- cbe_test_categorical(df_rxc, variable = "stage", by = "group", test = "fisher",
+  res_chunk <- test_categorical(df_rxc, variable = "stage", by = "group", test = "fisher",
                                     simulate.p.value = TRUE, B = 10000L, parallel = TRUE, n_chunks = 2L)
   expect_true(is.numeric(res_chunk$p.value))
   expect_gte(res_chunk$p.value, 0)
@@ -315,12 +315,12 @@ test_that("cbe_test_categorical supports formula interface", {
   )
 
   # Single variable formula
-  res_fmla <- cbe_test_categorical(df, response ~ trt)
+  res_fmla <- test_categorical(df, response ~ trt)
   expect_true(is.numeric(res_fmla$p.value))
   expect_match(res_fmla$method, "Central Fisher", ignore.case = TRUE)
 
   # Multi-variable formula
-  res_fmla_multi <- cbe_test_categorical(df, response + grade ~ trt)
+  res_fmla_multi <- test_categorical(df, response + grade ~ trt)
   expect_s3_class(res_fmla_multi, "tbl_df")
   expect_equal(nrow(res_fmla_multi), 2L)
   expect_equal(res_fmla_multi$variable, c("response", "grade"))
@@ -340,33 +340,33 @@ unused_level_df <- function() {
 
 test_that("an unused factor level does not demote a 2x2 test to a simulated RxC test", {
   dd <- unused_level_df()
-  ref <- cbe_test_categorical(droplevels(dd), "x", "g")
+  ref <- test_categorical(droplevels(dd), "x", "g")
 
-  res <- cbe_test_categorical(dd, "x", "g")
+  res <- test_categorical(dd, "x", "g")
   expect_match(res$method, "Central Fisher's Exact Test")
   # deterministic: no Monte Carlo, so repeated calls agree exactly
-  expect_identical(res$p.value, cbe_test_categorical(dd, "x", "g")$p.value)
+  expect_identical(res$p.value, test_categorical(dd, "x", "g")$p.value)
   expect_equal(res$p.value, ref$p.value)
 
   # also for the forced tests, which used to see a 3x2 table with an expected count of 0
-  chi <- cbe_test_categorical(dd, "x", "g", test = "chisq")
+  chi <- test_categorical(dd, "x", "g", test = "chisq")
   expect_false(is.nan(chi$statistic))
   expect_equal(chi$parameter, 1)
 })
 
 test_that("a variable observed at only one level is reported as untestable, not p = 1", {
   dd <- data.frame(g = factor(rep(c("A", "B"), each = 5)), x = factor("y", levels = c("y", "n")))
-  res <- cbe_test_categorical(dd, "x", "g")
+  res <- test_categorical(dd, "x", "g")
   expect_true(is.na(res$p.value))
   expect_match(res$method, "Insufficient levels")
 })
 
 test_that("cbe_exact2x2, cbe_four_quadrant_report and the plot caption ignore an empty level", {
   dd <- unused_level_df()
-  ref <- cbe_exact2x2(droplevels(dd)$x, droplevels(dd)$g)
+  ref <- exact2x2(droplevels(dd)$x, droplevels(dd)$g)
 
-  expect_equal(cbe_exact2x2(dd$x, dd$g)$p.value, ref$p.value)
-  expect_equal(cbe_exact2x2(table(dd$x, dd$g))$p.value, ref$p.value)
+  expect_equal(exact2x2(dd$x, dd$g)$p.value, ref$p.value)
+  expect_equal(exact2x2(table(dd$x, dd$g))$p.value, ref$p.value)
 
   rep <- cbe_four_quadrant_report(dd, "x", "g")
   expect_equal(rep$p_value, ref$p.value)
@@ -381,7 +381,7 @@ test_that("cbe_exact2x2, cbe_four_quadrant_report and the plot caption ignore an
 
   # a genuinely 3x2 table is still rejected by the 2x2-only helpers
   three <- data.frame(g = rep(c("A", "B"), 15), x = rep(c("a", "b", "c"), each = 10))
-  expect_error(cbe_exact2x2(three$x, three$g), "3x2")
+  expect_error(exact2x2(three$x, three$g), "3x2")
   expect_error(cbe_four_quadrant_report(three, "x", "g"), "3x2")
 })
 
@@ -390,13 +390,13 @@ test_that("a 2x2 Fisher test on a large sample is exact and labelled as such", {
     g = factor(rep(c("A", "B"), each = 300)),
     x = factor(c(rep("y", 250), rep("n", 50), rep("y", 100), rep("n", 200)))
   )
-  res <- cbe_test_categorical(big, "x", "g", test = "fisher")
+  res <- test_categorical(big, "x", "g", test = "fisher")
   expect_identical(res$method, "Fisher's exact test")
   expect_equal(res$p.value, stats::fisher.test(table(big$x, big$g))$p.value)
 
   # an RxC table still says it is simulated
   rxc <- data.frame(g = rep(c("A", "B"), 30), x = rep(c("a", "b", "c"), each = 20))
-  expect_match(cbe_test_categorical(rxc, "x", "g", test = "fisher")$method, "simulated")
+  expect_match(test_categorical(rxc, "x", "g", test = "fisher")$method, "simulated")
 })
 
 test_that("RxC captions on cbe_contingency_plot say the Fisher p-value is simulated", {
@@ -408,13 +408,13 @@ test_that("RxC captions on cbe_contingency_plot say the Fisher p-value is simula
 test_that("cbe_exact2x2 accepts the extra arguments gtsummary::add_p() passes to a custom test", {
   d <- unused_level_df()
   expect_no_error(
-    res <- cbe_exact2x2(
+    res <- exact2x2(
       data = d, variable = "x", by = "g",
       group = NULL, type = "categorical", test.args = NULL,
       adj.vars = character(0), tbl = NULL, continuous_variable = NULL
     )
   )
-  expect_equal(res$p.value, cbe_exact2x2(droplevels(d)$x, droplevels(d)$g)$p.value)
+  expect_equal(res$p.value, exact2x2(droplevels(d)$x, droplevels(d)$g)$p.value)
 
   skip_if_not_installed("gtsummary")
   tbl <- gtsummary::tbl_summary(d, by = g) |>

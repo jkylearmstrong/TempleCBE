@@ -171,14 +171,14 @@ test_that("pca_variables_plot warns, naming the remedy, when the PCA was not sca
   expect_warning(pca_variables_plot(unscaled), "not scaled")
   expect_warning(pca_variables_plot(unscaled), "prcomp\\(scale\\. = TRUE\\)")
   expect_warning(
-    pca_variables_plot(proc_pca(iris[, 1:4], scale = FALSE)),
+    pca_variables_plot(run_pca(iris[, 1:4], scale = FALSE)),
     "prcomp\\(scale\\. = TRUE\\)"
   )
   expect_warning(pca_plot(unscaled, type = "circle"), "prcomp\\(scale\\. = TRUE\\)")
 
   # A standardised fit is what the plot is for: no warning.
   expect_no_warning(pca_variables_plot(stats::prcomp(iris[, 1:4], scale. = TRUE)))
-  expect_no_warning(pca_variables_plot(proc_pca(iris[, 1:4])))
+  expect_no_warning(pca_variables_plot(run_pca(iris[, 1:4])))
 })
 
 test_that("pca_variables_plot(data =) plots correlations whatever the scaling of the fit", {

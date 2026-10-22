@@ -64,7 +64,7 @@ test_that("D1: shared worker bundle caches splits/recipe once per worker and chu
   expect_identical(prep1, prep2)
 
   # chunk_size parameter in summarize_tune_results and score_outer produces identical numerics
-  res_default <- summarize_tune_results(
+  res_default <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.2, 0.5, 0.8),
     recipe = rec,
@@ -73,7 +73,7 @@ test_that("D1: shared worker bundle caches splits/recipe once per worker and chu
     internal_folds = 3,
     seed = 67025
   )
-  res_chunked <- summarize_tune_results(
+  res_chunked <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.2, 0.5, 0.8),
     recipe = rec,
@@ -118,7 +118,7 @@ test_that("D2: seed_scheme is recorded in write_run_manifest() and verified by c
   ckpt_dir <- file.path(tempdir(), paste0("ckpt_d2_", floor(stats::runif(1, 1e5, 9e5))))
   on.exit(unlink(ckpt_dir, recursive = TRUE), add = TRUE)
 
-  res <- summarize_tune_results(
+  res <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.3, 0.7),
     recipe = rec,
@@ -150,7 +150,7 @@ test_that("D2: seed_scheme is recorded in write_run_manifest() and verified by c
 
   # summarize_tune_results with checkpoint_mismatch = "error" must also stop on seed_scheme mismatch
   expect_error(
-    summarize_tune_results(
+    tune_alpha_by_split(
       object = splits,
       alphas = c(0.3, 0.7),
       recipe = rec,
@@ -256,7 +256,7 @@ test_that("E5: clean_checkpoints() removes stale checkpoints and checkpoint_mism
   on.exit(unlink(ckpt_dir, recursive = TRUE), add = TRUE)
 
   # Initial run with 3 alphas
-  res1 <- summarize_tune_results(
+  res1 <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.2, 0.5, 0.8),
     recipe = rec,
@@ -291,7 +291,7 @@ test_that("E5: clean_checkpoints() removes stale checkpoints and checkpoint_mism
   # Overwrite mode: changing feature_names with checkpoint_mismatch = "overwrite"
   # overwrites existing checkpoint files in place WITHOUT emitting a mismatch warning
   ow_warns <- testthat::capture_warnings(
-    res_ow <- summarize_tune_results(
+    res_ow <- tune_alpha_by_split(
       object = splits,
       alphas = c(0.2, 0.5, 0.8),
       recipe = rec,
@@ -327,7 +327,7 @@ test_that("E6: on_complete callback and templecbe.on_complete option fire on suc
     events[[length(events) + 1L]] <<- payload
   }
 
-  res <- summarize_tune_results(
+  res <- tune_alpha_by_split(
     object = splits,
     alphas = c(0.3, 0.7),
     recipe = rec,
@@ -338,7 +338,7 @@ test_that("E6: on_complete callback and templecbe.on_complete option fire on suc
     seed = 77
   )
   expect_equal(length(events), 1L)
-  expect_equal(events[[1]]$fn, "summarize_tune_results")
+  expect_equal(events[[1]]$fn, "tune_alpha_by_split")
   expect_equal(events[[1]]$status, "completed")
   expect_true(is.numeric(events[[1]]$elapsed_sec))
   expect_s3_class(events[[1]]$result, "tbl_df")
@@ -351,7 +351,7 @@ test_that("E6: on_complete callback and templecbe.on_complete option fire on suc
     }),
     {
       expect_error(
-        summarize_tune_results(
+        tune_alpha_by_split(
           object = splits,
           alphas = c(0.5),
           recipe = rec,
@@ -372,7 +372,7 @@ test_that("E6: on_complete callback and templecbe.on_complete option fire on suc
 # E4: cbe_domain_children() per-domain expansion and failure isolation
 # ------------------------------------------------------------------------------
 
-test_that("E4: cbe_domain_children() expands domains, isolates failing domains, and records status", {
+test_that("E4: domain_children() expands domains, isolates failing domains, and records status", {
   skip_if_not_installed("knitr")
 
   child_tpl <- paste(
@@ -411,7 +411,7 @@ test_that("E4: cbe_domain_children() expands domains, isolates failing domains, 
 # E1, E2, & E7: cbe_nested_survival_run(), repro_appendix(), and rossi_data sharding
 # ------------------------------------------------------------------------------
 
-test_that("E1, E2 & E7: cbe_nested_survival_run() and repro_appendix() work end-to-end on rossi_data()", {
+test_that("E1, E2 & E7: nested_survival_run() and repro_appendix() work end-to-end on rossi_data()", {
   for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes", "ggplot2", "jsonlite")) {
     skip_if_not_installed(pkg)
   }
@@ -428,7 +428,7 @@ test_that("E1, E2 & E7: cbe_nested_survival_run() and repro_appendix() work end-
   on.exit(unlink(run_dir, recursive = TRUE), add = TRUE)
 
   # E1: Full nested survival run in one call
-  run1 <- cbe_nested_survival_run(
+  run1 <- nested_survival_run(
     data = rossi_sub,
     id = "id",
     start = "tstart",
@@ -468,7 +468,7 @@ test_that("E1, E2 & E7: cbe_nested_survival_run() and repro_appendix() work end-
   expect_true(nrow(td_imp) > 0L)
 
   # Rerunning on the same run_dir resumes from the fingerprinted artifact
-  run2 <- cbe_nested_survival_run(
+  run2 <- nested_survival_run(
     data = rossi_sub,
     id = "id",
     start = "tstart",

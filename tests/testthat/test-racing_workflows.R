@@ -17,7 +17,7 @@ test_that("control_race_survival produces valid control specification with clini
   expect_equal(ctrl$burn_in, 3)
 
   # Check alias
-  ctrl_cbe <- cbe_control_race(burn_in = 4)
+  ctrl_cbe <- control_race_survival(burn_in = 4)
   expect_equal(ctrl_cbe$burn_in, 4)
 })
 

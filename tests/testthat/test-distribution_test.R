@@ -6,8 +6,8 @@ test_that("significance_stars maps p-values to the right stars", {
 })
 
 test_that("is.int detects integer-valued vectors", {
-  expect_true(is.int(c(1, 2, 3, NA)))
-  expect_false(is.int(c(1, 2.5, 3)))
+  expect_true(is_integer_valued(c(1, 2, 3, NA)))
+  expect_false(is_integer_valued(c(1, 2.5, 3)))
 })
 
 test_that("is_normal flags normal data as normal and uniform data as not", {

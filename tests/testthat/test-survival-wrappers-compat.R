@@ -96,7 +96,7 @@ test_that("downstream-style tune_over_alpha and summarize_tune_results calls run
     outside = rsample::group_vfold_cv(group = subject_id, v = 2),
     inside = rsample::group_bootstraps(group = subject_id, times = 2)
   )
-  res <- summarize_tune_results(
+  res <- tune_alpha_by_split(
     nested$inner_resamples[[1]],
     recipe = fx$recipe, feature_names = fx$features,
     time_data = fx$times, internal_folds = 3,

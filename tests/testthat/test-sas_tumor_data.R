@@ -61,7 +61,7 @@ test_that("tumor_long() transforms wide data to counting process format matching
 test_that("cbe_cox_multi reproduces SAS PROC PHREG estimates on counting-process tumor data", {
   l <- tumor_long()
 
-  fit <- cbe_cox_multi(
+  fit <- cox_multi(
     data = l,
     formula = survival::Surv(T1, T2, Status) ~ Dose + NPap,
     id = ID,

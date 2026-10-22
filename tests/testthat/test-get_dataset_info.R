@@ -31,7 +31,7 @@ test_that("proc_contents works without labels on dataframe", {
 
   df2 <- data.frame(x = x, y = y)
 
-  result <- proc_contents(df2)
+  result <- describe_columns(df2)
 
   expect_equal(result$labels, c("x", "y"))
 })
@@ -44,7 +44,7 @@ test_that("proc_contents handles edge cases (no numeric, date only, logical only
     Date = as.Date(c("2023-01-01", "2023-01-02", "2023-01-03"))
   )
 
-  res_no_num <- proc_contents(df_no_numeric)
+  res_no_num <- describe_columns(df_no_numeric)
   expect_s3_class(res_no_num, "data.frame")
   expect_equal(nrow(res_no_num), 3)
   expect_equal(sort(unique(res_no_num$class)), sort(c("character", "Date")))
@@ -54,7 +54,7 @@ test_that("proc_contents handles edge cases (no numeric, date only, logical only
     Date1 = as.Date(c("2023-01-01", "2023-01-02", "2023-01-03")),
     Date2 = as.Date(c("2024-01-01", "2024-01-02", "2024-01-03"))
   )
-  res_date <- proc_contents(df_date_only)
+  res_date <- describe_columns(df_date_only)
   expect_s3_class(res_date, "data.frame")
   expect_equal(nrow(res_date), 2)
   expect_true(all(is.na(res_date$mean)))
@@ -64,7 +64,7 @@ test_that("proc_contents handles edge cases (no numeric, date only, logical only
     Flag1 = c(TRUE, FALSE, TRUE),
     Flag2 = c(FALSE, FALSE, TRUE)
   )
-  res_logical <- proc_contents(df_logical)
+  res_logical <- describe_columns(df_logical)
   expect_s3_class(res_logical, "data.frame")
   expect_equal(nrow(res_logical), 2)
   expect_true(all(is.na(res_logical$mean)))
@@ -73,7 +73,7 @@ test_that("proc_contents handles edge cases (no numeric, date only, logical only
 
   # 4. Empty dataframe (0 columns)
   df_empty <- tibble::tibble(.rows = 3)
-  res_empty <- proc_contents(df_empty)
+  res_empty <- describe_columns(df_empty)
   expect_s3_class(res_empty, "data.frame")
   expect_equal(nrow(res_empty), 0)
 })
@@ -153,7 +153,7 @@ test_that("proc_contents handles incompatible numeric S3 classes (e.g. chron::ti
   )
 
   # This should not error with the fix (forced as.numeric)
-  res <- proc_contents(df_incompat)
+  res <- describe_columns(df_incompat)
 
   expect_s3_class(res, "data.frame")
   expect_true("mean" %in% colnames(res))
@@ -237,9 +237,9 @@ test_that("get_dataset_info.list handles multi-table clinical databases", {
     survival_data = survival_data
   )
 
-  cbe_database_name(db) <- "ClinicalTrialDB"
-  cbe_dataset_label(db$inputs) <- "Demographics and Baseline Characteristics"
-  cbe_dataset_label(db$ABG) <- "Arterial Blood Gas Longitudinal Measurements"
+  database_name(db) <- "ClinicalTrialDB"
+  dataset_label(db$inputs) <- "Demographics and Baseline Characteristics"
+  dataset_label(db$ABG) <- "Arterial Blood Gas Longitudinal Measurements"
 
   res <- get_dataset_info(db, subject_id = list(inputs = "id", ABG = "id"))
 
@@ -253,12 +253,12 @@ test_that("get_dataset_info.list handles multi-table clinical databases", {
   expect_equal(abg_ph_row$variable_type, "Longitudinal (Time-Varying)")
 
   # Test helper getters and setters
-  labels_map <- cbe_get_dataset_labels(db)
+  labels_map <- get_dataset_labels(db)
   expect_equal(unname(labels_map["inputs"]), "Demographics and Baseline Characteristics")
   expect_true(is.na(labels_map["survival_data"]))
 
   # Test cbe_set_dataset_labels
-  db <- cbe_set_dataset_labels(db, list(survival_data = "Time-to-Event Clinical Followup"))
-  expect_equal(cbe_dataset_label(db$survival_data), "Time-to-Event Clinical Followup")
+  db <- set_dataset_labels(db, list(survival_data = "Time-to-Event Clinical Followup"))
+  expect_equal(dataset_label(db$survival_data), "Time-to-Event Clinical Followup")
 })
 

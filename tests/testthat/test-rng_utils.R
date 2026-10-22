@@ -31,7 +31,7 @@ test_that("local_seed() leaves no .Random.seed behind when there was none", {
   expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 })
 
-test_that("cbe_loco_mp_coxnet(seed =) does not disturb the caller's RNG stream", {
+test_that("loco_mp_coxnet(seed =) does not disturb the caller's RNG stream", {
   skip_if_not_installed("glmnet")
   skip_if_not_installed("survival")
   skip_if_not_installed("recipes")
@@ -46,7 +46,7 @@ test_that("cbe_loco_mp_coxnet(seed =) does not disturb the caller's RNG stream",
   set.seed(7)
   expected <- stats::runif(2)
   set.seed(7)
-  fit <- cbe_loco_mp_coxnet(x = x, y = survival::Surv(time, status), B = 10, seed = 1, penalty = 0.02)
+  fit <- loco_mp_coxnet(x = x, y = survival::Surv(time, status), B = 10, seed = 1, penalty = 0.02)
   expect_s3_class(fit, "cbe_loco_mp_coxnet")
   expect_identical(stats::runif(2), expected)
 })

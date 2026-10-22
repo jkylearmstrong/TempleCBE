@@ -14,7 +14,7 @@ test_that("plot_cox_forest generates a valid ggplot object", {
 test_that("plot_cox_survival works with cbe_cox object", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   p <- plot_cox_survival(res, data = lung)
   expect_s3_class(p, "ggplot")
@@ -23,7 +23,7 @@ test_that("plot_cox_survival works with cbe_cox object", {
 test_that("plot_cox_marginal works with cbe_cox object and continuous predictor", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   p <- plot_cox_marginal(res, data = lung, status_col = "status")
   expect_s3_class(p, "ggplot")
@@ -123,7 +123,7 @@ test_that("plot_cox_forest_multi renders a faceted forest plot from a cbe_cox_mu
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
 
-  res <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex_f"))
+  res <- cox_multi(lung, outcome = "outcome", features = c("age", "sex_f"))
   p <- plot_cox_forest_multi(res)
 
   expect_s3_class(p, "ggplot")
@@ -144,7 +144,7 @@ test_that("plot_cox_survival overlay_km = TRUE adds KM step curves alongside Cox
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "sex_f")
+  res <- cox_single(lung, outcome = "outcome", feature = "sex_f")
 
   p <- plot_cox_survival(res, data = lung, overlay_km = TRUE)
   expect_s3_class(p, "ggplot")
@@ -159,7 +159,7 @@ test_that("plot_cox_survival overlay_km = TRUE adds KM step curves alongside Cox
 test_that("plot_cox_marginal scale = 'prob' (default) still returns a valid ggplot", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   p <- plot_cox_marginal(res, data = lung, scale = "prob")
   expect_s3_class(p, "ggplot")
@@ -168,7 +168,7 @@ test_that("plot_cox_marginal scale = 'prob' (default) still returns a valid ggpl
 test_that("plot_cox_marginal scale = 'hr' plots the relative hazard curve", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   p <- plot_cox_marginal(res, data = lung, scale = "hr")
   expect_s3_class(p, "ggplot")
@@ -178,7 +178,7 @@ test_that("plot_cox_marginal scale = 'hr' plots the relative hazard curve", {
 test_that("plot_cox_marginal scale = 'log_hr' plots the centered linear predictor", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   p <- plot_cox_marginal(res, data = lung, scale = "log_hr")
   expect_s3_class(p, "ggplot")

@@ -7,7 +7,7 @@ test_that("cbe_variable_roles classifies single table correctly", {
     death = c(0, 0, 1, 1, 1)
   )
 
-  roles <- cbe_variable_roles(
+  roles <- variable_roles(
     df,
     id = "patient_id",
     time = "visit",
@@ -23,10 +23,10 @@ test_that("cbe_variable_roles classifies single table correctly", {
   expect_true(roles$X_var[roles$columns == "sbp"])
 
   # Test role extractors
-  expect_equal(cbe_get_predictors(roles), c("age", "sbp"))
-  expect_equal(cbe_get_outcomes(roles), "death")
-  expect_equal(cbe_get_id_cols(roles), "patient_id")
-  expect_equal(cbe_get_time_cols(roles), "visit")
+  expect_equal(get_predictors(roles), c("age", "sbp"))
+  expect_equal(get_outcomes(roles), "death")
+  expect_equal(get_id_cols(roles), "patient_id")
+  expect_equal(get_time_cols(roles), "visit")
 })
 
 test_that("cbe_variable_roles handles multi-table databases", {
@@ -35,7 +35,7 @@ test_that("cbe_variable_roles handles multi-table databases", {
     outcomes = data.frame(id = 1:3, death = c(0, 1, 0))
   )
 
-  roles_db <- cbe_variable_roles(
+  roles_db <- variable_roles(
     db,
     id = "id",
     outcome = list(outcomes = "death"),
