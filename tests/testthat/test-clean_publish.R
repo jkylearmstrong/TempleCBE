@@ -1147,7 +1147,8 @@ test_that("a full object id is lower-case hex in every shell and locale (CPB-06)
   # line feeds only (a text-mode file would get a carriage return as well on Windows)
   writeBin(charToRaw(paste0(paste(c(hook[start:end], "if _tcbe_is_id \"$1\"; then echo yes; else echo no; fi"), collapse = "\n"), "\n")), script)
   is_id <- function(shell, id) {
-    out <- suppressWarnings(system2(shell, shQuote(c(script, id)), stdout = TRUE, stderr = TRUE))
+    # standard output only: a shell prints a warning on standard error when the locale is not installed
+    out <- suppressWarnings(system2(shell, shQuote(c(script, id)), stdout = TRUE, stderr = FALSE))
     paste(out, collapse = "")
   }
   lower <- paste(rep("0123456789abcdef", 3L), collapse = "")
