@@ -13,8 +13,14 @@ on:
         type: boolean
         default: true
 
+# Read-only token for every job (a check never writes to the repository).
+permissions:
+  contents: read
+
+# One group per pull request number (not per branch name: a fork's branch named like a maintainer's
+# would cancel the other's checks).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 name: R-CMD-check
@@ -32,6 +38,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -53,7 +61,7 @@ jobs:
   cross-platform-check:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60
+    timeout-minutes: 75
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
     env:
@@ -69,12 +77,14 @@ jobs:
           - {os: windows-latest,  r: 'release', locale: English_United States.utf8, check_args: 'c("--no-manual", "--ignore-vignettes")', build_args: 'c("--no-build-vignettes")'}
           - {os: macOS-latest,    r: 'release', locale: en_US.UTF-8,                check_args: 'c("--no-manual")',                          build_args: 'character()'}
           # aarch64 Linux (same CPU architecture as DGX Spark / Grace). Posit Package
-          # Manager has no arm64 binaries, so first runs compile from source; the
-          # setup-r-dependencies cache makes later runs fast.
+          # Manager serves arm64 binaries for Ubuntu noble, so dependencies install in a few
+          # minutes, as on x86-64.
           - {os: ubuntu-24.04-arm, r: 'release', locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()'}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -97,7 +107,7 @@ jobs:
   optional-deps-installed-tests:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 45
+    timeout-minutes: 20
     name: optional-tests-${{ matrix.config.os }}
     env:
       LANG: ${{ matrix.config.locale }}
@@ -115,6 +125,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: r-lib/actions/setup-r@v2
         with:
