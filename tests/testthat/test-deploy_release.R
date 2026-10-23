@@ -135,16 +135,54 @@ test_that("deploy_release() does not push unless asked: it commits and tags loca
   expect_identical(cp_git(fx$public, "for-each-ref")$out, character())
 })
 
-test_that("with push = TRUE the branch and the tag go to the remote that is named, and to no other (CPD-06, CPD-16)", {
+test_that("with push = TRUE the release commit goes to a branch of its own on the remote that is named, and to no other (CPD-06, CPD-16)", {
+  skip_if_no_git()
+  fx <- dr_fixture()
+  origin_before <- cp_remote_refs(fx)
+  master_before <- cp_rev(fx$repo, "HEAD")
+
+  run_deploy(fx$repo, push = TRUE, remote = "public")
+
+  # a branch for a pull request: no master and no tag on the remote
+  release <- cp_rev(fx$repo, "release/v0.4.46")
+  expect_identical(cp_git(fx$public, "rev-parse", "release/v0.4.46")$out, release)
+  expect_identical(cp_git(fx$public, "for-each-ref", "--format=%(refname)")$out, "refs/heads/release/v0.4.46")
+  expect_identical(cp_git(fx$public, "tag", "--list")$out, character())
+  expect_identical(cp_git(fx$repo, "log", "-1", "--format=%s", "release/v0.4.46")$out, "Automated release for 0.4.46")
+  expect_identical(cp_git(fx$repo, "show", "release/v0.4.46:DESCRIPTION")$out[2L], "Version: 0.4.46")
+  # the local master is as it was: no release commit, no tag, DESCRIPTION unchanged
+  expect_identical(cp_rev(fx$repo, "HEAD"), master_before)
+  expect_identical(cp_git(fx$repo, "tag", "--list")$out, character())
+  expect_identical(dr_version(fx$repo), "0.4.45")
+  expect_identical(cp_git(fx$repo, "status", "--porcelain")$out, character())
+  expect_identical(cp_remote_refs(fx), origin_before)
+})
+
+test_that("push_branch = the expected branch pushes branch and tag to it directly, as before (CPD-06)", {
   skip_if_no_git()
   fx <- dr_fixture()
   origin_before <- cp_remote_refs(fx)
 
-  run_deploy(fx$repo, push = TRUE, remote = "public")
+  run_deploy(fx$repo, push = TRUE, remote = "public", push_branch = "master")
 
   expect_identical(cp_git(fx$public, "rev-parse", "master")$out, cp_rev(fx$repo, "HEAD"))
   expect_identical(cp_git(fx$public, "tag", "--list")$out, "v0.4.46")
   expect_identical(cp_remote_refs(fx), origin_before)
+})
+
+test_that("a local branch of the target name, or a bad push_branch, is refused before anything changes", {
+  skip_if_no_git()
+  fx <- dr_fixture()
+  cp_git(fx$repo, "branch", "release/v0.4.46")
+  before <- cp_state(fx$repo)
+
+  expect_error(run_deploy(fx$repo, push = TRUE, remote = "public"), "local branch 'release/v0.4.46' exists already")
+  expect_error(run_deploy(fx$repo, push = TRUE, remote = "public", push_branch = "--mirror"), "not a valid branch name")
+  expect_error(run_deploy(fx$repo, push = TRUE, remote = "public", push_branch = "a b"), "not a valid branch name")
+
+  expect_identical(cp_state(fx$repo), before)
+  expect_identical(dr_version(fx$repo), "0.4.45")
+  expect_identical(cp_git(fx$public, "for-each-ref")$out, character())
 })
 
 test_that("a push that fails rolls back the local commit and the tag, and DESCRIPTION is as it was (CPD-16)", {
@@ -201,14 +239,29 @@ test_that("scripts/deploy_release.R pushes only with --push, to the remote --rem
   expect_identical(cp_remote_refs(fx), origin_before)
   expect_identical(cp_git(fx$public, "for-each-ref")$out, character())
 
-  # --push --remote public publishes there and only there
+  # --push --remote public publishes a branch for a pull request there and only there, and says what is next
+  master_before <- cp_rev(fx$repo, "HEAD")
   pushed <- run_deploy_script(
     c("--version", "0.4.48", "--no-tests", "--no-readme", "--no-doc", "--push", "--remote", "public"), fx$repo
   )
   expect_identical(pushed$status, 0L, info = pushed$text)
-  expect_identical(cp_git(fx$public, "rev-parse", "master")$out, cp_rev(fx$repo, "HEAD"))
-  expect_identical(cp_git(fx$public, "tag", "--list")$out, "v0.4.48")
+  expect_identical(cp_git(fx$public, "rev-parse", "release/v0.4.48")$out, cp_rev(fx$repo, "release/v0.4.48"))
+  expect_identical(cp_git(fx$public, "for-each-ref", "--format=%(refname)")$out, "refs/heads/release/v0.4.48")
+  expect_identical(cp_git(fx$public, "tag", "--list")$out, character())
+  expect_identical(cp_rev(fx$repo, "HEAD"), master_before)
+  expect_match(pushed$text, "gh pr create --base master --head release/v0.4.48", fixed = TRUE)
+  expect_match(pushed$text, "git push public v0.4.48", fixed = TRUE)
   expect_identical(cp_remote_refs(fx), origin_before)
+
+  # --push-branch master is the direct push of branch and tag
+  direct <- run_deploy_script(
+    c("--version", "0.4.49", "--no-tests", "--no-readme", "--no-doc", "--push", "--push-branch", "master", "--remote", "public"),
+    fx$repo
+  )
+  expect_identical(direct$status, 0L, info = direct$text)
+  expect_identical(cp_git(fx$public, "rev-parse", "master")$out, cp_rev(fx$repo, "HEAD"))
+  expect_identical(cp_git(fx$public, "tag", "--list")$out, "v0.4.49")
+  expect_true(run_deploy_script(c("--dry-run", "--push-branch"), fx$repo)$status != 0L)
 })
 
 test_that("a commit that fails leaves the index and DESCRIPTION as they were, and nothing is tagged (CPD-16)", {
@@ -234,7 +287,7 @@ test_that("a repository path with a space works: every git argument is quoted (C
 
   run_deploy(fx$repo, push = TRUE, remote = "public", commit_msg = "A release with a message of several words")
 
-  expect_identical(cp_git(fx$public, "rev-parse", "master")$out, cp_rev(fx$repo, "HEAD"))
-  expect_identical(cp_git(fx$repo, "log", "-1", "--format=%s")$out, "A release with a message of several words")
-  expect_identical(cp_git(fx$public, "tag", "--list")$out, "v0.4.46")
+  expect_identical(cp_git(fx$public, "rev-parse", "release/v0.4.46")$out, cp_rev(fx$repo, "release/v0.4.46"))
+  expect_identical(cp_git(fx$repo, "log", "-1", "--format=%s", "release/v0.4.46")$out, "A release with a message of several words")
+  expect_identical(cp_git(fx$public, "tag", "--list")$out, character())
 })
