@@ -4,6 +4,10 @@
 
 * New `extract_docx_qa()` reads a Word document of investigator questions and the answers written for them and returns one row per question with its answer and the report files the answer cites (`question_pattern`, `citation_pattern`). With an index of the deliverables (`index_data`) it also builds Excel `HYPERLINK` formulas for the citations and lists those the index does not know. It reads the document body with `xml2`, so there is no new dependency, and leaves Word comments and tracked changes to `docx_review_extract()`. Requested for the downstream Q&A tracking sheets.
 
+## Data preparation
+
+* New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.
+
 ## Imputation diagnostics
 
 * New `compare_domain_datasets()` bundles the comparison of an original and an imputed version of one set of related variables (ECDF plot and KS / t tests, correlation differences and their heatmap, PCA loading differences, and mean trajectories by time with the shift caused by imputation and a paired test) into a list of tibbles and ggplot objects, so a report can loop over several domains. Requested for the downstream EDA reports.
