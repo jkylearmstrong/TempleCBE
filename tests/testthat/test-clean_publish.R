@@ -1169,7 +1169,7 @@ test_that("a full object id is lower-case hex in every shell and locale (CPB-06)
   }
 })
 
-test_that("a branch named like a full id, or an abbreviation of an id, is not taken for that id (CPB-06)", {
+test_that("a branch named like a full id is not taken for that id (CPB-06)", {
   skip_if_no_git()
   fx <- cp_fixture(published = TRUE)
   tip <- cp_rev(fx$repo, "private-history")
@@ -1178,11 +1178,75 @@ test_that("a branch named like a full id, or an abbreviation of an id, is not ta
   lookalike <- strrep("ab", 32L)
   expect_identical(cp_git(fx$repo, "branch", lookalike, tip)$status, 0L)
   cp_git(fx$repo, "config", "--add", "cleanpublish.cleancommit", lookalike)
-  # an abbreviation of the tip (40 digits it is not; 40 of the 64 would be a prefix of a longer id)
-  cp_git(fx$repo, "config", "--add", "cleanpublish.cleancommit", strrep("0", 40L))
 
   expect_push_refused(fx$repo, paste0(tip, ":refs/heads/by-lookalike"))
   expect_identical(cp_remote_refs(fx), character())
+  expect_push_accepted(fx$repo, "master")
+})
+
+test_that("the hook counts only the full id of a commit: a ref named like an id, an abbreviation in a SHA-256 repository, and a tag are ignored (review of PR 48)", {
+  skip_if_no_git()
+  shells <- cp_hook_shells()
+  skip_if(!length(shells), "no POSIX shell found")
+  fx <- cp_fixture(published = TRUE)
+  hook <- readLines(cp_hook_file(fx$repo), warn = FALSE)
+  # the hook's own definitions of _tcbe_say, _tcbe_is_id and _tcbe_commits, run alone
+  grab <- function(pattern) {
+    i <- grep(pattern, hook)
+    stopifnot(length(i) == 1L)
+    if (grepl("[}]$", hook[i]) && grepl("{ ", hook[i], fixed = TRUE)) return(hook[i])
+    hook[i:(i + which(hook[i:length(hook)] == "}")[1L] - 1L)]
+  }
+  funcs <- c(grab("^_tcbe_say\\(\\)"), grab("^_tcbe_is_id\\(\\)"), grab("^_tcbe_commits\\(\\)"))
+  script <- withr::local_tempfile(fileext = ".sh")
+  writeBin(charToRaw(paste0(paste(c(funcs, "_tcbe_commits \"$@\""), collapse = "\n"), "\n")), script)
+  counted <- function(shell, repo, ...) {
+    out <- withr::with_dir(repo, suppressWarnings(system2(shell, shQuote(c(script, "cleanpublish.cleancommit", ...)), stdout = TRUE, stderr = FALSE)))
+    trimws(paste(out, collapse = " "))
+  }
+  tip <- cp_rev(fx$repo, "private-history")
+  lookalike <- strrep("cd", 32L)
+  cp_git(fx$repo, "branch", lookalike, tip)
+  cp_git(fx$repo, "tag", "-a", "-m", "annotated", "an-annotated-tag", tip)
+  annotated <- cp_git(fx$repo, "rev-parse", "an-annotated-tag")$out
+  for (shell in shells) {
+    info <- basename(shell)
+    # the tip itself counts once; the branch named like an id and the tag object do not
+    expect_identical(counted(shell, fx$repo, tip, lookalike, annotated), tip, info = info)
+    # a value that does not exist, and the full id of a missing object, are ignored
+    expect_identical(counted(shell, fx$repo, strrep("0", 40L)), "", info = info)
+  }
+
+  # SHA-256: the first 40 digits of a 64-digit id have the shape of an id and resolve to that commit
+  sha256 <- file.path(fx$base, "sha256")
+  dir.create(sha256)
+  made <- cp_git(sha256, "init", "--quiet", "--object-format=sha256")
+  skip_if(made$status != 0L, "this git has no SHA-256 repositories")
+  cp_git(sha256, "-c", "user.name=t", "-c", "user.email=t@example.org", "commit", "--quiet", "--allow-empty", "-m", "x")
+  full <- cp_git(sha256, "rev-parse", "HEAD")$out
+  expect_identical(nchar(full), 64L)
+  for (shell in shells) {
+    info <- basename(shell)
+    expect_identical(counted(shell, sha256, substr(full, 1L, 40L)), "", info = info)
+    expect_identical(counted(shell, sha256, full), full, info = info)
+  }
+})
+
+test_that("a replace ref does not hide the private history from the hook (review of PR 48)", {
+  skip_if_no_git()
+  fx <- cp_fixture(published = TRUE)
+  tip <- cp_rev(fx$repo, "private-history")
+  # a commit on top of the private tip, then a replacement that makes it parentless: rev-list then
+  # sees nothing of the private history behind it
+  expect_identical(cp_git(fx$repo, "checkout", "--quiet", "--detach", tip)$status, 0L)
+  expect_identical(cp_git(fx$repo, "commit", "--quiet", "--allow-empty", "-m", "on top of the private tip")$status, 0L)
+  top <- cp_rev(fx$repo, "HEAD")
+  cp_git(fx$repo, "checkout", "--quiet", "master")
+  expect_identical(cp_git(fx$repo, "replace", "--graft", top)$status, 0L)
+
+  expect_push_refused(fx$repo, paste0(top, ":refs/heads/by-replace"))
+  expect_identical(cp_remote_refs(fx), character())
+  # the hook leaves the variable as it found it
   expect_push_accepted(fx$repo, "master")
 })
 
