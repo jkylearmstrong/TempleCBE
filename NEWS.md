@@ -1,3 +1,9 @@
+# TempleCBE 0.6.4.9000
+
+## Rendering
+
+* New `interactive_render_pipeline()`: a menu in front of `render_pipeline()` for an interactive session. It lists the documents in render order and renders the stale ones, everything again, everything up to one document, or one document only (or nothing). It refuses to run non-interactively. Requested for the downstream render scripts.
+
 # TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook
