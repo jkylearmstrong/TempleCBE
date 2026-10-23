@@ -1,8 +1,20 @@
 # TempleCBE 0.6.4.9000
 
+## Data preparation
+
+* New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.
+
+## Imputation diagnostics
+
+* New `compare_domain_datasets()` bundles the comparison of an original and an imputed version of one set of related variables (ECDF plot and KS / t tests, correlation differences and their heatmap, PCA loading differences, and mean trajectories by time with the shift caused by imputation and a paired test) into a list of tibbles and ggplot objects, so a report can loop over several domains. Requested for the downstream EDA reports.
+* `compare_imputed_ecdf()` no longer fails when one of the variables has no missing value in the original data ("arguments imply differing number of rows"); that variable contributes no imputed points.
+
 ## Docker image and CI
 
 * The `optional-tests` job (20 to 40 minutes) and the `test-coverage` job (30 to 60 minutes) have longer limits. Both were cancelled at their limit on pull-request runs of 2026-10-23, in the R and dependency installation steps, before any test ran: with the Actions cache full of Docker layers (see below) they reinstall R and every package, and the Ubuntu package mirror was slow (R setup took 10 to 19 minutes instead of 30 seconds). A warm cache needs about 5 minutes for them.
+
+* **The Linux x86-64 CI jobs use the main Ubuntu package mirror.** On 2026-10-23 `azure.archive.ubuntu.com`, the mirror the GitHub-hosted runners are configured with, was so slow that installing R and the system libraries took 20 to 40 minutes and the jobs were cancelled at their limits before any test ran. A first step now points apt at `archive.ubuntu.com`.
+* **A CI base image** (`Dockerfile.ci`, built by `.github/workflows/ci-image.yml` for amd64 and arm64 and published as `ghcr.io/<owner>/templecbe-ci`): R, pandoc, git and every package TempleCBE Imports or Suggests, as the newest CRAN binaries. It is rebuilt every Monday and when `DESCRIPTION` or the Dockerfile changes. The Linux CI jobs will run in it (next change) so that they stop reinstalling R and all dependencies on every run, which took 15 to 40 minutes whenever the package cache was cold.
 
 * **The Docker layer cache moved from the GitHub Actions cache to the registry** (`<image>:buildcache-<platform>`, written only by a publishing run). With `mode=max` each Docker run wrote about 5 GB to the Actions cache, which is limited to 10 GB per repository; it held 135 Docker entries and no R package cache, so every `R-CMD-check` run reinstalled R and all packages and the master run of 2026-10-23 reached the 60-minute limit before its check started.
 * **The build now fails unless a fresh R session started in `/pkg` finds TempleCBE and every extra package. (`yardstick`, `probably` and `quarto`, which `joint_model()`, `glmnet_IBS()` and the Quarto reports need, are not added: installing them pulls in `parsnip`, `dials` and a newer `future` than `renv.lock` pins, which the lock check refuses. They belong in `renv.lock`.) A DGX Spark run on 2026-10-23 reported that the extra packages added in 0.6.3.9000 were installed but not visible at run time (33 test errors and 405 skips in the image); the cause is not confirmed, and this check makes the build show it.

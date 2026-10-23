@@ -52,6 +52,7 @@ reference:
       - proc_contents
       - cbe_compare_df
       - autoplot.cbe_compare_df
+      - reconcile_column_dictionary
 
   - title: Clinical Databases & Multi-Table Management
     desc: Functions for multi-table clinical databases, metadata export/import, variable role assignment, and relational linkage analysis.
@@ -235,6 +236,7 @@ reference:
       - missranger_oob_by_mtry
       - missranger_max_mtry
       - tune_impute_numeric
+      - compare_domain_datasets
       - compare_imputed_ecdf
       - test_imputed_distributions
       - plot_imputed_ridgeline
