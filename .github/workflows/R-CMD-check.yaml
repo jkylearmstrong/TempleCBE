@@ -31,6 +31,9 @@ jobs:
     # pull-request runs of this job take 29 minutes (13 on a master push) and were cancelled at 30
     timeout-minutes: 60
     name: ubuntu-latest (release)
+    # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml);
+    # setup-r installing R through apt took 10-19 minutes on a slow mirror. The package must be public.
+    container: ghcr.io/jkylearmstrong/templecbe-ci:latest
     env:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
@@ -41,13 +44,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-
-      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-
-      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-        with:
-          r-version: 'release'
-          use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
@@ -108,8 +104,10 @@ jobs:
   optional-deps-installed-tests:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 20
+    timeout-minutes: 40
     name: optional-tests-${{ matrix.config.os }}
+    # the Linux x86-64 entry runs in the CI image (see sanity-check); the others have no container
+    container: ${{ matrix.config.container }}
     env:
       LANG: ${{ matrix.config.locale }}
       LC_ALL: ${{ matrix.config.locale }}
@@ -120,7 +118,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,  locale: C.UTF-8}
+          - {os: ubuntu-latest,  locale: C.UTF-8, container: 'ghcr.io/jkylearmstrong/templecbe-ci:latest'}
           - {os: windows-latest, locale: English_United States.utf8}
           - {os: ubuntu-24.04-arm, locale: C.UTF-8}
 
@@ -130,6 +128,7 @@ jobs:
           persist-credentials: false
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        if: ${{ !matrix.config.container }}
         with:
           r-version: release
           use-public-rspm: true
