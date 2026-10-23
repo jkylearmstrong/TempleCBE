@@ -246,7 +246,7 @@ compare_domain_datasets <- function(orig_df,
     theme_cbe() +
     ggplot2::labs(
       title = "Mean trajectories: original vs. imputed",
-      x = time_col, y = "Mean ± SE", color = "Data", fill = "Data"
+      x = time_col, y = "Mean +/- SE", color = "Data", fill = "Data"
     )
   list(deltas = deltas[, c("variable", "time", "mean_orig", "mean_imp", "delta", "n_paired", "p_value", "p_adj")],
        plot = plot)
