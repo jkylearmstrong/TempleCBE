@@ -39,16 +39,18 @@ compare_imputed_ecdf <- function(orig,
     # Identify which entries were originally missing
     was_na <- is.na(v_orig)
 
+    # rep() so that a variable with no missing value (or no observed one) gives zero rows
+    # instead of "arguments imply differing number of rows"
     df_obs <- data.frame(
-      variable = col,
+      variable = rep(col, sum(!was_na)),
       value = v_orig[!was_na],
-      dataset = "Original",
+      dataset = rep("Original", sum(!was_na)),
       stringsAsFactors = FALSE
     )
     df_imp <- data.frame(
-      variable = col,
+      variable = rep(col, sum(was_na)),
       value = v_imp[was_na],
-      dataset = "Imputed",
+      dataset = rep("Imputed", sum(was_na)),
       stringsAsFactors = FALSE
     )
     rbind(df_obs, df_imp)
