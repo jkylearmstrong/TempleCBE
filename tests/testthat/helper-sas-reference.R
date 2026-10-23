@@ -24,7 +24,7 @@ lung_full_data <- function() {
 }
 
 lung_model <- function(lung) {
-  cbe_cox_multi(lung, survival::Surv(time, event) ~ age + sex + ph_karno, ties = "breslow")$model
+  cox_multi(lung, survival::Surv(time, event) ~ age + sex + ph_karno, ties = "breslow")$model
 }
 
 # Numbers SAS produced once. `#` lines at the top of each file give the SAS
@@ -208,7 +208,7 @@ run_sas_file <- function(path) {
 
 # The same for a program bundled in inst/sas/.
 run_bundled_sas <- function(script) {
-  run_sas_file(cbe_sas_macro_path(script))
+  run_sas_file(sas_macro_path(script))
 }
 
 # Writes a SAS program that runs %cbe_brier_score (PHREG predictions, Breslow
@@ -221,7 +221,7 @@ write_brier_driver <- function(lung_days, eval_times, dir) {
   stopifnot(all(lung_days$time == round(lung_days$time)))
   rows <- with(lung_days, paste(time, event, age, sex, ph_karno))
   program <- c(
-    sprintf('%%include "%s";', cbe_sas_macro_path("cbe_brier_score.sas")),
+    sprintf('%%include "%s";', sas_macro_path("cbe_brier_score.sas")),
     "",
     "data work.lung_years;",
     "    input days event age sex ph_karno;",
@@ -261,7 +261,7 @@ write_counting_driver <- function(wide, obs_times, dir, stem) {
   sas_value <- function(x) ifelse(is.na(x), ".", as.character(x))
   rows <- do.call(paste, lapply(wide, sas_value))
   program <- c(
-    sprintf('%%include "%s";', cbe_sas_macro_path("cbe_counting_process.sas")),
+    sprintf('%%include "%s";', sas_macro_path("cbe_counting_process.sas")),
     "",
     "data work.wide;",
     sprintf("    input %s;", paste(names(wide), collapse = " ")),
@@ -494,7 +494,7 @@ compare_run <- function(name, fixtures = compare_fixtures(), tolerance = NULL) {
   duplicate_warning <- FALSE
   run <- function(tolerance) {
     withCallingHandlers(
-      cbe_compare_df(
+      compare_df(
         fixtures[[spec$base]], fixtures[[spec$compare]],
         by = spec$by, tolerance = tolerance, base_name = "base", compare_name = "compare"
       ),

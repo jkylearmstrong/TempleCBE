@@ -2,7 +2,7 @@ test_that("cbe_compare_df identifies exact concordance", {
   df1 <- data.frame(id = 1:5, x = c(10, 20, 30, 40, 50), y = letters[1:5], stringsAsFactors = FALSE)
   df2 <- df1
 
-  cmp <- cbe_compare_df(df1, df2, by = "id")
+  cmp <- compare_df(df1, df2, by = "id")
   expect_s3_class(cmp, "cbe_compare_df")
   expect_true(cmp$is_concordant)
   expect_equal(cmp$observations$n_matched, 5)
@@ -17,7 +17,7 @@ test_that("cbe_compare_df handles key-based alignment and unmatched keys", {
   # Reverse order and add extra key in compare, omit key 4
   df_comp <- data.frame(id = c(3, 1, 2, 5), val = c(30, 10, 20, 50))
 
-  cmp <- cbe_compare_df(df_base, df_comp, by = "id")
+  cmp <- compare_df(df_base, df_comp, by = "id")
   expect_false(cmp$is_concordant)
   expect_equal(cmp$observations$n_matched, 3)
   expect_equal(cmp$observations$unmatched_base, 1) # id 4
@@ -31,13 +31,13 @@ test_that("cbe_compare_df enforces numeric tolerance", {
   df2 <- data.frame(id = 1:3, x = c(1.0001, 2.000, 3.050))
 
   # Loose tolerance (0.01): row 1 matches, row 3 fails
-  cmp_loose <- cbe_compare_df(df1, df2, by = "id", tolerance = 0.01)
+  cmp_loose <- compare_df(df1, df2, by = "id", tolerance = 0.01)
   expect_equal(cmp_loose$summary$n_diff[cmp_loose$summary$variable == "x"], 1)
   expect_equal(nrow(cmp_loose$diffs), 1)
   expect_equal(cmp_loose$diffs$id, 3)
 
   # Tight tolerance (1e-5): row 1 and 3 fail
-  cmp_tight <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-5)
+  cmp_tight <- compare_df(df1, df2, by = "id", tolerance = 1e-5)
   expect_equal(cmp_tight$summary$n_diff[cmp_tight$summary$variable == "x"], 2)
   expect_equal(nrow(cmp_tight$diffs), 2)
 })
@@ -46,7 +46,7 @@ test_that("cbe_compare_df handles missing values (NA) appropriately", {
   df1 <- data.frame(id = 1:3, num = c(1, NA, 3), char = c("a", NA, "c"), stringsAsFactors = FALSE)
   df2 <- data.frame(id = 1:3, num = c(1, NA, 4), char = c("a", "b", "c"), stringsAsFactors = FALSE)
 
-  cmp <- cbe_compare_df(df1, df2, by = "id")
+  cmp <- compare_df(df1, df2, by = "id")
   # num: id 2 (both NA) matches; id 3 differs
   # char: id 2 (one NA, one 'b') differs
   expect_equal(cmp$summary$n_diff[cmp$summary$variable == "num"], 1)
@@ -58,7 +58,7 @@ test_that("cbe_compare_df captures variable labels from labelled", {
   df2 <- df1
   attr(df1$bmi, "label") <- "Body Mass Index (kg/m2)"
 
-  cmp <- cbe_compare_df(df1, df2, by = "id")
+  cmp <- compare_df(df1, df2, by = "id")
   expect_equal(cmp$summary$label[cmp$summary$variable == "bmi"], "Body Mass Index (kg/m2)")
 })
 
@@ -66,7 +66,7 @@ test_that("cbe_compare_df S3 methods work as expected", {
   df1 <- data.frame(id = 1:3, val = c(10, 20, 30))
   df2 <- data.frame(id = 1:3, val = c(10, 25, 30))
 
-  cmp <- cbe_compare_df(df1, df2, by = "id")
+  cmp <- compare_df(df1, df2, by = "id")
 
   # Print method
   expect_output(print(cmp), "modelled on SAS PROC COMPARE")
@@ -93,7 +93,7 @@ test_that("cbe_compare_df handles tables with no non-key columns without warning
   edges_y <- data.frame(from = "a", to = "b")
 
   cmp <- expect_no_warning(
-    cbe_compare_df(edges_x, edges_y, by = c("from", "to"))
+    compare_df(edges_x, edges_y, by = c("from", "to"))
   )
   expect_equal(nrow(cmp$summary), 0)
   expect_true(all(c("variable", "n_diff", "types_match") %in% names(cmp$summary)))
@@ -107,11 +107,11 @@ test_that("cbe_compare_df errors on invalid by keys", {
   df1 <- data.frame(id = 1:2, x = 1:2)
   df2 <- data.frame(idx = 1:2, x = 1:2)
 
-  expect_error(cbe_compare_df(df1, df2, by = "id"), "Key variable.*not found in compare dataset")
-  expect_error(cbe_compare_df(df1, df2, by = "nonexistent"), "Key variable.*not found in base dataset")
+  expect_error(compare_df(df1, df2, by = "id"), "Key variable.*not found in compare dataset")
+  expect_error(compare_df(df1, df2, by = "nonexistent"), "Key variable.*not found in base dataset")
 })
 
-test_that("cbe_compare_df() extends to cbe_database objects (nodes + edges)", {
+test_that("compare_df() extends to cbe_database objects (nodes + edges)", {
   db1 <- as_database(list(
     nodes = data.frame(name = c("a", "b"), stage = c("eda", "report")),
     edges = data.frame(from = "a", to = "b", weight = 1)
@@ -121,7 +121,7 @@ test_that("cbe_compare_df() extends to cbe_database objects (nodes + edges)", {
     edges = data.frame(from = "a", to = "b", weight = 2)
   ))
 
-  cmp <- cbe_compare_df(db1, db2, by = "name")
+  cmp <- compare_df(db1, db2, by = "name")
   expect_s3_class(cmp, "cbe_compare_database")
   expect_s3_class(cmp$nodes, "cbe_compare_df")
   expect_s3_class(cmp$edges, "cbe_compare_df")
@@ -130,7 +130,7 @@ test_that("cbe_compare_df() extends to cbe_database objects (nodes + edges)", {
   expect_output(print(cmp), "Edges")
 })
 
-test_that("cbe_compare_df() extends to graph objects directly", {
+test_that("compare_df() extends to graph objects directly", {
   g1 <- igraph::graph_from_data_frame(
     data.frame(from = "a", to = "b"),
     vertices = data.frame(name = c("a", "b"), stage = c("eda", "report"))
@@ -140,23 +140,23 @@ test_that("cbe_compare_df() extends to graph objects directly", {
     vertices = data.frame(name = c("a", "b"), stage = c("analysis", "report"))
   )
 
-  cmp <- cbe_compare_df(g1, g2, by = "name")
+  cmp <- compare_df(g1, g2, by = "name")
   expect_s3_class(cmp, "cbe_compare_database")
   expect_equal(cmp$nodes$summary$n_diff[cmp$nodes$summary$variable == "stage"], 1)
 
   # tbl_graph dispatches through the igraph method via class inheritance
-  cmp_tg <- cbe_compare_df(tidygraph::as_tbl_graph(g1), tidygraph::as_tbl_graph(g2), by = "name")
+  cmp_tg <- compare_df(tidygraph::as_tbl_graph(g1), tidygraph::as_tbl_graph(g2), by = "name")
   expect_s3_class(cmp_tg, "cbe_compare_database")
 })
 
 test_that("cbe_compare_df treats identical infinite values as equal", {
   a <- data.frame(id = 1:3, x = c(1, Inf, -Inf))
-  expect_true(cbe_compare_df(a, a, by = "id")$is_concordant)
-  expect_true(cbe_compare_df(a[, "x", drop = FALSE], a[, "x", drop = FALSE])$is_concordant)
+  expect_true(compare_df(a, a, by = "id")$is_concordant)
+  expect_true(compare_df(a[, "x", drop = FALSE], a[, "x", drop = FALSE])$is_concordant)
 
   # an infinity against a finite value, or against the opposite infinity, is a difference
   b <- data.frame(id = 1:3, x = c(1, 5, Inf))
-  cmp <- cbe_compare_df(a, b, by = "id")
+  cmp <- compare_df(a, b, by = "id")
   expect_false(cmp$is_concordant)
   expect_equal(cmp$summary$n_diff, 2L)
 })
@@ -164,46 +164,46 @@ test_that("cbe_compare_df treats identical infinite values as equal", {
 test_that("cbe_compare_df does not overflow on large integers", {
   a <- data.frame(x = c(.Machine$integer.max, 1L))
   b <- data.frame(x = c(-.Machine$integer.max, 1L))
-  expect_no_warning(cmp <- cbe_compare_df(a, b))
+  expect_no_warning(cmp <- compare_df(a, b))
   expect_equal(cmp$summary$n_diff, 1L)
 })
 
 test_that("cbe_compare_df pairs duplicate keys in order and flags surplus rows", {
   a <- data.frame(id = c(1, 1), x = c(5, 5))
   b <- data.frame(id = 1, x = 5)
-  expect_warning(cmp <- cbe_compare_df(a, b, by = "id"), "Duplicate key")
+  expect_warning(cmp <- compare_df(a, b, by = "id"), "Duplicate key")
   expect_false(cmp$is_concordant)
   expect_equal(cmp$observations$n_matched, 1)          # not the 2 x 1 cross product
   expect_equal(cmp$observations$unmatched_base, 1)
 
   # same duplicated keys and values, same order: concordant (warning aside)
   a2 <- data.frame(id = c(1, 1, 2), x = c(5, 6, 7))
-  expect_warning(same <- cbe_compare_df(a2, a2, by = "id"), "Duplicate key")
+  expect_warning(same <- compare_df(a2, a2, by = "id"), "Duplicate key")
   expect_true(same$is_concordant)
   expect_equal(same$observations$n_matched, 3)
 
   # a real difference among duplicates is located at the right pair
   b2 <- data.frame(id = c(1, 1, 2), x = c(5, 9, 7))
-  expect_warning(diff2 <- cbe_compare_df(a2, b2, by = "id"), "Duplicate key")
+  expect_warning(diff2 <- compare_df(a2, b2, by = "id"), "Duplicate key")
   expect_equal(diff2$diffs$row_base, 2L)
   expect_equal(diff2$diffs$row_compare, 2L)
 
   # unique keys stay silent
   expect_no_warning(
-    cbe_compare_df(data.frame(id = 1:2, x = 1:2), data.frame(id = 1:2, x = 1:2), by = "id")
+    compare_df(data.frame(id = 1:2, x = 1:2), data.frame(id = 1:2, x = 1:2), by = "id")
   )
 })
 
 test_that("cbe_compare_df keeps a key named like a diffs column distinct", {
   a <- data.frame(variable = c("a", "b"), label = c("A", "B"), n = 1:2)
   b <- data.frame(variable = c("a", "b"), label = c("A", "B"), n = c(1L, 3L))
-  expect_no_message(cmp <- cbe_compare_df(a, b, by = "variable"))
+  expect_no_message(cmp <- compare_df(a, b, by = "variable"))
   expect_true("key_variable" %in% names(cmp$diffs))
   expect_identical(cmp$diffs$key_variable, "b")
   expect_identical(cmp$diffs$variable, "n")
   expect_false(anyDuplicated(names(cmp$diffs)) > 0)
 
   # both keys clash
-  expect_no_message(cmp2 <- cbe_compare_df(a, b, by = c("variable", "label")))
+  expect_no_message(cmp2 <- compare_df(a, b, by = c("variable", "label")))
   expect_true(all(c("key_variable", "key_label", "variable", "label") %in% names(cmp2$diffs)))
 })

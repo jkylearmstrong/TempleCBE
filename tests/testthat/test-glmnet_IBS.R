@@ -199,7 +199,7 @@ test_that("summarize_tune_results binds successful fits across splits", {
   fx <- ibs_fixture()
   set.seed(4)
   folds <- rsample::group_vfold_cv(rsample::training(fx$split), group = id, v = 2)
-  res <- summarize_tune_results(
+  res <- tune_alpha_by_split(
     folds, recipe = fx$recipe, feature_names = fx$features,
     time_data = fx$times, internal_folds = 3, cox.ties = "breslow", alphas = c(0.5, 1)
   )

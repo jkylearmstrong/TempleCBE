@@ -32,7 +32,7 @@ test_that("cbe_cox_multi term prefix collision is prevented and default CI is 95
   df$outcome <- survival::Surv(df$time, df$status)
 
   # Model with both 'age' and 'age_group'
-  res <- cbe_cox_multi(
+  res <- cox_multi(
     data = df,
     outcome = "outcome",
     features = c("age", "age_group", "rx"),
@@ -46,7 +46,7 @@ test_that("cbe_cox_multi term prefix collision is prevented and default CI is 95
   expect_equal(sum(res$table$Variable == "rx"), 2)
 
   # Dynamic conf_level
-  res_90 <- cbe_cox_multi(
+  res_90 <- cox_multi(
     data = df,
     outcome = "outcome",
     features = c("age", "rx"),
@@ -62,14 +62,14 @@ test_that("cbe_km_single correctly formats 95% CI and handles unstratified 1D ta
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
 
-  km_out <- cbe_km_single(data = lung, outcome = "outcome", feature = "sex_f", conf_level = 0.95)
+  km_out <- km_single(data = lung, outcome = "outcome", feature = "sex_f", conf_level = 0.95)
 
   expect_true("95% CI" %in% names(km_out$summary))
   expect_equal(nrow(km_out$summary), 2)
   expect_false(is.na(km_out$summary$km_median_time[1]))
 
   # Dynamic CI column in KM
-  km_out_90 <- cbe_km_single(data = lung, outcome = "outcome", feature = "sex_f", conf_level = 0.90)
+  km_out_90 <- km_single(data = lung, outcome = "outcome", feature = "sex_f", conf_level = 0.90)
   expect_true("90% CI" %in% names(km_out_90$summary))
 
   # Test 1D table extraction logic (unstratified survfit returns a 1D named vector)
@@ -94,7 +94,7 @@ test_that("simulate_section_data restores .Random.seed on exit", {
 
 test_that("proc_pca computes SAS eigenvalue statistics and automatically subsets numeric columns", {
   # Iris has 4 numeric columns and 1 factor (Species)
-  res <- proc_pca(iris, scale = TRUE)
+  res <- run_pca(iris, scale = TRUE)
 
   expect_s3_class(res, "cbe_pca")
   expect_s3_class(res, "tbl_df")
@@ -113,7 +113,7 @@ test_that("proc_pca computes SAS eigenvalue statistics and automatically subsets
 })
 
 test_that("PCA visualization functions execute cleanly and produce ggplot objects", {
-  res <- proc_pca(iris, scale = TRUE)
+  res <- run_pca(iris, scale = TRUE)
 
   # Scree plot
   p_scree <- pca_scree_plot(res, kaiser = TRUE)

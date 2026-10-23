@@ -2,7 +2,7 @@ test_that("cbe_cox_check works on a univariable coxph model", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   fit <- survival::coxph(survival::Surv(time, status) ~ age, data = lung)
 
-  chk <- cbe_cox_check(fit)
+  chk <- cox_check(fit)
 
   expect_s3_class(chk, "cbe_cox_check")
   expect_s3_class(chk$zph, "cox.zph")
@@ -19,7 +19,7 @@ test_that("cbe_cox_check works on a multivariable coxph model, including the GLO
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   fit <- survival::coxph(survival::Surv(time, status) ~ age + sex, data = lung)
 
-  chk <- cbe_cox_check(fit)
+  chk <- cox_check(fit)
 
   expect_equal(nrow(chk$zph_table), 3)
   expect_true("GLOBAL" %in% rownames(chk$zph_table))
@@ -33,16 +33,16 @@ test_that("cbe_cox_check dispatches on cbe_cox and cbe_cox_multi objects", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res_single <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
-  chk_single <- cbe_cox_check(res_single)
+  res_single <- cox_single(lung, outcome = "outcome", feature = "age")
+  chk_single <- cox_check(res_single)
   expect_s3_class(chk_single, "cbe_cox_check")
 
-  res_multi <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
-  chk_multi <- cbe_cox_check(res_multi)
+  res_multi <- cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
+  chk_multi <- cox_check(res_multi)
   expect_s3_class(chk_multi, "cbe_cox_check")
   expect_equal(nrow(chk_multi$zph_table), 3)
 })
 
 test_that("cbe_cox_check errors on unsupported input", {
-  expect_error(cbe_cox_check(list(a = 1)), "must be a")
+  expect_error(cox_check(list(a = 1)), "must be a")
 })

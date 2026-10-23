@@ -14,14 +14,14 @@ test_that("cbe_explain_survival works with joint_model and coxnet_model", {
   )
 
   fit <- joint_model(df, survival::Surv(time, status) ~ x1 + x2, mixture = 1, penalty = 0.05)
-  expl <- cbe_explain_survival(fit)
+  expl <- explain_survival(fit)
 
   expect_s3_class(expl, "surv_explainer")
   expect_true(!is.null(expl$predict_survival_function))
   expect_true(!is.null(expl$predict_risk_function))
 
   # Also test with coxnet_model directly
-  expl_cox <- cbe_explain_survival(
+  expl_cox <- explain_survival(
     fit$coxnet_model,
     data = df[, c("x1", "x2")],
     y = survival::Surv(df$time, df$status)
@@ -45,7 +45,7 @@ test_that("cbe_explain_survival works with tidymodels workflow and parsnip (Issu
   )
 
   c_fit <- survival::coxph(survival::Surv(time, status) ~ x1 + x2, data = df, x = TRUE)
-  expl_c <- cbe_explain_survival(
+  expl_c <- explain_survival(
     c_fit,
     data = df[, c("x1", "x2")],
     y = survival::Surv(df$time, df$status)
@@ -72,13 +72,13 @@ test_that("cbe_survex_loss_ibs and cbe_survex_loss_brier integrate with survex",
   )
 
   fit <- joint_model(df, survival::Surv(time, status) ~ x1 + x2, mixture = 1, penalty = 0.05)
-  expl <- cbe_explain_survival(fit)
+  expl <- explain_survival(fit)
 
-  loss_ibs <- cbe_survex_loss_ibs()
+  loss_ibs <- survex_loss_ibs()
   expect_equal(attr(loss_ibs, "loss_type"), "integrated")
   expect_equal(attr(loss_ibs, "loss_name"), "TempleCBE Integrated Brier Score")
 
-  loss_brier <- cbe_survex_loss_brier()
+  loss_brier <- survex_loss_brier()
   expect_equal(attr(loss_brier, "loss_type"), "time-dependent")
   expect_equal(attr(loss_brier, "loss_name"), "TempleCBE Brier Score")
 
@@ -109,17 +109,17 @@ test_that("cbe_explain creates unified bundle and individual explainers", {
   fit <- joint_model(df, survival::Surv(time, status) ~ x1 + x2, mixture = 1, penalty = 0.05)
 
   # Full bundle
-  bundle <- cbe_explain(fit, type = "all")
+  bundle <- explain_joint(fit, type = "all")
   expect_s3_class(bundle, "cbe_joint_explainer")
   expect_s3_class(bundle$survival, "surv_explainer")
   expect_s3_class(bundle$status, "explainer")
   expect_s3_class(bundle$time, "explainer")
 
   # Helper functions
-  expl_stat <- cbe_explain_status(fit)
+  expl_stat <- explain_status(fit)
   expect_s3_class(expl_stat, "explainer")
 
-  expl_tm <- cbe_explain_time(fit)
+  expl_tm <- explain_time(fit)
   expect_s3_class(expl_tm, "explainer")
 })
 
@@ -142,18 +142,18 @@ test_that("cbe_predict_parts_shap works on survival and joint explainers", {
   new_obs <- df[1, c("x1", "x2")]
 
   # Survival explainer SurvSHAP
-  expl_surv <- cbe_explain_survival(fit)
-  shap_surv <- cbe_predict_parts_shap(expl_surv, new_observation = new_obs, type = "survshap", N = 15)
+  expl_surv <- explain_survival(fit)
+  shap_surv <- predict_parts_shap(expl_surv, new_observation = new_obs, type = "survshap", N = 15)
   expect_s3_class(shap_surv, "predict_parts_survival")
 
   # Status explainer standard SHAP
-  expl_stat <- cbe_explain_status(fit)
-  shap_stat <- cbe_predict_parts_shap(expl_stat, new_observation = new_obs, type = "shap", B = 10)
+  expl_stat <- explain_status(fit)
+  shap_stat <- predict_parts_shap(expl_stat, new_observation = new_obs, type = "shap", B = 10)
   expect_s3_class(shap_stat, "predict_parts")
 
   # Joint explainer bundle
-  bundle <- cbe_explain(fit, type = "all")
-  joint_shap <- cbe_predict_parts_shap(bundle, new_observation = new_obs, N = 15, B = 10)
+  bundle <- explain_joint(fit, type = "all")
+  joint_shap <- predict_parts_shap(bundle, new_observation = new_obs, N = 15, B = 10)
   expect_s3_class(joint_shap, "cbe_joint_predict_parts")
   expect_true(!is.null(joint_shap$survival))
   expect_true(!is.null(joint_shap$status))
@@ -196,7 +196,7 @@ test_that("cbe_survex_loss_brier is the Graf IPCW Brier score and doesn't depend
   times <- c(2, 5, 9)
   y <- survival::Surv(time, status)
 
-  loss <- cbe_survex_loss_brier(trunc = 0.05)
+  loss <- survex_loss_brier(trunc = 0.05)
   got <- loss(y_true = y, surv = surv, times = times)
   expect_length(got, 3)
   expect_equal(got, naive_graf_brier(time, status, surv, times))
@@ -239,7 +239,7 @@ test_that("cbe_explain_survival refuses start/stop outcomes that survex would mi
   skip_if_not_installed("survival")
   d <- sim_counting(n = 30)
   expect_error(
-    cbe_explain_survival(
+    explain_survival(
       survival::coxph(survival::Surv(tstart, tstop, status) ~ x1, data = d),
       data = d[c("x1")], y = survival::Surv(d$tstart, d$tstop, d$status)
     ),
@@ -314,7 +314,7 @@ test_that("the explainers of a joint model with a factor predictor work with the
   # Survival explainer, default data. The default used to be the one-hot columns
   # (x1, x2, ga, gb, gc), which the coxnet model, forging from the original
   # columns, rejects: 'The required column "g" is missing.'
-  expl <- cbe_explain_survival(fit)
+  expl <- explain_survival(fit)
   expect_named(expl$data, raw)
   surv <- expl$predict_survival_function(expl$model, expl$data[1:5, ], times = expl$times[1:3])
   expect_equal(dim(surv), c(5L, 3L))
@@ -324,7 +324,7 @@ test_that("the explainers of a joint model with a factor predictor work with the
   expect_s3_class(mp, "model_parts_survival")
 
   # All three explainers, default data: raw columns, and predictions equal to predict()
-  bundle <- cbe_explain(fit, type = "all")
+  bundle <- explain_joint(fit, type = "all")
   expect_named(bundle$survival$data, raw)
   expect_named(bundle$status$data, raw)
   expect_named(bundle$time$data, raw)
@@ -337,11 +337,11 @@ test_that("the explainers of a joint model with a factor predictor work with the
   expect_false(any(c("ga", "gb", "gc") %in% imp$variable))
 
   # User-supplied raw data, with the outcome columns left in
-  own <- cbe_explain(fit, data = df[raw], type = "all")
+  own <- explain_joint(fit, data = df[raw], type = "all")
   expect_true(all(is.finite(own$status$predict_function(own$status$model, own$status$data))))
   expect_true(all(is.finite(own$time$predict_function(own$time$model, own$time$data))))
   expect_true(all(is.finite(own$survival$predict_survival_function(own$survival$model, own$survival$data[1:4, ], times = own$survival$times[1:2]) |> as.matrix())))
-  both <- cbe_explain_status(fit, data = df)
+  both <- explain_status(fit, data = df)
   expect_equal(both$predict_function(both$model, rows), ref$.pred_status)
 })
 
@@ -356,7 +356,7 @@ test_that("cbe_survex_loss_ibs integrates the Graf Brier score the way yardstick
   times <- c(2, 5, 9, 12)
   surv <- t(apply(matrix(stats::runif(n * 4, 0.2, 0.9), n, 4), 1, sort, decreasing = TRUE))
 
-  brier <- cbe_survex_loss_brier()(y_true = y, surv = surv, times = times)
+  brier <- survex_loss_brier()(y_true = y, surv = surv, times = times)
   trapezoids <- sum(diff(times) * (utils::head(brier, -1) + utils::tail(brier, -1)) / 2)
-  expect_equal(cbe_survex_loss_ibs()(y_true = y, surv = surv, times = times), trapezoids / max(times))
+  expect_equal(survex_loss_ibs()(y_true = y, surv = surv, times = times), trapezoids / max(times))
 })

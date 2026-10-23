@@ -3,7 +3,7 @@ test_that("cbe_cox_multi works with numeric and factor predictors via outcome/fe
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
 
-  res <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex_f"))
+  res <- cox_multi(lung, outcome = "outcome", features = c("age", "sex_f"))
 
   expect_s3_class(res, "cbe_cox_multi")
   expect_s3_class(res$model, "coxph")
@@ -26,8 +26,8 @@ test_that("cbe_cox_multi accepts a formula interface equivalent to outcome/featu
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res_formula <- cbe_cox_multi(lung, formula = survival::Surv(time, status) ~ age + sex)
-  res_features <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
+  res_formula <- cox_multi(lung, formula = survival::Surv(time, status) ~ age + sex)
+  res_features <- cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
 
   expect_equal(res_formula$features, c("age", "sex"))
   expect_equal(
@@ -41,7 +41,7 @@ test_that("cbe_cox_multi uses labelled variable labels when present", {
   lung$outcome <- survival::Surv(lung$time, lung$status)
   labelled::var_label(lung$age) <- "Patient Age at Diagnosis (Years)"
 
-  res <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
+  res <- cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
   expect_equal(res$var_labels[["age"]], "Patient Age at Diagnosis (Years)")
   expect_true("Patient Age at Diagnosis (Years)" %in% res$table$Variable)
 })
@@ -50,9 +50,9 @@ test_that("cbe_cox_multi errors clearly without formula or features, and on miss
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  expect_error(cbe_cox_multi(lung), "Must supply either")
+  expect_error(cox_multi(lung), "Must supply either")
   expect_error(
-    cbe_cox_multi(lung, outcome = "outcome", features = c("age", "nonexistent_var")),
+    cox_multi(lung, outcome = "outcome", features = c("age", "nonexistent_var")),
     "not found in provided data"
   )
 })
@@ -64,7 +64,7 @@ test_that("cbe_cox_multi reports non-convergence when a custom iteration limit i
   # too few iterations: coxph() warns and the fit has not converged. This used to
   # be compared against the *default* limit of 20, so it read "converged".
   expect_warning(
-    res_short <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex", "ph.ecog"),
+    res_short <- cox_multi(lung, outcome = "outcome", features = c("age", "sex", "ph.ecog"),
                                control = survival::coxph.control(iter.max = 2)),
     "Ran out of iterations"
   )
@@ -72,17 +72,17 @@ test_that("cbe_cox_multi reports non-convergence when a custom iteration limit i
   expect_output(print(res_short), "Converged: No")
 
   # a generous limit that the fit does not exhaust is still reported as converged
-  res_ok <- cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex", "ph.ecog"),
+  res_ok <- cox_multi(lung, outcome = "outcome", features = c("age", "sex", "ph.ecog"),
                           control = survival::coxph.control(iter.max = 50))
   expect_true(res_ok$converged)
-  expect_true(cbe_cox_multi(lung, outcome = "outcome", features = c("age", "sex"))$converged)
+  expect_true(cox_multi(lung, outcome = "outcome", features = c("age", "sex"))$converged)
 })
 
 test_that("cbe_cox_multi warns about coefficients its table cannot show", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex", "ph.karno")])
 
   expect_warning(
-    res <- cbe_cox_multi(lung, formula = survival::Surv(time, status) ~ age * factor(sex) + log(ph.karno)),
+    res <- cox_multi(lung, formula = survival::Surv(time, status) ~ age * factor(sex) + log(ph.karno)),
     "not in `table`.*log\\(ph.karno\\)"
   )
   expect_true(all(c("age:factor(sex)2", "log(ph.karno)") %in% names(stats::coef(res$model))))
@@ -90,6 +90,6 @@ test_that("cbe_cox_multi warns about coefficients its table cannot show", {
   # plain main effects (numeric and factor) raise no warning
   lung$sex_f <- factor(lung$sex, labels = c("Male", "Female"))
   expect_no_warning(
-    cbe_cox_multi(lung, formula = survival::Surv(time, status) ~ age + sex_f + ph.karno)
+    cox_multi(lung, formula = survival::Surv(time, status) ~ age + sex_f + ph.karno)
   )
 })

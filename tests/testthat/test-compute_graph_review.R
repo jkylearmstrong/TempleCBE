@@ -577,7 +577,7 @@ test_that("R-CG-11: output_format_extensions() and create_qmd_renderer() share o
   )
 })
 
-test_that("R-CG-11: the format of an output file is read back from its name, so render() asks for revealjs, not html", {
+test_that("R-CG-11: the format of an output file is read back from its name, so render_pipeline() asks for revealjs, not html", {
   r <- create_qmd_renderer("s", "a/s.qmd", output_format = c("revealjs", "gfm", "pdf", "temple-html", "docx"))
   expect_equal(
     vapply(r@output, .output_format, ""),
@@ -595,7 +595,7 @@ test_that("R-CG-11: the format of an output file is read back from its name, so 
   skip_if_not_installed("quarto")
   asked <- character()
   res <- testthat::with_mocked_bindings(
-    suppressMessages(render(r)),
+    suppressMessages(render_pipeline(r)),
     quarto_render = function(input, output_format, ...) {
       asked <<- c(asked, output_format)
       invisible(NULL)

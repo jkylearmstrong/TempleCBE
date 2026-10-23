@@ -296,12 +296,12 @@ test_that("render skip_downstream marks dependent nodes as skipped_upstream_fail
   pipe <- list(node1, node2)
 
   # Rerun shorthand works
-  plan_dry <- render(pipe, rerun = "full", dry_run = TRUE, renv_guard = FALSE)
+  plan_dry <- render_pipeline(pipe, rerun = "full", dry_run = TRUE, renv_guard = FALSE)
   expect_equal(nrow(plan_dry), 2)
 
   # We verify render with on_error = "continue", rerun = "full", and skip_downstream = TRUE
   res <- suppressWarnings(
-    render(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
+    render_pipeline(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
            manifest = FALSE, renv_guard = FALSE, engine = "rmarkdown")
   )
 
@@ -343,7 +343,7 @@ test_that("render parallel wave execution renders independent branches even when
   pipe <- list(node_a1, node_a2, node_b1, node_b2)
 
   res <- suppressWarnings(
-    render(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
+    render_pipeline(pipe, rerun = "full", formats = "html", on_error = "continue", skip_downstream = TRUE,
            manifest = FALSE, renv_guard = FALSE, engine = "rmarkdown")
   )
 
@@ -427,7 +427,7 @@ test_that("render defaults to workers = 1 and never touches future::plan unless 
   on.exit(future::plan(current_plan), add = TRUE)
   future::plan(future::sequential)
 
-  res <- render(character(0), dry_run = TRUE, renv_guard = FALSE)
+  res <- render_pipeline(character(0), dry_run = TRUE, renv_guard = FALSE)
   expect_true(inherits(future::plan(), "sequential"))
 })
 
@@ -445,7 +445,7 @@ test_that("never-rendered reports with no declared outputs are detected as stale
   node2 <- FileOutputs(name = "new2", path = qmd2, renders = TRUE)
   pipe <- list(node1, node2)
 
-  plan <- render(pipe, dry_run = TRUE, renv_guard = FALSE)
+  plan <- render_pipeline(pipe, dry_run = TRUE, renv_guard = FALSE)
   expect_equal(nrow(plan), 2)
   expect_setequal(plan$file, c("new1.qmd", "new2.qmd"))
 })
@@ -680,7 +680,7 @@ test_that("checkpoint skipping message is emitted when progress is TRUE", {
 
   split_obj <- list(splits = list(structure(list(), class = "rsplit")))
   msgs <- capture_messages({
-    tryCatch(summarize_tune_results(split_obj, checkpoint_dir = tmp, progress = TRUE), error = function(e) NULL)
+    tryCatch(tune_alpha_by_split(split_obj, checkpoint_dir = tmp, progress = TRUE), error = function(e) NULL)
   })
   expect_true(any(grepl("Found 1 cached checkpoint file", msgs)))
 })
@@ -792,7 +792,7 @@ test_that("summarize_tune_results and score_outer fail informatively when all fi
 
   # summarize_tune_results should stop when every fit errors
   expect_error(
-    summarize_tune_results(obj, alphas = c(0.5)),
+    tune_alpha_by_split(obj, alphas = c(0.5)),
     "failed for split"
   )
 })

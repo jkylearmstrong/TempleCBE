@@ -21,20 +21,20 @@ test_that("get_model_parameters returns the ranked workflow's best parameters", 
   results <- tuned_workflow_set()
   ranked <- workflowsets::rank_results(results, rank_metric = "rmse", select_best = TRUE)
 
-  best <- get_model_parameters(results, "rmse")
+  best <- workflow_set_params(results, "rmse")
   expect_equal(nrow(best), 1)
   expect_equal(best$wflow_id, ranked$wflow_id[ranked$rank == 1][1])
   expect_true(all(c("wflow_id", "preproc", "model") %in% names(best)))
 
-  second <- get_model_parameters(results, "rmse", .rank = 2)
+  second <- workflow_set_params(results, "rmse", .rank = 2)
   expect_false(identical(second$wflow_id, best$wflow_id))
 
-  expect_error(get_model_parameters(results, "rmse", .rank = 3), "No workflow at rank 3")
+  expect_error(workflow_set_params(results, "rmse", .rank = 3), "No workflow at rank 3")
 })
 
 test_that("fit_n_rank fits the best workflow and reports its ranking row", {
   results <- tuned_workflow_set()
-  best <- fit_n_rank(results, rank_metric = "rmse")
+  best <- workflow_set_rank_fit(results, rank_metric = "rmse")
 
   expect_s3_class(best$model, "workflow")
   expect_equal(nrow(best$tuned_parameters), 1)
@@ -42,7 +42,7 @@ test_that("fit_n_rank fits the best workflow and reports its ranking row", {
   expect_true(all(c("mean", "std_err", ".config", "overall_rank") %in% names(best$tuned_parameters)))
   expect_equal(
     best$tuned_parameters$wflow_id,
-    get_model_parameters(results, "rmse")$wflow_id
+    workflow_set_params(results, "rmse")$wflow_id
   )
 })
 
@@ -54,7 +54,7 @@ test_that("fit_n_rank with group_wflow = FALSE fits the ranked configuration, no
   lasso <- rankings[rankings$wflow_id == "all_lasso", ]
   target <- lasso[nrow(lasso), ]
 
-  fitted <- fit_n_rank(results, rank_metric = "rmse", .rank = target$rank, group_wflow = FALSE)
+  fitted <- workflow_set_rank_fit(results, rank_metric = "rmse", .rank = target$rank, group_wflow = FALSE)
   expect_equal(fitted$tuned_parameters$.config, target$.config)
 
   tune_res <- workflowsets::extract_workflow_set_result(results, "all_lasso")

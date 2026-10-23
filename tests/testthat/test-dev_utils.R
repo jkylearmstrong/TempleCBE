@@ -8,7 +8,7 @@ test_that("install.packages.no_lock forwards to utils::install.packages with --n
     .package = "utils"
   )
 
-  install.packages.no_lock("dplyr")
+  install_package_no_lock("dplyr")
 
   expect_equal(called_with$pkgs, "dplyr")
   expect_equal(called_with$dots$INSTALL_opts, "--no-lock")

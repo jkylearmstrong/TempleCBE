@@ -13,12 +13,12 @@ test_that("cbe_find_shared_keys and cbe_database_relationships detect links and 
   db <- list(patients = patients, vitals = vitals)
 
   # Check shared keys
-  shared <- cbe_find_shared_keys(db)
+  shared <- find_shared_keys(db)
   expect_equal(shared$column, "id")
   expect_equal(shared$n_tables, 2)
 
   # Check relationships
-  rel <- cbe_database_relationships(db)
+  rel <- database_relationships(db)
   expect_equal(nrow(rel), 1)
   expect_equal(rel$from_table, "patients")
   expect_equal(rel$to_table, "vitals")
@@ -26,7 +26,7 @@ test_that("cbe_find_shared_keys and cbe_database_relationships detect links and 
   expect_equal(rel$shared_keys, 3) # IDs 1, 2, 3
 
   # Check integrity without compare
-  integ <- cbe_check_key_integrity(db, id_col = "id", master_dataset = "patients")
+  integ <- check_key_integrity(db, id_col = "id", master_dataset = "patients")
   expect_s3_class(integ, "cbe_key_integrity")
   expect_equal(nrow(integ), 2)
   vitals_integ <- integ |> dplyr::filter(dataset_name == "vitals")
@@ -37,14 +37,14 @@ test_that("cbe_find_shared_keys and cbe_database_relationships detect links and 
   demo_audit <- data.frame(id = 1:5, age = c(50, 55, 62, 65, 70), sex = c("M", "F", "M", "F", "M"))
   db2 <- list(master = patients2, audit = demo_audit)
 
-  integ_cmp <- cbe_check_key_integrity(db2, id_col = "id", master_dataset = "master", compare = TRUE)
+  integ_cmp <- check_key_integrity(db2, id_col = "id", master_dataset = "master", compare = TRUE)
   cmps <- attr(integ_cmp, "comparisons")
   expect_false(is.null(cmps))
   expect_false(is.null(cmps$audit))
   expect_equal(cmps$audit$summary$n_diff[cmps$audit$summary$variable == "age"], 1) # ID 3 age 60 vs 62
 
   # Check cbe_compare_df direct list call
-  cmp_direct <- cbe_compare_df(db2, c("master", "audit"), by = "id")
+  cmp_direct <- compare_df(db2, c("master", "audit"), by = "id")
   expect_s3_class(cmp_direct, "cbe_compare_df")
   expect_equal(cmp_direct$meta$base_name, "master")
   expect_equal(cmp_direct$meta$compare_name, "audit")

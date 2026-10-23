@@ -2,7 +2,7 @@ test_that("cbe_cox_single works on numeric continuous predictors", {
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
 
   expect_s3_class(res, "cbe_cox")
   expect_true(res$is_numeric)
@@ -26,7 +26,7 @@ test_that("cbe_cox_single works on categorical factor predictors with explicit r
   lung$outcome <- survival::Surv(lung$time, lung$status)
   lung$sex_f <- factor(lung$sex, levels = c(1, 2), labels = c("Male", "Female"))
 
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "sex_f")
+  res <- cox_single(lung, outcome = "outcome", feature = "sex_f")
 
   expect_s3_class(res, "cbe_cox")
   expect_false(res$is_numeric)
@@ -43,7 +43,7 @@ test_that("cbe_cox_single uses labelled variable labels when present", {
   lung$outcome <- survival::Surv(lung$time, lung$status)
   labelled::var_label(lung$age) <- "Patient Age at Diagnosis (Years)"
 
-  res <- cbe_cox_single(lung, outcome = "outcome", feature = "age")
+  res <- cox_single(lung, outcome = "outcome", feature = "age")
   expect_equal(res$var_label, "Patient Age at Diagnosis (Years)")
   expect_match(res$interpretation, "Patient Age at Diagnosis \\(Years\\)")
   expect_equal(res$table$Variable[1], "Patient Age at Diagnosis (Years)")
@@ -54,7 +54,7 @@ test_that("cbe_cox_single errors on missing feature", {
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
   expect_error(
-    cbe_cox_single(lung, outcome = "outcome", feature = "nonexistent_var"),
+    cox_single(lung, outcome = "outcome", feature = "nonexistent_var"),
     "not found in provided data"
   )
 })
@@ -63,7 +63,7 @@ test_that("cbe_cox_single labels a non-default interval for a numeric predictor,
   lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
   lung$outcome <- survival::Surv(lung$time, lung$status)
 
-  res90 <- cbe_cox_single(lung, outcome = "outcome", feature = "age", conf_level = 0.90)
+  res90 <- cox_single(lung, outcome = "outcome", feature = "age", conf_level = 0.90)
   expect_true("90% CI" %in% names(res90$table))
   expect_false("95% CI" %in% names(res90$table))
 
@@ -73,6 +73,6 @@ test_that("cbe_cox_single labels a non-default interval for a numeric predictor,
   expect_match(res90$interpretation, "90% CI", fixed = TRUE)
 
   # the default is unchanged, and matches the factor branch's convention
-  expect_true("95% CI" %in% names(cbe_cox_single(lung, outcome = "outcome", feature = "age")$table))
-  expect_true("90% CI" %in% names(cbe_cox_single(lung, outcome = "outcome", feature = "sex", conf_level = 0.90)$table))
+  expect_true("95% CI" %in% names(cox_single(lung, outcome = "outcome", feature = "age")$table))
+  expect_true("90% CI" %in% names(cox_single(lung, outcome = "outcome", feature = "sex", conf_level = 0.90)$table))
 })

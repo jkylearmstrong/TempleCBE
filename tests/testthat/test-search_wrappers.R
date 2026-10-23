@@ -22,7 +22,7 @@ test_that("read_search finds common data-import calls", {
     "out <- write.csv(df, 'out.csv')"
   ), file.path(tmp_dir, "script1.R"))
 
-  res <- read_search(tmp_dir)
+  res <- find_read_calls(tmp_dir)
 
   expect_true(all(c("file", "path", "line_number", "line", "pattern") %in% names(res)))
   expect_true("readRDS" %in% res$pattern)
@@ -42,7 +42,7 @@ test_that("write_search finds common data-export calls", {
     "saveRDS(df, 'out.rds')"
   ), file.path(tmp_dir, "script1.R"))
 
-  res <- write_search(tmp_dir)
+  res <- find_write_calls(tmp_dir)
 
   expect_true("writexl::write_xlsx" %in% res$pattern)
   expect_true("saveRDS" %in% res$pattern)
@@ -60,7 +60,7 @@ test_that("write_search excludes comment-only lines by default", {
     "saveRDS(df, 'out.rds')"
   ), file.path(tmp_dir, "script1.R"))
 
-  res <- write_search(tmp_dir)
+  res <- find_write_calls(tmp_dir)
 
   expect_equal(nrow(res), 1)
   expect_match(res$line[1], "out\\.rds")

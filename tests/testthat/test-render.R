@@ -2,8 +2,8 @@ withr::local_options(templecbe_suppress_renv_warning = TRUE)
 
 test_that("render errors on a missing path", {
   skip_if_not(requireNamespace("quarto", quietly = TRUE), "quarto package not available")
-  expect_error(render(file.path(tempdir(), "does-not-exist.qmd")), "not found")
-  expect_error(render_me(file.path(tempdir(), "does-not-exist.qmd")), "not found")
+  expect_error(render_pipeline(file.path(tempdir(), "does-not-exist.qmd")), "not found")
+  expect_error(render_pipeline(file.path(tempdir(), "does-not-exist.qmd")), "not found")
 })
 
 test_that("render renders a single file and reports timing/status", {
@@ -23,7 +23,7 @@ test_that("render renders a single file and reports timing/status", {
     "## Hello World"
   ), qmd_file)
 
-  res <- render(qmd_file, formats = "gfm")
+  res <- render_pipeline(qmd_file, formats = "gfm")
 
   expect_s3_class(res, "data.frame")
   expect_equal(nrow(res), 1)
@@ -33,7 +33,7 @@ test_that("render renders a single file and reports timing/status", {
   expect_true(file.exists(file.path(tmp_dir, "minimal.md")))
 
   # Backwards compatibility alias render_me
-  res_alias <- render_me(qmd_file, formats = "gfm")
+  res_alias <- render_pipeline(qmd_file, formats = "gfm")
   expect_equal(res_alias$status[1], "success")
 })
 
@@ -55,7 +55,7 @@ test_that("render renders every matching file in a directory", {
     ), file.path(tmp_dir, paste0(nm, ".qmd")))
   }
 
-  res <- render(tmp_dir, formats = "gfm")
+  res <- render_pipeline(tmp_dir, formats = "gfm")
 
   expect_equal(nrow(res), 2)
   expect_setequal(res$file, c("a.qmd", "b.qmd"))
@@ -84,7 +84,7 @@ test_that("render accepts a list of file paths", {
   }
 
   # Pass as a list
-  res <- render(as.list(files), formats = "gfm")
+  res <- render_pipeline(as.list(files), formats = "gfm")
   expect_equal(nrow(res), 2)
   expect_setequal(res$file, c("doc1.qmd", "doc2.qmd"))
   expect_true(all(res$status == "success"))
@@ -115,7 +115,7 @@ test_that("render renders from computeGraph FileOutputs and pipeline lists", {
   )
 
   # Passing a single FileOutputs object
-  res1 <- render(cg_obj)
+  res1 <- render_pipeline(cg_obj)
   expect_equal(nrow(res1), 1)
   expect_equal(res1$output[1], "gfm")
   expect_equal(res1$status[1], "success")
@@ -125,7 +125,7 @@ test_that("render renders from computeGraph FileOutputs and pipeline lists", {
   raw_data <- FilePath(name = "raw", path = file.path(tmp_dir, "raw.csv"), renders = FALSE)
   pipeline <- list(raw_data, cg_obj)
 
-  res2 <- render(pipeline, only_stale = FALSE)
+  res2 <- render_pipeline(pipeline, only_stale = FALSE)
   expect_equal(nrow(res2), 1)
   expect_equal(res2$file[1], "cg_report.qmd")
   expect_equal(res2$status[1], "success")
@@ -150,7 +150,7 @@ test_that("render extracts formats from document YAML when formats = 'yaml'", {
 
   expect_equal(extract_yaml_formats(qmd_file), "gfm")
 
-  res <- render(qmd_file, formats = "yaml")
+  res <- render_pipeline(qmd_file, formats = "yaml")
   expect_equal(nrow(res), 1)
   expect_equal(res$output[1], "gfm")
   expect_equal(res$status[1], "success")
@@ -181,7 +181,7 @@ test_that("computeGraph pipeline_config(default_formats) overrides defaults", {
   expect_equal(getOption("pipeline.default_formats"), "gfm")
 
   # Calling render() without formats argument should use pipeline default "gfm"
-  res <- render(qmd_file)
+  res <- render_pipeline(qmd_file)
   expect_equal(res$output[1], "gfm")
   expect_equal(res$status[1], "success")
 })
@@ -204,7 +204,7 @@ test_that("render forwards dots (...) to backend engines", {
   ), qmd_file)
 
   # Passing quiet = TRUE via ...
-  res <- render(qmd_file, formats = "gfm", quiet = TRUE)
+  res <- render_pipeline(qmd_file, formats = "gfm", quiet = TRUE)
   expect_equal(res$status[1], "success")
 })
 
@@ -225,7 +225,7 @@ test_that("render renders .Rmd files using rmarkdown or quarto", {
     "## Hello from R Markdown"
   ), rmd_file)
 
-  res <- render(rmd_file, formats = "html", engine = "rmarkdown")
+  res <- render_pipeline(rmd_file, formats = "html", engine = "rmarkdown")
 
   expect_s3_class(res, "data.frame")
   expect_equal(nrow(res), 1)
@@ -244,7 +244,7 @@ test_that("render supports dry_run = TRUE without modifying disk", {
   writeLines(c("---", "title: 'Dry'", "---"), qmd_file)
 
   out <- capture.output({
-    res <- render(qmd_file, formats = "gfm", dry_run = TRUE)
+    res <- render_pipeline(qmd_file, formats = "gfm", dry_run = TRUE)
   })
 
   expect_s3_class(res, "data.frame")
@@ -271,7 +271,7 @@ test_that("render cache = 'refresh' wipes document cache and files directories",
   expect_true(dir.exists(files_dir))
 
   # Render with dry_run or execution
-  render(qmd_file, formats = "gfm", cache = "refresh", dry_run = TRUE)
+  render_pipeline(qmd_file, formats = "gfm", cache = "refresh", dry_run = TRUE)
   # When dry_run is TRUE, cache wiping happens during execution:
   expect_true(dir.exists(cache_dir)) # dry_run didn't wipe
 
@@ -284,7 +284,7 @@ test_that("render cache = 'refresh' wipes document cache and files directories",
     dir.create(r_cache, showWarnings = FALSE)
     dir.create(r_files, showWarnings = FALSE)
 
-    render(rmd_file, formats = "html", engine = "rmarkdown", cache = "refresh")
+    render_pipeline(rmd_file, formats = "html", engine = "rmarkdown", cache = "refresh")
     expect_false(dir.exists(r_cache))
     expect_false(dir.exists(r_files))
   }
@@ -311,7 +311,7 @@ test_that("render resume skips completed targets", {
   )
 
   msgs <- capture_messages({
-    res <- render(list(rmd1, rmd2), formats = "html", engine = "rmarkdown", resume = prev_res)
+    res <- render_pipeline(list(rmd1, rmd2), formats = "html", engine = "rmarkdown", resume = prev_res)
   })
 
   expect_true(any(grepl("Resuming: skipping already completed 'r1.Rmd'", msgs)))
@@ -341,7 +341,7 @@ test_that("render on_error = 'stop' halts immediately on failure", {
   skip_if_not(requireNamespace("quarto", quietly = TRUE))
 
   expect_error(
-    render(bad_file, formats = "gfm", on_error = "stop"),
+    render_pipeline(bad_file, formats = "gfm", on_error = "stop"),
     "Error rendering"
   )
 })
@@ -357,7 +357,7 @@ test_that("render writes render_manifest.json beside outputs", {
   rmd_file <- file.path(tmp_dir, "doc.Rmd")
   writeLines(c("---", "title: 'Manifest Test'", "output: html_document", "---"), rmd_file)
 
-  res <- render(rmd_file, formats = "html", engine = "rmarkdown", manifest = TRUE, renv_guard = FALSE)
+  res <- render_pipeline(rmd_file, formats = "html", engine = "rmarkdown", manifest = TRUE, renv_guard = FALSE)
 
   manifest_file <- file.path(tmp_dir, "render_manifest.json")
   expect_true(file.exists(manifest_file))
