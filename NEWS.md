@@ -11,6 +11,8 @@
 
 ## Docker image and CI
 
+* The `rossi_nested_survival` vignette sets a seed before drawing its nested folds. Its folds were random, and a build of 2026-10-23 drew one without events ("The outcome has no events"), which failed `R CMD check` on a pull request that did not touch it.
+
 * **The Linux x86-64 CI jobs use the main Ubuntu package mirror.** On 2026-10-23 `azure.archive.ubuntu.com`, the mirror the GitHub-hosted runners are configured with, was so slow that installing R and the system libraries took 20 to 40 minutes and the jobs were cancelled at their limits before any test ran. A first step now points apt at `archive.ubuntu.com`.
 * **A CI base image** (`Dockerfile.ci`, built by `.github/workflows/ci-image.yml` for amd64 and arm64 and published as `ghcr.io/<owner>/templecbe-ci`): R, pandoc, git and every package TempleCBE Imports or Suggests, as the newest CRAN binaries. It is rebuilt every Monday and when `DESCRIPTION` or the Dockerfile changes. The Linux CI jobs will run in it (next change) so that they stop reinstalling R and all dependencies on every run, which took 15 to 40 minutes whenever the package cache was cold.
 
