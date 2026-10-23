@@ -42,6 +42,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
+      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
+      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
+      # (the Docker builds use it).
+      - name: Use the main Ubuntu package mirror
+        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
+        run: |
+          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
+
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
@@ -87,6 +97,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
+      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
+      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
+      # (the Docker builds use it).
+      - name: Use the main Ubuntu package mirror
+        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
+        run: |
+          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
+
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
@@ -128,6 +148,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
+      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
+      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
+      # (the Docker builds use it).
+      - name: Use the main Ubuntu package mirror
+        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
+        run: |
+          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
