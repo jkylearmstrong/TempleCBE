@@ -28,7 +28,8 @@ name: R-CMD-check
 jobs:
   sanity-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # pull-request runs of this job take 29 minutes (13 on a master push) and were cancelled at 30
+    timeout-minutes: 60
     name: ubuntu-latest (release)
     env:
       LANG: C.UTF-8
