@@ -77,6 +77,13 @@ RUN Rscript -e 'install.packages("remotes", repos = "https://packagemanager.posi
 
 WORKDIR /pkg
 
+# One project library for every renv call below and for every R session started in /pkg at run time.
+# Without this, the sessions that ran before `COPY . .` installed into /pkg/renv/library while a
+# session started afterwards put ~/.cache/R/renv/library/<project> on .libPaths() instead, so the
+# packages installed below were on disk but invisible (found by a DGX Spark run, 2026-10-23, and by
+# the check at the end of this file).
+ENV RENV_PATHS_LIBRARY=/pkg/renv/library
+
 # Restore the exact package versions pinned in renv.lock -- the same lockfile
 # renv::restore() uses on a Windows dev machine -- instead of remotes::install_deps()
 # resolving whatever the latest CRAN/r-universe versions happen to be at build time.
@@ -107,5 +114,11 @@ COPY . .
 # renv::install() runs inside the same renv-activated session restore() used, so the
 # library it installs into is guaranteed consistent -- no separate path plumbing needed.
 RUN Rscript -e 'renv::install(".", prompt = FALSE, INSTALL_opts = c("--no-multiarch", "--with-keep.source"))'
+
+# A fresh R session started in /pkg (as `docker run IMAGE Rscript ...` does) must find TempleCBE and
+# every package installed above. A DGX Spark run reported that the extra packages were installed but
+# masked at run time (renv put another library on .libPaths()); this fails the build, with the
+# library paths printed, instead of shipping an image in which about 30 tests error and 400 skip.
+RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
 
 CMD ["R"]
