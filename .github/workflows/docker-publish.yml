@@ -169,8 +169,13 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: ${{ needs.prepare.outputs.publish == 'true' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', steps.registry.outputs.images) || 'type=cacheonly' }}
-          cache-from: type=gha,scope=${{ matrix.pair }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.pair }}
+          # The layer cache lives in the registry, not in the Actions cache: with mode=max it wrote
+          # about 5 GB per run, which filled the repository's 10 GB Actions cache and evicted the R
+          # package cache that R-CMD-check, test-coverage and pkgdown depend on (an R-CMD-check run
+          # then spent an hour reinstalling R and its packages and timed out). Reading it needs no
+          # login; only a publishing run (master or a release tag) writes it.
+          cache-from: type=registry,ref=${{ steps.registry.outputs.images }}:buildcache-${{ matrix.pair }}
+          cache-to: ${{ needs.prepare.outputs.publish == 'true' && format('type=registry,ref={0}:buildcache-{1},mode=max,image-manifest=true,oci-mediatypes=true', steps.registry.outputs.images, matrix.pair) || '' }}
 
       - name: Export digest
         if: ${{ needs.prepare.outputs.publish == 'true' }}
