@@ -18,7 +18,7 @@ name: test-coverage
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     name: test-coverage
     env:
       LANG: C.UTF-8
