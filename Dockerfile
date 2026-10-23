@@ -94,7 +94,7 @@ RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); r
 # (the ones current on CRAN on 2026-10-21) so both architectures and every rebuild get the same
 # ones; their own dependencies (nloptr, RcppEigen, ...) are not pinned. Installed after the
 # lockfile restore so that layer stays cached. Moving these into renv.lock is the stricter fix.
-RUN Rscript -e 'renv::install(c("lme4@2.0-6", "furrr@0.4.0", "glmnet@5.1", "rsample@1.3.2", "openxlsx@4.2.9", "zip@3.0.2", "yardstick@1.3.2", "probably@1.2.0", "quarto@1.4.4"), prompt = FALSE)'
+RUN Rscript -e 'renv::install(c("lme4@2.0-6", "furrr@0.4.0", "glmnet@5.1", "rsample@1.3.2", "openxlsx@4.2.9", "zip@3.0.2", "yardstick@1.3.2", "probably@1.2.0", "quarto@1.4.4", "future@1.76.0"), prompt = FALSE)'
 
 # Fail the build if installing the packages above changed any package that renv.lock pins
 # (a newer release can require a newer Matrix, future, ...), so renv.lock keeps describing the image.
