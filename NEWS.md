@@ -4,6 +4,10 @@
 
 * New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
 
+## Data preparation
+
+* New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.
+
 ## Imputation diagnostics
 
 * New `compare_domain_datasets()` bundles the comparison of an original and an imputed version of one set of related variables (ECDF plot and KS / t tests, correlation differences and their heatmap, PCA loading differences, and mean trajectories by time with the shift caused by imputation and a paired test) into a list of tibbles and ggplot objects, so a report can loop over several domains. Requested for the downstream EDA reports.
