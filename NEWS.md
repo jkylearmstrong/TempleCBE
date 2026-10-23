@@ -4,6 +4,11 @@
 
 * New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
 
+## Imputation diagnostics
+
+* New `compare_domain_datasets()` bundles the comparison of an original and an imputed version of one set of related variables (ECDF plot and KS / t tests, correlation differences and their heatmap, PCA loading differences, and mean trajectories by time with the shift caused by imputation and a paired test) into a list of tibbles and ggplot objects, so a report can loop over several domains. Requested for the downstream EDA reports.
+* `compare_imputed_ecdf()` no longer fails when one of the variables has no missing value in the original data ("arguments imply differing number of rows"); that variable contributes no imputed points.
+
 ## Docker image and CI
 
 * **The Docker layer cache moved from the GitHub Actions cache to the registry** (`<image>:buildcache-<platform>`, written only by a publishing run). With `mode=max` each Docker run wrote about 5 GB to the Actions cache, which is limited to 10 GB per repository; it held 135 Docker entries and no R package cache, so every `R-CMD-check` run reinstalled R and all packages and the master run of 2026-10-23 reached the 60-minute limit before its check started.
