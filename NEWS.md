@@ -1,3 +1,10 @@
+# TempleCBE 0.6.4.9000
+
+## Imputation diagnostics
+
+* New `compare_domain_datasets()` bundles the comparison of an original and an imputed version of one set of related variables (ECDF plot and KS / t tests, correlation differences and their heatmap, PCA loading differences, and mean trajectories by time with the shift caused by imputation and a paired test) into a list of tibbles and ggplot objects, so a report can loop over several domains. Requested for the downstream EDA reports.
+* `compare_imputed_ecdf()` no longer fails when one of the variables has no missing value in the original data ("arguments imply differing number of rows"); that variable contributes no imputed points.
+
 # TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook
