@@ -1,4 +1,4 @@
-# TempleCBE 0.6.3.9000
+# TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook
 
