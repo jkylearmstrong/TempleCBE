@@ -4,6 +4,11 @@
 
 * New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.
 
+## Docker image and CI
+
+* **The Docker layer cache moved from the GitHub Actions cache to the registry** (`<image>:buildcache-<platform>`, written only by a publishing run). With `mode=max` each Docker run wrote about 5 GB to the Actions cache, which is limited to 10 GB per repository; it held 135 Docker entries and no R package cache, so every `R-CMD-check` run reinstalled R and all packages and the master run of 2026-10-23 reached the 60-minute limit before its check started.
+* **The build now fails unless a fresh R session started in `/pkg` finds TempleCBE and every extra package. (`yardstick`, `probably` and `quarto`, which `joint_model()`, `glmnet_IBS()` and the Quarto reports need, are not added: installing them pulls in `parsnip`, `dials` and a newer `future` than `renv.lock` pins, which the lock check refuses. They belong in `renv.lock`.) A DGX Spark run on 2026-10-23 reported that the extra packages added in 0.6.3.9000 were installed but not visible at run time (33 test errors and 405 skips in the image); the cause is not confirmed, and this check makes the build show it.
+
 # TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook
