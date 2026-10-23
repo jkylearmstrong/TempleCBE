@@ -69,7 +69,7 @@ Effect: only a repository admin can create a `v*` tag, and no one can move or de
 * **Untick "Allow GitHub Actions to create and approve pull requests".**
 * **Fork pull request workflows → Require approval for first-time contributors** (already on; keep it).
 * **Actions permissions**: "Allow OWNER, and select non-OWNER, actions and reusable workflows", allowing GitHub-created actions and the verified creators you use (`docker/*`, `r-lib/*`, `quarto-dev/*`, `codecov/*`, `peaceiris/*`). This is optional; the pinned-SHA requirement below is the stronger control.
-* **Require actions to be pinned to a full-length commit SHA**: do **not** turn this on yet. The workflows pin by major-version tag, and it would fail them all. The hardening PR adds Dependabot for GitHub Actions; once you have SHA-pinned the actions, turn it on.
+* **Require actions to be pinned to a full-length commit SHA**: the workflows are pinned by commit SHA since PR #46 (2026-10-23), so this can be turned on now; the nested actions of `r-lib/actions` and `quarto-actions` at the pinned commits are pinned too, and the first run after switching on is the test (it can be switched off again). Before PR #46 it would have failed them all. The hardening PR adds Dependabot for GitHub Actions; once you have SHA-pinned the actions, turn it on.
 
 ## 4. Docker Hub credentials
 
