@@ -53,6 +53,21 @@ jobs:
             any::caret
           needs: check
 
+      - name: Environment report (what the tests can use)
+        run: |
+          d <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests"))
+          pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("
+", " ", d), ",")))))
+          pk <- pk[nzchar(pk) & !is.na(pk) & pk != "R"]
+          cat("declared but not loadable:", paste(pk[!vapply(pk, requireNamespace, logical(1), quietly = TRUE)], collapse = ", "), "
+")
+          print(Sys.which(c("pandoc", "quarto", "pdflatex", "git", "sas")))
+          cat(".libPaths():
+"); print(.libPaths())
+          cat(system2("pandoc", "--version", stdout = TRUE)[1], "
+")
+        shell: Rscript {0}
+
       - name: Test coverage
         run: |
           Sys.setenv(R_LIBS_SITE = paste(.libPaths(), collapse = .Platform$path.sep))
