@@ -54,7 +54,8 @@ A statistical change with nothing on rungs 1 or 2 is treated as unverified and i
   * Ruleset `release tags` (active): creating, updating, deleting and force-pushing `v*` tags refused; repository administrators bypass, so only the maintainer creates a release tag.
   * Actions: the default workflow token is read-only and may not approve pull requests; first-time contributors need approval. The Docker Hub token is an environment secret of `dockerhub` (deployment branches and tags: `master`, `v*`); the user name is a repository variable.
   * Not covered: `gh-pages` (written by the site deployment). The scripted pushes in the next section no longer push `master`: `release.yaml` with `commit_and_push` and `scripts/deploy_release.R --push` push a branch `release/<tag>` for a pull request and make no tag; the maintainer tags the merge commit (the `release tags` ruleset allows only administrators to create `v*` tags). `deploy_release.R --push-branch master` still pushes `master` and the tag directly, which the ruleset refuses.
-  * Dependabot proposes updates of the GitHub Actions weekly (`.github/dependabot.yml`); each is a change to a workflow file (L3).
+  * Every `uses:` line of the workflows is pinned by full commit SHA with the tag in a comment (PR #46, 2026-10-23). Dependabot proposes updates of the GitHub Actions weekly, in one grouped pull request, each release at least 7 days old (`.github/dependabot.yml`); each is a change to workflow files (L3: read the changelogs, CI green, the maintainer's sign-off). The repository setting 'Require actions to be pinned to a full-length commit SHA' is **not** on yet; it is the owner's to switch on (one click to switch off again if a run breaks).
+  * The required check `ubuntu-latest (release)` has a limit of 60 minutes (PR #51): it takes about 29 minutes on a pull request and about 13 on a `master` push, and was cancelled at the old limit of 30.
 
 ## Pushes that do not go through a pull request
 
