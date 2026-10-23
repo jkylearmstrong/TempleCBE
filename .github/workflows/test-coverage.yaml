@@ -23,6 +23,9 @@ jobs:
     # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml)
     container: ghcr.io/jkylearmstrong/templecbe-ci:latest
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en

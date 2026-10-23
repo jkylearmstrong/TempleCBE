@@ -35,6 +35,9 @@ jobs:
     # setup-r installing R through apt took 10-19 minutes on a slow mirror. The package must be public.
     container: ghcr.io/jkylearmstrong/templecbe-ci:latest
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
@@ -126,6 +129,9 @@ jobs:
     # the Linux x86-64 entry runs in the CI image (see sanity-check); the others have no container
     container: ${{ matrix.config.container }}
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: ${{ matrix.config.container && 'FALSE' || 'TRUE' }}
       LANG: ${{ matrix.config.locale }}
       LC_ALL: ${{ matrix.config.locale }}
       LANGUAGE: en_US:en
