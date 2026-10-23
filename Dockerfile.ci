@@ -24,6 +24,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     sudo \
+    jq \
+    unzip \
+    wget \
+    gnupg \
+    lsb-release \
+    xz-utils \
+    file \
     libgit2-dev \
   && rm -rf /var/lib/apt/lists/*
 

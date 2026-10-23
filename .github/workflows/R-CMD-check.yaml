@@ -45,6 +45,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # tools that the r-lib actions call; the CI image gets them with the next image build (Dockerfile.ci)
+      - name: Install jq and friends if the image lacks them
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file
+          fi
+
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           extra-packages: any::rcmdcheck
@@ -152,6 +159,14 @@ jobs:
         with:
           r-version: release
           use-public-rspm: true
+
+      # tools that the r-lib actions call; the CI image gets them with the next image build (Dockerfile.ci)
+      - name: Install jq and friends if the image lacks them
+        if: ${{ matrix.config.container != '' }}
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file
+          fi
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
