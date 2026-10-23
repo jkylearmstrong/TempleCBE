@@ -276,14 +276,14 @@ cbe_pformat <- pformat
 #' library(gtsummary)
 #' trial |>
 #'   tbl_summary(by = trt, include = c(response, death, grade)) |>
-#'   add_p(test = all_categorical() ~ cbe_test_categorical) |>
+#'   add_p(test = all_categorical() ~ test_categorical) |>
 #'   separate_p_footnotes()
 #'
 #' # Standalone batch testing across multiple features:
-#' cbe_test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
+#' test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
 #'
 #' # Formula interface:
-#' cbe_test_categorical(trial, response ~ trt)
+#' test_categorical(trial, response ~ trt)
 test_categorical <- function(data,
                                  variable = NULL,
                                  by = NULL,
@@ -513,21 +513,7 @@ test_categorical <- function(data,
   }
 }
 
-#' @rdname exact2x2
-#' @export
-cbe_exact2x2 <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_exact2x2()", "exact2x2()")
-  exact2x2(...)
-}
-
 #' @rdname cbe_exact2x2_ci
 #' @export
 exact2x2_ci <- cbe_exact2x2_ci
-
-#' @rdname test_categorical
-#' @export
-cbe_test_categorical <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_test_categorical()", "test_categorical()")
-  test_categorical(...)
-}
 

@@ -27,20 +27,6 @@ match_like <- function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl
 
 #' @rdname infix_helpers
 #' @export
-like <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "like()", "match_like()", details = "Scheduled for complete removal in TempleCBE 0.7.0 to avoid masking data.table::like().")
-  match_like(...)
-}
-
-#' @rdname infix_helpers
-#' @export
-`%like%` <- function(vector, pattern) {
-  warning("`%like%` was deprecated in TempleCBE 0.5.8. Please use `match_like()` instead. Scheduled for complete removal in TempleCBE 0.7.0.", call. = FALSE)
-  match_like(vector, pattern)
-}
-
-#' @rdname infix_helpers
-#' @export
 ilike <- function(vector, pattern) match_like(vector, pattern, ignore.case = TRUE)
 
 #' @rdname infix_helpers
@@ -70,9 +56,3 @@ notin <- function(x, table) !(x %in% table)
 #' @rdname infix_helpers
 #' @export
 `%!in%` <- function(x, table) notin(x, table)
-
-# Unexported in TempleCBE 0.5.9 to avoid masking base R 4.6 `%notin%`. Retained as internal shim.
-`%notin%` <- function(x, table) {
-  warning("`%notin%` was deprecated in TempleCBE 0.5.8 and unexported in 0.5.9. Please use `%!`in`%` or `!(x %in% table)` instead. Scheduled for complete removal in TempleCBE 0.7.0.", call. = FALSE)
-  notin(x, table)
-}

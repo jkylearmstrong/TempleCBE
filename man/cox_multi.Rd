@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_cox_multi.R
 \name{cox_multi}
 \alias{cox_multi}
-\alias{cbe_cox_multi}
 \title{Multivariable Cox Proportional Hazards Modeling Engine}
 \usage{
 cox_multi(
@@ -13,8 +12,6 @@ cox_multi(
   conf_level = 0.95,
   ...
 )
-
-cbe_cox_multi(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate features.}

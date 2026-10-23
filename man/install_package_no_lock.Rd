@@ -2,12 +2,9 @@
 % Please edit documentation in R/dev_utils.R
 \name{install_package_no_lock}
 \alias{install_package_no_lock}
-\alias{install.packages.no_lock}
 \title{Install a Package, Bypassing an Existing Lock}
 \usage{
 install_package_no_lock(packages)
-
-install.packages.no_lock(...)
 }
 \arguments{
 \item{packages}{Character vector of package name(s) to install.}

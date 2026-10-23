@@ -6,7 +6,6 @@
 \alias{compare_df.cbe_database}
 \alias{compare_df.igraph}
 \alias{compare_df.visNetwork}
-\alias{cbe_compare_df}
 \title{Compare Two Data Frames (Modelled on SAS PROC COMPARE)}
 \usage{
 compare_df(base, compare, ...)
@@ -35,8 +34,6 @@ compare_df(base, compare, ...)
 \method{compare_df}{igraph}(base, compare, ...)
 
 \method{compare_df}{visNetwork}(base, compare, ...)
-
-cbe_compare_df(...)
 }
 \arguments{
 \item{base}{The base data frame or tibble (equivalent to SAS \code{base=}).}

@@ -35,13 +35,6 @@ workflow_set_params <- function(workflowset_results, rank_metric, .rank = 1) {
   dplyr::bind_cols(workflow_info(workflowset_results, wflow_id), dplyr::select(best, -".config"))
 }
 
-#' @rdname workflow_set_params
-#' @export
-get_model_parameters <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "get_model_parameters()", "workflow_set_params()")
-  workflow_set_params(...)
-}
-
 #' Fit the Configuration Ranked `.rank` in a Workflow Set
 #'
 #' Ranks the configurations of tuned workflow set results by `rank_metric`,
@@ -118,13 +111,6 @@ workflow_set_rank_fit <- function(grid_results,
   }
 
   list(model = model, tuned_parameters = tuned_parameters)
-}
-
-#' @rdname workflow_set_rank_fit
-#' @export
-fit_n_rank <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "fit_n_rank()", "workflow_set_rank_fit()")
-  workflow_set_rank_fit(...)
 }
 
 #' The `wflow_id`, `preproc` and `model` of One Workflow in a Set

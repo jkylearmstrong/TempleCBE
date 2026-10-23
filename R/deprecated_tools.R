@@ -280,7 +280,6 @@ templecbe_deprecated_map <- function() {
     "R_names" = "clean_names_keep_labels",
     "render_me" = "render_pipeline",
     "SumNa" = "count_na",
-    "cbe_exact2x2_ci" = "exact2x2_ci",
     "cbe_exact2x2" = "exact2x2",
     "cbe_compare_df" = "compare_df",
     "cbe_database_relationships" = "database_relationships",

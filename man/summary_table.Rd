@@ -2,7 +2,6 @@
 % Please edit documentation in R/my_summary_table.r
 \name{summary_table}
 \alias{summary_table}
-\alias{my_summary_table}
 \title{Summary Table Function}
 \usage{
 summary_table(
@@ -12,8 +11,6 @@ summary_table(
   data.output = TRUE,
   table.output = FALSE
 )
-
-my_summary_table(...)
 }
 \arguments{
 \item{data}{a dataframe or tibble}

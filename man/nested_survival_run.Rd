@@ -2,7 +2,6 @@
 % Please edit documentation in R/nested_survival_run.R
 \name{nested_survival_run}
 \alias{nested_survival_run}
-\alias{cbe_nested_survival_run}
 \title{Run an End-to-End Nested Cross-Validation Survival Pipeline (E1)}
 \usage{
 nested_survival_run(
@@ -41,8 +40,6 @@ nested_survival_run(
   progress = FALSE,
   ...
 )
-
-cbe_nested_survival_run(...)
 }
 \arguments{
 \item{data}{A data frame containing counting-process `(start, stop]` or

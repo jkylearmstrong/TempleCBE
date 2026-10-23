@@ -29,13 +29,6 @@ is_integer_valued <- function(col) {
   all(temp_col == floor(temp_col))
 }
 
-#' @rdname is_integer_valued
-#' @export
-is.int <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "is.int()", "is_integer_valued()")
-  is_integer_valued(...)
-}
-
 #' Test Whether a Vector Looks Normally Distributed
 #'
 #' Runs two normality tests on the finite values of `col`:

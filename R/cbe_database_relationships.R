@@ -455,27 +455,6 @@ print.cbe_key_integrity <- function(x, ...) {
   invisible(x)
 }
 
-#' @rdname database_relationships
-#' @export
-cbe_database_relationships <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_relationships()", "database_relationships()")
-  database_relationships(...)
-}
-
 #' @rdname cbe_database_venn
 #' @export
 database_venn <- cbe_database_venn
-
-#' @rdname database_relationships
-#' @export
-cbe_find_shared_keys <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_find_shared_keys()", "find_shared_keys()")
-  find_shared_keys(...)
-}
-
-#' @rdname database_relationships
-#' @export
-cbe_check_key_integrity <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_check_key_integrity()", "check_key_integrity()")
-  check_key_integrity(...)
-}

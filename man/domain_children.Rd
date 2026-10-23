@@ -2,7 +2,6 @@
 % Please edit documentation in R/nested_survival_run.R
 \name{domain_children}
 \alias{domain_children}
-\alias{cbe_domain_children}
 \title{Expand and Knit Per-Domain Child Templates With Failure Isolation (E4)}
 \usage{
 domain_children(
@@ -13,8 +12,6 @@ domain_children(
   on_error = c("continue", "stop"),
   quiet = TRUE
 )
-
-cbe_domain_children(...)
 }
 \arguments{
 \item{domains}{Character vector of domain names (or a named list of

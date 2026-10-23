@@ -239,13 +239,6 @@ explain_predict_risk <- function(m, new_data) {
   NULL
 }
 
-#' @rdname explain_survival
-#' @export
-cbe_explain_survival <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_survival()", "explain_survival()")
-  explain_survival(...)
-}
-
 #' TempleCBE Custom Loss Functions for survex
 #'
 #' Provides survival loss functions implementing TempleCBE's inverse-probability-of-censoring
@@ -370,20 +363,6 @@ survex_loss_brier <- function(trunc = 0.05) {
   attr(loss_fn, "loss_type") <- "time-dependent"
   attr(loss_fn, "loss_name") <- "TempleCBE Brier Score"
   loss_fn
-}
-
-#' @rdname survex_loss_ibs
-#' @export
-cbe_survex_loss_ibs <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_ibs()", "survex_loss_ibs()")
-  survex_loss_ibs(...)
-}
-
-#' @rdname survex_loss_ibs
-#' @export
-cbe_survex_loss_brier <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_brier()", "survex_loss_brier()")
-  survex_loss_brier(...)
 }
 
 #' Explain Joint Model Components via DALEX and survex
@@ -525,22 +504,8 @@ explain_model <- explain_joint
 
 #' @rdname explain_joint
 #' @export
-cbe_explain <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain()", "explain_joint()")
-  explain_joint(...)
-}
-
-#' @rdname explain_joint
-#' @export
 explain_status <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
   explain_joint(model = model, data = data, type = "status", label = label, verbose = verbose, ...)
-}
-
-#' @rdname explain_joint
-#' @export
-cbe_explain_status <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_status()", "explain_status()")
-  explain_status(...)
 }
 
 #' @rdname explain_joint
@@ -551,22 +516,8 @@ explain_time <- function(model, data = NULL, label = NULL, verbose = FALSE, ...)
 
 #' @rdname explain_joint
 #' @export
-cbe_explain_time <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_time()", "explain_time()")
-  explain_time(...)
-}
-
-#' @rdname explain_joint
-#' @export
 explain_stack <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
   explain_joint(model = model, data = data, type = "stack", label = label, verbose = verbose, ...)
-}
-
-#' @rdname explain_joint
-#' @export
-cbe_explain_stack <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_stack()", "explain_stack()")
-  explain_stack(...)
 }
 
 #' SHAP Variable Attributions across Survival and Joint Models
@@ -638,11 +589,4 @@ predict_parts_shap <- function(explainer,
   }
 
   stop("`explainer` must be a `survex_explainer`, `cbe_joint_explainer`, or `DALEX` explainer.", call. = FALSE)
-}
-
-#' @rdname predict_parts_shap
-#' @export
-cbe_predict_parts_shap <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_predict_parts_shap()", "predict_parts_shap()")
-  predict_parts_shap(...)
 }

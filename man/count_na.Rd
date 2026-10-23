@@ -2,12 +2,9 @@
 % Please edit documentation in R/SumNa.R
 \name{count_na}
 \alias{count_na}
-\alias{SumNa}
 \title{Count Total Missing (NA) Values}
 \usage{
 count_na(x, na_list = NULL)
-
-SumNa(...)
 }
 \arguments{
 \item{x}{A vector, matrix, or data frame.}

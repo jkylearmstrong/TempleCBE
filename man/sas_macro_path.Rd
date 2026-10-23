@@ -2,12 +2,9 @@
 % Please edit documentation in R/run_sas_script.R
 \name{sas_macro_path}
 \alias{sas_macro_path}
-\alias{cbe_sas_macro_path}
 \title{Path to a TempleCBE SAS Macro File}
 \usage{
 sas_macro_path(macro = "cbe_macros.sas")
-
-cbe_sas_macro_path(...)
 }
 \arguments{
 \item{macro}{Filename of the SAS macro or script (default: `"cbe_macros.sas"`).

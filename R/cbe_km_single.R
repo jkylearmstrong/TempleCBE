@@ -122,12 +122,3 @@ print.cbe_km <- function(x, ...) {
 }
 
 utils::globalVariables(c(".cbe_km_strata"))
-
-#' @rdname km_single
-#' @export
-cbe_km_single <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_km_single()", "km_single()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::km_single)
-  eval(mc, parent.frame())
-}

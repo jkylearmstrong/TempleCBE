@@ -2,12 +2,9 @@
 % Please edit documentation in R/keep_only.R
 \name{rm_all_except}
 \alias{rm_all_except}
-\alias{keep_only}
 \title{Keep Only Specified Objects in an Environment}
 \usage{
 rm_all_except(vector, .dontask = FALSE, env = parent.frame())
-
-keep_only(vector, .dontask = FALSE, env = parent.frame())
 }
 \arguments{
 \item{vector}{Character vector of object names to keep.}

@@ -1128,13 +1128,6 @@ pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
   dplyr::bind_rows(res_list)
 }
 
-#' @rdname pairwise_combos
-#' @export
-cbe_pairwise_combos <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_pairwise_combos()", "pairwise_combos()")
-  pairwise_combos(...)
-}
-
 #' @rdname cbe_contingency_plot
 #' @export
 contingency_plot <- cbe_contingency_plot

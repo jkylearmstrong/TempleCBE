@@ -2,12 +2,9 @@
 % Please edit documentation in R/cbe_km_single.R
 \name{km_single}
 \alias{km_single}
-\alias{cbe_km_single}
 \title{Univariable Kaplan-Meier and Cox Screening Engine}
 \usage{
 km_single(data, outcome = "outcome", feature, conf_level = 0.95)
-
-cbe_km_single(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate feature.}

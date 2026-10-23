@@ -595,10 +595,3 @@ autoplot.cbe_compare_df <- function(object, type = c("observations", "variables"
     theme_cbe()
   p
 }
-
-#' @rdname compare_df
-#' @export
-cbe_compare_df <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_compare_df()", "compare_df()")
-  compare_df(...)
-}

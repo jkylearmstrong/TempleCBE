@@ -2,12 +2,9 @@
 % Please edit documentation in R/compute_graph.R
 \name{produces_data}
 \alias{produces_data}
-\alias{controls_datasets}
 \title{Check if a FileOutputs object produces datasets (outputs an rds, xlsx, etc. file)}
 \usage{
 produces_data(obj)
-
-controls_datasets(...)
 }
 \arguments{
 \item{obj}{A FileOutputs object.}

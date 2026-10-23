@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_exact2x2.R
 \name{exact2x2}
 \alias{exact2x2}
-\alias{cbe_exact2x2}
 \title{Exact Test for 2x2 Tables with Automatic Zero-Cell Mid-p Default}
 \usage{
 exact2x2(
@@ -23,8 +22,6 @@ exact2x2(
   continuous_variable = NULL,
   ...
 )
-
-cbe_exact2x2(...)
 }
 \arguments{
 \item{x}{A 2x2 numeric matrix, table, or a categorical vector. Can also be a

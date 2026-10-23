@@ -2,12 +2,9 @@
 % Please edit documentation in R/sd_error.r
 \name{std_error}
 \alias{std_error}
-\alias{sd.error}
 \title{Compute standard error}
 \usage{
 std_error(x, na.rm = FALSE)
-
-sd.error(...)
 }
 \arguments{
 \item{x}{vector of data}

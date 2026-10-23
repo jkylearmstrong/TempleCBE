@@ -56,13 +56,6 @@ rm_all_except <- function(vector, .dontask = FALSE, env = parent.frame()) {
   invisible(NULL)
 }
 
-#' @rdname rm_all_except
-#' @export
-keep_only <- function(vector, .dontask = FALSE, env = parent.frame()) {
-  lifecycle::deprecate_warn("0.5.8", "keep_only()", "rm_all_except()")
-  rm_all_except(vector = vector, .dontask = .dontask, env = env)
-}
-
 #' Delete Stray 'nul' Files
 #'
 #' Windows-only. \code{knitr} occasionally leaves behind a file literally

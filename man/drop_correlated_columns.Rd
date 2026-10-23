@@ -2,7 +2,6 @@
 % Please edit documentation in R/corr_test_all.R
 \name{drop_correlated_columns}
 \alias{drop_correlated_columns}
-\alias{find_correlation}
 \title{Find Highly Correlated Columns}
 \usage{
 drop_correlated_columns(
@@ -14,8 +13,6 @@ drop_correlated_columns(
   names = TRUE,
   exact = ncol(data) < 100
 )
-
-find_correlation(...)
 }
 \arguments{
 \item{data}{A data frame or tibble.}

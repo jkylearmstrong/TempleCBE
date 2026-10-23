@@ -2,12 +2,9 @@
 % Please edit documentation in R/cbe_cox_single.R
 \name{cox_single}
 \alias{cox_single}
-\alias{cbe_cox_single}
 \title{Univariable Cox Proportional Hazards Screening Engine}
 \usage{
 cox_single(data, outcome = "outcome", feature, conf_level = 0.95, ...)
-
-cbe_cox_single(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate feature.}

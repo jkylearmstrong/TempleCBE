@@ -24,10 +24,3 @@ count_na <- function(x, na_list = NULL) {
     sum(is.na(x) | x %in% na_list)
   }
 }
-
-#' @rdname count_na
-#' @export
-SumNa <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "SumNa()", "count_na()")
-  count_na(...)
-}

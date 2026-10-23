@@ -2573,13 +2573,6 @@ produces_data <- function(obj) {
   any(exts %in% c("rds", "xlsx", "csv", "rdata"))
 }
 
-#' @rdname produces_data
-#' @export
-controls_datasets <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "controls_datasets()", "produces_data()")
-  produces_data(...)
-}
-
 
 ## Show Methods (for printing) -----------------
 

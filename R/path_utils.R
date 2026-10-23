@@ -53,13 +53,6 @@ normalize_path_safely <- function(x) {
   )
 }
 
-#' @rdname normalize_path_safely
-#' @export
-normalize_safely <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "normalize_safely()", "normalize_path_safely()")
-  normalize_path_safely(x)
-}
-
 #' Do Two Paths Name the Same File?
 #'
 #' Compares the canonical spelling of two paths (`.canonical_path()`: relative
@@ -217,13 +210,6 @@ extract_xlsx_paths <- function(x, xlsx_token_re = xlsx_name_re) {
   file <- m[, 3]
   full <- dplyr::if_else(!is.na(dir) & !is.na(file), as.character(fs::path(dir, file)), NA_character_)
   tibble::tibble(dir = dir, file = file, full_path = full)
-}
-
-#' @rdname extract_xlsx_paths
-#' @export
-extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
-  lifecycle::deprecate_warn("0.5.8", "extract_win_posix_paths()", "extract_xlsx_paths()")
-  extract_xlsx_paths(x, xlsx_token_re = xlsx_token_re)
 }
 
 #' Extract Every `.xlsx` File Name From Text

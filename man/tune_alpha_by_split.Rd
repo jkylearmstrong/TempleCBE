@@ -2,7 +2,6 @@
 % Please edit documentation in R/survival_metrics.R
 \name{tune_alpha_by_split}
 \alias{tune_alpha_by_split}
-\alias{summarize_tune_results}
 \title{Tune Over `alpha` for Every Split of a Resample}
 \usage{
 tune_alpha_by_split(
@@ -21,23 +20,6 @@ tune_alpha_by_split(
   chunk_size = NULL,
   on_complete = getOption("templecbe.on_complete", NULL),
   .fn_name = "tune_alpha_by_split"
-)
-
-summarize_tune_results(
-  object,
-  ...,
-  num_alpha_values = 10,
-  num_fixed = 6,
-  alphas = NULL,
-  formulas = NULL,
-  progress = FALSE,
-  seed = NULL,
-  calibrate = TRUE,
-  checkpoint_dir = NULL,
-  checkpoint_mismatch = c("recompute", "overwrite", "error"),
-  shard = NULL,
-  chunk_size = NULL,
-  on_complete = getOption("templecbe.on_complete", NULL)
 )
 }
 \arguments{

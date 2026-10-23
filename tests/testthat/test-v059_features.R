@@ -188,12 +188,8 @@ test_that("K4: %notin% is unexported and masks no base function while internal s
   expect_true(1 %!in% c(2, 3, 4))
   expect_false(1 %!in% c(1, 2, 3))
 
-  # Internal shim works with deprecation warning
-  expect_warning(
-    res_in <- TempleCBE:::`%notin%`(1, c(2, 3, 4)),
-    "unexported in 0\\.5\\.9"
-  )
-  expect_true(res_in)
+  # the internal shim was removed in 0.7.0
+  expect_false(exists("%notin%", envir = asNamespace("TempleCBE"), inherits = FALSE))
 })
 
 test_that("K5: Version 0.5.9 is properly synchronized across DESCRIPTION, NEWS, and code", {

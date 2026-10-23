@@ -2,12 +2,9 @@
 % Please edit documentation in R/search_wrappers.R
 \name{find_write_calls}
 \alias{find_write_calls}
-\alias{write_search}
 \title{Search a Directory Tree for File-Write Calls}
 \usage{
 find_write_calls(path, include_comments = FALSE, workers = NULL)
-
-write_search(...)
 }
 \arguments{
 \item{path}{Character. Root directory to search.}

@@ -54,8 +54,6 @@ test_that("tune_race_survival runs ANOVA racing on a survival workflow", {
   expect_true(nrow(metrics) > 0)
   expect_true(all(c("penalty", ".metric", "mean") %in% names(metrics)))
 
-  # Check cbe alias is available
-  expect_true(is.function(cbe_tune_race_survival))
 })
 
 test_that("tune_race_survival runs win-loss racing on a survival workflow", {

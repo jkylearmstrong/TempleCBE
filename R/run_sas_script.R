@@ -203,13 +203,6 @@ sas_macro_dir <- function() {
   dir
 }
 
-#' @rdname sas_macro_dir
-#' @export
-cbe_sas_macro_dir <- function() {
-  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_dir()", "sas_macro_dir()")
-  sas_macro_dir()
-}
-
 #' Path to a TempleCBE SAS Macro File
 #'
 #' Returns the absolute path to an installed TempleCBE SAS macro or benchmark script.
@@ -244,11 +237,4 @@ sas_macro_path <- function(macro = "cbe_macros.sas") {
     )
   }
   normalizePath(target, winslash = "/", mustWork = TRUE)
-}
-
-#' @rdname sas_macro_path
-#' @export
-cbe_sas_macro_path <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_path()", "sas_macro_path()")
-  sas_macro_path(...)
 }

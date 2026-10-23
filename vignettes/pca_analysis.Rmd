@@ -114,7 +114,7 @@ proc princomp data=sashelp.iris out=iris_pca plots=all;
 run;
 ```
 
-### TempleCBE proc_pca Implementation
+### TempleCBE run_pca Implementation
 
 In R using `TempleCBE`, the equivalent workflow is executed via `run_pca()`:
 

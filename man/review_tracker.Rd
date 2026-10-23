@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_review_extract.R
 \name{review_tracker}
 \alias{review_tracker}
-\alias{cbe_review_tracker}
 \title{Build a Structured Review Response Tracker Requiring Location and Rationale}
 \usage{
 review_tracker(
@@ -11,8 +10,6 @@ review_tracker(
   include_redlines = FALSE,
   overwrite = TRUE
 )
-
-cbe_review_tracker(...)
 }
 \arguments{
 \item{extract}{An object of class `cbe_review_extract` from

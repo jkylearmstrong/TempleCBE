@@ -2,7 +2,6 @@
 % Please edit documentation in R/explain_survival.R
 \name{explain_survival}
 \alias{explain_survival}
-\alias{cbe_explain_survival}
 \title{Explain Survival Models via survex and DALEX}
 \usage{
 explain_survival(
@@ -16,8 +15,6 @@ explain_survival(
   verbose = FALSE,
   ...
 )
-
-cbe_explain_survival(...)
 }
 \arguments{
 \item{model}{A fitted model object: \code{joint_model}, \code{coxnet_model},

@@ -5,9 +5,6 @@
 \alias{as_tbl_graph.cbe_database_relationships}
 \alias{find_shared_keys}
 \alias{check_key_integrity}
-\alias{cbe_database_relationships}
-\alias{cbe_find_shared_keys}
-\alias{cbe_check_key_integrity}
 \title{Analyze Relationships and Linkages Across Datasets in an R Database}
 \usage{
 database_relationships(db, id_cols = NULL)
@@ -24,12 +21,6 @@ check_key_integrity(
   tolerance = 1e-07,
   ...
 )
-
-cbe_database_relationships(...)
-
-cbe_find_shared_keys(...)
-
-cbe_check_key_integrity(...)
 }
 \arguments{
 \item{db}{A named list of data frames (an R database).}

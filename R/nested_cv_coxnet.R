@@ -246,7 +246,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
 
     loco_col <- if (importance == "loco_mp") {
       loco_fit <- tryCatch({
-        do.call(cbe_loco_mp_coxnet, c(
+        do.call(loco_mp_coxnet, c(
           list(
             formula = preprocessor, data = analysis, subject_id = subject_id,
             mixture = chosen_mix, penalty = chosen, eval_time = eval_time,
@@ -359,11 +359,11 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   })
 }
 
-# The named arguments of `...` that cbe_loco_mp_coxnet() does not already take
+# The named arguments of `...` that loco_mp_coxnet() does not already take
 # or set itself (B, mixture, penalty, eval_time, subject_id, ...), which it
 # passes on to coxnet() and so to glmnet.
 forwardable_glmnet_args <- function(args) {
-  own <- union(names(formals(loco_mp_coxnet)), names(formals(cbe_loco_mp_coxnet)))
+  own <- names(formals(loco_mp_coxnet))
   nms <- names(args) %||% character(length(args))
   args[nzchar(nms) & !nms %in% own]
 }

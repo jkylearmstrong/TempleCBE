@@ -569,7 +569,7 @@ res_cgd_strat$table
 Stratifying across the 13 clinical centers strengthens the estimated treatment effect ($\text{HR} = 0.29$, $95\%\text{ CI: } 0.16 - 0.52$), and R and SAS yield identical stratified partial likelihood estimates.
 
 
-### Proportional Hazards Diagnostics (`cbe_cox_check` vs SAS `ASSESS PH`)
+### Proportional Hazards Diagnostics (`cox_check` vs SAS `ASSESS PH`)
 
 To test whether the proportional hazards assumption holds in counting-process models, biostatisticians test for non-zero correlation between scaled Schoenfeld residuals and time:
 
@@ -903,7 +903,7 @@ fit_joint <- joint_model(
   penalty = 0.05
 )
 
-# Inspect model summary and components via proc_contents
+# Inspect model summary and components via describe_columns
 fit_info <- describe_columns(fit_joint)
 fit_info[, c("columns", "class", "mean", "sd", "most_freq")]
 

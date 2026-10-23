@@ -131,25 +131,11 @@ variable_roles <- function(data,
 }
 
 #' @rdname variable_roles
-#' @export
-cbe_variable_roles <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_variable_roles()", "variable_roles()")
-  variable_roles(...)
-}
-
-#' @rdname variable_roles
 #' @param ... Additional arguments passed to \code{\link{variable_roles}}.
 #' @export
 set_roles <- function(data, ...) {
   role_tbl <- variable_roles(data, ...)
   apply_database_metadata(data, role_tbl)
-}
-
-#' @rdname variable_roles
-#' @export
-cbe_set_roles <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_set_roles()", "set_roles()")
-  set_roles(...)
 }
 
 #' @rdname variable_roles
@@ -163,25 +149,11 @@ get_roles <- function(data) {
 }
 
 #' @rdname variable_roles
-#' @export
-cbe_get_roles <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_roles()", "get_roles()")
-  get_roles(...)
-}
-
-#' @rdname variable_roles
 #' @param roles Role table (e.g. from \code{\link{variable_roles}}) or data object.
 #' @export
 get_predictors <- function(roles) {
   if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$X_var | roles$role == "predictor"]
-}
-
-#' @rdname variable_roles
-#' @export
-cbe_get_predictors <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_predictors()", "get_predictors()")
-  get_predictors(...)
 }
 
 #' @rdname variable_roles
@@ -193,13 +165,6 @@ get_outcomes <- function(roles) {
 
 #' @rdname variable_roles
 #' @export
-cbe_get_outcomes <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_outcomes()", "get_outcomes()")
-  get_outcomes(...)
-}
-
-#' @rdname variable_roles
-#' @export
 get_id_cols <- function(roles) {
   if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$ID_var | roles$role == "id"]
@@ -207,21 +172,7 @@ get_id_cols <- function(roles) {
 
 #' @rdname variable_roles
 #' @export
-cbe_get_id_cols <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_id_cols()", "get_id_cols()")
-  get_id_cols(...)
-}
-
-#' @rdname variable_roles
-#' @export
 get_time_cols <- function(roles) {
   if (!is.data.frame(roles)) roles <- get_roles(roles)
   roles$columns[roles$Time_var | roles$role == "time"]
-}
-
-#' @rdname variable_roles
-#' @export
-cbe_get_time_cols <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_time_cols()", "get_time_cols()")
-  get_time_cols(...)
 }

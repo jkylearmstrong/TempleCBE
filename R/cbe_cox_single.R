@@ -199,12 +199,3 @@ utils::globalVariables(c(
   "txt", "Value"
 ))
 
-#' @rdname cox_single
-#' @export
-cbe_cox_single <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_cox_single()", "cox_single()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::cox_single)
-  eval(mc, parent.frame())
-}
-

@@ -3,8 +3,6 @@
 \name{infix_helpers}
 \alias{infix_helpers}
 \alias{match_like}
-\alias{like}
-\alias{\%like\%}
 \alias{ilike}
 \alias{\%ilike\%}
 \alias{flike}
@@ -16,10 +14,6 @@
 \title{Pattern Matching and Logical-Negation Infix Operators}
 \usage{
 match_like(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE)
-
-like(...)
-
-vector \%like\% pattern
 
 ilike(vector, pattern)
 
@@ -43,11 +37,11 @@ x \%!in\% table
 \item{ignore.case, fixed, perl}{Logical flags controlling how \code{pattern}
 is matched, as in \code{\link{grepl}}.}
 
-\item{...}{Passed to \code{match_like()}.}
-
 \item{x, vector}{A vector to test.}
 
 \item{table}{Vector of values to test against (for \code{notin()}/\code{\%notin\%}/\code{\%!in\%}).}
+
+\item{...}{Passed to \code{match_like()}.}
 }
 \value{
 A logical vector.

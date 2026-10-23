@@ -110,7 +110,7 @@ test_that("cbe_test_categorical integrates seamlessly with gtsummary", {
   )
 
   tbl <- gtsummary::tbl_summary(df, by = group) |>
-    gtsummary::add_p(test = gtsummary::all_categorical() ~ cbe_test_categorical)
+    gtsummary::add_p(test = gtsummary::all_categorical() ~ test_categorical)
 
   expect_s3_class(tbl, "gtsummary")
   df_tbl <- as.data.frame(tbl)
@@ -239,7 +239,7 @@ test_that("cbe_test_categorical integrates with gtsummary tbl_summary add_p", {
   # Test drop-in custom test with gtsummary
   tbl <- trial |>
     tbl_summary(by = trt, include = c(response, death, grade)) |>
-    add_p(test = all_categorical() ~ cbe_test_categorical)
+    add_p(test = all_categorical() ~ test_categorical)
 
   expect_s3_class(tbl, "gtsummary")
   df_tbl <- as.data.frame(tbl)
@@ -418,7 +418,7 @@ test_that("cbe_exact2x2 accepts the extra arguments gtsummary::add_p() passes to
 
   skip_if_not_installed("gtsummary")
   tbl <- gtsummary::tbl_summary(d, by = g) |>
-    gtsummary::add_p(test = gtsummary::all_categorical() ~ cbe_exact2x2)
+    gtsummary::add_p(test = gtsummary::all_categorical() ~ exact2x2)
   pv <- as.data.frame(tbl)[["**p-value**"]]
   expect_false(all(is.na(pv)))
 })

@@ -60,13 +60,6 @@ control_race_survival <- function(save_pred = TRUE,
   )
 }
 
-#' @rdname control_race_survival
-#' @export
-cbe_control_race <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_control_race()", "control_race_survival()")
-  control_race_survival(...)
-}
-
 #' Adaptive Racing Tuning for Survival Workflows and Workflow Sets
 #'
 #' Tunes hyperparameters of a survival \code{\link[workflows]{workflow}} or
@@ -242,13 +235,6 @@ tune_race_survival <- function(object,
     )
   }
   res
-}
-
-#' @rdname tune_race_survival
-#' @export
-cbe_tune_race_survival <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_tune_race_survival()", "tune_race_survival()")
-  tune_race_survival(...)
 }
 
 #' Default Evaluation Times for Racing, Read From a Workflow's Outcome

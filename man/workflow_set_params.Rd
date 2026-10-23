@@ -2,12 +2,9 @@
 % Please edit documentation in R/tuning_results.R
 \name{workflow_set_params}
 \alias{workflow_set_params}
-\alias{get_model_parameters}
 \title{Tuning Parameters of a Ranked Workflow in a Workflow Set}
 \usage{
 workflow_set_params(workflowset_results, rank_metric, .rank = 1)
-
-get_model_parameters(...)
 }
 \arguments{
 \item{workflowset_results}{Tuned workflow set results, the output of

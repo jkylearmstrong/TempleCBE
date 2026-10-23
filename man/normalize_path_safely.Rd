@@ -2,12 +2,9 @@
 % Please edit documentation in R/path_utils.R
 \name{normalize_path_safely}
 \alias{normalize_path_safely}
-\alias{normalize_safely}
 \title{Normalize File Paths Without Failing}
 \usage{
 normalize_path_safely(x)
-
-normalize_safely(x)
 }
 \arguments{
 \item{x}{Character vector of paths.}

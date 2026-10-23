@@ -2,31 +2,9 @@
 % Please edit documentation in R/loco_mp_coxnet.R
 \name{loco_mp_coxnet}
 \alias{loco_mp_coxnet}
-\alias{cbe_loco_mp_coxnet}
 \title{Leave-One-Covariate-Out Inference with MiniPatch Ensembles (LOCO-MP) for Cox Models}
 \usage{
 loco_mp_coxnet(
-  formula = NULL,
-  data = NULL,
-  x = NULL,
-  y = NULL,
-  B = 100,
-  n_ratio = 0.7,
-  m_ratio = 0.5,
-  penalty = NULL,
-  mixture = 1,
-  eval_time = NULL,
-  subject_id = NULL,
-  alpha = 0.05,
-  p_adjust = c("bonferroni", "BH", "fdr", "holm", "none"),
-  trunc = 0.05,
-  parallel = FALSE,
-  seed = NULL,
-  covariates = c("path", "baseline"),
-  ...
-)
-
-cbe_loco_mp_coxnet(
   formula = NULL,
   data = NULL,
   x = NULL,

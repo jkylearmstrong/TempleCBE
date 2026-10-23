@@ -2,12 +2,9 @@
 % Please edit documentation in R/cbe_cox_check.R
 \name{cox_check}
 \alias{cox_check}
-\alias{cbe_cox_check}
 \title{Tidy Proportional Hazards Diagnostics for Cox Models}
 \usage{
 cox_check(fit)
-
-cbe_cox_check(...)
 }
 \arguments{
 \item{fit}{A fitted \code{survival::coxph} model, or a \code{cbe_cox} or

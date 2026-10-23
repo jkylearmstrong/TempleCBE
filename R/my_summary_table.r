@@ -66,10 +66,3 @@ summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.ou
 
   return(result)
 }
-
-#' @rdname summary_table
-#' @export
-my_summary_table <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "my_summary_table()", "summary_table()")
-  summary_table(...)
-}

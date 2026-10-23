@@ -108,7 +108,7 @@ $$D_{i,j} = L(y_i, \hat{y}_{i, -j}) - L(y_i, \hat{y}_{i, +j})$$
 
 While the core minipatch architecture is identical, survival analysis introduces censoring and time-dependence that require distinct scoring metrics:
 
-| Attribute | Python `DataSlingers/LOCOMP` (`LOCOMPReg`) | R `TempleCBE` (`cbe_loco_mp_coxnet`) |
+| Attribute | Python `DataSlingers/LOCOMP` (`LOCOMPReg`) | R `TempleCBE` (`loco_mp_coxnet`) |
 |:---|:---|:---|
 | **Target Outcome ($Y$)** | Continuous scalar ($y \in \mathbb{R}$) | Right-censored `Surv(time, status)` or start/stop intervals |
 | **Loss Function ($L$)** | Mean Squared Error: $(y - \hat{y})^2$ | IPCW Graf Integrated Brier Score loss |
@@ -240,7 +240,7 @@ data_py = pd.DataFrame({
 data_r = pandas2ri.py2rpy(data_py)
 
 # 3. Fit LOCO-MP Penalized Cox Model in TempleCBE
-fit_r = templecbe.cbe_loco_mp_coxnet(
+fit_r = templecbe.loco_mp_coxnet(
     formula = ro.Formula("Surv(time, status) ~ age + biomarker_a + biomarker_b + noise_1 + noise_2"),
     data = data_r,
     B = 50,

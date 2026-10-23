@@ -2,15 +2,9 @@
 % Please edit documentation in R/cbe_factor_reference.R
 \name{relevel_factor}
 \alias{relevel_factor}
-\alias{factor_reference}
-\alias{cbe_factor_reference}
 \title{Relevel a Factor's Reference Level}
 \usage{
 relevel_factor(x, ref_level = NULL)
-
-factor_reference(...)
-
-cbe_factor_reference(...)
 }
 \arguments{
 \item{x}{A factor, or a vector coercible to one via \code{as.factor()}.}

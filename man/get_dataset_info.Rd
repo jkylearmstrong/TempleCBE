@@ -6,7 +6,6 @@
 \alias{get_dataset_info.list}
 \alias{get_dataset_info.joint_model}
 \alias{describe_columns}
-\alias{proc_contents}
 \title{Summarize a Data Frame or Joint Model's Columns and Components}
 \usage{
 get_dataset_info(x, ...)
@@ -25,8 +24,6 @@ get_dataset_info(x, ...)
 \method{get_dataset_info}{joint_model}(x, ...)
 
 describe_columns(x, ...)
-
-proc_contents(...)
 }
 \arguments{
 \item{x}{A data frame, tibble, named list of data frames, or a fitted \code{\link[TempleCBE]{joint_model}} object.}

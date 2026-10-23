@@ -2,7 +2,6 @@
 % Please edit documentation in R/tuning_results.R
 \name{workflow_set_rank_fit}
 \alias{workflow_set_rank_fit}
-\alias{fit_n_rank}
 \title{Fit the Configuration Ranked `.rank` in a Workflow Set}
 \usage{
 workflow_set_rank_fit(
@@ -13,8 +12,6 @@ workflow_set_rank_fit(
   select_best = FALSE,
   ...
 )
-
-fit_n_rank(...)
 }
 \arguments{
 \item{grid_results}{Tuned workflow set results, the output of

@@ -39,13 +39,6 @@ find_read_calls <- function(path, include_comments = TRUE, workers = NULL) {
   )
 }
 
-#' @rdname find_read_calls
-#' @export
-read_search <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "read_search()", "find_read_calls()")
-  find_read_calls(...)
-}
-
 #' Search a Directory Tree for File-Write Calls
 #'
 #' Convenience wrapper around \code{\link{find_code}} that searches for common
@@ -84,13 +77,6 @@ find_write_calls <- function(path, include_comments = FALSE, workers = NULL) {
     include_comments = include_comments, lines_after = 2,
     workers = workers
   )
-}
-
-#' @rdname find_write_calls
-#' @export
-write_search <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "write_search()", "find_write_calls()")
-  find_write_calls(...)
 }
 
 #' @keywords internal

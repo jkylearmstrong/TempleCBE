@@ -2,12 +2,9 @@
 % Please edit documentation in R/distribution_test.R
 \name{is_integer_valued}
 \alias{is_integer_valued}
-\alias{is.int}
 \title{Is a Vector Composed of Integer-Valued Numbers}
 \usage{
 is_integer_valued(col)
-
-is.int(...)
 }
 \arguments{
 \item{col}{A numeric vector.}

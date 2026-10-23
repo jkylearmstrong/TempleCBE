@@ -3,8 +3,6 @@
 \name{survex_loss_ibs}
 \alias{survex_loss_ibs}
 \alias{survex_loss_brier}
-\alias{cbe_survex_loss_ibs}
-\alias{cbe_survex_loss_brier}
 \title{TempleCBE Custom Loss Functions for survex}
 \usage{
 survex_loss_ibs(
@@ -14,10 +12,6 @@ survex_loss_ibs(
 )
 
 survex_loss_brier(trunc = 0.05)
-
-cbe_survex_loss_ibs(...)
-
-cbe_survex_loss_brier(...)
 }
 \arguments{
 \item{normalization}{Optional normalization parameter for \code{survex} integral calculation.

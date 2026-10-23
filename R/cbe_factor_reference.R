@@ -32,17 +32,3 @@ relevel_factor <- function(x, ref_level = NULL) {
   message(sprintf("relevel_factor(): reference level set to '%s'.", ref_level))
   f_releveled
 }
-
-#' @rdname relevel_factor
-#' @export
-factor_reference <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "factor_reference()", "relevel_factor()")
-  relevel_factor(...)
-}
-
-#' @rdname relevel_factor
-#' @export
-cbe_factor_reference <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_factor_reference()", "relevel_factor()")
-  relevel_factor(...)
-}

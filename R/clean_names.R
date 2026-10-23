@@ -1,23 +1,3 @@
-#' Clean and Standardize Variable Names
-#'
-#' Converts variable/column names to lower snake_case and removes invalid special characters.
-#'
-#' @param data A data frame, tibble, or character vector of names.
-#' @return Cleaned data frame or character vector.
-#' @export
-#' @examples
-#' clean_names(c("First Name", "ZIP Code", "Total ($)"))
-clean_names <- function(data) {
-  lifecycle::deprecate_warn("0.5.8", "clean_names()", "clean_names_keep_labels()", details = "Scheduled for complete removal in TempleCBE 0.7.0 to avoid masking janitor::clean_names(). Use clean_names_keep_labels() or janitor::clean_names() directly.")
-  if (is.character(data)) {
-    return(janitor::make_clean_names(data))
-  } else if (is.data.frame(data)) {
-    return(janitor::clean_names(data))
-  } else {
-    stop("Input must be a character vector or data frame.")
-  }
-}
-
 #' Generate Excel-Compatible Column Names
 #'
 #' Formats column names into sanitized, human-readable strings suitable for Excel output headers.

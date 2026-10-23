@@ -19,10 +19,3 @@ std_error <- function(x, na.rm = FALSE) {
                  stats::sd(x, na.rm = FALSE) / sqrt(length(x))
   )
 }
-
-#' @rdname std_error
-#' @export
-sd.error <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "sd.error()", "std_error()")
-  std_error(...)
-}

@@ -3,13 +3,9 @@
 \name{explain_joint}
 \alias{explain_joint}
 \alias{explain_model}
-\alias{cbe_explain}
 \alias{explain_status}
-\alias{cbe_explain_status}
 \alias{explain_time}
-\alias{cbe_explain_time}
 \alias{explain_stack}
-\alias{cbe_explain_stack}
 \title{Explain Joint Model Components via DALEX and survex}
 \usage{
 explain_joint(
@@ -32,19 +28,11 @@ explain_model(
   ...
 )
 
-cbe_explain(...)
-
 explain_status(model, data = NULL, label = NULL, verbose = FALSE, ...)
-
-cbe_explain_status(...)
 
 explain_time(model, data = NULL, label = NULL, verbose = FALSE, ...)
 
-cbe_explain_time(...)
-
 explain_stack(model, data = NULL, label = NULL, verbose = FALSE, ...)
-
-cbe_explain_stack(...)
 }
 \arguments{
 \item{model}{A fitted \code{joint_model} object.}

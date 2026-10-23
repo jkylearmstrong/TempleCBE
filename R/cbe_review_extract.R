@@ -555,13 +555,6 @@ docx_review_extract <- function(input_dir = NULL,
   invisible(out)
 }
 
-#' @rdname docx_review_extract
-#' @export
-cbe_docx_review_extract <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_docx_review_extract()", "docx_review_extract()")
-  docx_review_extract(...)
-}
-
 #' @export
 print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
@@ -4663,13 +4656,6 @@ review_tracker <- function(extract,
 
   class(out) <- c("review_tracker", "cbe_review_tracker", class(out))
   out
-}
-
-#' @rdname review_tracker
-#' @export
-cbe_review_tracker <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_review_tracker()", "review_tracker()")
-  review_tracker(...)
 }
 
 #' Validate a Review Response Tracker for Required Location and Rationale

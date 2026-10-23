@@ -2,19 +2,12 @@
 % Please edit documentation in R/cbe_variable_roles.R
 \name{variable_roles}
 \alias{variable_roles}
-\alias{cbe_variable_roles}
 \alias{set_roles}
-\alias{cbe_set_roles}
 \alias{get_roles}
-\alias{cbe_get_roles}
 \alias{get_predictors}
-\alias{cbe_get_predictors}
 \alias{get_outcomes}
-\alias{cbe_get_outcomes}
 \alias{get_id_cols}
-\alias{cbe_get_id_cols}
 \alias{get_time_cols}
-\alias{cbe_get_time_cols}
 \title{Define and Manage Clinical Variable Roles}
 \usage{
 variable_roles(
@@ -29,31 +22,17 @@ variable_roles(
   roles = NULL
 )
 
-cbe_variable_roles(...)
-
 set_roles(data, ...)
-
-cbe_set_roles(...)
 
 get_roles(data)
 
-cbe_get_roles(...)
-
 get_predictors(roles)
-
-cbe_get_predictors(...)
 
 get_outcomes(roles)
 
-cbe_get_outcomes(...)
-
 get_id_cols(roles)
 
-cbe_get_id_cols(...)
-
 get_time_cols(roles)
-
-cbe_get_time_cols(...)
 }
 \arguments{
 \item{data}{A data frame or a named list of data frames (an R database).}

@@ -100,10 +100,3 @@ print.cbe_cox_check <- function(x, ...) {
   if (nrow(x$zph_table) > 0) print(x$zph_table)
   invisible(x)
 }
-
-#' @rdname cox_check
-#' @export
-cbe_cox_check <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_cox_check()", "cox_check()")
-  cox_check(...)
-}

@@ -147,13 +147,6 @@ drop_correlated_columns <- function(data,
   caret::findCorrelation(cor_matrix, cutoff = cutoff, verbose = verbose, names = names, exact = exact)
 }
 
-#' @rdname drop_correlated_columns
-#' @export
-find_correlation <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "find_correlation()", "drop_correlated_columns()")
-  drop_correlated_columns(...)
-}
-
 #' Formatted Table of Highly Correlated Variable Pairs
 #'
 #' Evaluates pairwise correlation between all numeric columns in `data` and returns

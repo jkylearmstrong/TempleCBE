@@ -214,12 +214,3 @@ utils::globalVariables(c(
   "estimate", "conf.low", "conf.high", "p.value", "term", "clean_level",
   "Variable", "Level", "Role", "HR", "log(HR)", "95% CI"
 ))
-
-#' @rdname cox_multi
-#' @export
-cbe_cox_multi <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_cox_multi()", "cox_multi()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::cox_multi)
-  eval(mc, parent.frame())
-}

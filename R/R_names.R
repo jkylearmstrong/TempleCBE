@@ -25,10 +25,3 @@ clean_names_keep_labels <- function(df) {
   labelled::var_label(df) <- old_names
   df
 }
-
-#' @rdname clean_names_keep_labels
-#' @export
-R_names <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "R_names()", "clean_names_keep_labels()")
-  clean_names_keep_labels(...)
-}

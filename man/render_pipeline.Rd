@@ -2,8 +2,6 @@
 % Please edit documentation in R/render.R
 \name{render_pipeline}
 \alias{render_pipeline}
-\alias{render}
-\alias{render_me}
 \title{Render Pipeline Documents and Reports}
 \usage{
 render_pipeline(
@@ -29,10 +27,6 @@ render_pipeline(
   on_complete = getOption("templecbe.on_complete", NULL),
   ...
 )
-
-render(...)
-
-render_me(...)
 }
 \arguments{
 \item{path}{A file path (character), directory, list of files, or list of pipeline

@@ -734,13 +734,6 @@ nested_survival_run <- function(data,
   )
 }
 
-#' @rdname nested_survival_run
-#' @export
-cbe_nested_survival_run <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_nested_survival_run()", "nested_survival_run()")
-  nested_survival_run(...)
-}
-
 #' @export
 print.nested_survival_run <- function(x, ...) {
   print.cbe_nested_survival_run(x, ...)
@@ -1623,13 +1616,6 @@ domain_children <- function(domains,
   attr(combined, "succeeded_domains") <- succeeded_domains
   class(combined) <- c("domain_children", "cbe_domain_children", "knit_asis", "character")
   combined
-}
-
-#' @rdname domain_children
-#' @export
-cbe_domain_children <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_domain_children()", "domain_children()")
-  domain_children(...)
 }
 
 #' @export

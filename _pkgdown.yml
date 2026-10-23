@@ -42,49 +42,46 @@ reference:
   - title: Data Quality & Missingness Analysis
     desc: Functions for missing data auditing, summary tables, and visualizations.
     contents:
-      - SumNa
+      - count_na
       - features_percent_miss
       - plot_features_percent_miss
       - missmap
       - add_missing
-      - my_summary_table
+      - summary_table
       - get_dataset_info
-      - proc_contents
-      - cbe_compare_df
+      - describe_columns
+      - compare_df
       - autoplot.cbe_compare_df
 
   - title: Clinical Databases & Multi-Table Management
     desc: Functions for multi-table clinical databases, metadata export/import, variable role assignment, and relational linkage analysis.
     contents:
       - dataset_labels
-      - cbe_dataset_label
-      - cbe_database_name
-      - cbe_database_label
-      - cbe_set_dataset_labels
-      - cbe_get_dataset_labels
+      - dataset_label
+      - database_name
+      - database_label
+      - set_dataset_labels
+      - get_dataset_labels
       - write_database_to_excel
       - read_database_from_excel
       - write_workbook
-      - write_xlsx
       - write_xlsx_file
-      - cbe_write_database
-      - cbe_read_database
       - write_database_metadata
       - read_database_metadata
       - apply_database_metadata
       - database_metadata_io
-      - cbe_variable_roles
-      - cbe_set_roles
-      - cbe_get_roles
-      - cbe_get_predictors
-      - cbe_get_outcomes
-      - cbe_get_id_cols
-      - cbe_get_time_cols
-      - cbe_database_relationships
+      - variable_roles
+      - set_roles
+      - get_roles
+      - get_predictors
+      - get_outcomes
+      - get_id_cols
+      - get_time_cols
+      - database_relationships
       - autoplot.cbe_database_relationships
       - cbe_database_venn
-      - cbe_find_shared_keys
-      - cbe_check_key_integrity
+      - find_shared_keys
+      - check_key_integrity
       - autoplot.cbe_key_integrity
       - as_database
       - database_setops
@@ -106,7 +103,7 @@ reference:
       variance decomposition, eigenvalue tables, Kaiser-Guttman scree plots,
       biplots with concentration ellipses, and variable correlation circles.
     contents:
-      - proc_pca
+      - run_pca
       - pca_plot
       - pca_scree_plot
       - pca_variables_plot
@@ -139,7 +136,6 @@ reference:
       - add_graf_weights
       - glmnet_IBS
       - tune_over_alpha
-      - summarize_tune_results
       - tune_alpha_by_split
       - checkpoint_map
       - tune_grid_checkpointed
@@ -153,7 +149,6 @@ reference:
       - clean_checkpoints
       - estimate_runtime
       - nested_survival_run
-      - cbe_nested_survival_run
       - summary.cbe_nested_survival_run
       - plot.cbe_nested_survival_run
       - tidy.cbe_nested_survival_run
@@ -185,7 +180,6 @@ reference:
       - tune_race_survival
       - step_lencode_coxnet
       - loco_mp_coxnet
-      - cbe_loco_mp_coxnet
       - autoplot.loco_mp_coxnet
       - tidy.loco_mp_coxnet
 
@@ -209,17 +203,17 @@ reference:
       Unified explainability across survival and joint models using survex and DALEX,
       custom IPCW Integrated Brier loss functions, and SurvSHAP(t) attributions.
     contents:
-      - cbe_explain_survival
-      - cbe_explain
-      - cbe_predict_parts_shap
-      - cbe_survex_loss_ibs
+      - explain_survival
+      - explain_joint
+      - predict_parts_shap
+      - survex_loss_ibs
 
   - title: Tidymodels Recipe Steps & Modeling Utilities
     desc: Recipe steps and workflow set helpers.
     contents:
       - step_famd
-      - get_model_parameters
-      - fit_n_rank
+      - workflow_set_params
+      - workflow_set_rank_fit
       - tune_best_glmnet_workflow
       - summarize_dalex_importance
       - plot_permutation_importance
@@ -251,7 +245,7 @@ reference:
       - correlation_plot_split
       - correlation_diff
       - correlation_diff_heatmap
-      - find_correlation
+      - drop_correlated_columns
       - correlated_pairs_table
       - plot_corr_scatter
       - plot_rank_heatmap
@@ -259,7 +253,7 @@ reference:
       - distribution_plot
       - is_normal
       - is_poisson
-      - is.int
+      - is_integer_valued
       - significance_stars
 
   - title: Composite Clinical & Biomarker Indices
@@ -275,7 +269,6 @@ reference:
   - title: PCA & Dimensionality Reduction
     desc: Principal Component Analysis utilities, loadings, and biplots.
     contents:
-      - proc_pca
       - pca_loadings
       - pca_eqns
       - pca_percent_var_explained
@@ -307,22 +300,21 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
-      - cbe_sas_macro_dir
-      - cbe_sas_macro_path
+      - sas_macro_dir
+      - sas_macro_path
       - rossi_data
-      - render
-      - render_me
+      - render_pipeline
       - render_variants
       - zip_reports
       - write_run_manifest
       - repro_appendix
       - repro_appendix_template
-      - cbe_domain_children
+      - domain_children
       - check_renv_guard
       - extract_yaml_formats
       - scan_data_io
-      - read_search
-      - write_search
+      - find_read_calls
+      - find_write_calls
 
   - title: Pipeline & Computational Graph Architecture
     desc: >
@@ -343,7 +335,7 @@ reference:
       - export_subgraph
       - export_interactive_pipeline
       - list_stage_data_artifacts
-      - controls_datasets
+      - produces_data
       - create_qmd_renderer
       - get_render_plan
       - is_stale
@@ -411,20 +403,20 @@ reference:
       a paired Kaplan-Meier/Cox helper, a factor-releveling utility, and forest, survival-curve,
       and marginal-risk visualizations.
     contents:
-      - cbe_cox_single
+      - cox_single
       - print.cbe_cox
-      - cbe_cox_multi
+      - cox_multi
       - print.cbe_cox_multi
-      - cbe_cox_check
+      - cox_check
       - print.cbe_cox_check
       - cbe_cox_table
-      - cbe_km_single
+      - km_single
       - print.cbe_km
       - km_cutpoints
       - km_cutpoint_search
       - km_cutpoint_time_varying
       - plot_km_cutpoints
-      - cbe_factor_reference
+      - relevel_factor
       - plot_cox_forest
       - plot_cox_forest_multi
       - plot_cox_survival
@@ -448,9 +440,9 @@ reference:
       Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and publication-ready
       association visualizations (balloon, bar, contingency, mosaic, heatmap, and square plots).
     contents:
-      - cbe_exact2x2
+      - exact2x2
       - cbe_exact2x2_ci
-      - cbe_test_categorical
+      - test_categorical
       - cbe_four_quadrant_report
       - cbe_contingency_plot
       - cbe_balloon_plot
@@ -458,7 +450,7 @@ reference:
       - cbe_mosaic_plot
       - cbe_heatmap_plot
       - cbe_square_plot
-      - cbe_pairwise_combos
+      - pairwise_combos
       - plot_categorical_associations
 
   - title: Data Snapshot Manifest & Schema Engine
@@ -489,8 +481,8 @@ reference:
       - audit_report_deliverables
       - audit_render_parity
       - extract_yaml_formats
-      - cbe_docx_review_extract
-      - cbe_review_tracker
+      - docx_review_extract
+      - review_tracker
       - validate_review_tracker
       - review_config
 
@@ -503,8 +495,7 @@ reference:
   - title: Helper & Infix Operators
     desc: Clean column naming, string matching, and vector manipulation.
     contents:
-      - clean_names
-      - R_names
+      - clean_names_keep_labels
       - make_excel_names
       - excel_colnames
       - pretty_name
@@ -512,21 +503,21 @@ reference:
       - cbe_labels
       - tbl_label_map
       - label_helpers
-      - keep_only
+      - rm_all_except
       - delete_nul_files
       - find_code
-      - sd.error
+      - std_error
       - profvis_summary
-      - normalize_safely
+      - normalize_path_safely
       - parse_here_call_vec
       - file_meta_fs
-      - extract_win_posix_paths
+      - extract_xlsx_paths
       - extract_all_xlsx_tokens
-      - install.packages.no_lock
+      - install_package_no_lock
       - reexports
       - "%>%"
       - infix_helpers
-      - "%like%"
+      - match_like
       - "%ilike%"
       - "%flike%"
       - "%plike%"
