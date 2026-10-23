@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1
+#
+# Base image for the CI jobs of TempleCBE (R-CMD-check, test-coverage, optional tests on Linux).
+#
+# It holds what a job would otherwise download and install on every run: R, pandoc, git, the
+# system libraries the dependencies need, and every package TempleCBE Imports or Suggests, as the
+# newest binaries Posit Package Manager has for Ubuntu noble. A job running in this image still
+# runs r-lib/actions/setup-r-dependencies, which (with pak's default upgrade = FALSE) installs only
+# what is missing or too old for DESCRIPTION, so a run takes minutes instead of 15 to 40.
+#
+# This is not the release image (see Dockerfile: renv.lock pinned, with TeX and Quarto). It tracks
+# CRAN, so CI keeps testing against current packages; it is rebuilt weekly and whenever DESCRIPTION
+# or this file changes (.github/workflows/ci-image.yml).
+ARG R_VERSION=4.6.1
+FROM rocker/r-ver:${R_VERSION}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    pandoc \
+    curl \
+    ca-certificates \
+    sudo \
+    libgit2-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# Packages come from Posit Package Manager's Linux binaries for this Ubuntu release.
+RUN . /etc/os-release \
+  && echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/${VERSION_CODENAME}/latest'))" \
+       >> "$(R RHOME)/etc/Rprofile.site" \
+  && echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
+       >> "$(R RHOME)/etc/Rprofile.site"
+
+RUN Rscript -e 'install.packages("pak", repos = sprintf("https://r-lib.github.io/p/pak/stable/%s/%s/%s", .Platform$pkgType, R.Version()$os, R.Version()$arch))'
+
+# DESCRIPTION only: the layer is rebuilt when the dependencies change, not on every commit.
+WORKDIR /build
+COPY DESCRIPTION .
+RUN Rscript -e 'pak::local_install_deps(".", dependencies = TRUE, upgrade = FALSE)' \
+  && Rscript -e 'pak::pkg_install(c("any::rcmdcheck", "any::covr", "any::testthat", "any::remotes", "any::pkgload", "any::xml2", "any::readr", "any::jquerylib", "any::caret"))' \
+  && rm -rf /root/.cache/R /tmp/*
+
+# Fail the build if a dependency named in DESCRIPTION did not install.
+RUN Rscript -e 'd <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests")); pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("\n", " ", d), ","))))); pk <- pk[nzchar(pk) & !is.na(pk) & pk != "R"]; miss <- setdiff(pk, rownames(installed.packages())); if (length(miss)) stop("not installed: ", paste(miss, collapse = ", "), call. = FALSE)'
+
+WORKDIR /
+LABEL org.opencontainers.image.source="https://github.com/jkylearmstrong/TempleCBE" \
+      org.opencontainers.image.description="TempleCBE CI base image: R, pandoc and the CRAN dependencies"
