@@ -323,7 +323,7 @@ brier_survival_integrated(scored, truth = .truth, .pred)
 
 ## Existing analysis code: `glmnet_IBS()`
 
-`glmnet_IBS()`, `tune_over_alpha()`, and `summarize_tune_results()` keep their
+`glmnet_IBS()`, `tune_over_alpha()`, and `tune_alpha_by_split()` keep their
 arguments. They now use `cv_coxnet()` underneath, so the penalty is chosen on
 patient-grouped folds and the IBS uses censoring weights.
 
@@ -420,7 +420,7 @@ yardstick::brier_survival_integrated(scored_predictions, truth = .truth, .pred)
 
 When searching over a broad grid of elastic net mixing parameters ($\alpha$) or
 evaluating competing candidate clinical formulas, `tune_over_alpha()`,
-`summarize_tune_results()`, and `score_outer()` orchestrate parallel evaluation using `furrr`.
+`tune_alpha_by_split()`, and `score_outer()` orchestrate parallel evaluation using `furrr`.
 
 #### Nested Parallelism & Cluster Benchmarking Architecture
 
@@ -431,8 +431,8 @@ For example, a study with 7 outer folds, 7 inner resamples, 10 candidate $\alpha
 
 **Best Practices for Cluster & Multicore Execution:**
 1. **Outer/Split Parallelism**: Set `future::plan(multisession, workers = N)` at the session level before invoking tuning or scoring. `TempleCBE` functions strictly adhere to the *never call plan() inside functions* fleet rule.
-2. **Sequential Inner Fits**: Avoid setting `parallel = TRUE` inside `glmnet_IBS()` when `summarize_tune_results()` is already running across parallel workers; nested socket clusters lead to worker resource contention and OS deadlocks.
-3. **Resilience with Checkpoints**: Pass `checkpoint_dir = "checkpoints/tuning_abg"` to `summarize_tune_results()`, `tune_over_alpha()`, and `score_outer()`. Completed tasks save atomic `.rds` artifacts per split/fold. If a run is interrupted across cluster nodes, rerunning detects cached checkpoints and skips recomputation with an informative progress notice.
+2. **Sequential Inner Fits**: Avoid setting `parallel = TRUE` inside `glmnet_IBS()` when `tune_alpha_by_split()` is already running across parallel workers; nested socket clusters lead to worker resource contention and OS deadlocks.
+3. **Resilience with Checkpoints**: Pass `checkpoint_dir = "checkpoints/tuning_abg"` to `tune_alpha_by_split()`, `tune_over_alpha()`, and `score_outer()`. Completed tasks save atomic `.rds` artifacts per split/fold. If a run is interrupted across cluster nodes, rerunning detects cached checkpoints and skips recomputation with an informative progress notice.
 4. **Environment Isolation**: Multisession worker processes automatically import required preprocessing namespaces (`recipes`, `rsample`, `yardstick`, `survival`, `glmnet`).
 
 ```{r tune_alpha_demo, eval = FALSE}
@@ -450,7 +450,7 @@ alpha_results <- tune_over_alpha(
 )
 
 # Summarize results across all inner splits of a nested resample
-nested_alpha_summary <- summarize_tune_results(
+nested_alpha_summary <- tune_alpha_by_split(
   nested_folds$inner_resamples[[1]],
   checkpoint_dir = "checkpoints/inner_splits",
   progress = TRUE

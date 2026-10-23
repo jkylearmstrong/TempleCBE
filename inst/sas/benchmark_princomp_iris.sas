@@ -4,12 +4,12 @@
   Runs SAS PROC PRINCOMP (correlation matrix, the default) on the 150 rows of R's
   datasets::iris, typed into this program, so that R and SAS see the very same
   numbers (a test in test-sas_parity_reference.R checks the datalines). The
-  eigenvalue table SAS prints is compared with TempleCBE::proc_pca() in the
+  eigenvalue table SAS prints is compared with TempleCBE::run_pca() in the
   package tests; the numbers are in tests/testthat/reference/sas_princomp_iris.csv.
 
   Can be executed directly from R:
     TempleCBE::run_sas_script(
-      TempleCBE::cbe_sas_macro_path("benchmark_princomp_iris.sas")
+      TempleCBE::sas_macro_path("benchmark_princomp_iris.sas")
     )
 ==============================================================================*/
 

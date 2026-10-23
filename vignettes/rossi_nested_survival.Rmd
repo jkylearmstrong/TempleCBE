@@ -25,7 +25,7 @@ In multi-domain clinical survival pipelines, each domain report traditionally st
 
 1. **Validate counting-process intervals** (`validate_start_stop()`)
 2. **Construct subject-grouped nested folds** (`rsample::nested_cv()` + `rsample::group_vfold_cv()`)
-3. **Inner hyperparameter tuning** (`summarize_tune_results()`)
+3. **Inner hyperparameter tuning** (`tune_alpha_by_split()`)
 4. **Candidate model selection** (`select_candidate_models()`)
 5. **Outer-fold scoring** (`score_outer()`)
 6. **Predictor importance & selection stability** (`summarize_outer_importance()`)
@@ -33,7 +33,7 @@ In multi-domain clinical survival pipelines, each domain report traditionally st
 
 This vignette demonstrates how to run the entire nested survival workflow on the packaged `rossi_data()` recidivism cohort:
 
-- **One-call execution** with `cbe_nested_survival_run()` (including `summary()`, `plot()`, and `tidy()` methods)
+- **One-call execution** with `nested_survival_run()` (including `summary()`, `plot()`, and `tidy()` methods)
 - **Sharding across machines** with `shard = c(1, 2)` and `shard = c(2, 2)`, merging completed shards with `collect_checkpoints()`, and pruning stale checkpoints with `clean_checkpoints()`
 - **Self-rendering reproducibility appendix** via `repro_appendix()`
 

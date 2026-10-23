@@ -8,7 +8,7 @@
     %include "&templecbe_sas/cbe_macros.sas";
     
   Or in R:
-    sas_macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
+    sas_macro_file <- TempleCBE::sas_macro_path("cbe_macros.sas")
 ==============================================================================*/
 
 %put NOTE: ====================================================================;

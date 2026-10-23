@@ -221,7 +221,7 @@ contingency_plot_type <- "balloon"
 #          "chisq" (force Pearson Chi-squared test), "exact" (force exact test)
 contingency_test_type <- "auto"
 
-pairwise_combos <- TempleCBE::cbe_pairwise_combos(
+pairwise_combos <- TempleCBE::pairwise_combos(
   data = eda_data,
   cols = c(strata_var, cat_vars)
 )

@@ -56,7 +56,7 @@ Quantifying the predictive contribution of individual covariates is central to b
 To resolve these challenges, **Gan, Zheng, & Allen (2022)** introduced **LOCO-MP** (*Leave-One-Covariate-Out Inference via MiniPatch Ensembles*, [arXiv:2206.02088](https://arxiv.org/abs/2206.02088)), implemented in Python at [`DataSlingers/LOCOMP`](https://github.com/DataSlingers/LOCOMP). 
 
 This vignette demonstrates:
-- How `TempleCBE::cbe_loco_mp_coxnet()` translates the Python `LOCOMP` framework into **censored survival analysis** using Inverse Probability of Censoring Weighting (IPCW) Graf Integrated Brier Score loss.
+- How `TempleCBE::loco_mp_coxnet()` translates the Python `LOCOMP` framework into **censored survival analysis** using Inverse Probability of Censoring Weighting (IPCW) Graf Integrated Brier Score loss.
 - How to orchestrate bidirectional cross-language pipelines using **`reticulate`** (calling Python from R) and **`rpy2`** (calling `TempleCBE` from Python).
 - Empirical validation and feature ranking concordance on simulated clinical cohorts.
 
@@ -264,7 +264,7 @@ This delivers full biostatistical capabilities to Python pipelines without re-im
 
 ## Part 5: Direct Empirical Simulation & Concordance Benchmark
 
-To demonstrate `cbe_loco_mp_coxnet()` in action, we simulate a synthetic cohort where true risk is driven by features $X_1$ and $X_2$, while $X_3, \dots, X_6$ are independent uninformative noise:
+To demonstrate `loco_mp_coxnet()` in action, we simulate a synthetic cohort where true risk is driven by features $X_1$ and $X_2$, while $X_3, \dots, X_6$ are independent uninformative noise:
 
 $$\log h(t \mid X) = \log h_0(t) + 1.2 X_1 - 0.8 X_2 + 0 X_3 + 0 X_4 + 0 X_5 + 0 X_6$$
 
@@ -295,11 +295,11 @@ cat("Simulated clinical cohort: N =", nrow(sim_cohort), "patients, P =", p, "cov
 cat("Overall event rate: ", round(mean(status) * 100, 1), "%\n")
 ```
 
-### Running `cbe_loco_mp_coxnet()`
+### Running `loco_mp_coxnet()`
 
 ```{r fit_loco_mp}
 # Fit LOCO-MP ensemble across B = 50 minipatches
-fit_loco <- cbe_loco_mp_coxnet(
+fit_loco <- loco_mp_coxnet(
   formula   = Surv(time, status) ~ X1 + X2 + X3 + X4 + X5 + X6,
   data      = sim_cohort,
   B         = 50,
@@ -338,9 +338,9 @@ autoplot(fit_loco, title = "LOCO-MP Feature Importance: Simulated Survival Cohor
 
 ---
 
-## Part 6: Cross-Language Data Integrity Verification with `cbe_compare_df()`
+## Part 6: Cross-Language Data Integrity Verification with `compare_df()`
 
-When exchanging feature attribution tables between R and Python environments, biostatisticians must verify numerical concordance. `TempleCBE::cbe_compare_df()` serves as an audit-ready reconciliation engine:
+When exchanging feature attribution tables between R and Python environments, biostatisticians must verify numerical concordance. `TempleCBE::compare_df()` serves as an audit-ready reconciliation engine:
 
 ```{r reconcile_features}
 # Reconcile feature importance table against reference
@@ -350,7 +350,7 @@ loco_reference <- loco_table
 loco_perturbed <- loco_table
 loco_perturbed$importance[1] <- loco_perturbed$importance[1] + 1e-5
 
-cmp_features <- cbe_compare_df(
+cmp_features <- compare_df(
   base         = loco_reference,
   compare      = loco_perturbed,
   by           = "term",
@@ -371,4 +371,4 @@ By combining the distribution-free inference principles of **`DataSlingers/LOCOM
 
 1. **Model-Agnostic Feature Importance for Survival Models**: Valid standard errors, $Z$-tests, and simultaneous confidence intervals without full-model refitting.
 2. **Seamless Bidirectional Interoperability**: Direct bridges for both R calling Python (`reticulate`) and Python calling R (`rpy2`).
-3. **Audit-Ready Validation**: Automated cell-by-cell discrepancy reporting via `cbe_compare_df()`.
+3. **Audit-Ready Validation**: Automated cell-by-cell discrepancy reporting via `compare_df()`.

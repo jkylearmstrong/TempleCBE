@@ -48,7 +48,7 @@ This vignette serves as an operational reference for biostatisticians, statistic
    - Build a validated SAS macro library and compile it into permanent catalogs (`sasmacr.sas7bcat`).
    - Import macros into existing organizational SAS macro libraries (via autocall `SASAUTOS=` or `SASMSTORE=`).
    - Author, test, and register new features into a local macro library with automated batch execution from R.
-- @sec-part6 : **Joint Modeling of Longitudinal & Survival Processes**: Auditing repeated measures via `proc_contents(..., subject_id = ...)` and contrasting multi-paradigm predictive modeling (`joint_model()`) with the SAS `%JM` macro (Rizopoulos 2010, Garcia-Hernandez & Rizopoulos 2018).
+- @sec-part6 : **Joint Modeling of Longitudinal & Survival Processes**: Auditing repeated measures via `describe_columns(..., subject_id = ...)` and contrasting multi-paradigm predictive modeling (`joint_model()`) with the SAS `%JM` macro (Rizopoulos 2010, Garcia-Hernandez & Rizopoulos 2018).
 - @sec-part7 : **Master Macro Catalog & Translation Cheat Sheet**: Comprehensive reference mapping SAS syntax to `TempleCBE`.
 
 
@@ -348,7 +348,7 @@ tumor_tidy_compressed <- tumor_tidy %>%
 cat("Compressed intervals:", nrow(tumor_tidy_compressed), "rows (matching SAS Tumor1 exactly).\n")
 ```
 
-### Audit-Ready Data Frame Comparison: `cbe_compare_df()` vs. SAS `PROC COMPARE`
+### Audit-Ready Data Frame Comparison: `compare_df()` vs. SAS `PROC COMPARE`
 
 A critical component of regulatory statistical submissions (e.g., FDA CDISC compliance) is cross-system data reconciliation between SAS and R. 
 
@@ -358,7 +358,7 @@ Historically, R packages frequently relied on `arsenal::comparedf()` for data fr
 1. `arsenal` is a monolithic package with heavy legacy dependencies and method overlaps that were phased out in `TempleCBE` during the migration to `gtsummary`.
 2. Reintroducing `arsenal` purely for `comparedf()` would introduce package bloat and S3 namespace collisions.
 
-To provide a modern, tidyverse-native alternative, `TempleCBE` provides `cbe_compare_df()`—an audit-ready, high-performance engine modelled on SAS `PROC COMPARE` (it agrees with it on the benchmark described in `?cbe_compare_df`) with full `broom::tidy()` integration, column label awareness (`labelled::var_label`), and key-based observation alignment.
+To provide a modern, tidyverse-native alternative, `TempleCBE` provides `compare_df()`—an audit-ready, high-performance engine modelled on SAS `PROC COMPARE` (it agrees with it on the benchmark described in `?cbe_compare_df`) with full `broom::tidy()` integration, column label awareness (`labelled::var_label`), and key-based observation alignment.
 
 #### SAS Equivalent: `PROC COMPARE`
 
@@ -373,9 +373,9 @@ proc compare base=Tumor1 compare=Tumor_R method=absolute criterion=1e-7;
 run;
 ```
 
-#### TempleCBE Implementation: `cbe_compare_df()`
+#### TempleCBE Implementation: `compare_df()`
 
-In `TempleCBE`, the identical comparison is performed via `cbe_compare_df()`:
+In `TempleCBE`, the identical comparison is performed via `compare_df()`:
 
 ```{r run_cbe_compare_df}
 # Standardize column types for key comparison
@@ -390,7 +390,7 @@ tumor_sas_comp <- tumor_sas %>%
   )
 
 # Compare compressed R dataset against SAS reference on common keys (ID, T1, T2)
-cmp <- cbe_compare_df(
+cmp <- compare_df(
   base         = tumor_sas_comp,
   compare      = tumor_tidy_compressed,
   by           = c("ID", "T1", "T2"),
@@ -421,7 +421,7 @@ When datasets match identically (such as round-tripping a SAS Transport `.xpt` f
 
 ```{r exact_concordance_demo}
 # Self-comparison verification
-cmp_identical <- cbe_compare_df(
+cmp_identical <- compare_df(
   base         = tumor_sas_comp,
   compare      = tumor_sas_comp,
   by           = c("ID", "T1", "T2"),
@@ -480,11 +480,11 @@ run;
 
 #### TempleCBE Implementation
 
-In `TempleCBE`, `cbe_cox_multi()` supports clustered robust sandwich standard errors by passing the subject identifier into `id`:
+In `TempleCBE`, `cox_multi()` supports clustered robust sandwich standard errors by passing the subject identifier into `id`:
 
 ```{r fit_cgd_robust}
 # Multivariable counting-process Cox model with robust clustering on patient ID
-res_cgd_robust <- cbe_cox_multi(
+res_cgd_robust <- cox_multi(
   data = cgd,
   formula = Surv(tstart, tstop, status) ~ treat + sex + age,
   id = id,
@@ -548,7 +548,7 @@ In `TempleCBE`, strata terms are included directly in the formula using `strata(
 
 ```{r fit_cgd_strat}
 # Stratified Cox model by clinical center with robust clustering on id
-res_cgd_strat <- cbe_cox_multi(
+res_cgd_strat <- cox_multi(
   data = cgd,
   formula = Surv(tstart, tstop, status) ~ treat + sex + age + strata(center),
   id = id,
@@ -775,7 +775,7 @@ In automated pipelines where R orchestrates SAS batch jobs via `run_sas_script()
 
 ```{r r_macro_path}
 # Retrieve dynamic absolute path to master macro file
-macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
+macro_file <- TempleCBE::sas_macro_path("cbe_macros.sas")
 macro_file
 ```
 
@@ -832,7 +832,7 @@ You can validate your local SAS macro against R calculations directly from an R 
 ```{r run_sas_validation, eval = TempleCBE::sas_available()}
 # Execute validation script in batch mode; log and listing go to a temporary
 # folder (by default they are created beside the script, in the package library)
-val_script <- TempleCBE::cbe_sas_macro_path("benchmark_brier_lung.sas")
+val_script <- TempleCBE::sas_macro_path("benchmark_brier_lung.sas")
 val_out <- tempfile("sas_validation_")
 exit_status <- TempleCBE::run_sas_script(val_script, log_dir = val_out, list_dir = val_out)
 
@@ -855,9 +855,9 @@ However, as shown by Rizopoulos (2010, *JSS* 35(9)) and Garcia-Hernandez & Rizop
 > [!IMPORTANT]
 > `TempleCBE::joint_model()` is a multi-paradigm **prediction** framework (penalized Cox + calibrated logistic + duration regression). It addresses the biases above pragmatically through regularization and, with the bagged-tree engine, ensemble methods, but is architecturally distinct from the full shared-parameter joint models of Rizopoulos (2010) and Garcia-Hernandez & Rizopoulos (2018), which estimate a shared latent biological trajectory and its association parameter ($\alpha$) via maximum likelihood (`PROC NLMIXED`). Section 6.3 contrasts both paradigms side-by-side.
 
-### Pre-Flight Data Auditing via `get_dataset_info()` / `proc_contents()`
+### Pre-Flight Data Auditing via `get_dataset_info()` / `describe_columns()`
 
-Before fitting joint models in either language, biostatisticians must audit repeated measures per subject and distinguish baseline features from time-varying trajectories. `TempleCBE::proc_contents()` provides automated inspection:
+Before fitting joint models in either language, biostatisticians must audit repeated measures per subject and distinguish baseline features from time-varying trajectories. `TempleCBE::describe_columns()` provides automated inspection:
 
 ```{r joint_eda_audit}
 # Simulate multi-visit longitudinal biomarker trial with survival follow-up
@@ -876,11 +876,11 @@ sim_data <- data.frame(
 sim_data$surv_interval <- survival::Surv(sim_data$tstart, sim_data$tstop, sim_data$status)
 
 # Audit dataset structure with subject-level repeated-measures detection
-audit_tbl <- proc_contents(sim_data, subject_id = "patient")
+audit_tbl <- describe_columns(sim_data, subject_id = "patient")
 audit_tbl[, c("columns", "class", "variable_type", "mean", "most_freq")]
 ```
 
-Notice how `proc_contents()`:
+Notice how `describe_columns()`:
 - Correctly parses the counting-process `Surv(tstart, tstop, status)` interval duration and event percentage.
 - Automatically classifies `drug` as **Baseline (Time-Invariant)** and `cd4` as **Longitudinal (Time-Varying)** based on patient grouping.
 
@@ -904,7 +904,7 @@ fit_joint <- joint_model(
 )
 
 # Inspect model summary and components via proc_contents
-fit_info <- proc_contents(fit_joint)
+fit_info <- describe_columns(fit_joint)
 fit_info[, c("columns", "class", "mean", "sd", "most_freq")]
 
 # Multi-paradigm predictions
@@ -950,7 +950,7 @@ In SAS, joint modeling of generalized linear mixed models (GLMM) and survival da
 | **Survival Submodel** | Parametric (Weibull, piecewise exponential, B-splines) | Penalized Cox model (`coxnet`) on exact or counting-process intervals |
 | **Multi-Paradigm Output** | Fixed and random effect estimates; parameter $\alpha$ | Dynamic survival curves, calibrated event probability, duration prediction |
 | **Cross-Validation** | Manual macro loop | `cv_joint_model()`, `nested_cv_joint_model()` with Integrated Brier Score (IBS) |
-| **Pre-Flight Audit** | `PROC CONTENTS` / manual DATA step checks | `proc_contents(data, subject_id = "...")` |
+| **Pre-Flight Audit** | `PROC CONTENTS` / manual DATA step checks | `describe_columns(data, subject_id = "...")` |
 
 
 \clearpage
@@ -962,11 +962,11 @@ The `TempleCBE` SAS Macro Suite provides:
 | Macro Name | Source File | Purpose | Corresponding R Function |
 |:---|:---|:---|:---|
 | `%cbe_brier_score` | `cbe_brier_score.sas` | IPCW Graf Brier Score, Integrated Brier Score (IBS), and risk decile calibration | `yardstick::brier_survival()`, `brier_survival_integrated()` |
-| `%cbe_cox_phreg` | `cbe_cox_phreg.sas` | Standardized `PROC PHREG` with automated ODS extraction, robust sandwich variance, and `ASSESS PH` | `cbe_cox_single()`, `cbe_cox_multi()`, `cbe_cox_check()` |
+| `%cbe_cox_phreg` | `cbe_cox_phreg.sas` | Standardized `PROC PHREG` with automated ODS extraction, robust sandwich variance, and `ASSESS PH` | `cox_single()`, `cox_multi()`, `cox_check()` |
 | `%cbe_counting_process` | `cbe_counting_process.sas` | Transforms a **wide repeated-measurements panel** into start--stop counting process rows; covariate value changes drive the interval boundaries (analogous to `tmerge`) | `tidy_tmerge_cox()`, `survival::tmerge()` |
 | `%coxtvc` | `coxtvc.sas` | Adjusted survival curve estimation for Cox models with time-varying coefficients | `survfit(fit, newdata, id = ...)` |
 | `%cpdata` | `cpdata.sas` | Splits **single-record-per-subject** survival data at distinct event times (no covariate changes required; analogous to `survSplit`) | `survival::survSplit()` |
-| `%cbe_macros` | `cbe_macros.sas` | Master loader initializing all above macros into the active SAS session | `TempleCBE::cbe_sas_macro_path("cbe_macros.sas")` |
+| `%cbe_macros` | `cbe_macros.sas` | Master loader initializing all above macros into the active SAS session | `TempleCBE::sas_macro_path("cbe_macros.sas")` |
 | `%JM` | `JM.sas` (*JSS* 84(12)) | Full shared-parameter joint modeling of longitudinal GLMM and proportional hazards survival via `PROC NLMIXED` | `joint_model()`, `cv_joint_model()` |
 
 ### Side-by-Side Translation Reference
@@ -974,17 +974,17 @@ The `TempleCBE` SAS Macro Suite provides:
 | Task | SAS PROC PHREG Syntax | TempleCBE / R Syntax |
 |:---|:---|:---|
 | **Counting Process Layout** | `model (tstart, tstop)*status(0) = ...;` | `formula = Surv(tstart, tstop, status) ~ ...` |
-| **Clustered Robust Sandwich Variance** | `proc phreg covs(aggregate); id patid;` | `cbe_cox_multi(..., id = patid)` |
+| **Clustered Robust Sandwich Variance** | `proc phreg covs(aggregate); id patid;` | `cox_multi(..., id = patid)` |
 | **Multi-Center Stratification** | `strata center;` | `formula = Surv(...) ~ ... + strata(center)` |
-| **Proportional Hazards Diagnostic** | `assess ph / resample;` | `cbe_cox_check(fit)` or `cox.zph(fit$model)` |
-| **Breslow Tie Handling** | `model ... / ties=breslow;` | `cbe_cox_multi(..., ties = "breslow")` |
+| **Proportional Hazards Diagnostic** | `assess ph / resample;` | `cox_check(fit)` or `cox.zph(fit$model)` |
+| **Breslow Tie Handling** | `model ... / ties=breslow;` | `cox_multi(..., ties = "breslow")` |
 | **Forest Visualization** | Custom `PROC SGPLOT` | `plot_cox_forest_multi(res)` |
 | **Presentation Table** | Custom ODS RTF / macro | `cbe_cox_table(res)` |
 
 
 ## Conclusion
 
-By unifying bidirectional data interchange (`haven`), clustered robust sandwich variance estimation on counting process intervals (`cbe_cox_multi(..., id = id)` vs SAS `COVS(AGGREGATE)`), multi-center stratified modeling (`strata(center)`), and advanced survival curve estimation for time-varying coefficients (`survfit(..., id = ...)` vs `%coxtvc`), `TempleCBE` provides R counterparts of these SAS analyses; the package tests check its `PROC PHREG` and Brier score results against reference values from real SAS runs. Enterprise biostatistics teams can deploy these macros into permanent catalogs or autocall libraries to establish reproducible, audit-ready hybrid pipelines.
+By unifying bidirectional data interchange (`haven`), clustered robust sandwich variance estimation on counting process intervals (`cox_multi(..., id = id)` vs SAS `COVS(AGGREGATE)`), multi-center stratified modeling (`strata(center)`), and advanced survival curve estimation for time-varying coefficients (`survfit(..., id = ...)` vs `%coxtvc`), `TempleCBE` provides R counterparts of these SAS analyses; the package tests check its `PROC PHREG` and Brier score results against reference values from real SAS runs. Enterprise biostatistics teams can deploy these macros into permanent catalogs or autocall libraries to establish reproducible, audit-ready hybrid pipelines.
 
 
 ## Session Information

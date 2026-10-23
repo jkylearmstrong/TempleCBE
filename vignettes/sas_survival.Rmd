@@ -77,7 +77,7 @@ In regulated clinical trials and academic biostatistics, SAS `PROC PHREG` has lo
 1. **Exact Numerical Parity**: Confidence that survival models fit in R reproduce the parameter estimates, standard errors, test statistics, and hazard ratios computed by SAS.
 2. **Workflow Translation**: Clear mappings from familiar SAS statements (`CLASS`, `MODEL`, `BASELINE`, `ASSESS`, `OUTPUT`) and DATA-step macros to concise, production-ready R workflows.
 
-The `TempleCBE` package is designed to streamline survival analysis with univariable screening (`cbe_cox_single()`), multivariable modeling (`cbe_cox_multi()`), automated proportional hazards assumption validation (`cbe_cox_check()`), factor reference leveling (`cbe_factor_reference()`), presentation tables (`cbe_cox_table()`), and specialized ggplot2 visualizations (`plot_cox_forest()`, `plot_cox_survival()`, `plot_cox_marginal()`).
+The `TempleCBE` package is designed to streamline survival analysis with univariable screening (`cox_single()`), multivariable modeling (`cox_multi()`), automated proportional hazards assumption validation (`cox_check()`), factor reference leveling (`relevel_factor()`), presentation tables (`cbe_cox_table()`), and specialized ggplot2 visualizations (`plot_cox_forest()`, `plot_cox_survival()`, `plot_cox_marginal()`).
 
 This vignette demonstrates:
 
@@ -103,10 +103,10 @@ When validating Cox models between SAS and R, four primary default discrepancies
 
 | Feature | SAS (`PROC PHREG`) Default | R (`survival::coxph`) Default | How to Reconcile in TempleCBE |
 |:---|:---|:---|:---|
-| **Tie Handling** | `TIES=BRESLOW` | `ties = "efron"` | Pass `ties = "breslow"` into `cbe_cox_single()` or `cbe_cox_multi()`. |
-| **Factor Coding** | Last alphanumeric level is reference unless `REF=` is specified in `CLASS` | First factor level is reference | Use `cbe_factor_reference()` or specify factor levels explicitly. |
+| **Tie Handling** | `TIES=BRESLOW` | `ties = "efron"` | Pass `ties = "breslow"` into `cox_single()` or `cox_multi()`. |
+| **Factor Coding** | Last alphanumeric level is reference unless `REF=` is specified in `CLASS` | First factor level is reference | Use `relevel_factor()` or specify factor levels explicitly. |
 | **Baseline Hazards** | Centered at covariate means or zeroes via `BASELINE` | Centered at covariate means in `survfit.coxph` | Use `plot_cox_survival()` which handles prediction curves transparently. |
-| **Clustered / Repeated Data** | `ID` statement specifies subject grouping | `id = ...` or `cluster(...)` | Pass `id = ID` directly via `cbe_cox_multi()`. |
+| **Clustered / Repeated Data** | `ID` statement specifies subject grouping | `id = ...` or `cluster(...)` | Pass `id = ID` directly via `cox_multi()`. |
 
 \clearpage
 
@@ -137,10 +137,10 @@ run;
 
 #### TempleCBE Implementation
 
-In `TempleCBE`, univariable screening is performed with `cbe_cox_single()`. It fits the Cox model, tests the proportional hazards assumption via Schoenfeld residuals, tidies the coefficient table, and generates an automated clinical interpretation:
+In `TempleCBE`, univariable screening is performed with `cox_single()`. It fits the Cox model, tests the proportional hazards assumption via Schoenfeld residuals, tidies the coefficient table, and generates an automated clinical interpretation:
 
 ```{r fit_single_age}
-res_age <- cbe_cox_single(
+res_age <- cox_single(
   data = lung_data,
   outcome = "Surv(time, status)",
   feature = "age",
@@ -223,10 +223,10 @@ run;
 
 #### TempleCBE Implementation
 
-In `TempleCBE`, `cbe_cox_multi()` handles multivariable formulas, supports explicit factor reference rows, and performs both term-specific and global proportional hazards diagnostic checks:
+In `TempleCBE`, `cox_multi()` handles multivariable formulas, supports explicit factor reference rows, and performs both term-specific and global proportional hazards diagnostic checks:
 
 ```{r fit_multi}
-res_multi <- cbe_cox_multi(
+res_multi <- cox_multi(
   data = lung_data,
   formula = Surv(time, status) ~ age + sex + ph.karno,
   ties = "breslow"
@@ -349,10 +349,10 @@ How to modify this document to only re-render SAS chunks if SAS exists on machin
 ================================================================================
 -->
 
-In `TempleCBE`, we pass the counting-process formula and forward `id = ID` and `ties = "breslow"` directly into `cbe_cox_multi()`:
+In `TempleCBE`, we pass the counting-process formula and forward `id = ID` and `ties = "breslow"` directly into `cox_multi()`:
 
 ```{r fit_tumor_model}
-fit_tumor <- cbe_cox_multi(
+fit_tumor <- cox_multi(
   data = tumor_long,
   formula = Surv(T1, T2, Status) ~ Dose + NPap,
   id = ID,
@@ -424,7 +424,7 @@ tumor_tmerge <- tmerge(
 
 ```{r fit_tmerge}
 # Fit Cox model on tmerge data
-fit_tmerge <- cbe_cox_multi(
+fit_tmerge <- cox_multi(
   data = tumor_tmerge,
   formula = Surv(tstart, tstop, Status) ~ Dose + NPap,
   id = ID,
@@ -484,10 +484,10 @@ tidy_surv <- tidy_tmerge_cox(
 tidy_surv
 ```
 
-This tidy representation is ready for immediate modeling with `cbe_cox_multi()`:
+This tidy representation is ready for immediate modeling with `cox_multi()`:
 
 ```{r fit_tidy_model, eval = FALSE}
-cbe_cox_multi(
+cox_multi(
   data = tidy_surv,
   formula = Surv(tstart, tstop, event) ~ biomarker + age + arm,
   id = subject_id
@@ -562,7 +562,7 @@ lung_complete <- lung_data %>%
   filter(!is.na(ph.karno))
 
 # 1. Fit multivariable Cox model with Breslow tie handling (matching SAS default)
-fit_calib <- cbe_cox_multi(
+fit_calib <- cox_multi(
   data = lung_complete,
   formula = Surv(time, status) ~ age + sex + ph.karno,
   ties = "breslow"
@@ -690,7 +690,7 @@ This section provides a direct onboarding guide for biostatisticians, statistica
 ### Architecture & Workflow Philosophy
 
 `TempleCBE` is architected with a **dual-engine philosophy**:
-- **Interactive Development & Visualization**: Use R (`cbe_cox_multi()`, `cbe_explain_survival()`, `plot_cox_forest()`) for agile exploration, nested cross-validation, and publication-ready graphics.
+- **Interactive Development & Visualization**: Use R (`cox_multi()`, `explain_survival()`, `plot_cox_forest()`) for agile exploration, nested cross-validation, and publication-ready graphics.
 - **Regulatory Parity & Benchmark Audit**: Use SAS (`PROC PHREG`, `%cbe_brier_score`, `%cbe_cox_phreg`) to execute identical models in batch mode and compare the numbers SAS prints with R's.
 
 ### Locating Bundled SAS Macros from R
@@ -699,11 +699,11 @@ This section provides a direct onboarding guide for biostatisticians, statistica
 
 ```{r locate_macros}
 # Directory containing all bundled SAS macros
-macro_dir <- TempleCBE::cbe_sas_macro_dir()
+macro_dir <- TempleCBE::sas_macro_dir()
 macro_dir
 
 # Path to the master loader file
-master_macro_file <- TempleCBE::cbe_sas_macro_path("cbe_macros.sas")
+master_macro_file <- TempleCBE::sas_macro_path("cbe_macros.sas")
 master_macro_file
 ```
 
@@ -779,7 +779,7 @@ The library provides three core macros matching `TempleCBE`'s R functions:
 
 ```{r run_sas_demo, eval = TempleCBE::sas_available()}
 # This code chunk executes automatically when SAS 9.4 is detected on host
-sas_benchmark_file <- TempleCBE::cbe_sas_macro_path("benchmark_brier_lung.sas")
+sas_benchmark_file <- TempleCBE::sas_macro_path("benchmark_brier_lung.sas")
 
 # Run batch SAS program. By default logs/ and list/ are created beside the script;
 # here they go to a temporary folder, so the installed package is not written to.
@@ -821,7 +821,7 @@ out_ibs_path <- file.path(work_dir, "sas_ibs.sas7bdat")
 haven::write_xpt(lung_xpt_data, xpt_path, version = 5, name = "LUNG")
 
 # 2. Dynamically compose SAS driver invoking %cbe_brier_score
-macro_file <- TempleCBE::cbe_sas_macro_path("cbe_brier_score.sas")
+macro_file <- TempleCBE::sas_macro_path("cbe_brier_score.sas")
 
 driver_code <- sprintf('
 libname workdir "%s";
@@ -871,7 +871,7 @@ For statistical programmers working primarily inside SAS Enterprise Guide, SAS S
 #| lst-label: lst-sas-call-r-systask
 #| lst-cap: "SAS SYSTASK: Trigger TempleCBE R script from SAS batch mode"
 /* In SAS: Trigger TempleCBE script via OS command */
-systask command "powershell -File ""C:\PathTo\TempleCBE\scripts\Rscript.ps1"" -e ""TempleCBE::render('vignettes/sas_survival.Rmd', 'all')""" 
+systask command "powershell -File ""C:\PathTo\TempleCBE\scripts\Rscript.ps1"" -e ""TempleCBE::render_pipeline('vignettes/sas_survival.Rmd', 'all')""" 
     taskname=r_cbe_job wait;
 ```
 
@@ -885,7 +885,7 @@ proc iml;
     submit / R;
         library(TempleCBE)
         # Execute TempleCBE survival workflows in R
-        res <- cbe_cox_single(data = survival::lung, outcome = "Surv(time, status)", feature = "age")
+        res <- cox_single(data = survival::lung, outcome = "Surv(time, status)", feature = "age")
         print(res$table)
     endsubmit;
 run;
@@ -911,7 +911,7 @@ Parts 2 and 3 illustrated how time-dependent covariates can be structured into s
 
 To address this:
 - **In SAS**: Biostatisticians employ the `%JM` macro, fitting a joint generalized linear mixed model (`PROC NLMIXED` with adaptive Gauss-Hermite quadrature) and proportional hazards model.
-- **In TempleCBE**: Analysts deploy `joint_model()` and `proc_contents()`, which fit coordinated survival (`coxnet`), binary classification (`status`), and duration regression (`time`) models with integrated probability calibration:
+- **In TempleCBE**: Analysts deploy `joint_model()` and `describe_columns()`, which fit coordinated survival (`coxnet`), binary classification (`status`), and duration regression (`time`) models with integrated probability calibration:
 
 ```{r joint_model_brief, eval = all(vapply(c("glmnet", "rsample", "yardstick", "probably"), requireNamespace, logical(1), quietly = TRUE))}
 # Audit dataset with repeated-measures detection
@@ -926,7 +926,7 @@ toy_long <- data.frame(
 toy_long$surv <- survival::Surv(toy_long$tstart, toy_long$tstop, toy_long$status)
 
 # Audit counting-process duration and baseline vs longitudinal features
-audit_res <- proc_contents(toy_long, subject_id = "patid")
+audit_res <- describe_columns(toy_long, subject_id = "patid")
 audit_res[, c("columns", "class", "variable_type", "mean", "most_freq")]
 
 # Fit joint multi-paradigm predictive model
@@ -940,14 +940,14 @@ print(jm_fit)
 
 | Task | SAS `PROC PHREG` Syntax | `TempleCBE` / R Equivalent |
 |:---|:---|:---|
-| **Univariable Screening** | `model time*status(0) = x / ties=breslow;` | `cbe_cox_single(data, outcome, "x", ties="breslow")` |
-| **Multivariable Model** | `model time*status(0) = x1 x2 x3;` | `cbe_cox_multi(data, Surv(time, status) ~ x1 + x2 + x3)` |
-| **Factor Reference Level** | `class trt(ref="Control");` | `cbe_factor_reference(data, "trt", "Control")` or `factor(trt, levels=...)` |
+| **Univariable Screening** | `model time*status(0) = x / ties=breslow;` | `cox_single(data, outcome, "x", ties="breslow")` |
+| **Multivariable Model** | `model time*status(0) = x1 x2 x3;` | `cox_multi(data, Surv(time, status) ~ x1 + x2 + x3)` |
+| **Factor Reference Level** | `class trt(ref="Control");` | `relevel_factor(data, "trt", "Control")` or `factor(trt, levels=...)` |
 | **Tie Handling** | `ties=breslow` (default) \| `ties=efron` | `ties = "breslow"` \| `ties = "efron"` (default) |
 | **Counting Process (Start/Stop)** | `model (t1, t2)*status(0) = x;` | `Surv(t1, t2, status) ~ x` |
-| **Repeated / Clustered Subjects** | `id patient_id;` | `id = patient_id` passed via `...` in `cbe_cox_multi()` |
+| **Repeated / Clustered Subjects** | `id patient_id;` | `id = patient_id` passed via `...` in `cox_multi()` |
 | **Time-Dependent Merging** | Complex DATA-step macro with arrays/lags | `survival::tmerge()` or `TempleCBE::tidy_tmerge_cox()` |
-| **Proportional Hazards Test** | `assess ph / resample;` | `cbe_cox_check(fit)` (Schoenfeld tests + interpretation) |
+| **Proportional Hazards Test** | `assess ph / resample;` | `cox_check(fit)` (Schoenfeld tests + interpretation) |
 | **Time-Dependent Brier Score** | `%cbe_brier_score(...)` | `yardstick::brier_survival(scored, truth, .pred)` |
 | **Integrated Brier Score (IBS)** | `%cbe_brier_score(...)` -> `cbe_ibs` | `yardstick::brier_survival_integrated(scored, truth, .pred)` |
 | **Model Calibration Curve** | `%cbe_brier_score(...)` -> `cbe_calibration` | Quantile grouping + `ggplot2` |
@@ -955,11 +955,11 @@ print(jm_fit)
 | **Survival Curve vs. KM** | `baseline out=...;` + `proc sgplot;` | `plot_cox_survival(res, overlay_km = TRUE)` |
 | **Marginal Risk / HR Curve** | Custom `predict` + `loess` | `plot_cox_marginal(res, scale = "hr")` |
 | **Publication Summary Table** | `ods output ParameterEstimates=...;` | `cbe_cox_table(res, sort = "magnitude")` |
-| **Dataset Pre-Flight Audit** | `proc contents data=...;` | `proc_contents(data, subject_id = "...")` |
+| **Dataset Pre-Flight Audit** | `proc contents data=...;` | `describe_columns(data, subject_id = "...")` |
 | **Joint Longitudinal-Survival Model** | `%JM(data=..., survdata=...);` | `joint_model(data, outcome, engine="glmnet")` |
 | **Cross-Validated Joint Benchmark** | Custom macro loops | `cv_joint_model(data, outcome)` |
-| **Locate Macro Directory** | `%let dir = ...;` | `TempleCBE::cbe_sas_macro_dir()` |
-| **Locate Macro File** | `%include "path/to/macro.sas";` | `TempleCBE::cbe_sas_macro_path("cbe_macros.sas")` |
+| **Locate Macro Directory** | `%let dir = ...;` | `TempleCBE::sas_macro_dir()` |
+| **Locate Macro File** | `%include "path/to/macro.sas";` | `TempleCBE::sas_macro_path("cbe_macros.sas")` |
 | **Batch Run SAS from R** | Command line `sas -sysin ...` | `TempleCBE::run_sas_script("script.sas")` |
 
 

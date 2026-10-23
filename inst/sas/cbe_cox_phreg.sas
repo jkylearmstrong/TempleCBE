@@ -2,7 +2,7 @@
   TempleCBE SAS Macro Library: %cbe_cox_phreg
   
   Standardizes proportional hazards Cox regression in SAS PROC PHREG,
-  mirroring TempleCBE's cbe_cox_single() and cbe_cox_multi().
+  mirroring TempleCBE's cox_single() and cox_multi().
   
   Features:
     - Flexible ties handling (BRESLOW default, matching SAS; or EFRON default, matching R).

@@ -5,7 +5,7 @@
   
   Can be executed directly from R:
     TempleCBE::run_sas_script(
-      TempleCBE::cbe_sas_macro_path("example_85_7.sas")
+      TempleCBE::sas_macro_path("example_85_7.sas")
     )
 ==============================================================================*/
 
