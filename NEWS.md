@@ -1,3 +1,9 @@
+# TempleCBE 0.6.4.9000
+
+## Rendering
+
+* New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
+
 # TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook

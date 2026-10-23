@@ -313,6 +313,7 @@ reference:
       - render
       - render_me
       - render_variants
+      - render_parameterized_pair
       - zip_reports
       - write_run_manifest
       - repro_appendix
