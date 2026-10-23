@@ -235,6 +235,7 @@ reference:
       - missranger_oob_by_mtry
       - missranger_max_mtry
       - tune_impute_numeric
+      - compare_domain_datasets
       - compare_imputed_ecdf
       - test_imputed_distributions
       - plot_imputed_ridgeline
