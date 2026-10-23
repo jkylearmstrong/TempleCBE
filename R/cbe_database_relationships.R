@@ -236,7 +236,7 @@ cbe_database_venn <- function(db, id_col = "id", title = NULL, ...) {
 
 #' Autoplot Method for Database Relationships
 #'
-#' @param object A \code{\link{cbe_database_relationships}} object.
+#' @param object A \code{\link{database_relationships}} object.
 #' @param type Plot type: \code{"graph"} for network ER graph, or \code{"venn"} for key overlap.
 #' @param db Optional parent database list required when \code{type = "venn"}.
 #' @param id_col Identifier column for Venn overlap (default: first shared key).
@@ -272,7 +272,7 @@ autoplot.cbe_database_relationships <- function(object, type = c("graph", "venn"
 
 #' Autoplot Method for Key Integrity
 #'
-#' @param object A \code{\link{cbe_check_key_integrity}} object.
+#' @param object A \code{\link{check_key_integrity}} object.
 #' @param ... Additional arguments passed to methods.
 #' @return A ggplot2 object.
 #' @exportS3Method ggplot2::autoplot
@@ -328,10 +328,10 @@ find_shared_keys <- function(db) {
 #' @param master_dataset Character string naming the primary cohort table. If provided,
 #'   checks which IDs in other tables are absent from the master cohort table.
 #' @param compare Logical; if \code{TRUE} and \code{master_dataset} is supplied,
-#'   runs \code{\link{cbe_compare_df}} on overlapping variables between the master dataset
+#'   runs \code{\link{compare_df}} on overlapping variables between the master dataset
 #'   and child datasets, attaching the comparison results.
-#' @param tolerance Numeric comparison tolerance passed to \code{\link{cbe_compare_df}}.
-#' @param ... Additional arguments passed to \code{\link{cbe_compare_df}}.
+#' @param tolerance Numeric comparison tolerance passed to \code{\link{compare_df}}.
+#' @param ... Additional arguments passed to \code{\link{compare_df}}.
 #' @export
 check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FALSE, tolerance = 1e-7, ...) {
   if (!is.list(db) || is.data.frame(db)) {

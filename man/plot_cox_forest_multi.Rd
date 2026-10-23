@@ -20,7 +20,7 @@ plot_cox_forest_multi(
 )
 }
 \arguments{
-\item{x}{A \code{cbe_cox_multi} object from [cbe_cox_multi()].}
+\item{x}{A \code{cbe_cox_multi} object from [cox_multi()].}
 
 \item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).}
 
@@ -49,10 +49,10 @@ within each variable's block. See [plot_cox_forest()].}
 A ggplot2 object.
 }
 \description{
-Generates a forest plot from a [cbe_cox_multi()] result, grouping terms into
+Generates a forest plot from a [cox_multi()] result, grouping terms into
 per-variable blocks (facets) so factor levels stay visually attached to their
 parent variable.
 }
 \seealso{
-[cbe_cox_multi()], [plot_cox_forest()]
+[cox_multi()], [plot_cox_forest()]
 }

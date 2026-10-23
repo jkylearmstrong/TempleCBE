@@ -6,6 +6,15 @@
 \usage{
 extract_all_xlsx_tokens(x, xlsx_token_re = xlsx_name_re)
 }
+\arguments{
+\item{x}{Character vector, e.g. code lines.}
+
+\item{xlsx_token_re}{Regular expression for the file-name part. The default
+matches a name ending in `.xlsx`: right after a quote or path separator it
+may contain spaces and punctuation other than quotes and separators;
+elsewhere only letters, digits, `_`, `.`, and `-`. Names followed by `(`
+(function calls such as `read.xlsx()`) are skipped.}
+}
 \value{
 A list the length of `x`, each element a character vector of the
   `.xlsx` file names found in that string (empty when none).
@@ -17,5 +26,5 @@ Extract Every `.xlsx` File Name From Text
 extract_all_xlsx_tokens(c("read_excel('out/a.xlsx'); write_xlsx(df, 'b c.xlsx')", "none"))
 }
 \seealso{
-[extract_win_posix_paths()]
+[extract_xlsx_paths()]
 }

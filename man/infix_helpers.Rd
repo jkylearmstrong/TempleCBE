@@ -39,9 +39,7 @@ is matched, as in \code{\link{grepl}}.}
 
 \item{x, vector}{A vector to test.}
 
-\item{table}{Vector of values to test against (for \code{notin()}/\code{\%notin\%}/\code{\%!in\%}).}
-
-\item{...}{Passed to \code{match_like()}.}
+\item{table}{Vector of values to test against (for \code{notin()}/\code{\%!in\%}).}
 }
 \value{
 A logical vector.

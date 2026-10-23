@@ -8,8 +8,6 @@ is_integer_valued(col)
 }
 \arguments{
 \item{col}{A numeric vector.}
-
-\item{...}{Passed to [is_integer_valued()].}
 }
 \value{
 A single logical.

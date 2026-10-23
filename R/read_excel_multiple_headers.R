@@ -15,7 +15,7 @@
 #'   left-to-right across columns before vertical concatenation.
 #' @param sep Character string used to separate header levels. Default \code{" | "}.
 #' @param clean_names Logical (default \code{FALSE}); if \code{TRUE}, applies
-#'   \code{\link{clean_names}} to sanitize the final column names.
+#'   \code{\link{clean_names_keep_labels}} to sanitize the final column names.
 #' @param trim Logical (default \code{TRUE}); whether to trim leading/trailing
 #'   whitespace from header cells.
 #' @param ... Additional arguments passed to \code{\link[readxl]{read_excel}}

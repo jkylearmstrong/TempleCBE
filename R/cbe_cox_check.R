@@ -7,7 +7,6 @@
 #'
 #' @param fit A fitted \code{survival::coxph} model, or a \code{cbe_cox} or
 #'   \code{cbe_cox_multi} object.
-#' @param ... Passed to \code{cox_check()}.
 #' @return An object of class \code{cbe_cox_check} containing:
 #'   \itemize{
 #'     \item \code{zph}: The \code{survival::cox.zph} object (or \code{NULL} if it could not be computed).
@@ -19,7 +18,7 @@
 #'     \item \code{zph_text}: Automated summary sentence (a single string for a univariable fit
 #'       with one term; a two-element character vector, per-term then global, for a multivariable fit).
 #'   }
-#' @seealso [cbe_cox_single()], [cbe_cox_multi()]
+#' @seealso [cox_single()], [cox_multi()]
 #' @export
 cox_check <- function(fit) {
   if (inherits(fit, "cbe_cox") || inherits(fit, "cbe_cox_multi")) {

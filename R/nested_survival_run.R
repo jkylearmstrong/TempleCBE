@@ -14,7 +14,7 @@
 #'   \item Grouped nested resampling fold construction via [rsample::nested_cv()]
 #'     and [rsample::group_vfold_cv()].
 #'   \item Inner hyperparameter tuning across outer folds via
-#'     [summarize_tune_results()] with per-task fingerprinted checkpoints.
+#'     [tune_alpha_by_split()] with per-task fingerprinted checkpoints.
 #'   \item Candidate model selection via [select_candidate_models()].
 #'   \item Outer-fold model scoring via [score_outer()] with fingerprinted
 #'     checkpoints.
@@ -92,7 +92,7 @@
 #'   has a mismatched fingerprint: `"recompute"` (default), `"overwrite"`, or
 #'   `"error"`.
 #' @param chunk_size Optional integer number of tasks per worker chunk passed to
-#'   [summarize_tune_results()] and [score_outer()] (default `NULL`).
+#'   [tune_alpha_by_split()] and [score_outer()] (default `NULL`).
 #' @param seed Integer RNG seed for reproducible fold construction, tuning, and
 #'   outer scoring (default `42L`).
 #' @param on_complete Optional callback `function(result)` invoked when the run
@@ -118,7 +118,7 @@
 #'     \item{`shard`}{Shard specification (`NULL` or `c(i, n)`).}
 #'     \item{`status`}{`"completed"` or `"shard_completed"`.}
 #'   }
-#' @seealso [validate_start_stop()], [summarize_tune_results()],
+#' @seealso [validate_start_stop()], [tune_alpha_by_split()],
 #'   [select_candidate_models()], [score_outer()], [summarize_outer_importance()],
 #'   [compare_censoring_weights()], [collect_checkpoints()], [repro_appendix()]
 #' @export
@@ -765,7 +765,7 @@ print.cbe_nested_survival_run <- function(x, ...) {
 
 #' Summarize a `cbe_nested_survival_run` Object
 #'
-#' @param object A [cbe_nested_survival_run()] object.
+#' @param object A [nested_survival_run()] object.
 #' @param ... Unused.
 #' @return A list of class `summary.cbe_nested_survival_run` with elements
 #'   `overview` (1-row tibble of run metrics), `model_summary` (per-model outer
@@ -849,7 +849,7 @@ print.summary.cbe_nested_survival_run <- function(x, ...) {
 
 #' Plot a `cbe_nested_survival_run` Object
 #'
-#' @param x,object A [cbe_nested_survival_run()] object.
+#' @param x,object A [nested_survival_run()] object.
 #' @param type Plot type:
 #'   \describe{
 #'     \item{`"importance"`}{(Default) Outer-fold coefficient importance boxplot via [plot_outer_importance()].}
@@ -935,9 +935,9 @@ autoplot.cbe_nested_survival_run <- function(object,
 
 #' Tidy a `cbe_nested_survival_run` Object
 #'
-#' Extracts a tidy tibble from a [cbe_nested_survival_run()] object.
+#' Extracts a tidy tibble from a [nested_survival_run()] object.
 #'
-#' @param x A [cbe_nested_survival_run()] object.
+#' @param x A [nested_survival_run()] object.
 #' @param component Which component table to extract:
 #'   `"importance"` (default; predictor selection frequencies and coefficient
 #'   summaries), `"outer_scores"`, `"coefficients"`, `"candidates"`, `"tuning"`,
@@ -995,7 +995,7 @@ tidy.cbe_nested_survival_run <- function(x,
 #' `print` methods emit ready-to-render Markdown), or referenced via the
 #' packaged Quarto child template returned by [repro_appendix_template()].
 #'
-#' @param run Optional [cbe_nested_survival_run()] object (or list of such
+#' @param run Optional [nested_survival_run()] object (or list of such
 #'   objects across domains). When supplied, `data`, `validation`, `run_dir`,
 #'   `seed`, and `checkpoint_fingerprints` are extracted from `run` automatically.
 #' @param data Optional data frame or named list of data frames to hash with
@@ -1022,7 +1022,7 @@ tidy.cbe_nested_survival_run <- function(x,
 #'   `seed_scheme`, `future_plan`, `data_hashes`, `validation`,
 #'   `checkpoint_fingerprints`, `render_manifest`, and `markdown`.
 #' @seealso [repro_appendix_template()], [write_run_manifest()],
-#'   [validate_start_stop()], [cbe_nested_survival_run()]
+#'   [validate_start_stop()], [nested_survival_run()]
 #' @export
 repro_appendix <- function(run = NULL,
                            data = NULL,
@@ -1478,7 +1478,7 @@ print.cbe_repro_appendix <- function(x, ...) {
 #'     \item{`failed_domains`}{Character vector of domain names that failed.}
 #'     \item{`succeeded_domains`}{Character vector of domain names that succeeded.}
 #'   }
-#' @seealso [repro_appendix()], [cbe_nested_survival_run()], [render()]
+#' @seealso [repro_appendix()], [nested_survival_run()], [render_pipeline()]
 #' @export
 domain_children <- function(domains,
                             child,
@@ -1663,11 +1663,11 @@ tidy.cbe_domain_children <- function(x, ...) {
 #' Packaged Nested Survival Report Quarto Child Template
 #'
 #' Locates and returns the file path to the packaged Quarto child report template
-#' (`nested_survival_report.qmd`) used by [cbe_domain_children()] to render a
+#' (`nested_survival_report.qmd`) used by [domain_children()] to render a
 #' complete nested survival analysis report for a domain run object.
 #'
 #' @return File path character string.
-#' @seealso [cbe_domain_children()], [cbe_nested_survival_run()]
+#' @seealso [domain_children()], [nested_survival_run()]
 #' @export
 nested_survival_report_template <- function() {
   path <- system.file("templates", "nested_survival_report.qmd", package = "TempleCBE")

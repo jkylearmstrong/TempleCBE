@@ -52,5 +52,5 @@ formats coefficients with explicit reference levels grouped by variable, and
 gathers model fit and convergence metrics.
 }
 \seealso{
-[cbe_cox_single()], [cbe_cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
+[cox_single()], [cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 }

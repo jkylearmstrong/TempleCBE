@@ -28,7 +28,7 @@
 #'
 #' All three are set operations -- which nodes/edges exist where -- not a
 #' value-level comparison of attributes on nodes/edges that happen to match.
-#' For that, run \code{\link{cbe_compare_df}} on the two \code{\link{as_database}}
+#' For that, run \code{\link{compare_df}} on the two \code{\link{as_database}}
 #' results directly (or on the two graphs themselves).
 #'
 #' @param x,y Graph objects: \code{igraph}/\code{tbl_graph} objects, or

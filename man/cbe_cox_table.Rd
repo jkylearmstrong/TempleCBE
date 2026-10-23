@@ -31,8 +31,8 @@ tbl_cox(
 )
 }
 \arguments{
-\item{x}{A \code{cbe_cox} (from [cbe_cox_single()]) or \code{cbe_cox_multi}
-(from [cbe_cox_multi()]) object.}
+\item{x}{A \code{cbe_cox} (from [cox_single()]) or \code{cbe_cox_multi}
+(from [cox_multi()]) object.}
 
 \item{sort}{One of \code{"none"} (default; original model order), \code{"magnitude"}
 (sorts by \code{abs(log(HR))} descending; reference rows, which are always exactly
@@ -53,10 +53,10 @@ A tibble formatted for presentation, with columns \code{Variable}, \code{Level},
   \code{significance = TRUE}) \code{sig}.
 }
 \description{
-Formats the \code{table} element of a [cbe_cox_single()] or [cbe_cox_multi()] result
+Formats the \code{table} element of a [cox_single()] or [cox_multi()] result
 into a presentation table, adding a log(HR) column (if not already present) and
 optional sorting and significance annotation.
 }
 \seealso{
-[cbe_cox_single()], [cbe_cox_multi()]
+[cox_single()], [cox_multi()]
 }

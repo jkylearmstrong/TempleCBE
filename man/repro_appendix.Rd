@@ -23,7 +23,7 @@ repro_appendix(
 )
 }
 \arguments{
-\item{run}{Optional [cbe_nested_survival_run()] object (or list of such
+\item{run}{Optional [nested_survival_run()] object (or list of such
 objects across domains). When supplied, `data`, `validation`, `run_dir`,
 `seed`, and `checkpoint_fingerprints` are extracted from `run` automatically.}
 
@@ -83,5 +83,5 @@ packaged Quarto child template returned by [repro_appendix_template()].
 }
 \seealso{
 [repro_appendix_template()], [write_run_manifest()],
-  [validate_start_stop()], [cbe_nested_survival_run()]
+  [validate_start_stop()], [nested_survival_run()]
 }

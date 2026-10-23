@@ -214,10 +214,10 @@ extract_xlsx_paths <- function(x, xlsx_token_re = xlsx_name_re) {
 
 #' Extract Every `.xlsx` File Name From Text
 #'
-#' @inheritParams extract_win_posix_paths
+#' @inheritParams extract_xlsx_paths
 #' @return A list the length of `x`, each element a character vector of the
 #'   `.xlsx` file names found in that string (empty when none).
-#' @seealso [extract_win_posix_paths()]
+#' @seealso [extract_xlsx_paths()]
 #' @export
 #' @examples
 #' extract_all_xlsx_tokens(c("read_excel('out/a.xlsx'); write_xlsx(df, 'b c.xlsx')", "none"))

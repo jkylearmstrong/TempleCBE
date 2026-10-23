@@ -21,8 +21,6 @@ Can be \code{NULL}, \code{"t_max"}, or \code{"survival"}.}
 
 \item{trunc}{Lower truncation threshold for censoring survival probabilities to prevent
 inflation by rare tails. Default is 0.05.}
-
-\item{...}{Passed to [survex_loss_ibs()] or [survex_loss_brier()].}
 }
 \value{
 A loss function with attributes \code{"loss_type"} (\code{"integrated"} or

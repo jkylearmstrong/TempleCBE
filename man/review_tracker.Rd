@@ -13,7 +13,7 @@ review_tracker(
 }
 \arguments{
 \item{extract}{An object of class `cbe_review_extract` from
-[cbe_docx_review_extract()], a data frame of extracted comments, or a path
+[docx_review_extract()], a data frame of extracted comments, or a path
 to a `.docx` file or directory of `.docx` files.}
 
 \item{file}{Optional output path (`.xlsx` or `.csv`) to write the tracker
@@ -25,8 +25,6 @@ tracked paragraph redlines in addition to comments.}
 
 \item{overwrite}{Logical (default `TRUE`). Overwrite `file` if it already
 exists.}
-
-\item{...}{Passed to \code{review_tracker()}.}
 }
 \value{
 A tibble of class `cbe_review_tracker` with columns `item_id`,
@@ -35,12 +33,12 @@ A tibble of class `cbe_review_tracker` with columns `item_id`,
 }
 \description{
 Constructs a review response tracker table (and optional Excel workbook or
-CSV) from the output of [cbe_docx_review_extract()]. Each comment (and
+CSV) from the output of [docx_review_extract()]. Each comment (and
 optionally each reconstructed redline) is given explicit `status`,
 `location` (page, section, table, or figure where addressed), and `rationale`
 (reason if not adopted, or summary of changes made) columns for validation
 by [validate_review_tracker()].
 }
 \seealso{
-[validate_review_tracker()], [cbe_docx_review_extract()]
+[validate_review_tracker()], [docx_review_extract()]
 }

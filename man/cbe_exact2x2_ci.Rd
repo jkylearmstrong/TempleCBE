@@ -39,13 +39,13 @@ exact2x2_ci(
 \item{midp}{Logical or \code{NULL} (default). If \code{NULL}, automatically
 defaults to \code{TRUE} if any cell count is zero.}
 
-\item{...}{Additional arguments passed to \code{\link{cbe_exact2x2}}.}
+\item{...}{Additional arguments passed to \code{\link{exact2x2}}.}
 }
 \value{
 A character string with the formatted odds ratio and confidence interval.
 }
 \description{
-Computes the odds ratio and confidence interval from \code{\link{cbe_exact2x2}}
+Computes the odds ratio and confidence interval from \code{\link{exact2x2}}
 and returns a formatted character string (e.g. \code{"0.8 (0.3, 2.1)"}).
 Useful for inline text reporting or table presentation.
 }

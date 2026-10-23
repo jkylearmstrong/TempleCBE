@@ -30,8 +30,6 @@ drop_correlated_columns(
 \item{exact}{Passed to \code{\link[caret]{findCorrelation}}; defaults to
 \code{ncol(data) < 100} (the original had a bug here referencing an
 undefined \code{x} instead of \code{data} — fixed).}
-
-\item{...}{Passed to \code{drop_correlated_columns()}.}
 }
 \value{
 Character vector (or integer indices) of columns to remove.

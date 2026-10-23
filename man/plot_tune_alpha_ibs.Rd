@@ -14,7 +14,7 @@ plot_tune_alpha_ibs(
 )
 }
 \arguments{
-\item{data}{A data frame from [summarize_tune_results()].}
+\item{data}{A data frame from [tune_alpha_by_split()].}
 
 \item{log_ibs}{Logical. When `TRUE` (default), plots `log10(IBS)`.}
 

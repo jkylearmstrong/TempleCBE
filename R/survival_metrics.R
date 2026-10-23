@@ -76,7 +76,7 @@
 #'   and comparison of prognostic classification schemes for survival data.
 #'   *Statistics in Medicine*, 18(17-18), 2529-2545.
 #' @seealso [cv_coxnet()], [nested_cv_coxnet()], [tune_over_alpha()],
-#'   [summarize_tune_results()]
+#'   [tune_alpha_by_split()]
 #' @export
 #' @examples
 #' \donttest{
@@ -1034,7 +1034,7 @@ furrr_worker_packages <- function(pkgs = c("rsample", "yardstick", "survival", "
 #' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
 #'   `NULL`) and `error` (`NULL`, or the condition).
-#' @seealso [glmnet_IBS()], [summarize_tune_results()], [clean_checkpoints()], [cv_coxnet()]
+#' @seealso [glmnet_IBS()], [tune_alpha_by_split()], [clean_checkpoints()], [cv_coxnet()]
 #' @export
 tune_over_alpha <- function(object,
                             ...,
@@ -1837,7 +1837,7 @@ with_local_seed <- function(seed, expr) {
 
 #' Collect and Merge Sharded Checkpoints From `checkpoint_dir`
 #'
-#' Merges per-task checkpoint files written by [summarize_tune_results()] or
+#' Merges per-task checkpoint files written by [tune_alpha_by_split()] or
 #' [score_outer()] across multiple machines (`shard = c(i, n)`). Verifies that
 #' all checkpoint files carry the same `checkpoint_run_fingerprint` and
 #' `seed_scheme` so results from different data, recipes, feature sets, seed
@@ -1845,13 +1845,13 @@ with_local_seed <- function(seed, expr) {
 #'
 #' @param checkpoint_dir Directory containing `.rds` checkpoint files.
 #' @param type Optional checkpoint type to collect: `"auto"` (default; inferred
-#'   from files in `checkpoint_dir`), `"tune"` ([summarize_tune_results()]), or
+#'   from files in `checkpoint_dir`), `"tune"` ([tune_alpha_by_split()]), or
 #'   `"score_outer"` ([score_outer()]).
 #' @param allow_incomplete Logical (default `FALSE`). When `FALSE`, stops with
 #'   an error if any tasks from the full run grid are missing.
 #' @return A merged tibble matching the return format of
-#'   [summarize_tune_results()] or [score_outer()].
-#' @seealso [summarize_tune_results()], [score_outer()], [clean_checkpoints()]
+#'   [tune_alpha_by_split()] or [score_outer()].
+#' @seealso [tune_alpha_by_split()], [score_outer()], [clean_checkpoints()]
 #' @export
 collect_checkpoints <- function(checkpoint_dir,
                                 type = c("auto", "tune", "score_outer"),
@@ -2025,7 +2025,7 @@ collect_checkpoints <- function(checkpoint_dir,
 #' @return A tibble of class `cbe_clean_checkpoints` with columns `file`, `path`,
 #'   `family`, `run_fingerprint`, `seed_scheme`, `mtime`, `action` (`"kept"` or
 #'   `"removed"`), and `reason`, plus attributes `n_kept` and `n_removed`.
-#' @seealso [collect_checkpoints()], [summarize_tune_results()], [score_outer()]
+#' @seealso [collect_checkpoints()], [tune_alpha_by_split()], [score_outer()]
 #' @export
 clean_checkpoints <- function(dir,
                               keep = c("current", "matching", "none"),
@@ -2209,7 +2209,7 @@ print.cbe_clean_checkpoints <- function(x, ...) {
 #' Times a small sample of model fits (`n_sample`) and projects the total
 #' wall-clock time for the full grid and per machine.
 #'
-#' @param fn Function to benchmark, such as [summarize_tune_results],
+#' @param fn Function to benchmark, such as [tune_alpha_by_split],
 #'   [score_outer], [tune_over_alpha], or [glmnet_IBS] (or its character name).
 #' @param args Named list of arguments to pass to `fn`.
 #' @param n_sample Number of sample fits to time (default `3`).
@@ -2227,7 +2227,7 @@ print.cbe_clean_checkpoints <- function(x, ...) {
 #'   (`projected_sequential_sec`, `projected_total_sec`,
 #'   `projected_per_machine_sec`, `projected_total_mins`,
 #'   `projected_per_machine_mins`).
-#' @seealso [summarize_tune_results()], [score_outer()]
+#' @seealso [tune_alpha_by_split()], [score_outer()]
 #' @export
 estimate_runtime <- function(fn,
                              args,

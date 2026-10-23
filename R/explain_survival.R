@@ -33,7 +33,7 @@
 #'   lung <- survival::lung
 #'   df <- na.omit(lung[, c("time", "status", "age", "sex")])
 #'   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
-#'   expl <- cbe_explain_survival(fit)
+#'   expl <- explain_survival(fit)
 #'   mp <- survex::model_parts(expl)
 #' }
 #' }
@@ -250,7 +250,6 @@ explain_predict_risk <- function(m, new_data) {
 #' @param max_quantile Upper quantile cutoff for evaluation time window. Default is 1.
 #' @param trunc Lower truncation threshold for censoring survival probabilities to prevent
 #'   inflation by rare tails. Default is 0.05.
-#' @param ... Passed to [survex_loss_ibs()] or [survex_loss_brier()].
 #'
 #' @return A loss function with attributes \code{"loss_type"} (\code{"integrated"} or
 #'   \code{"time-dependent"}) and \code{"loss_name"}, directly passable to \code{survex}.
@@ -527,8 +526,8 @@ explain_stack <- function(model, data = NULL, label = NULL, verbose = FALSE, ...
 #' explainers, and \code{DALEX::predict_parts(type = "shap")} for classification/regression
 #' explainers.
 #'
-#' @param explainer An explainer object produced by \code{cbe_explain_survival()},
-#'   \code{cbe_explain()}, or \code{DALEX::explain()}.
+#' @param explainer An explainer object produced by \code{explain_survival()},
+#'   \code{explain_joint()}, or \code{DALEX::explain()}.
 #' @param new_observation A 1-row data frame containing the observation to explain.
 #' @param type Character specifying the attribution type: \code{"auto"} (the default),
 #'   \code{"shap"}, or \code{"survshap"}.

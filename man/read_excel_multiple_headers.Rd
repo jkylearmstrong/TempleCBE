@@ -30,7 +30,7 @@ left-to-right across columns before vertical concatenation.}
 \item{sep}{Character string used to separate header levels. Default \code{" | "}.}
 
 \item{clean_names}{Logical (default \code{FALSE}); if \code{TRUE}, applies
-\code{\link{clean_names}} to sanitize the final column names.}
+\code{\link{clean_names_keep_labels}} to sanitize the final column names.}
 
 \item{trim}{Logical (default \code{TRUE}); whether to trim leading/trailing
 whitespace from header cells.}

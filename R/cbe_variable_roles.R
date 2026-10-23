@@ -20,7 +20,7 @@
 #' @export
 #' @examples
 #' df <- data.frame(id = 1:5, time = 1:5, sbp = c(120, 130, 115, 140, 125), death = c(0, 0, 1, 0, 1))
-#' roles <- cbe_variable_roles(df, id = "id", time = "time", outcome = "death", predictors = "sbp")
+#' roles <- variable_roles(df, id = "id", time = "time", outcome = "death", predictors = "sbp")
 variable_roles <- function(data,
                            id = NULL,
                            outcome = NULL,

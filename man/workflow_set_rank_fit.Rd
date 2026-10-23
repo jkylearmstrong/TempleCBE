@@ -51,11 +51,11 @@ results <- workflowsets::workflow_map(
   wset, "tune_grid", resamples = folds, grid = 5,
   control = tune::control_grid(save_workflow = TRUE)
 )
-best <- fit_n_rank(results, rank_metric = "rmse")
+best <- workflow_set_rank_fit(results, rank_metric = "rmse")
 best$tuned_parameters
 predict(best$model, new_data)
 }
 }
 \seealso{
-[get_model_parameters()]
+[workflow_set_params()]
 }

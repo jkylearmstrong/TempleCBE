@@ -725,7 +725,7 @@ cbe_heatmap_plot <- function(data, var1 = NULL, var2 = NULL,
 #' }
 #' where q1 is (Row 1, Col 1), q2 is (Row 1, Col 2), q3 is (Row 2, Col 1), and q4 is (Row 2, Col 2).
 #' If any cell count is zero, hypothesis testing automatically defaults to the
-#' mid-p version of Central Fisher's exact test via \code{\link{cbe_exact2x2}}.
+#' mid-p version of Central Fisher's exact test via \code{\link{exact2x2}}.
 #'
 #' @param data A data frame or a 2x2 matrix/table.
 #' @param var1 Character string of row variable column name (if \code{data} is a data frame).
@@ -887,7 +887,7 @@ cbe_four_quadrant_report <- function(data, var1 = NULL, var2 = NULL,
 #' p = pformat
 #' }
 #' If any cell count is zero, hypothesis testing automatically defaults to the
-#' mid-p version of Central Fisher's exact test via \code{\link{cbe_exact2x2}}.
+#' mid-p version of Central Fisher's exact test via \code{\link{exact2x2}}.
 #'
 #' @inheritParams cbe_contingency_plot
 #' @return A \code{ggplot} object or invisibly the contingency table.
@@ -935,7 +935,7 @@ cbe_square_plot <- function(data, var1 = NULL, var2 = NULL,
 #'   all factor and character columns are selected.
 #' @param method Association metric: \code{"cramer_v"} (Cramer's V correlation,
 #'   default) or \code{"p_value"} (\eqn{-\log_{10}(p)}). For \code{"p_value"},
-#'   2x2 pairs use the exact test of \code{\link{cbe_exact2x2}} and larger
+#'   2x2 pairs use the exact test of \code{\link{exact2x2}} and larger
 #'   tables use the asymptotic Pearson chi-squared test, so every pair is on the
 #'   same deterministic scale (a simulated Fisher p-value cannot fall below
 #'   \code{1 / (B + 1)}). Values are capped at 16.
@@ -1070,7 +1070,6 @@ plot_categorical_associations <- function(data, cols = NULL,
 #' @param cols Optional character vector of column names to include. If \code{NULL},
 #'   all factor and character columns are included.
 #' @param labels_df Optional lookup data frame with columns \code{variable} and \code{label}.
-#' @param ... Passed to [pairwise_combos()].
 #'
 #' @return A tibble with columns \code{id}, \code{var1}, \code{var2}, \code{label1}, \code{label2},
 #'   and \code{comparison_label}.

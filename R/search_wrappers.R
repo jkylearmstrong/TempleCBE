@@ -12,7 +12,6 @@
 #'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 #'   caps at available cores minus one. Falls back to sequential search when
 #'   \pkg{future}/\pkg{furrr} are not installed.
-#' @param ... Passed to \code{find_read_calls()}.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which read function matched.
@@ -52,7 +51,6 @@ find_read_calls <- function(path, include_comments = TRUE, workers = NULL) {
 #'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 #'   caps at available cores minus one. Falls back to sequential search when
 #'   \pkg{future}/\pkg{furrr} are not installed.
-#' @param ... Passed to \code{find_write_calls()}.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which write function matched.

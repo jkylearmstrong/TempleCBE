@@ -24,5 +24,5 @@ scripts, and existing output deliverables in a pipeline and writes them to
 only re-render reports whose inputs or scripts genuinely changed in content.
 }
 \seealso{
-[is_stale()], [get_render_plan()], [render()]
+[is_stale()], [get_render_plan()], [render_pipeline()]
 }

@@ -7,7 +7,7 @@
 \method{summary}{cbe_nested_survival_run}(object, ...)
 }
 \arguments{
-\item{object}{A [cbe_nested_survival_run()] object.}
+\item{object}{A [nested_survival_run()] object.}
 
 \item{...}{Unused.}
 }

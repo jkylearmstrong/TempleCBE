@@ -109,7 +109,6 @@ corr_test_all <- function(data,
 #' @param exact Passed to \code{\link[caret]{findCorrelation}}; defaults to
 #'   \code{ncol(data) < 100} (the original had a bug here referencing an
 #'   undefined \code{x} instead of \code{data} — fixed).
-#' @param ... Passed to \code{drop_correlated_columns()}.
 #' @return Character vector (or integer indices) of columns to remove.
 #' @seealso [correlated_pairs_table()], [corr_test_all()], [plot_corr_scatter()]
 #' @export
@@ -152,7 +151,7 @@ drop_correlated_columns <- function(data,
 #' Evaluates pairwise correlation between all numeric columns in `data` and returns
 #' a tidy table of variable pairs exceeding a correlation threshold.
 #'
-#' Unlike [find_correlation()], which returns column names or indices to *drop* for multicollinearity,
+#' Unlike [drop_correlated_columns()], which returns column names or indices to *drop* for multicollinearity,
 #' `correlated_pairs_table()` preserves and reports the pairwise correlation metrics, absolute
 #' magnitude, and p-values for all pairs above `cutoff`.
 #'
@@ -163,7 +162,7 @@ drop_correlated_columns <- function(data,
 #' @param sort Sorting order: `"abs_desc"` (default, descending absolute correlation),
 #'   `"desc"` (descending raw correlation), `"p_value"` (ascending p-value), or `"none"`.
 #' @return A tibble with columns `var1`, `var2`, `r`, `abs_r`, `p_value`.
-#' @seealso [find_correlation()], [corr_test_all()], [plot_corr_scatter()]
+#' @seealso [drop_correlated_columns()], [corr_test_all()], [plot_corr_scatter()]
 #' @export
 #' @examples
 #' correlated_pairs_table(mtcars, cutoff = 0.7)

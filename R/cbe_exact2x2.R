@@ -56,11 +56,11 @@
 #' # 2x2 table with a zero cell: automatically triggers mid-p adjustment
 #' tab_zero <- matrix(c(0, 10, 5, 15), nrow = 2,
 #'                    dimnames = list(c("Treated", "Control"), c("Event", "No Event")))
-#' cbe_exact2x2(tab_zero)
+#' exact2x2(tab_zero)
 #'
 #' # 2x2 table without zero cells: standard Central Fisher's exact test
 #' tab_nonzero <- matrix(c(12, 8, 5, 15), nrow = 2)
-#' cbe_exact2x2(tab_nonzero)
+#' exact2x2(tab_nonzero)
 exact2x2 <- function(x, y = NULL, data = NULL, variable = NULL, by = NULL,
                          midp = NULL, conf.level = 0.95,
                          alternative = "two.sided", tsmethod = "central",
@@ -147,7 +147,7 @@ drop_empty_margins <- function(tab) {
 
 #' Format Exact 2x2 Odds Ratio and Confidence Interval
 #'
-#' Computes the odds ratio and confidence interval from \code{\link{cbe_exact2x2}}
+#' Computes the odds ratio and confidence interval from \code{\link{exact2x2}}
 #' and returns a formatted character string (e.g. \code{"0.8 (0.3, 2.1)"}).
 #' Useful for inline text reporting or table presentation.
 #'
@@ -158,7 +158,7 @@ drop_empty_margins <- function(tab) {
 #' @param conf.level Confidence level (default 0.95).
 #' @param midp Logical or \code{NULL} (default). If \code{NULL}, automatically
 #'   defaults to \code{TRUE} if any cell count is zero.
-#' @param ... Additional arguments passed to \code{\link{cbe_exact2x2}}.
+#' @param ... Additional arguments passed to \code{\link{exact2x2}}.
 #'
 #' @return A character string with the formatted odds ratio and confidence interval.
 #' @export

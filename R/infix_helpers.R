@@ -4,11 +4,10 @@
 #' and matching infix operators.
 #'
 #' @param x,vector A vector to test.
-#' @param table Vector of values to test against (for \code{notin()}/\code{\%notin\%}/\code{\%!in\%}).
+#' @param table Vector of values to test against (for \code{notin()}/\code{\%!in\%}).
 #' @param pattern Pattern to match (for the \code{like} family).
 #' @param ignore.case,fixed,perl Logical flags controlling how \code{pattern}
 #'   is matched, as in \code{\link{grepl}}.
-#' @param ... Passed to \code{match_like()}.
 #' @return A logical vector.
 #' @name infix_helpers
 NULL

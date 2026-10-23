@@ -24,7 +24,7 @@ all factor and character columns are selected.}
 
 \item{method}{Association metric: \code{"cramer_v"} (Cramer's V correlation,
 default) or \code{"p_value"} (\eqn{-\log_{10}(p)}). For \code{"p_value"},
-2x2 pairs use the exact test of \code{\link{cbe_exact2x2}} and larger
+2x2 pairs use the exact test of \code{\link{exact2x2}} and larger
 tables use the asymptotic Pearson chi-squared test, so every pair is on the
 same deterministic scale (a simulated Fisher p-value cannot fall below
 \code{1 / (B + 1)}). Values are capped at 16.}

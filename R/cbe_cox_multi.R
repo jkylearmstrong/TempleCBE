@@ -33,7 +33,7 @@ NULL
 #'     \item \code{features}: Character vector of feature names used.
 #'     \item \code{var_labels}: Named character vector mapping feature names to labels.
 #'   }
-#' @seealso [cbe_cox_single()], [cbe_cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
+#' @seealso [cox_single()], [cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 #' @export
 cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL, conf_level = 0.95, ...) {
   if (is.null(formula) && is.null(features)) {

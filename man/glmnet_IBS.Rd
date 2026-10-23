@@ -156,5 +156,5 @@ Graf E, Schmoor C, Sauerbrei W, Schumacher M (1999). Assessment
 }
 \seealso{
 [cv_coxnet()], [nested_cv_coxnet()], [tune_over_alpha()],
-  [summarize_tune_results()]
+  [tune_alpha_by_split()]
 }

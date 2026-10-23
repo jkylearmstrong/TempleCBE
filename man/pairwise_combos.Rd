@@ -13,8 +13,6 @@ pairwise_combos(data, cols = NULL, labels_df = NULL)
 all factor and character columns are included.}
 
 \item{labels_df}{Optional lookup data frame with columns \code{variable} and \code{label}.}
-
-\item{...}{Passed to [pairwise_combos()].}
 }
 \value{
 A tibble with columns \code{id}, \code{var1}, \code{var2}, \code{label1}, \code{label2},

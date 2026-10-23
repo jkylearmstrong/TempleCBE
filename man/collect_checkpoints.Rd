@@ -14,7 +14,7 @@ collect_checkpoints(
 \item{checkpoint_dir}{Directory containing `.rds` checkpoint files.}
 
 \item{type}{Optional checkpoint type to collect: `"auto"` (default; inferred
-from files in `checkpoint_dir`), `"tune"` ([summarize_tune_results()]), or
+from files in `checkpoint_dir`), `"tune"` ([tune_alpha_by_split()]), or
 `"score_outer"` ([score_outer()]).}
 
 \item{allow_incomplete}{Logical (default `FALSE`). When `FALSE`, stops with
@@ -22,15 +22,15 @@ an error if any tasks from the full run grid are missing.}
 }
 \value{
 A merged tibble matching the return format of
-  [summarize_tune_results()] or [score_outer()].
+  [tune_alpha_by_split()] or [score_outer()].
 }
 \description{
-Merges per-task checkpoint files written by [summarize_tune_results()] or
+Merges per-task checkpoint files written by [tune_alpha_by_split()] or
 [score_outer()] across multiple machines (`shard = c(i, n)`). Verifies that
 all checkpoint files carry the same `checkpoint_run_fingerprint` and
 `seed_scheme` so results from different data, recipes, feature sets, seed
 schemes, or settings cannot be combined by mistake.
 }
 \seealso{
-[summarize_tune_results()], [score_outer()], [clean_checkpoints()]
+[tune_alpha_by_split()], [score_outer()], [clean_checkpoints()]
 }

@@ -12,8 +12,6 @@ Available files include `"cbe_macros.sas"`, `"cbe_brier_score.sas"`,
 `"cbe_cox_phreg.sas"`, `"cbe_counting_process.sas"`, `"coxtvc.sas"`,
 `"cpdata.sas"`, `"benchmark_brier_lung.sas"`, `"benchmark_brier_lung_full.sas"`,
 and `"example_85_7.sas"`.}
-
-\item{...}{Passed to [sas_macro_path()].}
 }
 \value{
 Absolute path to the requested `.sas` file.

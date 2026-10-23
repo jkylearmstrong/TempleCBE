@@ -40,7 +40,7 @@
 #'     a character variable of different lengths as a differing attribute).
 #'   \item Only absolute differences. \code{METHOD=PERCENT} and \code{RELATIVE}, \code{BY}
 #'     group reports and special missing values are not part of the benchmark.
-#'   \item \code{cbe_compare_df()} needs no sorted data; \code{PROC COMPARE} does (the
+#'   \item \code{compare_df()} needs no sorted data; \code{PROC COMPARE} does (the
 #'     benchmark sorts the COMPARE data set).
 #' }
 #'
@@ -63,7 +63,7 @@
 #'   deparsed from the \code{compare} argument.
 #' @param max_diffs Maximum number of discrepant rows to store per variable (default: 100).
 #' @param ... Passed on to methods (and, for the \code{cbe_database} method,
-#'   on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolerance}).
+#'   on to the per-table \code{compare_df()} calls -- e.g. \code{by}/\code{tolerance}).
 #'
 #' @return An S3 object of class \code{"cbe_compare_df"} containing (or, for a
 #'   \code{\link[=as_database]{cbe_database}}/graph comparison, a \code{"cbe_compare_database"}
@@ -80,7 +80,7 @@
 #' @examples
 #' df1 <- data.frame(id = 1:5, x = c(1, 2, 3, 4, 5), y = c("a", "b", "c", "d", "e"))
 #' df2 <- data.frame(id = 1:5, x = c(1, 2, 3.0001, 4, 5), y = c("a", "b", "c", "d", "f"))
-#' cmp <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-3)
+#' cmp <- compare_df(df1, df2, by = "id", tolerance = 1e-3)
 #' print(cmp)
 #' generics::tidy(cmp)
 #' @export
@@ -469,7 +469,7 @@ tidy.cbe_compare_df <- function(x, ...) {
 #' 2-set Venn diagrams of observation/key overlap or variable concordance (leveraging
 #' \pkg{ggVennDiagram} when installed), or discrepancy bar charts across variables.
 #'
-#' @param object A \code{\link{cbe_compare_df}} object.
+#' @param object A \code{\link{compare_df}} object.
 #' @param type Character string specifying the plot type: \code{"observations"} (default; Venn of rows/keys),
 #'   \code{"variables"} (Venn of common/unique columns), or \code{"discrepancies"} (bar chart of value differences).
 #' @param ... Additional arguments passed to methods or \pkg{ggVennDiagram}.

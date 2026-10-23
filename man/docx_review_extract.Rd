@@ -79,8 +79,6 @@ defaults.}
 \code{"collaborative"}; see \code{\link{review_config}}. In collaborative
 mode every fork workbook also carries the other fork reviewers' sign-off
 and note columns (read-only: only a reviewer's own columns are merged back).}
-
-\item{...}{Passed to \code{docx_review_extract()}.}
 }
 \value{
 An object of class `cbe_review_extract`, which is a named list containing:

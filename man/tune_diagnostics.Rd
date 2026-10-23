@@ -5,6 +5,6 @@
 \title{Tuning Diagnostics and Visualization Family}
 \description{
 A comprehensive family of diagnostic plots, summary tables, and mixed-effects
-models for evaluating hyperparameter tuning results from [summarize_tune_results()]
+models for evaluating hyperparameter tuning results from [tune_alpha_by_split()]
 and [tune_over_alpha()].
 }

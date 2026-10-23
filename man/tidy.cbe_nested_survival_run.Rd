@@ -12,7 +12,7 @@
 )
 }
 \arguments{
-\item{x}{A [cbe_nested_survival_run()] object.}
+\item{x}{A [nested_survival_run()] object.}
 
 \item{component}{Which component table to extract:
 `"importance"` (default; predictor selection frequencies and coefficient
@@ -25,5 +25,5 @@ summaries), `"outer_scores"`, `"coefficients"`, `"candidates"`, `"tuning"`,
 A tibble.
 }
 \description{
-Extracts a tidy tibble from a [cbe_nested_survival_run()] object.
+Extracts a tidy tibble from a [nested_survival_run()] object.
 }

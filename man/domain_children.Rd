@@ -61,5 +61,5 @@ environment (if a named argument has the same length as `domains` or is
 named by `domains`, each domain receives its corresponding element).
 }
 \seealso{
-[repro_appendix()], [cbe_nested_survival_run()], [render()]
+[repro_appendix()], [nested_survival_run()], [render_pipeline()]
 }

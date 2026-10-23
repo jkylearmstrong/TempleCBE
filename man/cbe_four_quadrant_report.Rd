@@ -57,7 +57,7 @@ p = pformat
 }
 where q1 is (Row 1, Col 1), q2 is (Row 1, Col 2), q3 is (Row 2, Col 1), and q4 is (Row 2, Col 2).
 If any cell count is zero, hypothesis testing automatically defaults to the
-mid-p version of Central Fisher's exact test via \code{\link{cbe_exact2x2}}.
+mid-p version of Central Fisher's exact test via \code{\link{exact2x2}}.
 }
 \examples{
 tab <- matrix(c(14, 6, 4, 16), nrow = 2,

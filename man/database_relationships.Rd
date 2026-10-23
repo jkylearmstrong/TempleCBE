@@ -30,7 +30,7 @@ shared keys are automatically detected across datasets.}
 
 \item{x}{A \code{cbe_database_relationships} object.}
 
-\item{...}{Additional arguments passed to \code{\link{cbe_compare_df}}.}
+\item{...}{Additional arguments passed to \code{\link{compare_df}}.}
 
 \item{id_col}{Character string specifying the identifier column to check.}
 
@@ -38,10 +38,10 @@ shared keys are automatically detected across datasets.}
 checks which IDs in other tables are absent from the master cohort table.}
 
 \item{compare}{Logical; if \code{TRUE} and \code{master_dataset} is supplied,
-runs \code{\link{cbe_compare_df}} on overlapping variables between the master dataset
+runs \code{\link{compare_df}} on overlapping variables between the master dataset
 and child datasets, attaching the comparison results.}
 
-\item{tolerance}{Numeric comparison tolerance passed to \code{\link{cbe_compare_df}}.}
+\item{tolerance}{Numeric comparison tolerance passed to \code{\link{compare_df}}.}
 }
 \value{
 A tibble summarizing dataset pairs, shared key columns, record counts,

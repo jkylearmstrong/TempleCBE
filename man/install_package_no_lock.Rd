@@ -8,8 +8,6 @@ install_package_no_lock(packages)
 }
 \arguments{
 \item{packages}{Character vector of package name(s) to install.}
-
-\item{...}{Passed to \code{install_package_no_lock()}.}
 }
 \value{
 Invisibly, \code{NULL} (as per \code{\link[utils]{install.packages}}).

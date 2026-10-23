@@ -59,7 +59,7 @@ if (requireNamespace("survex", quietly = TRUE) && requireNamespace("survival", q
   lung <- survival::lung
   df <- na.omit(lung[, c("time", "status", "age", "sex")])
   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
-  expl <- cbe_explain_survival(fit)
+  expl <- explain_survival(fit)
   mp <- survex::model_parts(expl)
 }
 }

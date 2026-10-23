@@ -14,7 +14,7 @@ select_candidate_models(
 }
 \arguments{
 \item{tune_results}{A data frame containing tuning results with at least `alpha`
-and `IBS` columns (e.g. from [summarize_tune_results()]).}
+and `IBS` columns (e.g. from [tune_alpha_by_split()]).}
 
 \item{formulas}{Character vector of formulas, list of formula objects, or a single
 formula to evaluate.}
@@ -33,11 +33,11 @@ top `ntile` of individual tune result rows, e.g. `ntile(IBS, 5) == 1`) or `"alph
 A tibble with columns `model`, `alpha`, and `formula`.
 }
 \description{
-Takes results from [summarize_tune_results()] or [tune_over_alpha()], identifies
+Takes results from [tune_alpha_by_split()] or [tune_over_alpha()], identifies
 the best-performing `alpha` values (e.g. within the top `ntile` of integrated Brier
 scores), and crosses them with candidate formulas to construct an outer evaluation
 grid.
 }
 \seealso{
-[score_outer()], [compare_censoring_weights()], [summarize_tune_results()]
+[score_outer()], [compare_censoring_weights()], [tune_alpha_by_split()]
 }

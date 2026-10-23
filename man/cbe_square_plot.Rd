@@ -73,5 +73,5 @@ q3 | q4
 p = pformat
 }
 If any cell count is zero, hypothesis testing automatically defaults to the
-mid-p version of Central Fisher's exact test via \code{\link{cbe_exact2x2}}.
+mid-p version of Central Fisher's exact test via \code{\link{exact2x2}}.
 }

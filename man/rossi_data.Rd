@@ -40,5 +40,5 @@ df <- rossi_data()
 head(df[, 1:10])
 }
 \seealso{
-[cbe_sas_macro_path()], [run_sas_script()]
+[sas_macro_path()], [run_sas_script()]
 }

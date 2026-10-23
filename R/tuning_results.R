@@ -10,7 +10,6 @@
 #' @param rank_metric Name of the metric to rank by, e.g. `"rmse"` or
 #'   `"brier_survival_integrated"`.
 #' @param .rank Position to return; 1 (default) is the best workflow.
-#' @param ... Additional arguments passed to [workflow_set_params()].
 #' @return A one-row tibble with `wflow_id`, `preproc`, `model`, and one column
 #'   per tuning parameter.
 #' @seealso [workflow_set_rank_fit()] to also fit the chosen configuration.
@@ -59,7 +58,7 @@ workflow_set_params <- function(workflowset_results, rank_metric, .rank = 1) {
 #'   parameters, and its [workflowsets::rank_results()] row (`.config`,
 #'   `.metric`, `mean`, `std_err`, `n`, `rank`, and `overall_rank` when
 #'   `group_wflow = TRUE`).
-#' @seealso [get_model_parameters()]
+#' @seealso [workflow_set_params()]
 #' @export
 #' @examples
 #' \dontrun{
@@ -67,7 +66,7 @@ workflow_set_params <- function(workflowset_results, rank_metric, .rank = 1) {
 #'   wset, "tune_grid", resamples = folds, grid = 5,
 #'   control = tune::control_grid(save_workflow = TRUE)
 #' )
-#' best <- fit_n_rank(results, rank_metric = "rmse")
+#' best <- workflow_set_rank_fit(results, rank_metric = "rmse")
 #' best$tuned_parameters
 #' predict(best$model, new_data)
 #' }

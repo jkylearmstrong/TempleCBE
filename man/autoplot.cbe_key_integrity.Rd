@@ -7,7 +7,7 @@
 \method{autoplot}{cbe_key_integrity}(object, ...)
 }
 \arguments{
-\item{object}{A \code{\link{cbe_check_key_integrity}} object.}
+\item{object}{A \code{\link{check_key_integrity}} object.}
 
 \item{...}{Additional arguments passed to methods.}
 }

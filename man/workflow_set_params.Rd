@@ -14,8 +14,6 @@ workflow_set_params(workflowset_results, rank_metric, .rank = 1)
 `"brier_survival_integrated"`.}
 
 \item{.rank}{Position to return; 1 (default) is the best workflow.}
-
-\item{...}{Additional arguments passed to [workflow_set_params()].}
 }
 \value{
 A one-row tibble with `wflow_id`, `preproc`, `model`, and one column

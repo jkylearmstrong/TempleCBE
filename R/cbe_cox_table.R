@@ -1,11 +1,11 @@
 #' Presentation-Ready Cox Coefficient Table
 #'
-#' Formats the \code{table} element of a [cbe_cox_single()] or [cbe_cox_multi()] result
+#' Formats the \code{table} element of a [cox_single()] or [cox_multi()] result
 #' into a presentation table, adding a log(HR) column (if not already present) and
 #' optional sorting and significance annotation.
 #'
-#' @param x A \code{cbe_cox} (from [cbe_cox_single()]) or \code{cbe_cox_multi}
-#'   (from [cbe_cox_multi()]) object.
+#' @param x A \code{cbe_cox} (from [cox_single()]) or \code{cbe_cox_multi}
+#'   (from [cox_multi()]) object.
 #' @param sort One of \code{"none"} (default; original model order), \code{"magnitude"}
 #'   (sorts by \code{abs(log(HR))} descending; reference rows, which are always exactly
 #'   0, sort last), or \code{"pvalue"} (sorts by p-value ascending; reference rows, which
@@ -18,7 +18,7 @@
 #' @return A tibble formatted for presentation, with columns \code{Variable}, \code{Level},
 #'   \code{Role}, \code{HR}, \code{log(HR)}, \code{95\% CI}, \code{p.value}, and (if
 #'   \code{significance = TRUE}) \code{sig}.
-#' @seealso [cbe_cox_single()], [cbe_cox_multi()]
+#' @seealso [cox_single()], [cox_multi()]
 #' @export
 cbe_cox_table <- function(x,
                           sort = c("none", "magnitude", "pvalue"),

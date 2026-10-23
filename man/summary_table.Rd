@@ -22,8 +22,6 @@ summary_table(
 \item{data.output}{should the data be output, TRUE or FALSE, default is TRUE}
 
 \item{table.output}{should the table be output, TRUE or FALSE, default is FALSE}
-
-\item{...}{Passed to [summary_table()].}
 }
 \value{
 either a dataframe or readable table
@@ -34,10 +32,10 @@ Summary Table Function
 \examples{
 mtcars |> 
   dplyr::group_by(cyl) |> 
-  my_summary_table(mpg)
+  summary_table(mpg)
   
 mtcars |> 
   dplyr::group_by(cyl) |> 
-  my_summary_table(mpg, table.output = TRUE)
+  summary_table(mpg, table.output = TRUE)
 
 }

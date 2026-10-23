@@ -92,9 +92,9 @@ binary variable with an empty extra level is still tested as 2x2.
 # 2x2 table with a zero cell: automatically triggers mid-p adjustment
 tab_zero <- matrix(c(0, 10, 5, 15), nrow = 2,
                    dimnames = list(c("Treated", "Control"), c("Event", "No Event")))
-cbe_exact2x2(tab_zero)
+exact2x2(tab_zero)
 
 # 2x2 table without zero cells: standard Central Fisher's exact test
 tab_nonzero <- matrix(c(12, 8, 5, 15), nrow = 2)
-cbe_exact2x2(tab_nonzero)
+exact2x2(tab_nonzero)
 }

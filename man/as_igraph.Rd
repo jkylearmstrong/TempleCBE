@@ -14,7 +14,7 @@ as_igraph(x, ...)
 }
 \arguments{
 \item{x}{list of FilePath, FileUses, and FileOutputs objects, or another
-object with an \code{as_igraph} method (e.g. \code{\link{cbe_database_relationships}}).}
+object with an \code{as_igraph} method (e.g. \code{\link{database_relationships}}).}
 
 \item{...}{Additional arguments passed to methods.}
 

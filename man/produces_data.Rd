@@ -8,8 +8,6 @@ produces_data(obj)
 }
 \arguments{
 \item{obj}{A FileOutputs object.}
-
-\item{...}{Passed to [produces_data()].}
 }
 \value{
 Logical.

@@ -18,7 +18,6 @@ significance_stars <- function(p_value) {
 #' Is a Vector Composed of Integer-Valued Numbers
 #'
 #' @param col A numeric vector.
-#' @param ... Passed to [is_integer_valued()].
 #' @return A single logical.
 #' @export
 #' @examples

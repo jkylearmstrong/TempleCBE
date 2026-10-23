@@ -12,8 +12,8 @@ predict_parts_shap(
 )
 }
 \arguments{
-\item{explainer}{An explainer object produced by \code{cbe_explain_survival()},
-\code{cbe_explain()}, or \code{DALEX::explain()}.}
+\item{explainer}{An explainer object produced by \code{explain_survival()},
+\code{explain_joint()}, or \code{DALEX::explain()}.}
 
 \item{new_observation}{A 1-row data frame containing the observation to explain.}
 

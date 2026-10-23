@@ -15,7 +15,7 @@ estimate_runtime(
 )
 }
 \arguments{
-\item{fn}{Function to benchmark, such as [summarize_tune_results],
+\item{fn}{Function to benchmark, such as [tune_alpha_by_split],
 [score_outer], [tune_over_alpha], or [glmnet_IBS] (or its character name).}
 
 \item{args}{Named list of arguments to pass to `fn`.}
@@ -47,5 +47,5 @@ Times a small sample of model fits (`n_sample`) and projects the total
 wall-clock time for the full grid and per machine.
 }
 \seealso{
-[summarize_tune_results()], [score_outer()]
+[tune_alpha_by_split()], [score_outer()]
 }

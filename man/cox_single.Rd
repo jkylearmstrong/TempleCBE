@@ -40,6 +40,6 @@ hazards assumption, formats coefficients with explicit reference levels,
 generates plain-language clinical interpretations, and gathers model fit metrics.
 }
 \seealso{
-[cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
+[cox_multi()], [cox_check()], [km_single()], [cbe_cox_table()],
   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 }

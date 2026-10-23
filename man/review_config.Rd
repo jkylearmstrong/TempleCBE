@@ -72,7 +72,7 @@ Use \code{character(0)} to clear.}
 
 \item{input_dirs}{Character vector of folders (relative to the working
 directory or \code{TEMPLECBE_ANALYSIS_ROOT}, or absolute) in which
-\code{\link{cbe_docx_review_extract}} looks, in order, for \code{.docx}
+\code{\link{docx_review_extract}} looks, in order, for \code{.docx}
 files when \code{input_dir} is not given. Defaults to none, so the working
 directory is used. Use \code{character(0)} to clear.}
 
@@ -96,7 +96,7 @@ A list containing the current configuration options.
 }
 \description{
 Decouples project-specific reviewer identities from the review-tracking
-mechanics in \code{\link{cbe_docx_review_extract}}, mirroring how
+mechanics in \code{\link{docx_review_extract}}, mirroring how
 \code{\link{pipeline_config}} decouples study name and stage labels from
 the core compute-graph classes: the number and names of reviewers are
 data supplied by the calling project, not hardcoded here.

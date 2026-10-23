@@ -49,14 +49,14 @@
 #'   of the event times in the full data.
 #' @param importance Method for evaluating feature importance on the outer analysis sets.
 #'   Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with MiniPatch ensembles).
-#'   [cbe_loco_mp_coxnet()] is run on each outer analysis set at the `mixture`
+#'   [loco_mp_coxnet()] is run on each outer analysis set at the `mixture`
 #'   and penalty chosen there, with the same glmnet arguments (see `...`). It
 #'   draws its minipatches by subject, so `group` does not apply to it, and a
 #'   warning says so when `group` is set.
 #' @param ... Further arguments passed to [glmnet::glmnet()], such as `cox.ties`,
 #'   `standardize`, `penalty.factor`, or `nlambda`. With `importance = "loco_mp"`
-#'   they are passed to [cbe_loco_mp_coxnet()] as well, so the minipatch models
-#'   are fit like the tuned ones; arguments that [cbe_loco_mp_coxnet()] sets
+#'   they are passed to [loco_mp_coxnet()] as well, so the minipatch models
+#'   are fit like the tuned ones; arguments that [loco_mp_coxnet()] sets
 #'   itself, such as `B`, are not forwarded.
 #' @param check_subject_overlap If `TRUE` (the default), stop when an outer
 #'   split, or an inner resample, puts the same subject (or, when `group` is
@@ -76,7 +76,7 @@
 #'   cross-validation's summarized metrics). If `importance = "loco_mp"`, includes
 #'   `.importance` with tidy LOCO-MP statistical inference. `tune::collect_metrics()`
 #'   averages `.metrics` over outer splits.
-#' @seealso [cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()], [tune_race_survival()]
+#' @seealso [cv_coxnet()], [coxnet()], [loco_mp_coxnet()], [tune_race_survival()]
 #' @export
 #' @examples
 #' \donttest{
