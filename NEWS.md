@@ -1,3 +1,9 @@
+# TempleCBE 0.6.4.9000
+
+## Word documents
+
+* New `extract_docx_qa()` reads a Word document of investigator questions and the answers written for them and returns one row per question with its answer and the report files the answer cites (`question_pattern`, `citation_pattern`). With an index of the deliverables (`index_data`) it also builds Excel `HYPERLINK` formulas for the citations and lists those the index does not know. It reads the document body with `xml2`, so there is no new dependency, and leaves Word comments and tracked changes to `docx_review_extract()`. Requested for the downstream Q&A tracking sheets.
+
 # TempleCBE 0.6.4
 
 ## `clean_publish()` pre-push hook
