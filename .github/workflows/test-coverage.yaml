@@ -54,6 +54,7 @@ jobs:
           needs: check
 
       - name: Environment report (what the tests can use)
+        continue-on-error: true
         run: |
           d <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests"))
           pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("[\r\n]+", " ", d), ",")))))

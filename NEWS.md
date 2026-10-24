@@ -1,4 +1,4 @@
-# TempleCBE 0.6.4.9000
+# TempleCBE 0.6.5.9000
 
 ## Removed (breaking): the deprecated wrappers announced for 0.7.0
 
@@ -84,6 +84,20 @@
 
 
 
+# TempleCBE 0.6.5
+
+This is the last release that still contains the deprecated wrappers (they warn; `find_deprecated_calls()` finds them in a project). They are removed in 0.7.0.
+
+## Word documents
+
+* New `extract_docx_qa()` reads a Word document of investigator questions and the answers written for them and returns one row per question with its answer and the report files the answer cites (`question_pattern`, `citation_pattern`). With an index of the deliverables (`index_data`) it also builds Excel `HYPERLINK` formulas for the citations and lists those the index does not know. It reads the document body with `xml2`, so there is no new dependency, and leaves Word comments and the authors of tracked changes to `docx_review_extract()` (insertions are read as text, deletions are not). Requested for the downstream Q&A tracking sheets.
+
+## Rendering
+
+* New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
+
+* New `interactive_render_pipeline()`: a menu in front of `render_pipeline()` for an interactive session. It lists the documents in render order and renders the stale ones, everything again, everything up to one document, or one document only (or nothing). It refuses to run non-interactively. Requested for the downstream render scripts.
+
 ## Data preparation
 
 * New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.
@@ -98,6 +112,7 @@
 * The `rossi_nested_survival` vignette sets a seed before drawing its nested folds. Its folds were random, and a build of 2026-10-23 drew one without events ("The outcome has no events"), which failed `R CMD check` on a pull request that did not touch it.
 
 * **The Linux x86-64 CI jobs use the main Ubuntu package mirror.** On 2026-10-23 `azure.archive.ubuntu.com`, the mirror the GitHub-hosted runners are configured with, was so slow that installing R and the system libraries took 20 to 40 minutes and the jobs were cancelled at their limits before any test ran. A first step pointed apt at `archive.ubuntu.com` (the jobs that run in the CI image below need no such step).
+* The weekly rebuild of the CI image changes a build argument (`CRAN_WEEK`) so that the layer with the CRAN packages is rebuilt instead of served from the cache.
 * **A CI base image** (`Dockerfile.ci`, built by `.github/workflows/ci-image.yml` for amd64 and arm64 and published as `ghcr.io/<owner>/templecbe-ci`): R, pandoc, git and every package TempleCBE Imports or Suggests, as the newest CRAN binaries. It is rebuilt every Monday and when `DESCRIPTION` or the Dockerfile changes. The Linux x86-64 jobs of `R-CMD-check` (including the optional tests) and `test-coverage` run in it (the image also carries `jq`, `unzip`, `wget` and `xz-utils`, which the r-lib actions call; the first image lacked `jq`), so they stop reinstalling R and all dependencies on every run, which took 15 to 40 minutes whenever the package cache was cold.
 
 * **The Docker layer cache moved from the GitHub Actions cache to the registry** (`<image>:buildcache-<platform>`, written only by a publishing run). With `mode=max` each Docker run wrote about 5 GB to the Actions cache, which is limited to 10 GB per repository; it held 135 Docker entries and no R package cache, so every `R-CMD-check` run reinstalled R and all packages and the master run of 2026-10-23 reached the 60-minute limit before its check started.

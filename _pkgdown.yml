@@ -307,6 +307,7 @@ reference:
       - rossi_data
       - render_pipeline
       - render_variants
+      - render_parameterized_pair
       - zip_reports
       - write_run_manifest
       - repro_appendix
@@ -340,6 +341,7 @@ reference:
       - produces_data
       - create_qmd_renderer
       - get_render_plan
+      - interactive_render_pipeline
       - is_stale
       - record_pipeline_hashes
       - save_pipeline
@@ -484,6 +486,7 @@ reference:
       - audit_render_parity
       - extract_yaml_formats
       - docx_review_extract
+      - extract_docx_qa
       - review_tracker
       - validate_review_tracker
       - review_config
