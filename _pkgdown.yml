@@ -315,6 +315,7 @@ reference:
       - render
       - render_me
       - render_variants
+      - render_parameterized_pair
       - zip_reports
       - write_run_manifest
       - repro_appendix
@@ -348,6 +349,7 @@ reference:
       - controls_datasets
       - create_qmd_renderer
       - get_render_plan
+      - interactive_render_pipeline
       - is_stale
       - record_pipeline_hashes
       - save_pipeline
@@ -492,6 +494,7 @@ reference:
       - audit_render_parity
       - extract_yaml_formats
       - cbe_docx_review_extract
+      - extract_docx_qa
       - cbe_review_tracker
       - validate_review_tracker
       - review_config
