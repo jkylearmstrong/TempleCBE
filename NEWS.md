@@ -1,4 +1,4 @@
-# TempleCBE 0.6.5.9000
+# TempleCBE 0.7.0
 
 ## Removed (breaking): the deprecated wrappers announced for 0.7.0
 
