@@ -121,7 +121,7 @@ compare_imputation_rse <- function(results_df,
     )
   })
   res <- dplyr::bind_rows(pieces)
-  uneven <- unique(res$variable[ave(res$n, res$variable, FUN = function(z) length(unique(z))) > 1L])
+  uneven <- unique(res$variable[stats::ave(res$n, res$variable, FUN = function(z) length(unique(z))) > 1L])
   if (length(uneven)) {
     warning("The methods were scored on different numbers of cells for: ", paste(uneven, collapse = ", "),
             ". Their RSEs are only comparable on the same cells.", call. = FALSE)
