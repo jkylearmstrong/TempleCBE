@@ -1,3 +1,18 @@
+# TempleCBE 0.7.4
+
+Eight downstream requests (GAP-01 to GAP-08). Nothing is removed or renamed.
+
+## New
+
+* **`sample_candidate_formulas_adaptive()`**: second-stage formula search. Keeps the best `top_quantile` of an earlier tuning run, takes the size range (25th percentile to median of the winners' term counts) and term weights (share among winners) from them, optionally drops terms with an unfavourable univariate HR/OR (`effects`), and draws through `sample_candidate_formulas()`.
+* **`tbl_table_one()`**: stratified baseline table (overall, per stratum, omnibus p-value) on `gtsummary`; mean (SD) or median [Q1, Q3] for `non_normal_vars`, n (%) for categorical.
+* **`plot_imputed_vs_observed()`**: per-fold boxplots and/or density overlays of observed versus imputed values.
+* **`plot_comissingness_matrix()`**: correlation of missingness indicators, optionally clustered, to tell block failure from scattered missingness.
+* **`plot_marginal_effect_contrast()`**: raw-unit and normalized estimates of `glm_single()` / `lmm_single()` side by side, or as their ratio.
+* **`render_parameterized_study()`**: `render_parameterized_pair()` for a whole folder, one output folder per parameter set.
+* **`invalidate_downstream_checkpoints()`**: removes only the checkpoints of the nodes downstream of a changed node of a pipeline graph (`dry_run` available).
+* **`expand_child_template()`**: `knit_expand()` a child template per row of a parameter grid and knit the result.
+
 # TempleCBE 0.7.3
 
 The 0.7.3 work. Nothing is removed or renamed.

@@ -149,6 +149,7 @@ reference:
       - tune_race_survival_checkpointed
       - collect_checkpoints
       - clean_checkpoints
+      - invalidate_downstream_checkpoints
       - estimate_runtime
       - nested_survival_run
       - summary.cbe_nested_survival_run
@@ -160,6 +161,7 @@ reference:
       - score_outer
       - select_candidate_models
       - sample_candidate_formulas
+      - sample_candidate_formulas_adaptive
       - calculate_feature_weights
       - tidy_outer_coefficients
       - summarize_outer_importance
@@ -319,6 +321,8 @@ reference:
       - render_pipeline
       - render_variants
       - render_parameterized_pair
+      - render_parameterized_study
+      - expand_child_template
       - zip_reports
       - write_run_manifest
       - repro_appendix
@@ -463,6 +467,10 @@ reference:
       - plot_missingness
       - table_two_by_two
       - tbl_two_sample_compare
+      - tbl_table_one
+      - plot_imputed_vs_observed
+      - plot_comissingness_matrix
+      - plot_marginal_effect_contrast
 
   - title: Categorical Association & Contingency Tables
     desc: >
