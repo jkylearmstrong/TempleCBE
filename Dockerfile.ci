@@ -46,12 +46,15 @@ RUN Rscript -e 'install.packages("pak", repos = sprintf("https://r-lib.github.io
 # DESCRIPTION only: the layer is rebuilt when the dependencies change, not on every commit.
 WORKDIR /build
 COPY DESCRIPTION .
+# changes every ISO week (ci-image.yml), so that this layer is not served from the cache for ever
+ARG CRAN_WEEK=0
+RUN echo "CRAN packages as of week ${CRAN_WEEK}"
 RUN Rscript -e 'pak::local_install_deps(".", dependencies = TRUE, upgrade = FALSE)' \
   && Rscript -e 'pak::pkg_install(c("any::rcmdcheck", "any::covr", "any::testthat", "any::remotes", "any::pkgload", "any::xml2", "any::readr", "any::jquerylib", "any::caret"))' \
   && rm -rf /root/.cache/R /tmp/*
 
-# Fail the build if a dependency named in DESCRIPTION did not install.
-RUN Rscript -e 'd <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests")); pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("\n", " ", d), ","))))); pk <- pk[nzchar(pk) & !is.na(pk) & pk != "R"]; miss <- setdiff(pk, rownames(installed.packages())); if (length(miss)) stop("not installed: ", paste(miss, collapse = ", "), call. = FALSE)'
+# Fail the build if a dependency named in DESCRIPTION does not load.
+RUN Rscript -e 'd <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests")); pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("\n", " ", d), ","))))); pk <- pk[nzchar(pk) & !is.na(pk) & pk != "R"]; miss <- pk[!vapply(pk, requireNamespace, logical(1), quietly = TRUE)]; if (length(miss)) stop("not loadable: ", paste(miss, collapse = ", "), call. = FALSE)'
 
 WORKDIR /
 LABEL org.opencontainers.image.source="https://github.com/jkylearmstrong/TempleCBE" \
