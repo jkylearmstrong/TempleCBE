@@ -68,7 +68,7 @@ sample_candidate_formulas_adaptive <- function(prior_results_df,
   }
   score <- suppressWarnings(as.numeric(prior_results_df[[metric]]))
   fml <- prior_results_df[[formula_col]]
-  ok <- !is.na(score) & !vapply(fml, function(f) length(f) == 0L || all(is.na(f)), logical(1))
+  ok <- !is.na(score) & vapply(fml, function(f) inherits(f, "formula") || (length(f) > 0L && !all(is.na(f))), logical(1))
   if (!any(ok)) stop("No row has both a `", metric, "` value and a formula.", call. = FALSE)
   score <- score[ok]
   fml <- fml[ok]
