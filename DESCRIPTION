@@ -94,6 +94,7 @@ Suggests:
     missRanger (>= 2.4.0),
     openxlsx (>= 4.2.6),
     parsnip,
+    patchwork,
     pkgload,
     probably (>= 1.2.0),
     profvis,

@@ -208,6 +208,7 @@ reference:
       custom IPCW Integrated Brier loss functions, and SurvSHAP(t) attributions.
     contents:
       - explain_survival
+      - adapter_tidymodels_survex
       - explain_joint
       - predict_parts_shap
       - survex_loss_ibs
@@ -254,6 +255,7 @@ reference:
       - correlation_plot
       - correlation_plot_split
       - plot_target_correlation_heatmap
+      - plot_scatter_glm
       - correlation_diff
       - correlation_diff_heatmap
       - drop_correlated_columns
@@ -411,6 +413,8 @@ reference:
       - words_list
       - pluralize
       - include_landscape_figure
+      - plot_normalization_comparison
+      - read_positional_excel_headers
 
   - title: Cox Models, Kaplan-Meier, & Diagnostics
     desc: >
@@ -422,6 +426,12 @@ reference:
       - cox_single
       - batch_cox_single
       - tbl_cox_glance_compare
+      - glm_single
+      - lmm_single
+      - plot_coef_forest
+      - tbl_coef_forest
+      - transform_longitudinal_features
+      - plot_feature_transform_heatmap
       - print.cbe_cox
       - cox_multi
       - print.cbe_cox_multi
