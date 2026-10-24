@@ -3,14 +3,8 @@
 #' `survex::explain_survival()` wants a function that returns an N by T matrix of survival
 #' probabilities, one row per subject and one column per time. A tidymodels censored-regression workflow
 #' returns a nested tibble instead (`predict(type = "survival", eval_time = times)`). This unnests it and
-#' checks the shape, so it can be used as `predict_survival_function`:
-#'
-#' ```
-#' explain_survival(model, data, y,
-#'   predict_survival_function = function(model, newdata, times) {
-#'     adapter_tidymodels_survex(model, newdata, times)
-#'   })
-#' ```
+#' checks the shape, so it can be used as `predict_survival_function`: pass a function of
+#' `(model, newdata, times)` that calls `adapter_tidymodels_survex(model, newdata, times)`.
 #'
 #' @param workflow A fitted tidymodels workflow (or any object whose `predict()` method accepts
 #'   `new_data`, `type = "survival"` and `eval_time`).

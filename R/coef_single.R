@@ -18,6 +18,11 @@
 #' A model that fails to fit also returns a row with the message; convergence or singular-fit warnings
 #' are kept in `warning`.
 #'
+#' @section Intervals:
+#' For `glm_single()` with a family whose coefficient table is t-based (gaussian, quasi), the limits use the
+#' t quantile with the residual degrees of freedom, so the interval excludes 0 exactly when the p-value is
+#' below `1 - conf_level`; for z-based families (binomial, poisson) they use the normal quantile.
+#'
 #' @section Mixed models:
 #' `lmm_single()` fits `outcome ~ feature + (1 | id_col)` with [lme4::lmer()] (maximum likelihood is not
 #' used for the fixed effects; REML). Confidence limits and p-values are **Wald** (normal
@@ -71,7 +76,13 @@ NULL
   cm <- coef_fun(fit)
   cm <- cm[rownames(cm) != "(Intercept)", , drop = FALSE]
   if (nrow(cm) == 0L) return(.coef_screen_empty(feature, var_label, scale, nrow(df), "no coefficient estimated"))
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  # a t-based coefficient table (Pr(>|t|)) gets t limits so that the interval and the p-value agree
+  dfres <- tryCatch(fit$df.residual, error = function(e) NULL)
+  z <- if (ncol(cm) >= 4L && identical(colnames(cm)[4], "Pr(>|t|)") && is.numeric(dfres) && length(dfres) == 1L && dfres > 0) {
+    stats::qt(1 - (1 - conf_level) / 2, dfres)
+  } else {
+    stats::qnorm(1 - (1 - conf_level) / 2)
+  }
   est <- cm[, 1]
   se <- cm[, 2]
   stat <- cm[, 3]
@@ -191,6 +202,7 @@ lmm_single <- function(data, outcome, feature, id_col, normalize = TRUE, conf_le
 #'   gets the last label; a missing p-value gets `""`.
 #' @param facet_by Optional column to facet by (for example `"scale"`).
 #' @param order_by `"input"` (default) keeps the row order, `"estimate"` and `"p"` sort.
+#' @param x_label Axis label (default: "Coefficient estimate with confidence interval").
 #' @export
 plot_coef_forest <- function(results_df,
                              term_col = "var_label",
@@ -201,7 +213,8 @@ plot_coef_forest <- function(results_df,
                              p_breaks = c(0.001, 0.01, 0.05, 0.1, 0.2),
                              p_labels = c("****", "***", "**", "*", ".", "ns"),
                              facet_by = NULL,
-                             order_by = c("input", "estimate", "p")) {
+                             order_by = c("input", "estimate", "p"),
+                             x_label = NULL) {
   order_by <- match.arg(order_by)
   .coef_cols(results_df, term_col, estimate_col, low_col, high_col, p_col)
   .check_star_scheme(p_breaks, p_labels)
@@ -214,12 +227,25 @@ plot_coef_forest <- function(results_df,
   df$.hi <- df[[high_col]]
   df$.stars <- .coef_stars(df[[p_col]], p_breaks, p_labels)
   lab <- as.character(df[[term_col]])
+  # contrasts of one factor, or the raw and normalized rows of one predictor, share a label: tell them apart
+  dup <- lab %in% lab[duplicated(lab)]
+  if (any(dup) && "term" %in% names(df) && !identical(term_col, "term")) {
+    lab[dup] <- paste0(lab[dup], " [", df$term[dup], "]")
+  }
+  dup <- lab %in% lab[duplicated(lab)]
+  if (any(dup) && "scale" %in% names(df) && is.null(facet_by)) {
+    lab[dup] <- paste0(lab[dup], " (", df$scale[dup], ")")
+  }
+  if (is.null(facet_by)) lab <- make.unique(lab, sep = " #")
   ord <- switch(order_by, input = seq_len(nrow(df)), estimate = order(df$.est), p = order(-df[[p_col]], na.last = FALSE))
   df <- df[ord, , drop = FALSE]
   lab <- lab[ord]
   df$.label <- factor(lab, levels = rev(unique(lab)))
-  rng <- range(c(df$.lo, df$.hi, df$.est), na.rm = TRUE)
-  df$.xstar <- rng[2] + 0.04 * diff(rng)
+  grp <- if (is.null(facet_by)) rep("all", nrow(df)) else as.character(df[[facet_by]])
+  df$.xstar <- stats::ave(seq_len(nrow(df)), grp, FUN = function(i) {
+    rng <- range(c(df$.lo[i], df$.hi[i], df$.est[i]), na.rm = TRUE)
+    rng[2] + 0.04 * diff(rng)
+  })
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.est, y = .data$.label)) +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.lo, xmax = .data$.hi), width = 0.25, color = "#9D2235", orientation = "y") +
@@ -227,7 +253,7 @@ plot_coef_forest <- function(results_df,
     ggplot2::geom_text(ggplot2::aes(x = .data$.xstar, label = .data$.stars), hjust = 0, size = 3.5) +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.15))) +
     cbe_theme_survival() +
-    ggplot2::labs(x = "Coefficient estimate (95% CI)", y = NULL,
+    ggplot2::labs(x = x_label %||% "Coefficient estimate with confidence interval", y = NULL,
                   caption = paste0("Significance: ", paste0(p_labels[-length(p_labels)], " p < ", p_breaks, collapse = ", "),
                                    ", ", p_labels[length(p_labels)], " otherwise"))
   if (!is.null(facet_by)) p <- p + ggplot2::facet_wrap(stats::as.formula(paste0("~", facet_by)), scales = "free_x")

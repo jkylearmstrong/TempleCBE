@@ -7,8 +7,9 @@
 #' @section Definitions:
 #' Within a subject and feature, missing values are dropped and the rest are ordered by `time_col`
 #' (ties in time keep the data order). `n_obs` is the number of values used.
-#' * `"pct_change_baseline"`: `100 * (last - first) / first`, with `first` the value at the earliest time
-#'   (the baseline) and `last` the value at the latest time. `NA` if the baseline is 0 or there is only
+#' * `"pct_change_baseline"`: `100 * (last - first) / abs(first)`, with `first` the value at the earliest
+#'   time (the baseline) and `last` the value at the latest time; the absolute value keeps the sign meaning
+#'   "went up" or "went down" when the baseline is negative. `NA` if the baseline is 0 or there is only
 #'   one value.
 #' * `"variance"` and `"sd"`: the sample variance and standard deviation (divisor `n - 1`) of all values;
 #'   `NA` with fewer than two values.
@@ -58,6 +59,9 @@ transform_longitudinal_features <- function(data,
   bad <- features[!vapply(data[features], is.numeric, logical(1))]
   if (length(bad)) stop("Feature(s) must be numeric: ", paste(bad, collapse = ", "), ".", call. = FALSE)
   if (anyNA(data[[id_col]])) stop("`id_col` must not contain missing values.", call. = FALSE)
+  if (id_col %in% c("feature", "method", "value", "n_obs")) {
+    stop("`id_col` must not be named feature, method, value or n_obs; rename the column first.", call. = FALSE)
+  }
 
   summarise_one <- function(x, tm) {
     ok <- !is.na(x) & !is.na(tm)
@@ -68,7 +72,7 @@ transform_longitudinal_features <- function(data,
     n <- length(x)
     res <- c(pct_change_baseline = NA_real_, variance = NA_real_, sd = NA_real_, max_signed_diff = NA_real_)
     if (n >= 2L) {
-      if (x[1] != 0) res[["pct_change_baseline"]] <- 100 * (x[n] - x[1]) / x[1]
+      if (x[1] != 0) res[["pct_change_baseline"]] <- 100 * (x[n] - x[1]) / abs(x[1])
       res[["variance"]] <- stats::var(x)
       res[["sd"]] <- stats::sd(x)
       imax <- which.max(x)

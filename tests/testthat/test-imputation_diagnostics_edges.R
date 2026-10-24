@@ -43,3 +43,10 @@ test_that("plot_imputed_ridgeline() builds, and says which package or column is 
   expect_s3_class(p, "ggplot")
   expect_error(plot_imputed_ridgeline(orig_df(), imp_df(), "nope"), "missing from")
 })
+
+test_that("test_imputed_distributions() gives NA means, quietly, for factors", {
+  o <- data.frame(f = factor(c("a", "b", NA, "a")))
+  i <- data.frame(f = factor(c("a", "b", "c", "a")))
+  expect_no_warning(r <- test_imputed_distributions(o, i, "f"))
+  expect_true(is.na(r$mean_observed) && is.na(r$mean_imputed))
+})

@@ -12,6 +12,18 @@
 #' `clean_names = TRUE` the names go through [janitor::make_clean_names()]; otherwise they are made unique
 #' with a numeric suffix. All header cells are read as text.
 #'
+#' @section Limitations:
+#' A title above the last header row is carried to every following column whose cell in that row is blank,
+#' not only across a merged range (the merge ranges are not read), so a standalone column placed after a
+#' group can pick up the group's title. Excel dates are read as their serial numbers (text such as
+#' `"45296"`), not as dates; convert them yourself.
+#'
+#' @section Data types:
+#' With `convert = TRUE` (default) a column becomes numeric only if every non-missing value is a plain
+#' number and none starts with a leading zero, so identifiers such as `"00123"` and codes such as `"F"` stay
+#' text. With `convert = FALSE` every column stays text.
+#'
+#' @param convert Logical; see Data types.
 #' @param path Path to an `.xlsx` or `.xls` file.
 #' @param sheet Sheet name or number (default 1).
 #' @param header_rows Integer rows (of the sheet, counting from 1) that form the header; consecutive,
@@ -21,7 +33,7 @@
 #'   cells (one row per header row).
 #' @seealso [excel_colnames()]
 #' @export
-read_positional_excel_headers <- function(path, sheet = 1, header_rows = 1:2, clean_names = TRUE) {
+read_positional_excel_headers <- function(path, sheet = 1, header_rows = 1:2, clean_names = TRUE, convert = TRUE) {
   if (!is.character(path) || length(path) != 1L || !file.exists(path)) {
     stop("`path` must be an existing Excel file.", call. = FALSE)
   }
@@ -32,7 +44,11 @@ read_positional_excel_headers <- function(path, sheet = 1, header_rows = 1:2, cl
   header_rows <- sort(as.integer(header_rows))
   last <- max(header_rows)
 
-  raw_all <- suppressMessages(readxl::read_excel(path, sheet = sheet, col_names = FALSE, col_types = "text", .name_repair = "minimal"))
+  # an explicit range starting at A1 keeps leading blank rows, so `header_rows` are real sheet rows
+  raw_all <- suppressMessages(readxl::read_excel(
+    path, sheet = sheet, col_names = FALSE, col_types = "text", .name_repair = "minimal",
+    range = readxl::cell_limits(c(1L, 1L), c(NA_integer_, NA_integer_))
+  ))
   if (nrow(raw_all) < last) stop("The sheet has only ", nrow(raw_all), " row(s); `header_rows` reaches row ", last, ".", call. = FALSE)
   hdr <- as.data.frame(raw_all[header_rows, , drop = FALSE], stringsAsFactors = FALSE)
   hdr[] <- lapply(hdr, function(x) { x <- trimws(as.character(x)); x[!nzchar(x)] <- NA_character_; x })
@@ -65,7 +81,18 @@ read_positional_excel_headers <- function(path, sheet = 1, header_rows = 1:2, cl
   data_rows <- raw_all[-seq_len(last), , drop = FALSE]
   out <- as.data.frame(data_rows, stringsAsFactors = FALSE)
   names(out) <- nm
-  out <- utils::type.convert(out, as.is = TRUE)
+  if (isTRUE(convert)) {
+    out[] <- lapply(out, function(x) {
+      vals <- x[!is.na(x)]
+      # numbers only; text such as ids with leading zeros ("00123"), single letters ("F") and the like stay text
+      if (length(vals) > 0L && !any(grepl("^[+-]?0[0-9]", vals)) &&
+          !anyNA(suppressWarnings(as.numeric(vals))) && all(grepl("^[+-]?[0-9.]+([eE][+-]?[0-9]+)?$", vals))) {
+        as.numeric(x)
+      } else {
+        x
+      }
+    })
+  }
   out <- tibble::as_tibble(out)
   attr(out, "header") <- tibble::as_tibble(stats::setNames(as.data.frame(hm, stringsAsFactors = FALSE), nm))
   out

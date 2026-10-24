@@ -8,7 +8,8 @@ read_positional_excel_headers(
   path,
   sheet = 1,
   header_rows = 1:2,
-  clean_names = TRUE
+  clean_names = TRUE,
+  convert = TRUE
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ read_positional_excel_headers(
 for example `1:2`. The data start on the row after the last one.}
 
 \item{clean_names}{If `TRUE` (default) tidy the combined names with [janitor::make_clean_names()].}
+
+\item{convert}{Logical; see Data types.}
 }
 \value{
 A tibble of the data rows with the combined names. The attribute `"header"` has the raw header
@@ -38,6 +41,21 @@ left in that row (a merged title that spans columns); a blank in the last header
 A column with no header text at all is named by its Excel column letters (`"C"`, `"AB"`). With
 `clean_names = TRUE` the names go through [janitor::make_clean_names()]; otherwise they are made unique
 with a numeric suffix. All header cells are read as text.
+}
+
+\section{Limitations}{
+
+A title above the last header row is carried to every following column whose cell in that row is blank,
+not only across a merged range (the merge ranges are not read), so a standalone column placed after a
+group can pick up the group's title. Excel dates are read as their serial numbers (text such as
+`"45296"`), not as dates; convert them yourself.
+}
+
+\section{Data types}{
+
+With `convert = TRUE` (default) a column becomes numeric only if every non-missing value is a plain
+number and none starts with a leading zero, so identifiers such as `"00123"` and codes such as `"F"` stay
+text. With `convert = FALSE` every column stays text.
 }
 
 \seealso{

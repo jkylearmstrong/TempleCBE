@@ -67,3 +67,11 @@ test_that("input is validated", {
   expect_error(transform_longitudinal_features(d2, "id", "time", "x"), "missing")
   expect_error(transform_longitudinal_features(1, "id", "time", "x"), "data frame")
 })
+
+test_that("percent change keeps its direction for a negative baseline; id names that would clash are refused", {
+  d <- data.frame(id = "a", time = c(0, 1), x = c(-10, -20))
+  r <- transform_longitudinal_features(d, "id", "time", "x", methods = "pct_change_baseline")
+  expect_equal(r$value, -100) # more negative: went down
+  d2 <- data.frame(value = "a", time = c(0, 1), x = c(1, 2))
+  expect_error(transform_longitudinal_features(d2, "value", "time", "x"), "must not be named")
+})

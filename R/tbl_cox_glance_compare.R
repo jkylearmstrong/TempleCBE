@@ -64,7 +64,14 @@ tbl_cox_glance_compare <- function(models,
       n = as.integer(gl$n), events = as.integer(gl$nevent), loglik = as.numeric(gl$logLik),
       AIC = as.numeric(gl$AIC), BIC = as.numeric(gl$BIC),
       concordance = as.numeric(gl$concordance), se = as.numeric(gl$std.error.concordance)
-    )
+    ) |> (\(r) {
+      # a model without covariates has no concordance; broom reports 0
+      if (length(stats::coef(f)) == 0L) {
+        r$concordance <- NA_real_
+        r$se <- NA_real_
+      }
+      r
+    })()
   })
   num <- tibble::tibble(
     model = nm,

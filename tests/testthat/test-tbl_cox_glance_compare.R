@@ -59,3 +59,10 @@ test_that("models fitted to different rows trigger a comparability warning", {
   b <- survival::coxph(survival::Surv(time, status) ~ age + ph.ecog, data = lung)
   expect_warning(tbl_cox_glance_compare(list(a, b)), "not comparable")
 })
+
+test_that("a model without covariates shows no concordance", {
+  lung <- survival::lung
+  null <- survival::coxph(survival::Surv(time, status) ~ 1, data = lung)
+  tab <- tbl_cox_glance_compare(null)
+  expect_equal(tab$`Concordance (SE)`, "")
+})

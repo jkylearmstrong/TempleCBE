@@ -74,10 +74,16 @@ plot_scatter_glm <- function(data,
   })
   stats_tbl <- dplyr::bind_rows(stat_rows)
 
+  # a line only in panels with enough points and some variation (the same ones that get statistics)
+  fit_ok <- unlist(lapply(names(panels), function(nm) {
+    d <- df[panels[[nm]], , drop = FALSE]
+    rep(nrow(d) >= 3L && stats::sd(d[[x]]) > 0 && stats::sd(d[[y]]) > 0, nrow(d))
+  }))
+  df_line <- df[unlist(panels)[fit_ok], , drop = FALSE]
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[[x]], y = .data[[y]])) +
     ggplot2::geom_point(alpha = 0.6, color = "#6F6F6F") +
-    ggplot2::geom_smooth(method = "lm", formula = y ~ x, level = conf_level, color = "#9D2235", fill = "#9D2235",
-                         alpha = 0.15, na.rm = TRUE) +
+    ggplot2::geom_smooth(data = df_line, method = "lm", formula = y ~ x, level = conf_level, color = "#9D2235",
+                         fill = "#9D2235", alpha = 0.15, na.rm = TRUE) +
     theme_cbe() +
     ggplot2::labs(x = x_label %||% x, y = y_label %||% y)
   if (!is.null(facet_by)) p <- p + ggplot2::facet_wrap(stats::as.formula(paste0("~", facet_by)))

@@ -7,6 +7,10 @@
 #' @name imputation_diagnostics
 NULL
 
+# mean of numeric values; NA (no warning) for factors and text
+#' @noRd
+safe_mean <- function(x) if (is.numeric(x) || is.logical(x)) mean(x, na.rm = TRUE) else NA_real_
+
 # Stops with the names of the columns that either data set lacks
 #' @noRd
 check_imputation_cols <- function(orig, imp, cols) {
@@ -115,7 +119,7 @@ test_imputed_distributions <- function(orig, imp, cols) {
     if (n_imp == 0) {
       return(tibble::tibble(
         variable = col, n_observed = n_obs, n_imputed = 0L,
-        mean_observed = mean(obs_vals, na.rm = TRUE), mean_imputed = NA_real_,
+        mean_observed = safe_mean(obs_vals), mean_imputed = NA_real_,
         ks_statistic = NA_real_, ks_p_value = NA_real_, t_p_value = NA_real_
       ))
     }
@@ -134,8 +138,8 @@ test_imputed_distributions <- function(orig, imp, cols) {
       variable = col,
       n_observed = n_obs,
       n_imputed = n_imp,
-      mean_observed = mean(obs_vals, na.rm = TRUE),
-      mean_imputed = mean(imp_vals, na.rm = TRUE),
+      mean_observed = safe_mean(obs_vals),
+      mean_imputed = safe_mean(imp_vals),
       ks_statistic = unname(ks_res$statistic),
       ks_p_value = unname(ks_res$p.value),
       t_p_value = unname(t_res$p.value)

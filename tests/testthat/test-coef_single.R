@@ -8,8 +8,9 @@ test_that("glm_single() matches lm and gives raw and normalized rows", {
   fit <- lm(mpg ~ wt, mtcars)
   expect_equal(r$estimate[1], unname(coef(fit)["wt"]))
   expect_equal(r$p.value[1], summary(fit)$coefficients["wt", 4])
-  z <- qnorm(0.975)
-  expect_equal(r$conf.low[1], r$estimate[1] - z * r$std.error[1])
+  tcrit <- qt(0.975, fit_df <- lm(mpg ~ wt, mtcars)$df.residual)
+  expect_equal(r$conf.low[1], r$estimate[1] - tcrit * r$std.error[1])
+  expect_equal(c(r$conf.low[1], r$conf.high[1]), unname(confint(lm(mpg ~ wt, mtcars))["wt", ]))
   # the normalized effect is the raw effect times the observed range
   expect_equal(r$estimate[2], r$estimate[1] * diff(range(mtcars$wt)))
   expect_equal(r$p.value[2], r$p.value[1])
@@ -96,4 +97,42 @@ test_that("plot_coef_forest() and tbl_coef_forest() display stacked screens", {
   failed <- glm_single(transform(mtcars, k = 1), "mpg", "k")
   expect_error(plot_coef_forest(failed), "No estimable")
   expect_equal(tbl_coef_forest(failed)$`Estimate [95% CI]`, "")
+})
+
+test_that("gaussian screens use t limits so the interval agrees with the p-value", {
+  set.seed(3)
+  d <- data.frame(x = rnorm(6), y = rnorm(6))
+  r <- glm_single(d, "y", "x", normalize = FALSE)
+  fit <- lm(y ~ x, d)
+  ci <- confint(fit)["x", ]
+  expect_equal(c(r$conf.low, r$conf.high), unname(ci), tolerance = 1e-8)
+  # the interval excludes 0 exactly when p < 0.05
+  expect_equal(r$conf.low > 0 || r$conf.high < 0, r$p.value < 0.05)
+  # binomial tables are z-based
+  b <- glm_single(mtcars, "am", "wt", family = binomial(), normalize = FALSE)
+  expect_equal(b$conf.low, b$estimate - qnorm(0.975) * b$std.error)
+})
+
+test_that("plot_coef_forest() separates factor contrasts and the two scales of one predictor", {
+  d <- mtcars
+  res <- glm_single(d, "mpg", "cyl")
+  p <- plot_coef_forest(res)
+  expect_equal(length(unique(p$data$.label)), nrow(p$data))
+  stk <- dplyr::bind_rows(glm_single(d, "mpg", "wt"), glm_single(d, "mpg", "hp"))
+  p2 <- plot_coef_forest(stk)
+  expect_equal(length(unique(p2$data$.label)), nrow(stk))
+  expect_match(as.character(p2$data$.label[1]), "raw|normalized")
+})
+
+test_that("star positions are per facet and the axis label can be set", {
+  stk <- dplyr::bind_rows(glm_single(mtcars, "mpg", "wt"), glm_single(mtcars, "mpg", "hp"))
+  p <- plot_coef_forest(stk, facet_by = "scale", x_label = "Effect (90% CI)")
+  d <- p$data
+  for (sc in c("raw", "normalized")) {
+    hi <- max(d$.hi[d$scale == sc])
+    span <- diff(range(c(d$.lo[d$scale == sc], d$.hi[d$scale == sc], d$.est[d$scale == sc])))
+    expect_true(all(d$.xstar[d$scale == sc] > hi))
+    expect_true(all(d$.xstar[d$scale == sc] <= hi + 0.1 * span))
+  }
+  expect_equal(p$labels$x, "Effect (90% CI)")
 })

@@ -80,3 +80,16 @@ test_that("plot_normalization_comparison() draws two panels and validates input"
   expect_error(plot_normalization_comparison(c(1, NA), c(NA, 1), "v"), "two complete pairs")
   expect_error(plot_normalization_comparison(x, x, c("a", "b")), "single string")
 })
+
+test_that("the heatmap legend labels are not padded and use the real break values", {
+  p <- plot_feature_transform_heatmap(heat_df())
+  expect_equal(levels(p$data$.bucket), c("p < 0.001", "p < 0.01", "p < 0.05", "p < 0.2", "NS (p \u2265 0.2)"))
+})
+
+test_that("plot_scatter_glm() draws a line only in panels that have statistics", {
+  d <- data.frame(x = c(1, 2, 3, 4, 5, 1, 2), y = c(2, 4, 5, 8, 10, 3, 7), g = c(rep("big", 5), rep("tiny", 2)))
+  p <- plot_scatter_glm(d, "x", "y", facet_by = "g")
+  smooth <- p$layers[[which(vapply(p$layers, function(l) inherits(l$geom, "GeomSmooth"), logical(1)))]]
+  expect_equal(unique(smooth$data$g), "big")
+  expect_no_warning(ggplot2::ggplot_build(p))
+})

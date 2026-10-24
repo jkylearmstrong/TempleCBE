@@ -38,8 +38,9 @@ within-subject variability, or the largest swing.
 
 Within a subject and feature, missing values are dropped and the rest are ordered by `time_col`
 (ties in time keep the data order). `n_obs` is the number of values used.
-* `"pct_change_baseline"`: `100 * (last - first) / first`, with `first` the value at the earliest time
-  (the baseline) and `last` the value at the latest time. `NA` if the baseline is 0 or there is only
+* `"pct_change_baseline"`: `100 * (last - first) / abs(first)`, with `first` the value at the earliest
+  time (the baseline) and `last` the value at the latest time; the absolute value keeps the sign meaning
+  "went up" or "went down" when the baseline is negative. `NA` if the baseline is 0 or there is only
   one value.
 * `"variance"` and `"sd"`: the sample variance and standard deviation (divisor `n - 1`) of all values;
   `NA` with fewer than two values.

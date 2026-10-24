@@ -29,7 +29,8 @@ plot_coef_forest(
   p_breaks = c(0.001, 0.01, 0.05, 0.1, 0.2),
   p_labels = c("****", "***", "**", "*", ".", "ns"),
   facet_by = NULL,
-  order_by = c("input", "estimate", "p")
+  order_by = c("input", "estimate", "p"),
+  x_label = NULL
 )
 
 tbl_coef_forest(
@@ -72,6 +73,8 @@ gets the last label; a missing p-value gets `""`.}
 
 \item{order_by}{`"input"` (default) keeps the row order, `"estimate"` and `"p"` sort.}
 
+\item{x_label}{Axis label (default: "Coefficient estimate with confidence interval").}
+
 \item{digits}{Decimals for the estimate and its interval.}
 }
 \value{
@@ -100,6 +103,13 @@ A predictor with fewer than two distinct non-missing values, or an outcome with 
 one row with `status` saying so instead of an error, so a screen over many predictors does not stop.
 A model that fails to fit also returns a row with the message; convergence or singular-fit warnings
 are kept in `warning`.
+}
+
+\section{Intervals}{
+
+For `glm_single()` with a family whose coefficient table is t-based (gaussian, quasi), the limits use the
+t quantile with the residual degrees of freedom, so the interval excludes 0 exactly when the p-value is
+below `1 - conf_level`; for z-based families (binomial, poisson) they use the normal quantile.
 }
 
 \section{Mixed models}{

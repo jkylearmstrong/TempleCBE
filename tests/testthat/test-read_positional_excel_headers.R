@@ -53,3 +53,30 @@ test_that("bad input is explained", {
   expect_error(read_positional_excel_headers(f, header_rows = 0), "consecutive")
   expect_error(read_positional_excel_headers(f, header_rows = 1:5), "only 2 row")
 })
+
+test_that("header_rows are real sheet rows even after blank leading rows", {
+  f <- write_header_book(list(
+    list(NA, NA),
+    list("Group", NA),
+    list("a", "b"),
+    list(1, 2)
+  ))
+  r <- read_positional_excel_headers(f, header_rows = 2:3)
+  expect_equal(names(r), c("group_a", "group_b"))
+  expect_equal(r$group_a, 1)
+})
+
+test_that("ids with leading zeros, letter codes and text stay text; plain numbers are converted", {
+  f <- write_header_book(list(
+    list("id", "sex", "age", "note"),
+    list("00123", "F", "41", "ok"),
+    list("00456", "M", "52", "fine")
+  ))
+  r <- read_positional_excel_headers(f, header_rows = 1)
+  expect_equal(r$id, c("00123", "00456"))
+  expect_equal(r$sex, c("F", "M"))
+  expect_equal(r$age, c(41, 52))
+  expect_true(is.numeric(r$age))
+  raw <- read_positional_excel_headers(f, header_rows = 1, convert = FALSE)
+  expect_true(is.character(raw$age))
+})

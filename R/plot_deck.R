@@ -195,7 +195,6 @@ plot_dynamic_trajectory <- function(data,
     summary_df$lo <- summary_df$center - summary_df$se
     summary_df$hi <- summary_df$center + summary_df$se
   }
-  summary_df$mean_for_plot <- summary_df$center
 
   p <- ggplot2::ggplot(
     summary_df,

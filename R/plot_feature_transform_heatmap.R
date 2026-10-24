@@ -52,7 +52,9 @@ plot_feature_transform_heatmap <- function(results_df,
     stop("`results_df` has more than one row for a feature and transformation.", call. = FALSE)
   }
   p <- suppressWarnings(as.numeric(df[[p_col]]))
-  labels <- c(paste0("p < ", format(p_breaks, scientific = FALSE)), paste0("NS (p ≥ ", format(p_breaks[length(p_breaks)], scientific = FALSE), ")"))
+  fmt_break <- function(b) format(b, scientific = FALSE)
+  labels <- c(paste0("p < ", vapply(p_breaks, fmt_break, "")),
+              paste0("NS (p \u2265 ", fmt_break(p_breaks[length(p_breaks)]), ")"))
   idx <- ifelse(is.na(p), length(p_breaks) + 1L, vapply(p, function(x) if (is.na(x)) NA_integer_ else sum(p_breaks <= x) + 1L, integer(1)))
   df$.bucket <- factor(labels[idx], levels = labels)
 
