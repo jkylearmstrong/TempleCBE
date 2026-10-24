@@ -10,8 +10,9 @@ Requested by downstream projects, to replace local copies of the same code. Noth
 ## Changed
 
 * **`plot_cox_forest()` and `plot_cox_forest_multi()`** gain `exponentiate` (`TRUE`: hazard ratios, reference line at 1; `FALSE`: raw coefficients, reference line at 0, confidence limits transformed with the estimate), `log_scale` (a log axis for hazard ratios, a separate choice from `exponentiate`) and `sig_level` (the cut-off for `color_by = "significance"`, default 0.05). Invalid combinations are errors, for example `log_scale = TRUE` with `exponentiate = FALSE`. `scale = "hr"/"log_hr"` still works and means `exponentiate = TRUE/FALSE`.
+* **`plot_cox_forest()`** colors a term with a missing p-value as "Not significant" (it had no color).
 * **`plot_survival_km()`** accepts `pval` (the name other survival plotting packages use) as well as `p_value`; the log-rank p-value is now drawn inside the plot instead of replacing the caption, and asking for it without two or more groups warns. `risk_table = TRUE` was already available (through `ggsurvfit`; `survminer` is not needed).
-* **`plot_dynamic_trajectory()`** gains `palette` (named colors keep each group's color whichever groups are plotted) and `group_levels` (groups and their order). Data whose groups are not Survived/Died now use the CBE palette instead of failing; the default for Survived/Died is unchanged.
+* **`plot_dynamic_trajectory()`** gains `palette` (named colors keep each group's color whichever groups are plotted) and `group_levels` (groups and their order). Data whose groups are not Survived/Died now use the CBE palette instead of grey; the default for Survived/Died is unchanged. Numeric group labels sort as numbers (1, 2, 10).
 
 # TempleCBE 0.7.0
 

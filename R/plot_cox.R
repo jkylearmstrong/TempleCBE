@@ -269,7 +269,7 @@ forest_plot_engine <- function(df,
   }
 
   if (color_by == "significance") {
-    sig_lbl <- paste0("Significant (p < ", format(sig_level), ")")
+    sig_lbl <- paste0("Significant (p < ", format(sig_level, scientific = FALSE), ")")
     df$.sig <- ifelse(!is.na(df$.p) & df$.p < sig_level, sig_lbl, "Not significant")
     color_values <- stats::setNames(c(color, "grey60"), c(sig_lbl, "Not significant"))
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, y = .data$.y, color = .data$.sig)) +

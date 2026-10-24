@@ -139,3 +139,36 @@ test_that("calculate_feature_weights() validates scores", {
   expect_error(calculate_feature_weights(cand, c(NA_real_, NA_real_)), "No candidate has a score")
   expect_error(calculate_feature_weights(1:3, 1:3), "must be a result")
 })
+
+test_that("an exact size is honoured when it is 2 or more (single-value draw)", {
+  a <- sample_candidate_formulas(c("a", "b", "c", "d", "e"), n = 10, min_size = 3, max_size = 3, seed = 1)
+  expect_true(all(a$n_terms == 3L))
+  b <- sample_candidate_formulas(c("a", "b", "c", "d", "e"), required = "a", n = 4, min_size = 4, max_size = 4, seed = 1)
+  expect_true(all(b$n_terms == 4L))
+  expect_true(all(vapply(b$terms, function(t) "a" %in% t, logical(1))))
+  for (s in 1:5) {
+    cand <- sample_candidate_formulas(letters[1:6], n = 15, min_size = 2, max_size = 3, seed = s)
+    expect_true(all(cand$n_terms >= 2L & cand$n_terms <= 3L))
+  }
+})
+
+test_that("sampling input problems get specific messages", {
+  expect_error(sample_candidate_formulas(c("a", "b("), n = 1), "not a valid formula term")
+  expect_error(sample_candidate_formulas(c("a", "b"), min_size = c(1, 2)), "single whole numbers")
+  expect_error(sample_candidate_formulas(c("a", "b", "c"), required = c("a", "b"), max_size = 1), "2 `required` terms but `max_size` is 1")
+  expect_error(sample_candidate_formulas(c("a", "b"), weights = c(0, 0)), "All sampling weights are 0")
+  expect_error(sample_candidate_formulas(c("a", "b"), weights = c(z = 1)), "not in `predictors`")
+})
+
+test_that("named weights may leave terms out (they get the mean) so feature weights can be fed back", {
+  cand <- sample_candidate_formulas(c("a", "b", "log(c)"), n = 4, seed = 1)
+  w <- calculate_feature_weights(cand, c(0.5, 0.6, 0.7, 0.8), level = "term")
+  nxt <- sample_candidate_formulas(c("a", "b", "log(c)"), n = 3, weights = stats::setNames(w$weight, w$feature), seed = 2)
+  expect_equal(nrow(nxt), 3L)
+  part <- sample_candidate_formulas(c("a", "b", "log(c)"), n = 3, weights = c(a = 2), seed = 2)
+  expect_equal(nrow(part), 3L)
+})
+
+test_that("infinite scores are rejected", {
+  expect_error(calculate_feature_weights(list("a", "b"), c(1, Inf)), "finite")
+})

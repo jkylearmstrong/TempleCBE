@@ -33,7 +33,10 @@ the formulas are one-sided (`~ a + b`).}
 (`max_size` defaults to all terms).}
 
 \item{weights}{Optional non-negative numeric vector, one value per entry of `predictors`
-(named by term, or in the same order). A weight of 0 keeps a term out unless it is required.}
+(in the same order), or named by term; a named vector may leave terms out, which then get the
+mean of the given weights, and may not name a term that is not in `predictors`. A weight of 0
+keeps a term out unless it is required. To feed back the output of [calculate_feature_weights()],
+use `level = "term"` there and pass `setNames(w$weight, w$feature)`.}
 
 \item{exclude}{Optional list of character vectors of terms that may not all appear together.}
 

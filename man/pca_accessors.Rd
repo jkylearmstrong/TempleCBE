@@ -57,6 +57,8 @@ use all components of the full fit (`sdev` is complete), so they are shares of t
 
 Variance percentages are on a 0 to 100 scale (`12.3` means 12.3 percent), like `variance_pct`
 in [run_pca()]. Loadings are the elements of `rotation`: signed, and unit-length per component.
+The sign of a component is arbitrary (a refit can flip it), so describe direction relative to
+the other loadings of the same component.
 }
 
 \examples{

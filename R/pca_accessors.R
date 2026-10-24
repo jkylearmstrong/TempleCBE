@@ -16,6 +16,8 @@
 #' @section Scale:
 #' Variance percentages are on a 0 to 100 scale (`12.3` means 12.3 percent), like `variance_pct`
 #' in [run_pca()]. Loadings are the elements of `rotation`: signed, and unit-length per component.
+#' The sign of a component is arbitrary (a refit can flip it), so describe direction relative to
+#' the other loadings of the same component.
 #'
 #' @param pca_mod A `prcomp` object or a [run_pca()] result.
 #' @param feature Name of one original variable (a row name of the rotation matrix).
@@ -40,10 +42,10 @@ NULL
     stop("`", arg, "` must be a component number or name such as \"PC1\".", call. = FALSE)
   }
   idx <- if (is.character(pc)) {
-    ok <- grepl("^PC[0-9]+$", pc)
+    ok <- grepl("^PC[0-9]+$", pc, ignore.case = TRUE)
     if (!all(ok)) stop("`", arg, "` must be a component number or a name such as \"PC1\".", call. = FALSE)
-    as.integer(sub("^PC", "", pc))
-  } else if (is.numeric(pc) && all(pc == round(pc))) {
+    as.integer(sub("^PC", "", toupper(pc)))
+  } else if (is.numeric(pc) && all(is.finite(pc)) && all(pc == round(pc))) {
     as.integer(pc)
   } else {
     stop("`", arg, "` must be a component number or a name such as \"PC1\".", call. = FALSE)
@@ -99,7 +101,7 @@ pca_top_features <- function(pca_mod, pc, n = 5L, by = c("abs", "positive", "neg
   by <- match.arg(by)
   rot <- .pca_rotation(pca_mod)
   if (length(pc) != 1L) stop("`pc` must be a single component for `pca_top_features()`.", call. = FALSE)
-  if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1) {
+  if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1 || n != round(n)) {
     stop("`n` must be a positive whole number.", call. = FALSE)
   }
   j <- .pca_pc_index(pc, ncol(rot))

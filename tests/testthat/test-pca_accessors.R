@@ -52,3 +52,9 @@ test_that("unnamed variables get the V1.. names run_pca() gives them", {
   m <- stats::prcomp(unname(as.matrix(mtcars[, 1:3])), scale. = TRUE)
   expect_equal(pca_loading(m, "V2", 1), unname(m$rotation[2, 1]))
 })
+
+test_that("component names ignore case and bad numbers fail cleanly", {
+  expect_equal(pca_loading(fit, "mpg", "pc2"), pca_loading(fit, "mpg", 2))
+  expect_error(pca_loading(fit, "mpg", Inf), "component number")
+  expect_error(pca_top_features(fit, 1, n = 2.5), "whole number")
+})

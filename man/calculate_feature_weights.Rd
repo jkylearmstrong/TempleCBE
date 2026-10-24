@@ -44,7 +44,10 @@ Each formula gets a share `s_i` of the total score: scores are shifted so the wo
 (`score - min(score)`, after flipping the sign when `higher_is_better = FALSE`) and divided by their
 sum; if all scores are equal every formula gets `1 / n`. The weight of a feature is the sum of the
 shares of the formulas that contain it, a number between 0 and 1: 1 means it is in every
-formula that scores above the worst, 0 that it is in none. `method = "inclusion"` ignores the scores
+formula that scores above the worst, 0 that it is in none. Because the worst candidate always gets
+a share of 0, a feature found only in the worst formula gets weight 0, and a tiny score gap can
+swing weights between 0 and 1; if you pass these weights to [sample_candidate_formulas()] a 0 keeps
+the term out of the next round, so add a small constant to the weights if you want every term to stay possible. `method = "inclusion"` ignores the scores
 and gives the plain fraction of formulas that contain the feature. `normalize = "sum"` rescales the
 weights to add to 1 and `"max"` rescales the largest to 1.
 }

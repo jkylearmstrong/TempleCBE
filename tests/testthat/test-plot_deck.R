@@ -178,3 +178,16 @@ test_that("colors = NULL and explicit colors behave as before", {
   expect_equal(unname(line_cols(plot_dynamic_trajectory(d, "val", "time", "grp", colors = NULL))), unname(cbe_palette[1:2]))
   expect_equal(unname(line_cols(plot_dynamic_trajectory(d, "val", "time", "grp", colors = c("red", "blue")))), c("red", "blue"))
 })
+
+test_that("plot_survival_km() p-value works when group_col is a formula expression", {
+  lung <- stats::na.omit(survival::lung[, c("time", "status", "sex", "ph.ecog")])
+  base <- plot_survival_km(lung, "time", "status", "sex + ph.ecog")
+  p <- plot_survival_km(lung, "time", "status", "sex + ph.ecog", pval = TRUE)
+  expect_length(p$layers, length(base$layers) + 1L)
+})
+
+test_that("numeric group labels sort as numbers in plot_dynamic_trajectory()", {
+  d <- traj_data(c("1", "2", "10"))
+  d$grp <- as.numeric(d$grp)
+  expect_equal(levels(plot_dynamic_trajectory(d, "val", "time", "grp")$data$grp), c("1", "2", "10"))
+})

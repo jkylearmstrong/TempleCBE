@@ -40,7 +40,10 @@
 #' @param min_size,max_size Smallest and largest number of terms per formula
 #'   (`max_size` defaults to all terms).
 #' @param weights Optional non-negative numeric vector, one value per entry of `predictors`
-#'   (named by term, or in the same order). A weight of 0 keeps a term out unless it is required.
+#'   (in the same order), or named by term; a named vector may leave terms out, which then get the
+#'   mean of the given weights, and may not name a term that is not in `predictors`. A weight of 0
+#'   keeps a term out unless it is required. To feed back the output of [calculate_feature_weights()],
+#'   use `level = "term"` there and pass `setNames(w$weight, w$feature)`.
 #' @param exclude Optional list of character vectors of terms that may not all appear together.
 #' @param hierarchy Logical; see Constraints.
 #' @param unique Logical; drop repeated term sets (default `TRUE`).
@@ -83,12 +86,23 @@ sample_candidate_formulas <- function(predictors,
   if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1) stop("`n` must be a positive whole number.", call. = FALSE)
   n <- as.integer(n)
 
+  for (tm in c(predictors, required)) {
+    if (inherits(try(str2lang(tm), silent = TRUE), "try-error")) {
+      stop("`", tm, "` is not a valid formula term.", call. = FALSE)
+    }
+  }
   pool <- setdiff(predictors, required)
   all_terms <- c(required, pool)
   max_size <- if (is.null(max_size)) length(all_terms) else as.integer(max_size)
+  if (length(min_size) != 1L || length(max_size) != 1L) {
+    stop("`min_size` and `max_size` must be single whole numbers.", call. = FALSE)
+  }
   min_size <- as.integer(min_size)
   if (is.na(min_size) || is.na(max_size) || min_size < 1L) {
     stop("`min_size` and `max_size` must be whole numbers, with `min_size` at least 1.", call. = FALSE)
+  }
+  if (length(required) > max_size) {
+    stop("There are ", length(required), " `required` terms but `max_size` is ", max_size, ".", call. = FALSE)
   }
   if (min_size < length(required)) min_size <- length(required)
   if (max_size > length(all_terms)) max_size <- length(all_terms)
@@ -103,10 +117,13 @@ sample_candidate_formulas <- function(predictors,
       stop("`weights` must be non-negative numbers without NA.", call. = FALSE)
     }
     if (!is.null(names(weights))) {
-      if (!all(predictors %in% names(weights))) {
-        stop("`weights` is named but lacks: ", paste(setdiff(predictors, names(weights)), collapse = ", "), ".", call. = FALSE)
+      if (!all(names(weights) %in% predictors)) {
+        stop("`weights` names terms that are not in `predictors`: ",
+             paste(setdiff(names(weights), predictors), collapse = ", "), ".", call. = FALSE)
       }
+      # terms without a weight (for example never sampled in the last round) get the mean weight
       w <- unname(weights[pool])
+      w[is.na(w)] <- mean(weights)
     } else {
       if (length(weights) != length(predictors)) {
         stop("`weights` must have one value per entry of `predictors`.", call. = FALSE)
@@ -149,7 +166,9 @@ sample_candidate_formulas <- function(predictors,
   n_free_max <- sum(w > 0)
   while (length(found) < n && attempts < max_attempts) {
     attempts <- attempts + 1L
-    k_extra <- sample(seq.int(max(min_size - length(required), 0L), max_size - length(required)), 1L)
+    lo <- max(min_size - length(required), 0L)
+    hi <- max_size - length(required)
+    k_extra <- lo + sample.int(hi - lo + 1L, 1L) - 1L
     if (k_extra > n_free_max) next
     drawn <- if (k_extra == 0L) character() else pool[sample.int(length(pool), k_extra, prob = if (any(w != 1)) w else NULL)]
     terms <- c(required, drawn)
@@ -158,6 +177,9 @@ sample_candidate_formulas <- function(predictors,
     if (isTRUE(unique) && key %in% keys) next
     keys <- c(keys, key)
     found[[length(found) + 1L]] <- terms
+  }
+  if (length(found) == 0L && !any(w > 0)) {
+    stop("All sampling weights are 0, so no formula can be drawn.", call. = FALSE)
   }
   if (length(found) < n) {
     warning("Only ", length(found), " of ", n, " distinct valid formulas could be found.", call. = FALSE)
@@ -187,7 +209,10 @@ sample_candidate_formulas <- function(predictors,
 #' (`score - min(score)`, after flipping the sign when `higher_is_better = FALSE`) and divided by their
 #' sum; if all scores are equal every formula gets `1 / n`. The weight of a feature is the sum of the
 #' shares of the formulas that contain it, a number between 0 and 1: 1 means it is in every
-#' formula that scores above the worst, 0 that it is in none. `method = "inclusion"` ignores the scores
+#' formula that scores above the worst, 0 that it is in none. Because the worst candidate always gets
+#' a share of 0, a feature found only in the worst formula gets weight 0, and a tiny score gap can
+#' swing weights between 0 and 1; if you pass these weights to [sample_candidate_formulas()] a 0 keeps
+#' the term out of the next round, so add a small constant to the weights if you want every term to stay possible. `method = "inclusion"` ignores the scores
 #' and gives the plain fraction of formulas that contain the feature. `normalize = "sum"` rescales the
 #' weights to add to 1 and `"max"` rescales the largest to 1.
 #'
@@ -246,6 +271,7 @@ calculate_feature_weights <- function(candidates,
     if (!is.numeric(scores) || length(scores) != n) {
       stop("`scores` must be numeric with one value per candidate (", n, ").", call. = FALSE)
     }
+    if (any(is.infinite(scores))) stop("`scores` must be finite (or NA).", call. = FALSE)
     keep <- !is.na(scores)
     if (!all(keep)) warning(sum(!keep), " candidate(s) with a missing score were dropped.", call. = FALSE)
     if (!any(keep)) stop("No candidate has a score.", call. = FALSE)

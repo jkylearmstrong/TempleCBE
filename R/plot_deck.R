@@ -75,7 +75,7 @@ plot_survival_km <- function(data,
     )
 
   if (show_p) {
-    n_groups <- if (is.null(group_col)) 0L else length(unique(stats::na.omit(data[[group_col]])))
+    n_groups <- length(fit$strata)
     if (n_groups < 2L) {
       warning("A log-rank p-value needs `group_col` with at least two groups; none is shown.", call. = FALSE)
     } else {
@@ -141,7 +141,7 @@ plot_dynamic_trajectory <- function(data,
   } else if (is.factor(data[[group_col]])) {
     lvls <- levels(data[[group_col]])[levels(data[[group_col]]) %in% present]
   } else {
-    lvls <- sort(present)
+    lvls <- as.character(sort(unique(stats::na.omit(data[[group_col]]))))
   }
   data[[group_col]] <- factor(as.character(data[[group_col]]), levels = lvls)
 
