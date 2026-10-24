@@ -22,9 +22,17 @@ NULL
 #' @param title Optional plot title.
 #' @param caption Optional plot caption.
 #' @param base_size Base font size (default: 13).
-#' @param risk_table Logical. If `TRUE`, appends a number-at-risk table below the survival curve. Default `FALSE`.
-#' @param p_value Logical. If `TRUE` and `group_col` is specified, displays log-rank test p-value. Default `FALSE`.
-#' @return A ggplot2 object.
+#' @param risk_table Logical. If `TRUE`, appends a number-at-risk table below the survival curve,
+#'   with the same time axis and the same strata and colors as the curve ([ggsurvfit::add_risktable()]).
+#'   Default `FALSE`.
+#' @param p_value Logical. If `TRUE` and `group_col` is specified, displays the log-rank test p-value
+#'   (the test of [survival::survdiff()], `rho = 0`, comparing all strata at once) inside the plot.
+#'   Default `FALSE`. Asking for it without a `group_col`, or with a group that has a single level,
+#'   gives a warning and no p-value.
+#' @param pval Same as `p_value`; the short name used by other survival plotting packages
+#'   (`survminer::ggsurvplot(pval = TRUE)`). If both are given, `pval` wins.
+#' @return A ggplot2 object, or (with `risk_table = TRUE`) a `ggsurvfit` plot that draws the risk table
+#'   under the curve when printed.
 #' @export
 plot_survival_km <- function(data,
                              time_col,
@@ -35,7 +43,9 @@ plot_survival_km <- function(data,
                              caption = NULL,
                              base_size = 13,
                              risk_table = FALSE,
-                             p_value = FALSE) {
+                             p_value = FALSE,
+                             pval = p_value) {
+  show_p <- isTRUE(pval)
   surv_fmla_str <- if (!is.null(group_col)) {
     sprintf("survival::Surv(%s, %s) ~ %s", time_col, status_col, group_col)
   } else {
@@ -64,8 +74,14 @@ plot_survival_km <- function(data,
       caption = caption
     )
 
-  if (isTRUE(p_value) && !is.null(group_col)) {
-    p <- p + ggsurvfit::add_pvalue()
+  if (show_p) {
+    n_groups <- length(fit$strata)
+    if (n_groups < 2L) {
+      warning("A log-rank p-value needs `group_col` with at least two groups; none is shown.", call. = FALSE)
+    } else {
+      # "annotation" keeps the caption free for the user's own text
+      p <- p + ggsurvfit::add_pvalue(location = "annotation")
+    }
   }
 
   if (isTRUE(risk_table)) {
@@ -87,7 +103,17 @@ plot_survival_km <- function(data,
 #' @param facet_col Optional character name of domain or biomarker column to facet wrap.
 #' @param colors Named or unnamed character vector of colors matching group levels,
 #'   or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
+#'   When `colors` is left at its default and the data's groups are not Survived/Died, the CBE palette
+#'   is used instead of failing, so any grouping works without extra arguments.
 #' @param base_size Base font size (default: 12).
+#' @param palette Optional colors for the groups, used instead of `colors`. A **named** vector must
+#'   name every group (extra names are ignored), so a group keeps its color whichever subset of
+#'   groups is plotted. An **unnamed** vector is assigned to the groups in level order and must be at
+#'   least as long as the number of groups. Anything short of that is an error, not a recycled color.
+#' @param group_levels Optional character vector giving the groups and their order (legend and
+#'   color assignment). Every group in the data must be listed; list the levels in the order you
+#'   want. By default a factor keeps its levels (unused ones are dropped) and other columns are sorted.
+#'   Use this for multiclass phenotypes, tertiles (`c("T1", "T2", "T3")`) or cluster labels.
 #' @return A ggplot2 object.
 #' @export
 plot_dynamic_trajectory <- function(data,
@@ -96,7 +122,29 @@ plot_dynamic_trajectory <- function(data,
                                     group_col,
                                     facet_col = NULL,
                                     colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
-                                    base_size = 12) {
+                                    base_size = 12,
+                                    palette = NULL,
+                                    group_levels = NULL) {
+  colors_given <- !missing(colors)
+  if (!group_col %in% names(data)) {
+    stop("`group_col` \"", group_col, "\" is not a column of `data`.", call. = FALSE)
+  }
+  present <- unique(as.character(stats::na.omit(data[[group_col]])))
+  if (!is.null(group_levels)) {
+    group_levels <- as.character(group_levels)
+    if (anyDuplicated(group_levels)) stop("`group_levels` has duplicates.", call. = FALSE)
+    absent <- setdiff(present, group_levels)
+    if (length(absent)) {
+      stop("`group_levels` does not list group(s) in the data: ", paste(absent, collapse = ", "), ".", call. = FALSE)
+    }
+    lvls <- group_levels
+  } else if (is.factor(data[[group_col]])) {
+    lvls <- levels(data[[group_col]])[levels(data[[group_col]]) %in% present]
+  } else {
+    lvls <- as.character(sort(unique(stats::na.omit(data[[group_col]]))))
+  }
+  data[[group_col]] <- factor(as.character(data[[group_col]]), levels = lvls)
+
   grouping_vars <- c(time_col, group_col)
   if (!is.null(facet_col)) grouping_vars <- c(facet_col, grouping_vars)
 
@@ -125,16 +173,31 @@ plot_dynamic_trajectory <- function(data,
     ggplot2::geom_errorbar(ggplot2::aes(ymin = mean - se, ymax = mean + se), width = 3) +
     theme_cbe_deck(base_size = base_size)
 
-  if (!is.null(colors)) {
-    if (is.null(names(colors))) {
-      group_lvls <- unique(summary_df[[group_col]])
-      if (length(colors) >= length(group_lvls)) {
-        names(colors) <- group_lvls[seq_along(colors)]
-      }
+  chosen <- if (!is.null(palette)) palette else if (colors_given) colors else {
+    # the Survived/Died default only fits those two groups
+    if (all(lvls %in% names(colors))) colors else NULL
+  }
+  if (is.null(chosen)) {
+    pal <- unname(cbe_palette)
+    if (length(lvls) > length(pal)) {
+      stop("There are ", length(lvls), " groups but the CBE palette has ", length(pal),
+           " colors; give `palette`.", call. = FALSE)
     }
-    p <- p + ggplot2::scale_color_manual(values = colors)
+    p <- p + ggplot2::scale_color_manual(values = stats::setNames(pal[seq_along(lvls)], lvls), drop = FALSE)
   } else {
-    p <- p + scale_color_cbe()
+    if (is.null(names(chosen))) {
+      if (length(chosen) < length(lvls)) {
+        stop("`", if (!is.null(palette)) "palette" else "colors", "` has ", length(chosen),
+             " colors for ", length(lvls), " groups.", call. = FALSE)
+      }
+      names(chosen) <- lvls[seq_along(chosen)]
+    }
+    miss <- setdiff(lvls, names(chosen))
+    if (length(miss)) {
+      stop("`", if (!is.null(palette)) "palette" else "colors", "` has no color for group(s): ",
+           paste(miss, collapse = ", "), ".", call. = FALSE)
+    }
+    p <- p + ggplot2::scale_color_manual(values = chosen[lvls], drop = FALSE)
   }
 
   p <- p +

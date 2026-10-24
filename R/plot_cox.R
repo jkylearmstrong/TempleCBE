@@ -22,9 +22,11 @@ NULL
 #' @param color Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).
 #' @param scale One of \code{"hr"} (default; plots hazard ratios with a reference line at 1) or
 #'   \code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with
-#'   a reference line at 0).
+#'   a reference line at 0). Equivalent to \code{exponentiate = TRUE} and \code{FALSE}; kept for
+#'   existing code. Give \code{scale} or \code{exponentiate}, not both with different meanings.
 #' @param color_by One of \code{"none"} (default) or \code{"significance"}, which colors points/error
-#'   bars by whether \code{p_col} is below 0.05 and adds a legend.
+#'   bars by whether \code{p_col} is below \code{sig_level} (a term is significant when
+#'   \code{p < sig_level}; a missing p-value counts as not significant) and adds a legend.
 #' @param order_by One of \code{"none"} (default; original row order), \code{"magnitude"} (sorts by
 #'   \code{abs(log(estimate))} descending), or \code{"pvalue"} (sorts by \code{p_col} ascending).
 #' @param x_limits Optional 2-element numeric vector for x-axis limits.
@@ -34,6 +36,15 @@ NULL
 #' @param base_size Base font size (default: 13).
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
+#' @param exponentiate `NULL` (default: follow `scale`), `TRUE` to show hazard ratios (reference line
+#'   at 1) or `FALSE` to show the raw coefficients, `log(HR)` (reference line at 0, linear axis).
+#'   The columns you pass are always on the HR scale; this only chooses what is displayed, and the
+#'   confidence limits are transformed with the estimate.
+#' @param log_scale Logical. With hazard ratios, `TRUE` draws the axis on a log scale (reference line
+#'   still at 1, so equal ratios in either direction are the same distance from it). This is a
+#'   separate choice from `exponentiate`; `log_scale = TRUE` with `exponentiate = FALSE` is an error,
+#'   because the coefficients are already logs. All HR and confidence limits must be positive.
+#' @param sig_level Significance threshold for `color_by = "significance"` (default 0.05).
 #' @return A ggplot2 object.
 #' @seealso [plot_cox_forest_multi()]
 #' @export
@@ -53,7 +64,11 @@ plot_cox_forest <- function(data,
                             caption = NULL,
                             base_size = 13,
                             label_map = NULL,
-                            style = NULL) {
+                            style = NULL,
+                            exponentiate = NULL,
+                            log_scale = FALSE,
+                            sig_level = 0.05) {
+  disp <- resolve_forest_display(scale, missing(scale), exponentiate, log_scale, sig_level)
   scale <- match.arg(scale)
   color_by <- match.arg(color_by)
   order_by <- match.arg(order_by)
@@ -83,8 +98,34 @@ plot_cox_forest <- function(data,
     df = data, label_col = label_col, hr_col = hr_col, low_col = low_col, high_col = high_col,
     p_col = p_col, color = color, x_limits = x_limits, x_breaks = x_breaks,
     title = title, caption = caption, base_size = base_size,
-    scale = scale, color_by = color_by, order_by = order_by
+    scale = scale, color_by = color_by, order_by = order_by,
+    exponentiate = disp$exponentiate, log_scale = disp$log_scale, sig_level = sig_level
   )
+}
+
+# Resolves `scale` (older argument) and `exponentiate`/`log_scale` into one consistent choice.
+resolve_forest_display <- function(scale, scale_missing, exponentiate, log_scale, sig_level) {
+  if (!is.null(exponentiate) && (!is.logical(exponentiate) || length(exponentiate) != 1L || is.na(exponentiate))) {
+    stop("`exponentiate` must be TRUE, FALSE or NULL.", call. = FALSE)
+  }
+  if (!is.logical(log_scale) || length(log_scale) != 1L || is.na(log_scale)) {
+    stop("`log_scale` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!is.numeric(sig_level) || length(sig_level) != 1L || is.na(sig_level) || sig_level <= 0 || sig_level >= 1) {
+    stop("`sig_level` must be a number between 0 and 1.", call. = FALSE)
+  }
+  scale_hr <- if (scale_missing) NA else identical(match.arg(scale, c("hr", "log_hr")), "hr")
+  if (is.null(exponentiate)) {
+    exponentiate <- if (is.na(scale_hr)) TRUE else scale_hr
+  } else if (!is.na(scale_hr) && !identical(scale_hr, exponentiate)) {
+    stop("`scale = \"", if (scale_hr) "hr" else "log_hr", "\"` and `exponentiate = ", exponentiate,
+         "` disagree; use `exponentiate` alone.", call. = FALSE)
+  }
+  if (isTRUE(log_scale) && !isTRUE(exponentiate)) {
+    stop("`log_scale = TRUE` needs hazard ratios (`exponentiate = TRUE`); coefficients are already on the log scale.",
+         call. = FALSE)
+  }
+  list(exponentiate = exponentiate, log_scale = log_scale)
 }
 
 #' Forest Plot of Hazard Ratios for a Multivariable Cox Model
@@ -106,6 +147,7 @@ plot_cox_forest <- function(data,
 #' @param base_size Base font size (default: 13).
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
+#' @param exponentiate,log_scale,sig_level See [plot_cox_forest()].
 #' @return A ggplot2 object.
 #' @seealso [cox_multi()], [plot_cox_forest()]
 #' @export
@@ -120,10 +162,14 @@ plot_cox_forest_multi <- function(x,
                                   caption = NULL,
                                   base_size = 13,
                                   label_map = NULL,
-                                  style = NULL) {
+                                  style = NULL,
+                                  exponentiate = NULL,
+                                  log_scale = FALSE,
+                                  sig_level = 0.05) {
   if (!inherits(x, "cbe_cox_multi")) {
     stop("`x` must be a `cbe_cox_multi` object (see `cox_multi()`).", call. = FALSE)
   }
+  disp <- resolve_forest_display(scale, missing(scale), exponentiate, log_scale, sig_level)
   scale <- match.arg(scale)
   color_by <- match.arg(color_by)
   order_by <- match.arg(order_by)
@@ -134,7 +180,8 @@ plot_cox_forest_multi <- function(x,
     df = df, label_col = "Level", hr_col = "estimate", low_col = "conf.low", high_col = "conf.high",
     p_col = "p.value", color = color, x_limits = x_limits, x_breaks = x_breaks,
     title = title, caption = caption, base_size = base_size,
-    scale = scale, color_by = color_by, order_by = order_by, facet_col = "Variable"
+    scale = scale, color_by = color_by, order_by = order_by, facet_col = "Variable",
+    exponentiate = disp$exponentiate, log_scale = disp$log_scale, sig_level = sig_level
   )
 }
 
@@ -173,7 +220,8 @@ forest_plot_engine <- function(df,
                                label_col, hr_col, low_col, high_col, p_col,
                                color, x_limits, x_breaks, title, caption, base_size,
                                scale = "hr", color_by = "none", order_by = "none",
-                               facet_col = NULL) {
+                               facet_col = NULL, exponentiate = identical(scale, "hr"),
+                               log_scale = FALSE, sig_level = 0.05) {
   if (color_by == "significance" && is.null(p_col)) {
     stop("`color_by = \"significance\"` requires `p_col`.", call. = FALSE)
   }
@@ -201,7 +249,11 @@ forest_plot_engine <- function(df,
 
   df$.y <- factor(df$.label, levels = rev(unique(df$.label)))
 
-  if (scale == "log_hr") {
+  if (isTRUE(log_scale) && any(c(df$.hr, df$.low, df$.hi) <= 0, na.rm = TRUE)) {
+    stop("`log_scale = TRUE` needs positive hazard ratios and confidence limits.", call. = FALSE)
+  }
+
+  if (!isTRUE(exponentiate)) {
     df$.x    <- log(df$.hr)
     df$.xmin <- log(df$.low)
     df$.xmax <- log(df$.hi)
@@ -213,12 +265,13 @@ forest_plot_engine <- function(df,
     df$.xmax <- df$.hi
     x_intercept <- 1
     ci_lbl <- attr(df, "ci_label") %||% "95% CI"
-    x_lab <- paste0("Hazard Ratio (", ci_lbl, ")")
+    x_lab <- paste0("Hazard Ratio (", ci_lbl, if (isTRUE(log_scale)) ", log scale" else "", ")")
   }
 
   if (color_by == "significance") {
-    df$.sig <- ifelse(df$.p < 0.05, "Significant (p < 0.05)", "Not significant")
-    color_values <- stats::setNames(c(color, "grey60"), c("Significant (p < 0.05)", "Not significant"))
+    sig_lbl <- paste0("Significant (p < ", format(sig_level, scientific = FALSE), ")")
+    df$.sig <- ifelse(!is.na(df$.p) & df$.p < sig_level, sig_lbl, "Not significant")
+    color_values <- stats::setNames(c(color, "grey60"), c(sig_lbl, "Not significant"))
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, y = .data$.y, color = .data$.sig)) +
       ggplot2::geom_vline(xintercept = x_intercept, linetype = "dashed", color = "grey50") +
       ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.xmin, xmax = .data$.xmax), width = 0.25, linewidth = 0.8) +
@@ -236,7 +289,9 @@ forest_plot_engine <- function(df,
     ggplot2::theme(plot.margin = ggplot2::margin(5.5, 18, 5.5, 5.5)) +
     ggplot2::labs(title = title, x = x_lab, y = NULL, caption = caption)
 
-  if (!is.null(x_limits)) {
+  if (isTRUE(log_scale)) {
+    p <- p + ggplot2::scale_x_log10(limits = x_limits, breaks = x_breaks %||% scales::breaks_log(n = 6, base = 10))
+  } else if (!is.null(x_limits)) {
     p <- p + ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks %||% scales::breaks_pretty(n = 5))
   }
 
