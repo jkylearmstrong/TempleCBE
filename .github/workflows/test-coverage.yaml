@@ -20,7 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: test-coverage
+    # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml)
+    container: ghcr.io/jkylearmstrong/templecbe-ci:latest
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
@@ -31,21 +36,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
-      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
-      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
-      # (the Docker builds use it).
-      - name: Use the main Ubuntu package mirror
-        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
+      # tools that the r-lib actions call; the CI image gets them with the next image build (Dockerfile.ci)
+      - name: Install jq and friends if the image lacks them
         run: |
-          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
-
-      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-
-      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-        with:
-          use-public-rspm: true
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file
+          fi
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
@@ -56,6 +52,20 @@ jobs:
             any::jquerylib
             any::caret
           needs: check
+
+      - name: Environment report (what the tests can use)
+        run: |
+          d <- read.dcf("DESCRIPTION", fields = c("Imports", "Suggests"))
+          pk <- unique(trimws(sub("[(].*", "", unlist(strsplit(gsub("[\r\n]+", " ", d), ",")))))
+          pk <- pk[nzchar(pk) & !is.na(pk) & pk != "R"]
+          bad <- pk[!vapply(pk, requireNamespace, logical(1), quietly = TRUE)]
+          cat("declared but not loadable:", paste(bad, collapse = ", "), "\n")
+          cat("user:", Sys.info()[["user"]], "\n")
+          print(Sys.which(c("pandoc", "quarto", "pdflatex", "git", "zip", "python3")))
+          cat("git:", system2("git", "--version", stdout = TRUE), "\n")
+          cat("pandoc:", system2("pandoc", "--version", stdout = TRUE)[1], "\n")
+          print(.libPaths())
+        shell: Rscript {0}
 
       - name: Test coverage
         run: |
@@ -90,11 +100,14 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+      # RUNNER_TEMP is the path inside the job's container; runner.temp in an expression is the host's
       - name: Show testthat output
         if: always()
         run: |
           ## --------------------------------------------------------------------
-          find '${{ runner.temp }}' -name 'testthat.Rout*' -exec cat '{}' \; || true
+          mkdir -p "$GITHUB_WORKSPACE/testthat-out"
+          find "$RUNNER_TEMP" -name 'testthat.Rout*' -exec cp --backup=numbered '{}' "$GITHUB_WORKSPACE/testthat-out/" \; || true
+          find "$RUNNER_TEMP" -name 'testthat.Rout*' -exec cat '{}' \; || true
         shell: bash
 
       - name: Upload test results
@@ -102,5 +115,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-test-failures
-          path: ${{ runner.temp }}/**/testthat.Rout*
+          path: testthat-out/
+          if-no-files-found: ignore
 

@@ -36,6 +36,7 @@ jobs:
     outputs:
       publish: ${{ steps.decide.outputs.publish }}
       image: ${{ steps.decide.outputs.image }}
+      week: ${{ steps.decide.outputs.week }}
     steps:
       - id: decide
         env:
@@ -46,6 +47,7 @@ jobs:
           if [ "$EVENT" != pull_request ] && [ "$REF" = refs/heads/master ]; then publish=true; fi
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/templecbe-ci" >> "$GITHUB_OUTPUT"
+          echo "week=$(date -u +%G%V)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -80,6 +82,9 @@ jobs:
         with:
           context: .
           file: Dockerfile.ci
+          # a new value each ISO week invalidates the layer that installs the CRAN packages, so the Monday
+          # build picks up new releases instead of reusing the cached layer
+          build-args: CRAN_WEEK=${{ needs.prepare.outputs.week }}
           platforms: ${{ matrix.platform }}
           outputs: ${{ needs.prepare.outputs.publish == 'true' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', needs.prepare.outputs.image) || 'type=cacheonly' }}
           cache-from: type=registry,ref=${{ needs.prepare.outputs.image }}:buildcache-${{ matrix.pair }}

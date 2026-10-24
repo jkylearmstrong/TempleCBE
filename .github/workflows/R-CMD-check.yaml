@@ -31,7 +31,13 @@ jobs:
     # pull-request runs of this job take 29 minutes (13 on a master push) and were cancelled at 30
     timeout-minutes: 60
     name: ubuntu-latest (release)
+    # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml);
+    # setup-r installing R through apt took 10-19 minutes on a slow mirror. The package must be public.
+    container: ghcr.io/jkylearmstrong/templecbe-ci:latest
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       LANGUAGE: en_US:en
@@ -42,22 +48,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
-      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
-      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
-      # (the Docker builds use it).
-      - name: Use the main Ubuntu package mirror
-        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
+      # tools that the r-lib actions call; the CI image gets them with the next image build (Dockerfile.ci)
+      - name: Install jq and friends if the image lacks them
         run: |
-          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
-
-      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-
-      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
-        with:
-          r-version: 'release'
-          use-public-rspm: true
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file
+          fi
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
@@ -97,16 +93,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
-      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
-      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
-      # (the Docker builds use it).
-      - name: Use the main Ubuntu package mirror
-        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
-        run: |
-          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
-
       - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
 
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
@@ -128,9 +114,14 @@ jobs:
   optional-deps-installed-tests:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 20
+    timeout-minutes: 40
     name: optional-tests-${{ matrix.config.os }}
+    # the Linux x86-64 entry runs in the CI image (see sanity-check); the others have no container
+    container: ${{ matrix.config.container }}
     env:
+      # the repository's .Rprofile activates renv, which would hide the packages of the image (they
+      # live in the site library); the container jobs run without it
+      RENV_CONFIG_AUTOLOADER_ENABLED: ${{ matrix.config.container && 'FALSE' || 'TRUE' }}
       LANG: ${{ matrix.config.locale }}
       LC_ALL: ${{ matrix.config.locale }}
       LANGUAGE: en_US:en
@@ -140,7 +131,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,  locale: C.UTF-8}
+          - {os: ubuntu-latest,  locale: C.UTF-8, container: 'ghcr.io/jkylearmstrong/templecbe-ci:latest'}
           - {os: windows-latest, locale: English_United States.utf8}
           - {os: ubuntu-24.04-arm, locale: C.UTF-8}
 
@@ -149,20 +140,19 @@ jobs:
         with:
           persist-credentials: false
 
-      # apt on the GitHub-hosted Ubuntu runners reads packages from azure.archive.ubuntu.com, which was
-      # throttled on 2026-10-23: installing R and the system libraries took 20-40 minutes and the jobs
-      # were cancelled at their limits. archive.ubuntu.com downloaded the same packages in minutes
-      # (the Docker builds use it).
-      - name: Use the main Ubuntu package mirror
-        if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}
-        run: |
-          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|g; s|http://azure.archive.ubuntu.com/ubuntu/\?|http://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-          grep -rhE '^(URIs|deb )' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | head -5 || true
-
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        if: ${{ !matrix.config.container }}
         with:
           r-version: release
           use-public-rspm: true
+
+      # tools that the r-lib actions call; the CI image gets them with the next image build (Dockerfile.ci)
+      - name: Install jq and friends if the image lacks them
+        if: ${{ matrix.config.container != '' }}
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file
+          fi
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
