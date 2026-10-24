@@ -2,6 +2,8 @@
 
 ## Rendering
 
+* New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
+
 * New `interactive_render_pipeline()`: a menu in front of `render_pipeline()` for an interactive session. It lists the documents in render order and renders the stale ones, everything again, everything up to one document, or one document only (or nothing). It refuses to run non-interactively. Requested for the downstream render scripts.
 
 ## Data preparation
