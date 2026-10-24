@@ -1,3 +1,16 @@
+# TempleCBE 0.7.2
+
+More downstream requests. Nothing is removed or renamed.
+
+## New
+
+* **Imputation method selection**: `compare_imputation_rse()` scores imputation methods on cells with a known truth against a null baseline that predicts the variable's overall mean or median (`RSE = (RMSE / null RMSE)^2`; below 1 beats the baseline); `tbl_best_imputation_method()` picks the lowest RSE per variable; `build_best_imputed_data()` assembles the final data from each variable's winning method; `plot_rse_by_column()` and `plot_rse_vs_missingness()` draw the diagnostics. `tbl_best_imputation_method()` and the plots also accept the output of `tune_impute_numeric()`.
+* **`plot_target_correlation_heatmap()`**: one target against many candidate predictors as a single column of correlation tiles, with weak correlations faded below a cut-off.
+* **`batch_cox_single()`**: univariate Cox models for many features at once (optionally parallel through `furrr`, start-stop data supported), with hazard ratios, confidence intervals and a multiple-testing adjusted p-value per feature. A feature whose model fails is reported, not fatal.
+* **`tbl_two_sample_compare()`**: Welch, Student or Wilcoxon comparison of continuous variables between two groups as a manuscript table (N, mean (SD), difference with confidence interval, p-value).
+* **`words_list()` and `pluralize()`**: Oxford-comma lists that return a fallback for empty input, and a count with the right plural. (`words()` stays; `words_list()` adds the choice of joining word and ignores `NA`.)
+* **`include_landscape_figure()`**: for `results = "asis"` chunks; puts a figure on a landscape page in PDF output and writes no LaTeX in HTML or Word.
+
 # TempleCBE 0.7.1
 
 Requested by downstream projects, to replace local copies of the same code. Nothing is removed or renamed.

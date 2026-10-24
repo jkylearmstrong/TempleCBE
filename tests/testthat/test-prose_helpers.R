@@ -1,0 +1,23 @@
+test_that("words_list() builds Oxford-comma lists and falls back when empty", {
+  expect_equal(words_list(character()), "none")
+  expect_equal(words_list(NULL, none = "no variables"), "no variables")
+  expect_equal(words_list("a"), "a")
+  expect_equal(words_list(c("a", "b")), "a and b")
+  expect_equal(words_list(c("a", "b", "c")), "a, b, and c")
+  expect_equal(words_list(c("a", "b", "c"), and = "or "), "a, b, or c")
+  expect_equal(words_list(c("a", NA, "b")), "a and b")
+  expect_equal(words_list(NA_character_), "none")
+  expect_equal(words_list(1:3), "1, 2, and 3")
+  expect_error(words_list("a", and = ""), "single word")
+})
+
+test_that("pluralize() uses the singular only for exactly one", {
+  expect_equal(pluralize(1, "model"), "1 model")
+  expect_equal(pluralize(0, "model"), "0 models")
+  expect_equal(pluralize(2, "child", "children"), "2 children")
+  expect_equal(pluralize(c(1, 2, 1.5), "unit"), c("1 unit", "2 units", "1.5 units"))
+  expect_equal(pluralize(1200, "case", big_mark = ","), "1,200 cases")
+  expect_equal(pluralize(NA_real_, "case"), NA_character_)
+  expect_error(pluralize("a", "case"), "numeric")
+  expect_error(pluralize(1, c("a", "b")), "single string")
+})
