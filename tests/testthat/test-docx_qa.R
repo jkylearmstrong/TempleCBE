@@ -1,5 +1,6 @@
 # a .docx whose body is the given XML; everything here is invented
 qa_docx <- function(body_xml, env = parent.frame()) {
+  testthat::skip_if_not_installed("zip")
   td <- withr::local_tempdir(.local_envir = env)
   dir.create(file.path(td, "word"))
   writeLines(paste0(
@@ -13,9 +14,7 @@ qa_docx <- function(body_xml, env = parent.frame()) {
     body_xml, "</w:body></w:document>"
   ), file.path(td, "word", "document.xml"), useBytes = TRUE)
   target <- file.path(withr::local_tempdir(.local_envir = env), "questions.docx")
-  withr::with_dir(td, utils::zip(
-    target, files = list.files(".", recursive = TRUE, all.files = TRUE, no.. = TRUE), flags = "-r9Xq"
-  ))
+  zip::zip(target, files = list.files(td, recursive = TRUE, all.files = TRUE, no.. = TRUE), root = td)
   target
 }
 
@@ -116,9 +115,52 @@ test_that("inputs are checked", {
   expect_error(extract_docx_qa(path, index_data = data.frame(file = "a")), "must name a column")
 
   # a .docx that is not a Word document
+  skip_if_not_installed("zip")
   fake <- withr::local_tempfile(fileext = ".docx")
   td <- withr::local_tempdir()
   writeLines("x", file.path(td, "a.txt"))
-  withr::with_dir(td, utils::zip(fake, "a.txt", flags = "-r9Xq"))
+  zip::zip(fake, "a.txt", root = td)
   expect_error(extract_docx_qa(fake), "no word/document.xml")
+})
+
+test_that("file names with dots are cited whole", {
+  path <- qa_docx(paste0(qa_para("What changed?"), qa_para("See model_v1.2.pdf and https://example.org/p/page.html.")))
+  out <- extract_docx_qa(path)
+  expect_identical(out$citations, list(c("model_v1.2.pdf", "page.html")))
+})
+
+test_that("a text box is read once, and its fallback copy not at all", {
+  body <- paste0(
+    qa_para("Why was it excluded?"),
+    '<w:p><w:r><w:t>Outer text </w:t></w:r>',
+    '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">',
+    "<mc:Choice><w:r><w:txbxContent>", qa_para("boxed.pdf"), "</w:txbxContent></w:r></mc:Choice>",
+    "<mc:Fallback><w:r><w:txbxContent>", qa_para("boxed.pdf"), "</w:txbxContent></w:r></mc:Fallback>",
+    "</mc:AlternateContent></w:p>"
+  )
+  out <- extract_docx_qa(qa_docx(body))
+  expect_identical(out$answer, "Outer text
+boxed.pdf")
+  expect_identical(out$citations, list("boxed.pdf"))
+})
+
+test_that("an answer that begins with a question word is cut short: documented, and visible in n_answer_paragraphs", {
+  path <- qa_docx(paste0(qa_para("What is the effect?"), qa_para("Can't say yet."), qa_para("See a.pdf.")))
+  out <- extract_docx_qa(path)
+  expect_identical(out$question, c("What is the effect?", "Can't say yet."))
+  expect_identical(out$n_answer_paragraphs, c(0L, 1L))
+})
+
+test_that("index problems are reported, not hidden", {
+  path <- qa_docx(paste0(qa_para("What changed?"), qa_para("See a.pdf, b.pdf and c.pdf.")))
+  index <- data.frame(
+    file = c("a.pdf", "A.PDF", "b.pdf", "c.pdf"),
+    path = c("one/a.pdf", "two/a.pdf", strrep("x", 300L), NA)
+  )
+  expect_warning(
+    expect_warning(out <- extract_docx_qa(path, index_data = index), "more than once"),
+    "255 characters"
+  )
+  expect_identical(out$links[[1]], "=HYPERLINK(\"one/a.pdf\",\"a.pdf\")")
+  expect_identical(out$unresolved_citations, "b.pdf; c.pdf")
 })

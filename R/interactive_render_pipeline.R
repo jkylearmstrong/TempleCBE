@@ -75,7 +75,7 @@ interactive_render_pipeline <- function(all_file_objects, ...) {
       list(only_stale = FALSE, from = item, to = item)
     }
   )
-  invisible(do.call(render_pipeline, c(list(path = all_file_objects), args, dots)))
+  invisible(do.call("render_pipeline", c(list(path = all_file_objects), args, dots)))
 }
 
 # thin wrappers so that tests can stand in for the console

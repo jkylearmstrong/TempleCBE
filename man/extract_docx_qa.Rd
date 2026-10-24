@@ -7,7 +7,7 @@
 extract_docx_qa(
   docx_path,
   question_pattern = "^(What|Why|How|Summarize|Explain|Can|Is|Are)\\\\b|\\\\?$",
-  citation_pattern = "(?i)\\\\b[[:alnum:]_\\\\-]+\\\\.(pdf|docx|html)\\\\b",
+  citation_pattern = "(?i)\\\\b[[:alnum:]_.\\\\-]+\\\\.(pdf|docx|html)\\\\b",
   index_data = NULL,
   index_file_col = "file",
   index_path_col = "path"
@@ -39,19 +39,31 @@ Reads the body of a `.docx` that lists investigator questions, each followed by 
 answer paragraphs written for it, and returns one row per question with its answer and the
 report files the answer cites. This is for tracking reviewer or PI questions across a
 project (a Q&A sheet in Word turned into a deliverables table); it does not read Word's
-comments or tracked changes, for which see [docx_review_extract()].
+comments or who made a tracked change, for which see [docx_review_extract()].
 }
 \details{
 A paragraph is a **question** if it matches `question_pattern`; every following paragraph
 up to the next question is part of its **answer** (joined with a line break). Paragraphs
 before the first question are ignored. The text is what the document currently reads: tracked
-insertions count, tracked deletions do not. A table's paragraphs count, in document order.
-Empty paragraphs are dropped.
+insertions count, tracked deletions do not. A table's paragraphs count, in document order;
+the text of a text box is read once, as its own paragraph. Empty paragraphs are dropped.
+
+**The default `question_pattern` is simple and can misfire**: an answer paragraph that begins
+with one of its words ("Can't say.", "How we handled it: see a.pdf") or ends with `?` is taken
+for a new question, and the answer it interrupts is cut short without a warning. Check
+`n_answer_paragraphs`, or give a stricter pattern (for example `"^Q[0-9]+[.:]"` when the
+questions are numbered).
 
 **Citations** are the matches of `citation_pattern` in the answer. With `index_data`, each is
-looked up (by file name, ignoring case and folders) in the index, and an Excel formula
-`=HYPERLINK("<path>", "<file>")` is built for it, so the table can be written to a workbook with
-live links; a citation the index does not know is listed in `unresolved_citations`.
+looked up (by file name, ignoring case and folders) in the index; the column `links` then holds,
+per question, the Excel formulas `=HYPERLINK("<path>", "<file>")` of the citations the index
+knows, as character strings (write them to a workbook cell with `openxlsx::writeFormula()`; Excel
+limits a string in a formula to 255 characters, so longer paths are reported with a warning and
+are not linked). A citation the index does not know is listed in `unresolved_citations`; an index
+with the same file name twice uses the first and warns.
+
+The question and answer text is returned as it is in the document. If you write it to a CSV or
+workbook, text that begins with `=`, `+`, `-` or `@` is read by spreadsheet programs as a formula.
 }
 \examples{
 \dontrun{

@@ -38,7 +38,7 @@
 #'   "analysis/mixed_models.qmd",
 #'   params_original = list(data_suffix = "original", impute = FALSE),
 #'   params_imputed  = list(data_suffix = "imputed",  impute = TRUE),
-#'   output_names    = c("mixed_models_original", "mixed_models_imputed"),
+#'   output_names    = c("original", "imputed"),   # -> mixed_models_original.html, mixed_models_imputed.html
 #'   formats         = c("html", "docx"),
 #'   output_dir      = "reports"
 #' )
@@ -75,6 +75,11 @@ render_parameterized_pair <- function(input,
   if (!is.character(output_names) || length(output_names) != 2L || anyNA(output_names) ||
       !all(nzchar(output_names)) || identical(tolower(output_names[1L]), tolower(output_names[2L]))) {
     stop("`output_names` must be two different, non-empty names.", call. = FALSE)
+  }
+
+  if (!all(grepl("^[A-Za-z0-9][A-Za-z0-9_.-]*$", output_names))) {
+    stop("`output_names` may contain only letters, digits, `_`, `.` and `-`, and must start with a letter or digit.",
+         call. = FALSE)
   }
 
   variants <- stats::setNames(list(params_original, params_imputed), output_names)

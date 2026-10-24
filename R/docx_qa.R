@@ -4,18 +4,30 @@
 #' answer paragraphs written for it, and returns one row per question with its answer and the
 #' report files the answer cites. This is for tracking reviewer or PI questions across a
 #' project (a Q&A sheet in Word turned into a deliverables table); it does not read Word's
-#' comments or tracked changes, for which see [docx_review_extract()].
+#' comments or who made a tracked change, for which see [docx_review_extract()].
 #'
 #' A paragraph is a **question** if it matches `question_pattern`; every following paragraph
 #' up to the next question is part of its **answer** (joined with a line break). Paragraphs
 #' before the first question are ignored. The text is what the document currently reads: tracked
-#' insertions count, tracked deletions do not. A table's paragraphs count, in document order.
-#' Empty paragraphs are dropped.
+#' insertions count, tracked deletions do not. A table's paragraphs count, in document order;
+#' the text of a text box is read once, as its own paragraph. Empty paragraphs are dropped.
+#'
+#' **The default `question_pattern` is simple and can misfire**: an answer paragraph that begins
+#' with one of its words ("Can't say.", "How we handled it: see a.pdf") or ends with `?` is taken
+#' for a new question, and the answer it interrupts is cut short without a warning. Check
+#' `n_answer_paragraphs`, or give a stricter pattern (for example `"^Q[0-9]+[.:]"` when the
+#' questions are numbered).
 #'
 #' **Citations** are the matches of `citation_pattern` in the answer. With `index_data`, each is
-#' looked up (by file name, ignoring case and folders) in the index, and an Excel formula
-#' `=HYPERLINK("<path>", "<file>")` is built for it, so the table can be written to a workbook with
-#' live links; a citation the index does not know is listed in `unresolved_citations`.
+#' looked up (by file name, ignoring case and folders) in the index; the column `links` then holds,
+#' per question, the Excel formulas `=HYPERLINK("<path>", "<file>")` of the citations the index
+#' knows, as character strings (write them to a workbook cell with `openxlsx::writeFormula()`; Excel
+#' limits a string in a formula to 255 characters, so longer paths are reported with a warning and
+#' are not linked). A citation the index does not know is listed in `unresolved_citations`; an index
+#' with the same file name twice uses the first and warns.
+#'
+#' The question and answer text is returned as it is in the document. If you write it to a CSV or
+#' workbook, text that begins with `=`, `+`, `-` or `@` is read by spreadsheet programs as a formula.
 #'
 #' @param docx_path Path to the `.docx` file.
 #' @param question_pattern Regular expression (PCRE) that marks a question paragraph.
@@ -42,7 +54,7 @@
 #' }
 extract_docx_qa <- function(docx_path,
                             question_pattern = "^(What|Why|How|Summarize|Explain|Can|Is|Are)\\b|\\?$",
-                            citation_pattern = "(?i)\\b[[:alnum:]_\\-]+\\.(pdf|docx|html)\\b",
+                            citation_pattern = "(?i)\\b[[:alnum:]_.\\-]+\\.(pdf|docx|html)\\b",
                             index_data = NULL,
                             index_file_col = "file",
                             index_path_col = "path") {
@@ -113,13 +125,27 @@ extract_docx_qa <- function(docx_path,
     idx_file <- tolower(basename(as.character(index_data[[index_file_col]])))
     idx_path <- as.character(index_data[[index_path_col]])
     idx_name <- basename(as.character(index_data[[index_file_col]]))
+    dup <- unique(idx_name[duplicated(idx_file)])
+    if (length(dup)) {
+      warning("`index_data` lists the file name(s) ", paste(dup, collapse = ", "),
+              " more than once; the first entry is used.", call. = FALSE)
+    }
+    # a citation counts as resolved only if the index gives it a path of a length Excel accepts
+    usable <- !is.na(idx_path) & nzchar(idx_path) & nchar(idx_path) <= 255L
+    too_long <- unique(idx_name[!is.na(idx_path) & nchar(idx_path) > 255L])
+    if (length(too_long)) {
+      warning("Path(s) of more than 255 characters cannot go into an Excel HYPERLINK formula; not linked: ",
+              paste(too_long, collapse = ", "), call. = FALSE)
+    }
     resolve <- function(cites) {
       pos <- match(tolower(basename(cites)), idx_file)
+      ok <- !is.na(pos) & usable[pos]
+      ok[is.na(ok)] <- FALSE
       list(
-        links = vapply(which(!is.na(pos)), function(i) {
+        links = vapply(which(ok), function(i) {
           .hyperlink_formula(idx_path[pos[i]], idx_name[pos[i]])
         }, character(1)),
-        unresolved = cites[is.na(pos)]
+        unresolved = cites[!ok]
       )
     }
     res <- lapply(out$citations, resolve)
@@ -149,11 +175,21 @@ extract_docx_qa <- function(docx_path,
     xml2::read_xml(file.path(exdir, "word", "document.xml")),
     error = function(e) stop("The Word document could not be read: ", conditionMessage(e), call. = FALSE)
   )
-  ns <- c(w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
-  paras <- xml2::xml_find_all(doc, "//w:body//w:p", ns)
+  ns <- c(
+    w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    mc = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+  )
+  # `mc:Fallback` repeats the content of `mc:Choice` for readers that lack the feature (text boxes)
+  paras <- xml2::xml_find_all(doc, "//w:body//w:p[not(ancestor::mc:Fallback)]", ns)
   text <- vapply(paras, function(p) {
-    # text runs and tabs / line breaks; w:delText (deleted text) is a different element and is left out
-    leaves <- xml2::xml_find_all(p, ".//w:t | .//w:tab | .//w:br", ns)
+    # text runs and tabs / line breaks of this paragraph only (a text box inside it is a paragraph of
+    # its own); w:delText (deleted text) is a different element and is left out
+    depth <- xml2::xml_find_num(p, "count(ancestor-or-self::w:p)", ns)
+    leaves <- xml2::xml_find_all(
+      p,
+      sprintf(".//*[(self::w:t or self::w:tab or self::w:br) and count(ancestor::w:p) = %d]", as.integer(depth)),
+      ns
+    )
     paste0(vapply(leaves, function(el) {
       switch(xml2::xml_name(el), t = xml2::xml_text(el), tab = " ", br = " ", "")
     }, character(1)), collapse = "")

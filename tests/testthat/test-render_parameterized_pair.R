@@ -85,7 +85,7 @@ test_that("output names must be two different names", {
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "A")), "two different")
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "")), "two different")
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", NA)), "two different")
-  expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "b c")), "Variant names may contain only")
+  expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "b c")), "`output_names` may contain only")
 })
 
 test_that("a parameter the template does not declare is still caught by render_variants()", {

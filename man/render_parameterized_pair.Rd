@@ -61,7 +61,7 @@ render_parameterized_pair(
   "analysis/mixed_models.qmd",
   params_original = list(data_suffix = "original", impute = FALSE),
   params_imputed  = list(data_suffix = "imputed",  impute = TRUE),
-  output_names    = c("mixed_models_original", "mixed_models_imputed"),
+  output_names    = c("original", "imputed"),   # -> mixed_models_original.html, mixed_models_imputed.html
   formats         = c("html", "docx"),
   output_dir      = "reports"
 )
