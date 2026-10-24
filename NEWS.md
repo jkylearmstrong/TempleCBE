@@ -1,4 +1,6 @@
-# TempleCBE 0.6.4.9000
+# TempleCBE 0.6.5
+
+This is the last release that still contains the deprecated wrappers (they warn; `find_deprecated_calls()` finds them in a project). They are removed in 0.7.0.
 
 ## Word documents
 
