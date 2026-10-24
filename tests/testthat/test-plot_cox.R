@@ -184,3 +184,76 @@ test_that("plot_cox_marginal scale = 'log_hr' plots the centered linear predicto
   expect_s3_class(p, "ggplot")
   expect_equal(p$labels$y, "log(Relative Hazard) (centered)")
 })
+
+# --- plot_cox_forest: exponentiate / log_scale / sig_level ----------------
+
+forest_df <- data.frame(
+  index_label = c("Age", "Biomarker A", "Biomarker B"),
+  estimate    = c(1.2, 0.8, 1.5),
+  conf.low    = c(1.05, 0.65, 1.1),
+  conf.high   = c(1.38, 0.98, 2.05),
+  p.value     = c(0.01, 0.2, 0.06),
+  stringsAsFactors = FALSE
+)
+
+test_that("exponentiate = FALSE shows coefficients with a reference line at 0 and transforms the CI too", {
+  p <- plot_cox_forest(forest_df, exponentiate = FALSE)
+  expect_equal(p$labels$x, "log(Hazard Ratio)")
+  expect_equal(sort(ggplot2::layer_data(p, 3)$x), sort(log(forest_df$estimate)))
+  eb <- ggplot2::layer_data(p, 2)
+  expect_equal(sort(eb$xmin), sort(log(forest_df$conf.low)))
+  expect_equal(sort(eb$xmax), sort(log(forest_df$conf.high)))
+  expect_equal(p$layers[[1]]$data$xintercept, 0)
+})
+
+test_that("default and exponentiate = TRUE keep hazard ratios with a reference line at 1", {
+  for (p in list(plot_cox_forest(forest_df), plot_cox_forest(forest_df, exponentiate = TRUE))) {
+    expect_equal(sort(ggplot2::layer_data(p, 3)$x), sort(forest_df$estimate))
+    expect_equal(p$layers[[1]]$data$xintercept, 1)
+  }
+})
+
+test_that("log_scale = TRUE puts hazard ratios on a log axis with the reference line at 1", {
+  p <- plot_cox_forest(forest_df, log_scale = TRUE)
+  expect_equal(p$layers[[1]]$data$xintercept, 1)
+  expect_match(p$labels$x, "log scale")
+  sc <- p$scales$get_scales("x")
+  expect_equal(sc$trans$name, "log-10")
+  expect_s3_class(ggplot2::ggplot_build(p), "ggplot_built")
+})
+
+test_that("argument combinations are validated", {
+  expect_error(plot_cox_forest(forest_df, exponentiate = FALSE, log_scale = TRUE), "already on the log scale")
+  expect_error(plot_cox_forest(forest_df, scale = "hr", exponentiate = FALSE), "disagree")
+  expect_error(plot_cox_forest(forest_df, scale = "log_hr", exponentiate = TRUE), "disagree")
+  expect_error(plot_cox_forest(forest_df, scale = "log_hr", log_scale = TRUE), "already on the log scale")
+  expect_error(plot_cox_forest(forest_df, exponentiate = "yes"), "TRUE, FALSE or NULL")
+  expect_error(plot_cox_forest(forest_df, log_scale = NA), "TRUE or FALSE")
+  expect_error(plot_cox_forest(forest_df, sig_level = 2), "between 0 and 1")
+  bad <- forest_df
+  bad$conf.low[1] <- 0
+  expect_error(plot_cox_forest(bad, log_scale = TRUE), "positive")
+  # consistent with the older argument
+  expect_no_error(plot_cox_forest(forest_df, scale = "log_hr", exponentiate = FALSE))
+})
+
+test_that("sig_level sets the significance cut-off and its legend text", {
+  p <- plot_cox_forest(forest_df, p_col = "p.value", color_by = "significance", sig_level = 0.1)
+  d <- ggplot2::layer_data(p, 3)
+  expect_equal(length(unique(d$colour)), 2L)
+  expect_equal(sum(d$colour == "#9D2235"), 2L) # p = 0.01 and 0.06
+  expect_true("Significant (p < 0.1)" %in% p$data$.sig)
+  d05 <- ggplot2::layer_data(plot_cox_forest(forest_df, p_col = "p.value", color_by = "significance"), 3)
+  expect_equal(sum(d05$colour == "#9D2235"), 1L)
+})
+
+test_that("plot_cox_forest_multi accepts the new display arguments", {
+  skip_if_not_installed("survival")
+  lung <- stats::na.omit(survival::lung[, c("time", "status", "age", "sex")])
+  lung$outcome <- survival::Surv(lung$time, lung$status)
+  m <- cox_multi(lung, outcome = "outcome", features = c("age", "sex"))
+  expect_s3_class(plot_cox_forest_multi(m, log_scale = TRUE), "ggplot")
+  p0 <- plot_cox_forest_multi(m, exponentiate = FALSE)
+  expect_equal(p0$layers[[1]]$data$xintercept, 0)
+  expect_error(plot_cox_forest_multi(m, exponentiate = FALSE, log_scale = TRUE), "already on the log scale")
+})

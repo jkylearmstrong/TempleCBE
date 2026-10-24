@@ -14,7 +14,8 @@ plot_survival_km(
   caption = NULL,
   base_size = 13,
   risk_table = FALSE,
-  p_value = FALSE
+  p_value = FALSE,
+  pval = p_value
 )
 }
 \arguments{
@@ -34,12 +35,21 @@ plot_survival_km(
 
 \item{base_size}{Base font size (default: 13).}
 
-\item{risk_table}{Logical. If `TRUE`, appends a number-at-risk table below the survival curve. Default `FALSE`.}
+\item{risk_table}{Logical. If `TRUE`, appends a number-at-risk table below the survival curve,
+with the same time axis and the same strata and colors as the curve ([ggsurvfit::add_risktable()]).
+Default `FALSE`.}
 
-\item{p_value}{Logical. If `TRUE` and `group_col` is specified, displays log-rank test p-value. Default `FALSE`.}
+\item{p_value}{Logical. If `TRUE` and `group_col` is specified, displays the log-rank test p-value
+(the test of [survival::survdiff()], `rho = 0`, comparing all strata at once) inside the plot.
+Default `FALSE`. Asking for it without a `group_col`, or with a group that has a single level,
+gives a warning and no p-value.}
+
+\item{pval}{Same as `p_value`; the short name used by other survival plotting packages
+(`survminer::ggsurvplot(pval = TRUE)`). If both are given, `pval` wins.}
 }
 \value{
-A ggplot2 object.
+A ggplot2 object, or (with `risk_table = TRUE`) a `ggsurvfit` plot that draws the risk table
+  under the curve when printed.
 }
 \description{
 Renders a clean Kaplan-Meier curve using the Temple Cherry palette, with censor

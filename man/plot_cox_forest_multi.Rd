@@ -16,7 +16,10 @@ plot_cox_forest_multi(
   caption = NULL,
   base_size = 13,
   label_map = NULL,
-  style = NULL
+  style = NULL,
+  exponentiate = NULL,
+  log_scale = FALSE,
+  sig_level = 0.05
 )
 }
 \arguments{
@@ -44,6 +47,8 @@ within each variable's block. See [plot_cox_forest()].}
 \item{label_map}{Optional label mapping (see [cbe_labels()]).}
 
 \item{style}{Optional label style (`"short"` or `"full"`).}
+
+\item{exponentiate, log_scale, sig_level}{See [plot_cox_forest()].}
 }
 \value{
 A ggplot2 object.

@@ -11,7 +11,9 @@ plot_dynamic_trajectory(
   group_col,
   facet_col = NULL,
   colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
-  base_size = 12
+  base_size = 12,
+  palette = NULL,
+  group_levels = NULL
 )
 }
 \arguments{
@@ -26,9 +28,21 @@ plot_dynamic_trajectory(
 \item{facet_col}{Optional character name of domain or biomarker column to facet wrap.}
 
 \item{colors}{Named or unnamed character vector of colors matching group levels,
-or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.}
+or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
+When `colors` is left at its default and the data's groups are not Survived/Died, the CBE palette
+is used instead of failing, so any grouping works without extra arguments.}
 
 \item{base_size}{Base font size (default: 12).}
+
+\item{palette}{Optional colors for the groups, used instead of `colors`. A **named** vector must
+name every group (extra names are ignored), so a group keeps its color whichever subset of
+groups is plotted. An **unnamed** vector is assigned to the groups in level order and must be at
+least as long as the number of groups. Anything short of that is an error, not a recycled color.}
+
+\item{group_levels}{Optional character vector giving the groups and their order (legend and
+color assignment). Every group in the data must be listed; list the levels in the order you
+want. By default a factor keeps its levels (unused ones are dropped) and other columns are sorted.
+Use this for multiclass phenotypes, tertiles (`c("T1", "T2", "T3")`) or cluster labels.}
 }
 \value{
 A ggplot2 object.

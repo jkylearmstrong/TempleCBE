@@ -116,6 +116,7 @@ reference:
       - pca_eqns
       - pca_loading_diff
       - pca_loading_diff_heatmap
+      - pca_accessors
 
   - title: Penalized Cox Models for Survival Data
     desc: >
@@ -158,6 +159,8 @@ reference:
       - compare_censoring_weights
       - score_outer
       - select_candidate_models
+      - sample_candidate_formulas
+      - calculate_feature_weights
       - tidy_outer_coefficients
       - summarize_outer_importance
       - plot_outer_importance

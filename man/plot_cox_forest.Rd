@@ -21,7 +21,10 @@ plot_cox_forest(
   caption = NULL,
   base_size = 13,
   label_map = NULL,
-  style = NULL
+  style = NULL,
+  exponentiate = NULL,
+  log_scale = FALSE,
+  sig_level = 0.05
 )
 }
 \arguments{
@@ -42,10 +45,12 @@ and \code{order_by = "pvalue"}.}
 
 \item{scale}{One of \code{"hr"} (default; plots hazard ratios with a reference line at 1) or
 \code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with
-a reference line at 0).}
+a reference line at 0). Equivalent to \code{exponentiate = TRUE} and \code{FALSE}; kept for
+existing code. Give \code{scale} or \code{exponentiate}, not both with different meanings.}
 
 \item{color_by}{One of \code{"none"} (default) or \code{"significance"}, which colors points/error
-bars by whether \code{p_col} is below 0.05 and adds a legend.}
+bars by whether \code{p_col} is below \code{sig_level} (a term is significant when
+\code{p < sig_level}; a missing p-value counts as not significant) and adds a legend.}
 
 \item{order_by}{One of \code{"none"} (default; original row order), \code{"magnitude"} (sorts by
 \code{abs(log(estimate))} descending), or \code{"pvalue"} (sorts by \code{p_col} ascending).}
@@ -63,6 +68,18 @@ bars by whether \code{p_col} is below 0.05 and adds a legend.}
 \item{label_map}{Optional label mapping (see [cbe_labels()]).}
 
 \item{style}{Optional label style (`"short"` or `"full"`).}
+
+\item{exponentiate}{`NULL` (default: follow `scale`), `TRUE` to show hazard ratios (reference line
+at 1) or `FALSE` to show the raw coefficients, `log(HR)` (reference line at 0, linear axis).
+The columns you pass are always on the HR scale; this only chooses what is displayed, and the
+confidence limits are transformed with the estimate.}
+
+\item{log_scale}{Logical. With hazard ratios, `TRUE` draws the axis on a log scale (reference line
+still at 1, so equal ratios in either direction are the same distance from it). This is a
+separate choice from `exponentiate`; `log_scale = TRUE` with `exponentiate = FALSE` is an error,
+because the coefficients are already logs. All HR and confidence limits must be positive.}
+
+\item{sig_level}{Significance threshold for `color_by = "significance"` (default 0.05).}
 }
 \value{
 A ggplot2 object.
