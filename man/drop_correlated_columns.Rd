@@ -37,12 +37,12 @@ Character vector (or integer indices) of columns to remove.
 \description{
 Identifies numeric columns to drop for multicollinearity, via
 \code{\link[caret]{findCorrelation}} on the pairwise correlation matrix of
-\code{data}'s numeric columns. Named \code{find_correlation()} (not
+\code{data}'s numeric columns. Named \code{drop_correlated_columns()} (not
 \code{findCorrelation()}) so it doesn't shadow \pkg{caret}'s function of
 the same name for anyone with both packages loaded.
 }
 \details{
-**Note:** `find_correlation()` identifies column names or indices to *remove*
+**Note:** `drop_correlated_columns()` identifies column names or indices to *remove*
 to mitigate multicollinearity. To inspect the pairwise correlation coefficients
 themselves in a tidy table, use [correlated_pairs_table()] or [corr_test_all()].
 }

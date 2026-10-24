@@ -49,7 +49,7 @@
 * **Tests must not pin the package version.** Compare against `packageVersion()` / `templecbe_version()`.
 
 ### 5. Deprecation Removal Schedule
-* Wrappers deprecated in 0.5.8 (`cbe_*` non-formatting names, masking helpers such as `clean_names()`, `like()`, `write_xlsx()`, `render()`) were announced for removal in 0.6.0 but were **kept** in 0.6.0. Removal is re-targeted to **0.7.0**; warning text, docs and tests say 0.7.0.
+* Wrappers deprecated in 0.5.8 (`cbe_*` non-formatting names, masking helpers such as `clean_names()`, `like()`, `write_xlsx()`, `render()`) were announced for removal in 0.6.0 but were **kept** in 0.6.0. They were removed in **0.7.0**.
 
 ### 6. Release Records
 * L3 release sign-offs live in `release-notes/` (excluded from the build). 0.6.0 has a retroactive record there.

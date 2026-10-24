@@ -536,7 +536,7 @@ create_qmd_renderer <- function(
 #' The file extension alone cannot say it (`.html` is the output of `html` and of `revealjs`), so
 #' the format is read from the output's name, which create_qmd_renderer() builds as
 #' `"<report> <FORMAT>"`. The name counts only when it names a format that writes this
-#' extension; any other output is its extension, as render() has always read it.
+#' extension; any other output is its extension, as render_pipeline() has always read it.
 #' @param o A FilePath object.
 #' @return Character, lower case; `""` for a path without an extension.
 #' @noRd
@@ -676,7 +676,7 @@ create_qmd_renderer <- function(
 #'
 #' Computes SHA-256 content hashes for all declared input files, producer
 #' scripts, and existing output deliverables in a pipeline and writes them to
-#' `pipeline_hashes.json`. Used by `render(stale_by = "hash")` and
+#' `pipeline_hashes.json`. Used by `render_pipeline(stale_by = "hash")` and
 #' `is_stale(stale_by = "hash")` so reruns across machines or git checkouts
 #' only re-render reports whose inputs or scripts genuinely changed in content.
 #'

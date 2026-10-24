@@ -19,7 +19,7 @@ The path to the written `pipeline_hashes.json` file (invisibly).
 \description{
 Computes SHA-256 content hashes for all declared input files, producer
 scripts, and existing output deliverables in a pipeline and writes them to
-`pipeline_hashes.json`. Used by `render(stale_by = "hash")` and
+`pipeline_hashes.json`. Used by `render_pipeline(stale_by = "hash")` and
 `is_stale(stale_by = "hash")` so reruns across machines or git checkouts
 only re-render reports whose inputs or scripts genuinely changed in content.
 }

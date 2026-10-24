@@ -1384,7 +1384,7 @@ tune_alpha_by_split <- function(object,
       dots = dots,
       seed = seed,
       extra = list(
-        fn = "summarize_tune_results",
+        fn = "summarize_tune_results", # legacy label kept: it is part of existing checkpoint fingerprints
         splits = splits_canon,
         num_alpha_values = num_alpha_values,
         num_fixed = num_fixed,
@@ -2276,7 +2276,8 @@ estimate_runtime <- function(fn,
   n_domains <- max(1L, as.integer(n_domains))
 
   # Determine total tasks in `args` and build sample calls
-  is_summarize <- identical(fn_name, "summarize_tune_results")
+  is_summarize <- identical(fn, tune_alpha_by_split) ||
+    fn_name %in% c("tune_alpha_by_split", "summarize_tune_results")
   is_score <- identical(fn, score_outer) || identical(fn_name, "score_outer")
   is_tune_alpha <- identical(fn, tune_over_alpha) || identical(fn_name, "tune_over_alpha")
 

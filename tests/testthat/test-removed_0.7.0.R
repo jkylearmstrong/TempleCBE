@@ -115,3 +115,67 @@ test_that("find_deprecated_calls() and update_deprecated_calls() still find and 
   )
   expect_identical(nrow(find_deprecated_calls(script)), 0L)
 })
+
+test_that("update_deprecated_calls() leaves method calls and names of other packages alone", {
+  td <- withr::local_tempdir()
+  script <- file.path(td, "analysis.R")
+  lines <- c(
+    "app$render(x)",
+    "obj$write_xlsx(df)",
+    "library(janitor); clean_names(df)",
+    "out <- like(x, 'a')",
+    "n <- SumNa(df)"
+  )
+  writeLines(lines, script)
+
+  found <- find_deprecated_calls(script)
+  expect_false(any(found$line %in% c(1L, 2L)))
+  suppressMessages(update_deprecated_calls(script, dry_run = FALSE))
+  expect_identical(readLines(script), c(lines[1:4], "n <- count_na(df)"))
+})
+
+test_that("estimate_runtime() projects tune_alpha_by_split like the removed wrapper did", {
+  args <- list(object = list(splits = list(1, 2)), num_alpha_values = 4, num_fixed = 2)
+  est <- estimate_runtime(tune_alpha_by_split, args, n_sample = 1, workers = 1, n_machines = 1)
+  expect_equal(est$n_total_fits, 8L)
+})
+
+test_that("find_deprecated_calls() ignores strings, prose, comments, other packages' functions and excluded folders", {
+  td <- withr::local_tempdir()
+  dir.create(file.path(td, "ARCHIVE"))
+  writeLines(c(
+    "msg <- 'Enter the last item number to render (1 to'",
+    "x <- 1 # call write_xlsx(df) later",
+    "SumNa(df)"
+  ), file.path(td, "a.R"))
+  writeLines(c(
+    "library(writexl)",
+    "write_xlsx(df, 'o.xlsx')"
+  ), file.path(td, "b.R"))
+  writeLines(c(
+    "Prose about `write_xlsx()` and SumNa(x).",
+    "```{r}",
+    "SumNa(df)",
+    "```",
+    "More prose: SumNa(y)"
+  ), file.path(td, "c.qmd"))
+  writeLines("SumNa(df)", file.path(td, "ARCHIVE", "old.R"))
+
+  found <- find_deprecated_calls(td)
+  expect_setequal(basename(found$file), c("a.R", "c.qmd", "old.R"))
+  expect_identical(found$line[basename(found$file) == "a.R"], 3L)
+  expect_identical(found$line[basename(found$file) == "c.qmd"], 3L)
+  expect_setequal(basename(find_deprecated_calls(td, exclude_dirs = "ARCHIVE")$file), c("a.R", "c.qmd"))
+
+  # a file that uses TempleCBE and calls write_xlsx() unqualified: reported, never rewritten
+  writeLines(c("library(TempleCBE)", "write_xlsx(df, 'o.xlsx')"), file.path(td, "d.R"))
+  d <- find_deprecated_calls(file.path(td, "d.R"))
+  expect_identical(d$call_type, "ambiguous")
+  suppressMessages(update_deprecated_calls(file.path(td, "d.R"), dry_run = FALSE))
+  expect_identical(readLines(file.path(td, "d.R"))[2], "write_xlsx(df, 'o.xlsx')")
+
+  # a name in a string on the same line as a real call is left alone
+  writeLines("SumNa(df); message('SumNa(x)')", file.path(td, "e.R"))
+  suppressMessages(update_deprecated_calls(file.path(td, "e.R"), dry_run = FALSE))
+  expect_identical(readLines(file.path(td, "e.R")), "count_na(df); message('SumNa(x)')")
+})

@@ -6,13 +6,18 @@
 #'
 #' @description
 #' `find_deprecated_calls()` inspects code files and reports all occurrences of
-#' deprecated TempleCBE functions scheduled for removal in TempleCBE 0.7.0.
+#' deprecated TempleCBE functions removed in TempleCBE 0.7.0 (this tool finds them in your own code).
 #'
 #' `update_deprecated_calls()` previews or applies in-place renames to update
 #' both package-qualified calls (`TempleCBE::old()`, `TempleCBE:::old()`) and
 #' unqualified calls (`old()`).
+#' Only code is read: string literals and comments are ignored, and in `.Rmd`/`.qmd` files only
+#' the R chunks. Method calls (`obj$render()`) are ignored.
 #'
 #' @param path Path to a source file or directory of project scripts.
+#' @param exclude_dirs Optional character vector of directory names (for example
+#'   `c("ARCHIVE", "renv", "doc")`) to skip when `path` is a directory; a file is
+#'   skipped if any folder on its path below `path` has one of these names.
 #' @param dry_run Logical; if `TRUE` (default), only previews the proposed
 #'   renames without modifying files. If `FALSE`, rewrites files in place.
 #' @return A `tibble` with columns:
@@ -20,7 +25,10 @@
 #'   \item{line}{1-based line number.}
 #'   \item{old_name}{Name of the deprecated function.}
 #'   \item{replacement}{Canonical replacement function name.}
-#'   \item{call_type}{Whether the call was `"qualified"` or `"unqualified"`.}
+#'   \item{call_type}{`"qualified"` (`TempleCBE::old()`), `"unqualified"` (`old()`), or
+#'     `"ambiguous"`: an unqualified `clean_names()`, `render()`, `like()` or `write_xlsx()` in a
+#'     file that uses TempleCBE. Other packages export these names too, so
+#'     `update_deprecated_calls()` never rewrites them.}
 #'   \item{context}{The original source code line.}
 #' @export
 #' @examples
@@ -36,7 +44,60 @@
 #' readLines(tmp)
 #' unlink(tmp)
 #' }
-find_deprecated_calls <- function(path) {
+find_deprecated_calls <- function(path, exclude_dirs = NULL) {
+  out <- .deprecated_matches(path, exclude_dirs)
+  out[, c("file", "line", "old_name", "replacement", "call_type", "context")]
+}
+
+# `lines` with the text of string literals and comments blanked out (same length, so positions hold)
+.mask_code <- function(lines) {
+  vapply(lines, function(x) {
+    ch <- strsplit(x, "", fixed = TRUE)[[1]]
+    n <- length(ch)
+    if (n == 0L) return("")
+    q <- ""
+    i <- 1L
+    while (i <= n) {
+      c1 <- ch[i]
+      if (nzchar(q)) {
+        if (c1 == "\\" && i < n) {
+          ch[i] <- " "
+          ch[i + 1L] <- " "
+          i <- i + 2L
+          next
+        }
+        if (c1 == q) q <- "" else ch[i] <- " "
+      } else if (c1 == "#") {
+        ch[i:n] <- " "
+        break
+      } else if (c1 == "\"" || c1 == "'") {
+        q <- c1
+      }
+      i <- i + 1L
+    }
+    paste(ch, collapse = "")
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# TRUE for the lines inside an R code chunk of an Rmd/qmd file (the fences themselves are not code)
+.in_r_chunk <- function(lines) {
+  open <- grepl("^\\s*`{3,}\\s*\\{r[ ,}]", lines, perl = TRUE)
+  close <- grepl("^\\s*`{3,}\\s*$", lines, perl = TRUE)
+  inside <- logical(length(lines))
+  state <- FALSE
+  for (i in seq_along(lines)) {
+    if (!state && open[i]) {
+      state <- TRUE
+    } else if (state && close[i]) {
+      state <- FALSE
+    } else {
+      inside[i] <- state
+    }
+  }
+  inside
+}
+
+.deprecated_matches <- function(path, exclude_dirs = NULL) {
   if (!file.exists(path)) {
     stop("`path` '", path, "' does not exist.", call. = FALSE)
   }
@@ -44,13 +105,21 @@ find_deprecated_calls <- function(path) {
   files <- if (dir.exists(path)) {
     all_f <- list.files(
       path,
-      pattern = "\\.(r|rmd|qmd|md)$",
+      pattern = "\\.(r|rmd|qmd)$",
       ignore.case = TRUE,
       recursive = TRUE,
       full.names = TRUE
     )
     # Exclude version control, build folders, renv
-    all_f[!grepl("[/\\\\](\\.(git|Rproj\\.user|system_generated)|renv)[/\\\\]", all_f)]
+    all_f <- all_f[!grepl("[/\\\\](\\.(git|Rproj\\.user|system_generated)|renv)[/\\\\]", all_f)]
+    if (length(exclude_dirs) && length(all_f)) {
+      rel <- substring(all_f, nchar(path) + 1L)
+      drop <- vapply(strsplit(rel, "[/\\\\]"), function(p) {
+        any(utils::head(p, -1L) %in% exclude_dirs)
+      }, logical(1))
+      all_f <- all_f[!drop]
+    }
+    all_f
   } else {
     path
   }
@@ -61,12 +130,16 @@ find_deprecated_calls <- function(path) {
   dep_pattern <- paste(gsub("\\.", "\\\\.", dep_names), collapse = "|")
 
   call_pattern <- paste0(
-    "(?<![a-zA-Z0-9_.])",
+    "(?<![a-zA-Z0-9_.$@])",
     "(?:([a-zA-Z0-9_.]+):::?)?",
     "(", dep_pattern, ")",
     "(?![a-zA-Z0-9_])\\s*\\("
   )
 
+  empty <- tibble::tibble(
+    file = character(), line = integer(), old_name = character(), replacement = character(),
+    call_type = character(), context = character(), name_start = integer(), name_len = integer()
+  )
   results <- list()
 
   for (f in files) {
@@ -95,35 +168,36 @@ find_deprecated_calls <- function(path) {
 
     if (length(lines) == 0L) next
 
-    # Detect functions defined locally in this file
+    # Code only: string literals and comments are blanked; in Rmd/qmd only the R chunks count
+    code <- .mask_code(lines)
+    if (grepl("\\.(rmd|qmd)$", f, ignore.case = TRUE)) {
+      code[!.in_r_chunk(lines)] <- ""
+    }
+
+    # Functions defined locally in this file
     local_fns <- character()
     def_matches <- regmatches(
-      lines,
-      gregexpr("(?<![a-zA-Z0-9_.])([a-zA-Z0-9_.]+)\\s*(?:<-|=)\\s*(?:function|\\\\)", lines, perl = TRUE)
+      code,
+      gregexpr("(?<![a-zA-Z0-9_.])([a-zA-Z0-9_.]+)\\s*(?:<-|=)\\s*(?:function|\\\\)", code, perl = TRUE)
     )
     for (m in unlist(def_matches)) {
-      fn_name <- sub("\\s*(?:<-|=)\\s*(?:function|\\\\).*", "", m)
-      fn_name <- trimws(fn_name)
+      fn_name <- trimws(sub("\\s*(?:<-|=)\\s*(?:function|\\\\).*", "", m))
       if (nzchar(fn_name)) local_fns <- c(local_fns, fn_name)
     }
     local_fns <- unique(local_fns)
 
-    candidate_line_idx <- which(grepl(dep_pattern, lines, perl = TRUE))
+    attaches_templecbe <- any(grepl("(library|require|requireNamespace|loadNamespace)\\s*\\(\\s*[\"']?TempleCBE\\b", lines)) ||
+      any(grepl("TempleCBE:::?", code))
 
-    for (line_idx in candidate_line_idx) {
-      ln <- lines[line_idx]
-      trimmed <- trimws(ln)
-      if (grepl("^#", trimmed)) next
-
+    for (line_idx in which(grepl(dep_pattern, code, perl = TRUE))) {
+      ln <- code[line_idx]
       m <- gregexpr(call_pattern, ln, perl = TRUE)
-      reg_len <- attr(m[[1]], "match.length")
-      if (reg_len[1] == -1L) next
+      if (m[[1]][1] == -1L) next
 
       capture_starts <- attr(m[[1]], "capture.start")
       capture_lengths <- attr(m[[1]], "capture.length")
 
-      n_matches <- length(m[[1]])
-      for (k in seq_len(n_matches)) {
+      for (k in seq_along(m[[1]])) {
         pkg_start <- capture_starts[k, 1]
         pkg_len <- capture_lengths[k, 1]
         pkg <- if (pkg_start > 0 && pkg_len > 0) substr(ln, pkg_start, pkg_start + pkg_len - 1L) else ""
@@ -141,39 +215,36 @@ find_deprecated_calls <- function(path) {
         if (!nzchar(pkg) && old_fn %in% local_fns) next
 
         ctype <- if (nzchar(pkg)) "qualified" else "unqualified"
-        new_fn <- dep_map[[old_fn]]
+        if (ctype == "unqualified" && old_fn %in% .ambiguous_deprecated_names) {
+          # janitor, rmarkdown, data.table and writexl export these names too: it is TempleCBE's
+          # only if the file uses TempleCBE at all, and even then a person has to decide
+          if (!attaches_templecbe) next
+          ctype <- "ambiguous"
+        }
 
         results[[length(results) + 1L]] <- tibble::tibble(
           file = f,
           line = line_idx,
           old_name = old_fn,
-          replacement = new_fn,
+          replacement = dep_map[[old_fn]],
           call_type = ctype,
-          context = trimmed
+          context = trimws(lines[line_idx]),
+          name_start = as.integer(fn_start),
+          name_len = as.integer(fn_len)
         )
       }
     }
   }
 
-  if (length(results) == 0L) {
-    return(tibble::tibble(
-      file = character(),
-      line = integer(),
-      old_name = character(),
-      replacement = character(),
-      call_type = character(),
-      context = character()
-    ))
-  }
-
-  out <- dplyr::bind_rows(results)
-  dplyr::distinct(out, .data$file, .data$line, .data$old_name, .keep_all = TRUE)
+  if (length(results) == 0L) return(empty)
+  dplyr::distinct(dplyr::bind_rows(results), .data$file, .data$line, .data$name_start, .keep_all = TRUE)
 }
 
 #' @rdname find_deprecated_calls
 #' @export
-update_deprecated_calls <- function(path, dry_run = TRUE) {
-  findings <- find_deprecated_calls(path)
+update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL) {
+  matches <- .deprecated_matches(path, exclude_dirs)
+  findings <- matches[, c("file", "line", "old_name", "replacement", "call_type", "context")]
 
   if (nrow(findings) == 0L) {
     message("No deprecated TempleCBE calls found in '", path, "'.")
@@ -191,79 +262,40 @@ update_deprecated_calls <- function(path, dry_run = TRUE) {
     return(findings)
   }
 
-  dep_map <- templecbe_deprecated_map()
-  by_file <- split(findings, findings$file)
-
   total_updated <- 0L
   modified_files_count <- 0L
 
-  for (fpath in names(by_file)) {
-    file_findings <- by_file[[fpath]]
+  for (fpath in unique(matches$file)) {
+    file_matches <- matches[matches$file == fpath, ]
+    skipped <- file_matches[file_matches$call_type == "ambiguous", ]
+    if (nrow(skipped)) {
+      message(sprintf("  - %s: not rewritten, check by hand (the name is also a function of another package): %s",
+                      basename(fpath),
+                      paste0(skipped$old_name, " [line ", skipped$line, "]", collapse = ", ")))
+    }
+    file_matches <- file_matches[file_matches$call_type != "ambiguous", ]
+    if (nrow(file_matches) == 0L) next
+
     lines <- readLines(fpath, warn = FALSE, encoding = "UTF-8")
-    file_updates_count <- 0L
-    file_update_details <- list()
-
-    target_names <- unique(file_findings$old_name)
-    target_names <- target_names[order(nchar(target_names), decreasing = TRUE)]
-
-    for (old_fn in target_names) {
-      new_fn <- dep_map[[old_fn]]
-      escaped_old <- gsub("\\.", "\\\\.", old_fn)
-
-      # 1. Qualified calls: TempleCBE:::old( or TempleCBE::old(
-      qual_findings <- file_findings[file_findings$old_name == old_fn & file_findings$call_type == "qualified", ]
-      if (nrow(qual_findings) > 0L) {
-        pat3 <- paste0("(?<![a-zA-Z0-9_.])TempleCBE:::", escaped_old, "(?![a-zA-Z0-9_])(\\s*\\()")
-        rep3 <- paste0("TempleCBE:::", new_fn, "\\1")
-        pat2 <- paste0("(?<![a-zA-Z0-9_.])TempleCBE::", escaped_old, "(?![a-zA-Z0-9_])(\\s*\\()")
-        rep2 <- paste0("TempleCBE::", new_fn, "\\1")
-
-        for (l_i in qual_findings$line) {
-          prev_line <- lines[l_i]
-          new_line <- gsub(pat3, rep3, prev_line, perl = TRUE)
-          new_line <- gsub(pat2, rep2, new_line, perl = TRUE)
-          if (!identical(prev_line, new_line)) {
-            lines[l_i] <- new_line
-            file_updates_count <- file_updates_count + 1L
-            file_update_details[[length(file_update_details) + 1L]] <- sprintf("%s -> %s [line %d]", old_fn, new_fn, l_i)
-          }
-        }
-      }
-
-      # 2. Unqualified calls: old( (ensuring no other package prefix like janitor::)
-      unqual_findings <- file_findings[file_findings$old_name == old_fn & file_findings$call_type == "unqualified", ]
-      if (nrow(unqual_findings) > 0L) {
-        unqual_pat <- paste0("(?<![a-zA-Z0-9_.:])", escaped_old, "(?![a-zA-Z0-9_])(\\s*\\()")
-        unqual_rep <- paste0(new_fn, "\\1")
-
-        for (l_i in unqual_findings$line) {
-          prev_line <- lines[l_i]
-          new_line <- gsub(unqual_pat, unqual_rep, prev_line, perl = TRUE)
-          if (!identical(prev_line, new_line)) {
-            lines[l_i] <- new_line
-            file_updates_count <- file_updates_count + 1L
-            file_update_details[[length(file_update_details) + 1L]] <- sprintf("%s -> %s [line %d]", old_fn, new_fn, l_i)
-          }
-        }
-      }
+    # right to left within a line, so that earlier positions stay valid
+    file_matches <- file_matches[order(file_matches$line, -file_matches$name_start), ]
+    for (i in seq_len(nrow(file_matches))) {
+      l_i <- file_matches$line[i]
+      s <- file_matches$name_start[i]
+      lines[l_i] <- paste0(substr(lines[l_i], 1L, s - 1L), file_matches$replacement[i],
+                           substr(lines[l_i], s + file_matches$name_len[i], nchar(lines[l_i])))
     }
-
-    if (file_updates_count > 0L) {
-      writeLines(lines, fpath, useBytes = FALSE)
-      total_updated <- total_updated + file_updates_count
-      modified_files_count <- modified_files_count + 1L
-      detail_summary <- if (length(file_update_details) > 3L) {
-        paste0(paste(file_update_details[1:3], collapse = ", "), sprintf(", and %d more", length(file_update_details) - 3L))
-      } else {
-        paste(file_update_details, collapse = ", ")
-      }
-      message(sprintf("  - %s: %d call(s) updated (%s)", basename(fpath), file_updates_count, detail_summary))
-    }
+    writeLines(lines, fpath, useBytes = FALSE)
+    total_updated <- total_updated + nrow(file_matches)
+    modified_files_count <- modified_files_count + 1L
+    message(sprintf("  - %s: %d call(s) updated", basename(fpath), nrow(file_matches)))
   }
 
   message(sprintf("Updated %d deprecated call(s) across %d file(s).", total_updated, modified_files_count))
   invisible(findings)
 }
+
+.ambiguous_deprecated_names <- c("clean_names", "render", "like", "write_xlsx")
 
 templecbe_deprecated_map <- function() {
   c(

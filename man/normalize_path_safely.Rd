@@ -18,7 +18,7 @@ inputs become `NA`, and a path that cannot be normalized comes back as it
 was. Paths need not exist. Separators are forward slashes on every platform.
 }
 \details{
-**Note:** `normalize_safely()` normalizes *filesystem paths* using [normalizePath()].
+**Note:** `normalize_path_safely()` normalizes *filesystem paths* using [normalizePath()].
 It does **not** scale or normalize numeric numbers; for min-max scaling of numeric
 vectors, see [min_max_norm()].
 }
