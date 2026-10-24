@@ -38,8 +38,8 @@ summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.ou
         N = sum(!is.na({{var}})),
         Mean = mean({{var}}, na.rm = TRUE),
         SD = stats::sd({{var}}, na.rm = TRUE),
-        min = min({{var}}, na.rm = TRUE),
-        Max = max({{var}}, na.rm = TRUE),
+        min = summary_extreme({{var}}, min),
+        Max = summary_extreme({{var}}, max),
         SD_Error = std_error({{var}}, na.rm = TRUE)) %>%
       mutate(variable = a_var_name)
   } else {
@@ -64,4 +64,11 @@ summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.ou
   }
 
   return(result)
+}
+
+# min()/max() over the non-missing values; NA (not Inf with a warning) when there are none
+#' @noRd
+summary_extreme <- function(x, f) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0L) NA_real_ else f(x)
 }

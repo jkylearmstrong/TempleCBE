@@ -421,6 +421,7 @@ reference:
     contents:
       - cox_single
       - batch_cox_single
+      - tbl_cox_glance_compare
       - print.cbe_cox
       - cox_multi
       - print.cbe_cox_multi

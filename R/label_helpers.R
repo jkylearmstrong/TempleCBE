@@ -61,7 +61,7 @@ excel_colnames <- function(names, max_char = NULL, replacement = "_") {
   names <- as.character(names)
 
   # Forbidden Excel characters: \ / ? * : [ ]
-  cleaned <- gsub("[\\\\/?*:[\\]]", replacement, names)
+  cleaned <- gsub("[\\\\/?*:\\[\\]]", replacement, names, perl = TRUE)
   # Remove duplicate replacement characters
   if (nzchar(replacement)) {
     pattern <- paste0(replacement, "+")

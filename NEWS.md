@@ -1,3 +1,21 @@
+# TempleCBE 0.7.3
+
+First batch of the 0.7.3 work (more follows in later 0.7.3 pull requests). Nothing is removed or renamed.
+
+## Fixed
+
+* **`excel_colnames()` now removes the characters Excel forbids** (`\ / ? * : [ ]`). The pattern did not match, so names such as `"Patient/Subject [ID]"` came back unchanged.
+* **`summary_table(na.rm = TRUE)`** returns `NA` for the minimum and maximum of a group with no non-missing values, instead of `Inf` and `-Inf` with a warning.
+
+## New
+
+* **`tbl_cox_glance_compare()`**: one row per Cox model with N, events, log-likelihood, AIC, BIC and concordance (SE), sorted by AIC, BIC or concordance; warns when the models were fitted to different rows.
+* **`plot_dynamic_trajectory()`** gains `ribbon_type` (`"se"` as before, `"quantile"` with `quantile_probs`, or `"iqr"`) and `central_tendency` (`"mean"` or `"median"`).
+
+## Tests
+
+* Edge cases of `pretty_name()`, `excel_colnames()`, `copy_var_labels()`, `summary_table()`, `min_max_norm()` and `as_tuning_results()` (all-NA columns, constant columns, empty input, file reading, tidymodels metric tables).
+
 # TempleCBE 0.7.2
 
 More downstream requests. Nothing is removed or renamed.
