@@ -122,7 +122,7 @@ traj_data <- function(groups) {
   )
 }
 line_cols <- function(p) {
-  d <- ggplot2::layer_data(p, 2)
+  d <- ggplot2::layer_data(p, which(vapply(p$layers, function(l) inherits(l$geom, "GeomLine"), logical(1)))[1])
   as.character(vapply(split(d$colour, d$group), function(x) unique(x)[1], character(1)))
 }
 
@@ -190,4 +190,45 @@ test_that("numeric group labels sort as numbers in plot_dynamic_trajectory()", {
   d <- traj_data(c("1", "2", "10"))
   d$grp <- as.numeric(d$grp)
   expect_equal(levels(plot_dynamic_trajectory(d, "val", "time", "grp")$data$grp), c("1", "2", "10"))
+})
+
+test_that("plot_dynamic_trajectory() ribbon_type = 'se' is unchanged (mean and standard error)", {
+  d <- traj_data(c("Survived", "Died"))
+  p <- plot_dynamic_trajectory(d, "val", "time", "grp")
+  expect_equal(p$labels$y, "Mean Index Value (\u00b1 SE)")
+  eb <- ggplot2::layer_data(p, 4)
+  expect_true(all(eb$ymax > eb$ymin))
+  s <- p$data
+  expect_equal(s$lo, s$mean - s$se)
+  expect_equal(s$hi, s$mean + s$se)
+  expect_equal(s$center, s$mean)
+})
+
+test_that("quantile and IQR ribbons use the empirical quantiles and the chosen centre", {
+  d <- traj_data(c("A", "B"))
+  q <- plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "quantile", central_tendency = "median")
+  first <- q$data[1, ]
+  v <- d$val[d$grp == first$grp & d$time == first$time]
+  expect_equal(first$center, median(v))
+  expect_equal(first$lo, unname(quantile(v, 0.025)))
+  expect_equal(first$hi, unname(quantile(v, 0.975)))
+  expect_true(any(vapply(q$layers, function(l) inherits(l$geom, "GeomRibbon"), logical(1))))
+  expect_match(q$labels$y, "Median.*2.5%.*97.5%")
+  i <- plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "iqr")
+  f2 <- i$data[1, ]
+  v2 <- d$val[d$grp == f2$grp & d$time == f2$time]
+  expect_equal(c(f2$lo, f2$hi), unname(quantile(v2, c(0.25, 0.75))))
+  expect_equal(f2$center, mean(v2))
+  expect_s3_class(ggplot2::ggplot_build(i), "ggplot_built")
+  custom <- plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "quantile", quantile_probs = c(0.1, 0.9))
+  expect_equal(custom$data$lo[1], unname(quantile(d$val[d$grp == custom$data$grp[1] & d$time == custom$data$time[1]], 0.1)))
+})
+
+test_that("ribbons keep the palette and validate quantile_probs", {
+  d <- traj_data(c("A", "B", "C"))
+  p <- plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "iqr", palette = c(A = "#111111", B = "#222222", C = "#333333"))
+  expect_equal(unname(line_cols(p)), c("#111111", "#222222", "#333333"))
+  expect_error(plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "quantile", quantile_probs = c(0.9, 0.1)), "lower then upper")
+  expect_error(plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "quantile", quantile_probs = 0.5), "two probabilities")
+  expect_error(plot_dynamic_trajectory(d, "val", "time", "grp", ribbon_type = "sd"))
 })

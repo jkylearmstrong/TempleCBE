@@ -1,3 +1,30 @@
+# TempleCBE 0.7.3
+
+The 0.7.3 work. Nothing is removed or renamed.
+
+## Fixed
+
+* **`test_imputed_distributions()` and `plot_imputed_ridgeline()` name a missing column** (they treated it as no data; the ridgeline plot failed on a variable with nothing imputed).
+* **`excel_colnames()` now removes the characters Excel forbids** (`\ / ? * : [ ]`). The pattern did not match, so names such as `"Patient/Subject [ID]"` came back unchanged.
+* **`summary_table(na.rm = TRUE)`** returns `NA` for the minimum and maximum of a group with no non-missing values, instead of `Inf` and `-Inf` with a warning.
+
+## New
+
+* **`tbl_cox_glance_compare()`**: one row per Cox model with N, events, log-likelihood, AIC, BIC and concordance (SE), sorted by AIC, BIC or concordance; warns when the models were fitted to different rows.
+* **`plot_dynamic_trajectory()`** gains `ribbon_type` (`"se"` as before, `"quantile"` with `quantile_probs`, or `"iqr"`) and `central_tendency` (`"mean"` or `"median"`).
+* **Univariate screens for continuous outcomes**: `glm_single()` and `lmm_single()` fit one predictor at a time on its original and on a 0 to 1 scale (a status row instead of an error for degenerate predictors; model warnings kept; t-based intervals for gaussian fits), and `plot_coef_forest()` / `tbl_coef_forest()` display stacked results with a configurable significance-star scheme (`p_breaks`, `p_labels`; a p-value gets the label of the first break it is strictly below).
+* **`transform_longitudinal_features()`**: per-subject percent change from baseline, variance, SD and the signed largest swing of repeated measurements (long or wide).
+* **`plot_feature_transform_heatmap()`**: features by transformation, coloured by significance bucket with the within-transformation rank.
+* **`plot_scatter_glm()`**: scatter with a regression line and band and the sentence "Pearson's r of ..., with p-value of ... The regression line is given by y = ...".
+* **`plot_normalization_comparison()`**: one variable before and after normalization, side by side (needs `patchwork`, now in Suggests).
+* **`adapter_tidymodels_survex()`**: survival probabilities of a tidymodels censored workflow as the N by T matrix that `survex` expects.
+* **`read_positional_excel_headers()`**: reads sheets whose header spans several rows, carrying titles to the right (see the limitations in its help) and naming empty columns by their Excel letters; identifiers with leading zeros and letter codes stay text.
+
+## Tests
+
+* Failure recovery of `render_pipeline()` (a failing document does not stop the others; `on_error = "stop"`; the manifest is still written), a nested cross-validation with almost no events, and the column checks of the imputation diagnostics.
+* Edge cases of `pretty_name()`, `excel_colnames()`, `copy_var_labels()`, `summary_table()`, `min_max_norm()` and `as_tuning_results()` (all-NA columns, constant columns, empty input, file reading, tidymodels metric tables).
+
 # TempleCBE 0.7.2
 
 More downstream requests. Nothing is removed or renamed.

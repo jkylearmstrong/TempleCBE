@@ -7,6 +7,23 @@
 #' @name imputation_diagnostics
 NULL
 
+# mean of numeric values; NA (no warning) for factors and text
+#' @noRd
+safe_mean <- function(x) if (is.numeric(x) || is.logical(x)) mean(x, na.rm = TRUE) else NA_real_
+
+# Stops with the names of the columns that either data set lacks
+#' @noRd
+check_imputation_cols <- function(orig, imp, cols) {
+  if (!is.data.frame(orig) || !is.data.frame(imp)) {
+    stop("`orig` and `imp` must be data frames.", call. = FALSE)
+  }
+  lacking <- unique(c(setdiff(cols, names(orig)), setdiff(cols, names(imp))))
+  if (length(lacking) > 0L) {
+    stop("Specified column(s) missing from datasets: ", paste(lacking, collapse = ", "), ".", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
 #' Compare Original vs Imputed Empirical Cumulative Distribution Functions
 #'
 #' Overlays the empirical cumulative distribution function (ECDF) of observed
@@ -27,11 +44,7 @@ compare_imputed_ecdf <- function(orig,
                                  imp,
                                  cols,
                                  colors = c(Original = "#2B2B2B", Imputed = "#9D2235")) {
-  missing_orig <- setdiff(cols, names(orig))
-  missing_imp <- setdiff(cols, names(imp))
-  if (length(missing_orig) > 0 || length(missing_imp) > 0) {
-    stop("Specified column(s) missing from datasets.", call. = FALSE)
-  }
+  check_imputation_cols(orig, imp, cols)
 
   long_data <- lapply(cols, function(col) {
     v_orig <- orig[[col]]
@@ -91,6 +104,7 @@ compare_imputed_ecdf <- function(orig,
 #' @seealso [compare_imputed_ecdf()]
 #' @export
 test_imputed_distributions <- function(orig, imp, cols) {
+  check_imputation_cols(orig, imp, cols)
   rows <- lapply(cols, function(col) {
     v_orig <- orig[[col]]
     v_imp <- imp[[col]]
@@ -105,7 +119,7 @@ test_imputed_distributions <- function(orig, imp, cols) {
     if (n_imp == 0) {
       return(tibble::tibble(
         variable = col, n_observed = n_obs, n_imputed = 0L,
-        mean_observed = mean(obs_vals, na.rm = TRUE), mean_imputed = NA_real_,
+        mean_observed = safe_mean(obs_vals), mean_imputed = NA_real_,
         ks_statistic = NA_real_, ks_p_value = NA_real_, t_p_value = NA_real_
       ))
     }
@@ -124,8 +138,8 @@ test_imputed_distributions <- function(orig, imp, cols) {
       variable = col,
       n_observed = n_obs,
       n_imputed = n_imp,
-      mean_observed = mean(obs_vals, na.rm = TRUE),
-      mean_imputed = mean(imp_vals, na.rm = TRUE),
+      mean_observed = safe_mean(obs_vals),
+      mean_imputed = safe_mean(imp_vals),
       ks_statistic = unname(ks_res$statistic),
       ks_p_value = unname(ks_res$p.value),
       t_p_value = unname(t_res$p.value)
@@ -148,14 +162,17 @@ plot_imputed_ridgeline <- function(orig, imp, cols) {
   if (!requireNamespace("ggridges", quietly = TRUE)) {
     stop("Package \"ggridges\" is required for plot_imputed_ridgeline().", call. = FALSE)
   }
+  check_imputation_cols(orig, imp, cols)
 
   long_data <- lapply(cols, function(col) {
     v_orig <- orig[[col]]
     v_imp <- imp[[col]]
     was_na <- is.na(v_orig)
 
-    df_obs <- data.frame(variable = col, value = v_orig[!was_na], dataset = "Original", stringsAsFactors = FALSE)
-    df_imp <- data.frame(variable = col, value = v_imp[was_na], dataset = "Imputed", stringsAsFactors = FALSE)
+    df_obs <- data.frame(variable = rep(col, sum(!was_na)), value = v_orig[!was_na],
+                         dataset = rep("Original", sum(!was_na)), stringsAsFactors = FALSE)
+    df_imp <- data.frame(variable = rep(col, sum(was_na)), value = v_imp[was_na],
+                         dataset = rep("Imputed", sum(was_na)), stringsAsFactors = FALSE)
     rbind(df_obs, df_imp)
   })
 

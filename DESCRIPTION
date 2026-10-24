@@ -1,7 +1,7 @@
 Package: TempleCBE
 Type: Package
 Title: Temple CBE Biostatistics, Clinical Data Science, and Modeling Utilities
-Version: 0.7.2
+Version: 0.7.3
 Authors@R: 
     c(
         person("J Kyle", "Armstrong", email = "j.kyle.armstrong@temple.edu", role = c("aut", "cre"),
@@ -94,6 +94,7 @@ Suggests:
     missRanger (>= 2.4.0),
     openxlsx (>= 4.2.6),
     parsnip,
+    patchwork,
     pkgload,
     probably (>= 1.2.0),
     profvis,

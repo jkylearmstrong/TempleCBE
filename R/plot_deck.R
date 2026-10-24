@@ -114,6 +114,15 @@ plot_survival_km <- function(data,
 #'   color assignment). Every group in the data must be listed; list the levels in the order you
 #'   want. By default a factor keeps its levels (unused ones are dropped) and other columns are sorted.
 #'   Use this for multiclass phenotypes, tertiles (`c("T1", "T2", "T3")`) or cluster labels.
+#' @param ribbon_type How the spread around the central line is drawn: `"se"` (default; error bars of
+#'   the standard error of the mean, as before), `"quantile"` (a ribbon between the empirical
+#'   `quantile_probs` of the values at each time point) or `"iqr"` (a ribbon from the 25th to the 75th
+#'   percentile). Quantiles use [stats::quantile()] type 7. A time point with one value has no spread.
+#' @param quantile_probs Two probabilities (lower, upper) for `ribbon_type = "quantile"`; default
+#'   `c(0.025, 0.975)`.
+#' @param central_tendency `"mean"` (default) or `"median"`, the line and points. With `ribbon_type = "se"`
+#'   the error bars are centred on the line, so with `"median"` they are median plus or minus the standard
+#'   error of the mean; prefer a quantile ribbon with the median.
 #' @return A ggplot2 object.
 #' @export
 plot_dynamic_trajectory <- function(data,
@@ -124,7 +133,17 @@ plot_dynamic_trajectory <- function(data,
                                     colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
                                     base_size = 12,
                                     palette = NULL,
-                                    group_levels = NULL) {
+                                    group_levels = NULL,
+                                    ribbon_type = c("se", "quantile", "iqr"),
+                                    quantile_probs = c(0.025, 0.975),
+                                    central_tendency = c("mean", "median")) {
+  ribbon_type <- match.arg(ribbon_type)
+  central_tendency <- match.arg(central_tendency)
+  if (ribbon_type == "quantile" &&
+      (!is.numeric(quantile_probs) || length(quantile_probs) != 2L || anyNA(quantile_probs) ||
+       any(quantile_probs < 0 | quantile_probs > 1) || quantile_probs[1] >= quantile_probs[2])) {
+    stop("`quantile_probs` must be two probabilities, lower then upper, between 0 and 1.", call. = FALSE)
+  }
   colors_given <- !missing(colors)
   if (!group_col %in% names(data)) {
     stop("`group_col` \"", group_col, "\" is not a column of `data`.", call. = FALSE)
@@ -153,25 +172,55 @@ plot_dynamic_trajectory <- function(data,
     dplyr::group_by(dplyr::across(dplyr::all_of(grouping_vars))) |>
     dplyr::summarise(
       n = dplyr::n(),
+      center = if (central_tendency == "median") stats::median(.data[[value_col]]) else mean(.data[[value_col]]),
       mean = mean(.data[[value_col]], na.rm = TRUE),
       se = stats::sd(.data[[value_col]], na.rm = TRUE) / sqrt(n),
+      lo = if (ribbon_type == "quantile") {
+        stats::quantile(.data[[value_col]], quantile_probs[1], names = FALSE)
+      } else if (ribbon_type == "iqr") {
+        stats::quantile(.data[[value_col]], 0.25, names = FALSE)
+      } else {
+        NA_real_
+      },
+      hi = if (ribbon_type == "quantile") {
+        stats::quantile(.data[[value_col]], quantile_probs[2], names = FALSE)
+      } else if (ribbon_type == "iqr") {
+        stats::quantile(.data[[value_col]], 0.75, names = FALSE)
+      } else {
+        NA_real_
+      },
       .groups = "drop"
     )
+  if (ribbon_type == "se") {
+    summary_df$lo <- summary_df$center - summary_df$se
+    summary_df$hi <- summary_df$center + summary_df$se
+  }
 
   p <- ggplot2::ggplot(
     summary_df,
     ggplot2::aes(
       x = .data[[time_col]],
-      y = mean,
+      y = .data$center,
       color = .data[[group_col]],
       group = .data[[group_col]]
     )
   ) +
-    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    ggplot2::geom_line(linewidth = 1) +
-    ggplot2::geom_point(size = 2) +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = mean - se, ymax = mean + se), width = 3) +
-    theme_cbe_deck(base_size = base_size)
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey50")
+  if (ribbon_type == "se") {
+    p <- p +
+      ggplot2::geom_line(linewidth = 1) +
+      ggplot2::geom_point(size = 2) +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), width = 3)
+  } else {
+    p <- p +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = .data$lo, ymax = .data$hi, fill = .data[[group_col]]),
+        alpha = 0.2, color = NA
+      ) +
+      ggplot2::geom_line(linewidth = 1) +
+      ggplot2::geom_point(size = 2)
+  }
+  p <- p + theme_cbe_deck(base_size = base_size)
 
   chosen <- if (!is.null(palette)) palette else if (colors_given) colors else {
     # the Survived/Died default only fits those two groups
@@ -183,7 +232,9 @@ plot_dynamic_trajectory <- function(data,
       stop("There are ", length(lvls), " groups but the CBE palette has ", length(pal),
            " colors; give `palette`.", call. = FALSE)
     }
-    p <- p + ggplot2::scale_color_manual(values = stats::setNames(pal[seq_along(lvls)], lvls), drop = FALSE)
+    pal_values <- stats::setNames(pal[seq_along(lvls)], lvls)
+    p <- p + ggplot2::scale_color_manual(values = pal_values, drop = FALSE)
+    if (ribbon_type != "se") p <- p + ggplot2::scale_fill_manual(values = pal_values, drop = FALSE, guide = "none")
   } else {
     if (is.null(names(chosen))) {
       if (length(chosen) < length(lvls)) {
@@ -198,12 +249,18 @@ plot_dynamic_trajectory <- function(data,
            paste(miss, collapse = ", "), ".", call. = FALSE)
     }
     p <- p + ggplot2::scale_color_manual(values = chosen[lvls], drop = FALSE)
+    if (ribbon_type != "se") p <- p + ggplot2::scale_fill_manual(values = chosen[lvls], drop = FALSE, guide = "none")
   }
 
   p <- p +
     ggplot2::labs(
       x = "Protocol Time",
-      y = "Mean Index Value (\u00b1 SE)",
+      y = switch(ribbon_type,
+        se = if (central_tendency == "mean") "Mean Index Value (\u00b1 SE)" else "Median Index Value (\u00b1 SE of the mean)",
+        quantile = sprintf("%s Index Value (%s%%\u2013%s%% interval)", tools::toTitleCase(central_tendency),
+                           format(100 * quantile_probs[1]), format(100 * quantile_probs[2])),
+        iqr = sprintf("%s Index Value (IQR)", tools::toTitleCase(central_tendency))
+      ),
       color = NULL
     )
 

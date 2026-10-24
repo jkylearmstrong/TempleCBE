@@ -13,7 +13,10 @@ plot_dynamic_trajectory(
   colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
   base_size = 12,
   palette = NULL,
-  group_levels = NULL
+  group_levels = NULL,
+  ribbon_type = c("se", "quantile", "iqr"),
+  quantile_probs = c(0.025, 0.975),
+  central_tendency = c("mean", "median")
 )
 }
 \arguments{
@@ -43,6 +46,18 @@ least as long as the number of groups. Anything short of that is an error, not a
 color assignment). Every group in the data must be listed; list the levels in the order you
 want. By default a factor keeps its levels (unused ones are dropped) and other columns are sorted.
 Use this for multiclass phenotypes, tertiles (`c("T1", "T2", "T3")`) or cluster labels.}
+
+\item{ribbon_type}{How the spread around the central line is drawn: `"se"` (default; error bars of
+the standard error of the mean, as before), `"quantile"` (a ribbon between the empirical
+`quantile_probs` of the values at each time point) or `"iqr"` (a ribbon from the 25th to the 75th
+percentile). Quantiles use [stats::quantile()] type 7. A time point with one value has no spread.}
+
+\item{quantile_probs}{Two probabilities (lower, upper) for `ribbon_type = "quantile"`; default
+`c(0.025, 0.975)`.}
+
+\item{central_tendency}{`"mean"` (default) or `"median"`, the line and points. With `ribbon_type = "se"`
+the error bars are centred on the line, so with `"median"` they are median plus or minus the standard
+error of the mean; prefer a quantile ribbon with the median.}
 }
 \value{
 A ggplot2 object.
