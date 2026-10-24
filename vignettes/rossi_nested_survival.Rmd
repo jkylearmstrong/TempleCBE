@@ -147,6 +147,8 @@ shard_dir <- file.path(tempdir(), "rossi_sharded_checkpoints")
 tune_ckpt_dir <- file.path(shard_dir, "tune_fold1")
 score_ckpt_dir <- file.path(shard_dir, "score_outer")
 
+# the fold assignment is random: without a seed a build occasionally drew a fold without events
+set.seed(67025)
 nested_splits <- nested_cv(
   rossi_cohort,
   outside = group_vfold_cv(group = id, v = 2),
