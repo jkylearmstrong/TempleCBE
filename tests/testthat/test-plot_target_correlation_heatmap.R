@@ -34,3 +34,10 @@ test_that("spearman and palette are accepted; bad input errors", {
   expect_error(plot_target_correlation_heatmap(mtcars, "mpg", "wt", cutoff = 2), "between 0 and 1")
   expect_error(plot_target_correlation_heatmap(data.frame(a = 1:5, b = letters[1:5]), "a", "b"), "numeric")
 })
+
+test_that("predictors without a correlation sort last, not first", {
+  d <- mtcars
+  d$k <- 1
+  p <- plot_target_correlation_heatmap(d, "mpg", c("k", "wt", "hp"))
+  expect_equal(rev(levels(p$data$predictor)), c("wt", "hp", "k"))
+})

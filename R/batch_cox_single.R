@@ -26,8 +26,11 @@
 #'   `furrr::future_map()` under the current [future::plan()] (sequential unless you set a plan). Without
 #'   `furrr` the fits run one after the other.
 #' @return A tibble of class `cbe_batch_cox` ordered by `p_adj`, with `feature`, `term`, `estimate`,
-#'   `conf.low`, `conf.high`, `std.error`, `statistic`, `p.value`, `p_overall`, `p_adj`, `n`, `n_events`
-#'   and `status` (`"ok"` or the error message).
+#'   `conf.high`, `std.error`, `statistic`, `p.value`, `p_overall`, `p_adj`, `n`, `n_events`,
+#'   `status` (`"ok"`, `"not estimable"` for a coefficient `coxph` could not estimate, or the error message)
+#'   and `warning` (the warnings `coxph` raised for the feature, joined with `"; "`, otherwise `""`).
+#'   Look at `warning` before trusting a result: "coefficient may be infinite" means perfect separation,
+#'   and the hazard ratio and its p-value are then not meaningful.
 #' @seealso [cox_single()]
 #' @export
 #' @examples
@@ -65,6 +68,9 @@ batch_cox_single <- function(data,
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be between 0 and 1.", call. = FALSE)
   }
+  if (!is.numeric(data[[status]]) && !is.logical(data[[status]])) {
+    stop("`status` must be numeric (0/1) or logical.", call. = FALSE)
+  }
   if (!all(data[[status]][!is.na(data[[status]])] %in% c(0, 1, TRUE, FALSE))) {
     stop("`status` must be 0/1 or FALSE/TRUE.", call. = FALSE)
   }
@@ -76,10 +82,11 @@ batch_cox_single <- function(data,
     d <- data[, c(if (!is.null(time_start)) time_start, time, status, feat), drop = FALSE]
     d <- d[stats::complete.cases(d), , drop = FALSE]
     names(d) <- c(if (!is.null(time_start)) ".start", ".time", ".status", ".feat")
+    if (is.factor(d$.feat)) d$.feat <- droplevels(d$.feat)
     fail <- function(msg) tibble::tibble(feature = feat, term = NA_character_, estimate = NA_real_,
                                          conf.low = NA_real_, conf.high = NA_real_, std.error = NA_real_,
                                          statistic = NA_real_, p.value = NA_real_, p_overall = NA_real_,
-                                         n = nrow(d), n_events = sum(d$.status == 1), status = msg)
+                                         n = nrow(d), n_events = sum(d$.status == 1), status = msg, warning = "")
     if (nrow(d) == 0L) return(fail("no complete cases"))
     if (length(unique(d$.feat)) < 2L) return(fail("feature has a single value"))
     f <- if (is.null(time_start)) {
@@ -87,10 +94,14 @@ batch_cox_single <- function(data,
     } else {
       survival::Surv(.start, .time, .status) ~ .feat
     }
+    warns <- character()
     res <- tryCatch({
       withCallingHandlers(
         survival::coxph(f, data = d),
-        warning = function(w) invokeRestart("muffleWarning")
+        warning = function(w) {
+          warns <<- c(warns, conditionMessage(w))
+          invokeRestart("muffleWarning")
+        }
       )
     }, error = function(e) conditionMessage(e))
     if (is.character(res)) return(fail(res))
@@ -113,7 +124,9 @@ batch_cox_single <- function(data,
       std.error = unname(cf[, "se(coef)"]), statistic = unname(cf[, ncol(cf) - 1L]),
       p.value = unname(cf[, ncol(cf)]),
       p_overall = unname(sm$waldtest[["pvalue"]]),
-      n = res$n, n_events = res$nevent, status = "ok"
+      n = res$n, n_events = res$nevent,
+      status = ifelse(is.na(est), "not estimable", "ok"),
+      warning = paste(unique(warns), collapse = "; ")
     )
   }
 
@@ -134,7 +147,7 @@ batch_cox_single <- function(data,
   adj <- p_adj_feat[match(out$feature, out$feature[per_feat])]
   out$p_adj <- adj
   out <- out[, c("feature", "term", "estimate", "conf.low", "conf.high", "std.error", "statistic",
-                 "p.value", "p_overall", "p_adj", "n", "n_events", "status")]
+                 "p.value", "p_overall", "p_adj", "n", "n_events", "status", "warning")]
   out <- out[order(is.na(out$p_adj), out$p_adj, out$feature, out$term), , drop = FALSE]
   class(out) <- c("cbe_batch_cox", class(out))
   out

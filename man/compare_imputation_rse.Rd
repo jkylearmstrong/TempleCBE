@@ -33,17 +33,22 @@ A tibble of class `cbe_rse` with `variable`, `method`, `n`, `n_dropped`, `rmse`,
 \description{
 Scores imputation methods on cells whose true value is known (values you masked, then imputed).
 For each variable and method it computes the root mean squared error, the RMSE of a **null
-baseline** that predicts every cell with one overall value (the variable's mean or median), and
-the **relative squared error**
+baseline** that predicts every cell with one overall value, and the **relative squared error**
 \deqn{\mathrm{RSE} = (\mathrm{RMSE}_{\mathrm{method}} / \mathrm{RMSE}_{\mathrm{null}})^2.}
 An RSE below 1 beats the null baseline, 1 matches it, above 1 is worse.
 }
 \section{Null baseline}{
 
-By default the baseline value is the mean (or median) of the `truth` cells of that variable, which
-is the most favourable constant and so the hardest baseline to beat. To use the training data's
-mean or median instead, pass `baseline`: a named numeric vector (names are variables) or a data frame
-with `variable` and `value`. If the null RMSE is 0 (all truths equal the baseline) the RSE is `NA`.
+By default the baseline value is the mean (or median) of the held-out `truth` values of that variable
+(every row of `results_df` for the variable counts once), one value per variable shared by all methods. This is an **oracle** baseline: it uses the very values
+being predicted, so it is the best constant for the mean (it minimises the RMSE) and a method that
+imputes the training mean scores an RSE slightly above 1. (The median minimises the absolute error,
+not the RMSE.) Note that [tune_impute_numeric()] defines its RSE differently, with the mean of the
+unmasked training values as the baseline, so its `mean` method scores exactly 1. To use the training
+data's mean or median here as well, pass `baseline`: a named numeric vector (names are variables) or a
+data frame with `variable` and `value`. If the null RMSE is 0 (all truths equal the baseline) the RSE
+is `NA`. RSEs of different methods are only comparable when they were scored on the same cells; the
+function warns when the cell counts differ.
 }
 
 \examples{

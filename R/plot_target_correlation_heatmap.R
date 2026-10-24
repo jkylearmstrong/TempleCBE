@@ -55,7 +55,7 @@ plot_target_correlation_heatmap <- function(data,
   })
   df <- dplyr::bind_rows(rows)
   df$faded <- !is.na(df$r) & abs(df$r) < cutoff
-  ord <- if (isTRUE(sort_by_abs)) order(-abs(replace(df$r, is.na(df$r), -1)), seq_len(nrow(df))) else seq_len(nrow(df))
+  ord <- if (isTRUE(sort_by_abs)) order(-abs(replace(df$r, is.na(df$r), 0)), seq_len(nrow(df))) else seq_len(nrow(df))
   df <- df[ord, , drop = FALSE]
   df$predictor <- factor(df$predictor, levels = rev(df$predictor))
   df$.x <- target

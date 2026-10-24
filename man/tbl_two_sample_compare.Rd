@@ -30,8 +30,8 @@ tbl_two_sample_compare(
 \item{p_digits}{Decimals for the p-value (values below the last digit print as `<0.001`).}
 }
 \value{
-A tibble with `Variable`, `N1`, `Mean (SD) 1`, `N2`, `Mean (SD) 2`, `Difference [95\% CI]`,
-  `p-value` (all text, with the group names in the column headers), and attributes `groups` (the two
+A tibble with `Variable`, `N (<group 1>)`, `Mean (SD) <group 1>`, `N (<group 2>)`,
+  `Mean (SD) <group 2>`, `Difference [95\% CI]` and `p-value` (all text), and attributes `groups` (the two
   levels), `test` and `numeric` (the unformatted results as a tibble).
 }
 \description{
@@ -44,8 +44,9 @@ The difference is **first level minus second level** of `group_col` (the factor 
 values if it is not a factor). `"welch"` (default) is Welch's t-test (unequal variances) and
 `"student"` the pooled-variance t-test; both give the mean difference and its confidence interval.
 `"wilcoxon"` is the Wilcoxon rank-sum test; its difference is the Hodges-Lehmann estimate (a
-shift in location, not a difference in means) with its confidence interval, falling back to `NA`
-when it cannot be computed (for example with ties that stop the exact interval). Each group's
+shift in location, not a difference in means) with its confidence interval. The p-value is kept
+when the estimate or interval cannot be computed (those are then blank), and it is computed even when
+both groups are constant at different values. Each group's
 `N` counts the non-missing values of that variable in that group. A variable with fewer than 2
 values in a group, or constant in both, gets `NA` for the test.
 }

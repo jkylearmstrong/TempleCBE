@@ -17,6 +17,7 @@ build_best_imputed_data(
 are returned as they are.}
 
 \item{imputations}{A **named list** of data frames, one per method, each the same size as `data`
+and in the same row order (this is not checked beyond the number of rows)
 with the columns imputed by that method. The names are the method names used in `best`.}
 
 \item{best}{A [tbl_best_imputation_method()] result.}

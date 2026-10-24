@@ -8,8 +8,9 @@
 #' values if it is not a factor). `"welch"` (default) is Welch's t-test (unequal variances) and
 #' `"student"` the pooled-variance t-test; both give the mean difference and its confidence interval.
 #' `"wilcoxon"` is the Wilcoxon rank-sum test; its difference is the Hodges-Lehmann estimate (a
-#' shift in location, not a difference in means) with its confidence interval, falling back to `NA`
-#' when it cannot be computed (for example with ties that stop the exact interval). Each group's
+#' shift in location, not a difference in means) with its confidence interval. The p-value is kept
+#' when the estimate or interval cannot be computed (those are then blank), and it is computed even when
+#' both groups are constant at different values. Each group's
 #' `N` counts the non-missing values of that variable in that group. A variable with fewer than 2
 #' values in a group, or constant in both, gets `NA` for the test.
 #'
@@ -20,8 +21,8 @@
 #' @param conf_level Confidence level for the difference (default 0.95).
 #' @param digits Decimals for means, SDs and the difference.
 #' @param p_digits Decimals for the p-value (values below the last digit print as `<0.001`).
-#' @return A tibble with `Variable`, `N1`, `Mean (SD) 1`, `N2`, `Mean (SD) 2`, `Difference [95\% CI]`,
-#'   `p-value` (all text, with the group names in the column headers), and attributes `groups` (the two
+#' @return A tibble with `Variable`, `N (<group 1>)`, `Mean (SD) <group 1>`, `N (<group 2>)`,
+#'   `Mean (SD) <group 2>`, `Difference [95\% CI]` and `p-value` (all text), and attributes `groups` (the two
 #'   levels), `test` and `numeric` (the unformatted results as a tibble).
 #' @seealso [table_two_by_two()], [compare_domain_datasets()]
 #' @export
@@ -67,28 +68,30 @@ tbl_two_sample_compare <- function(data,
     x1 <- data[[v]][!is.na(g) & g == lv[1] & !is.na(data[[v]])]
     x2 <- data[[v]][!is.na(g) & g == lv[2] & !is.na(data[[v]])]
     est <- lo <- hi <- p <- NA_real_
-    if (length(x1) >= 2L && length(x2) >= 2L && !(stats::sd(x1) == 0 && stats::sd(x2) == 0)) {
+    enough <- length(x1) >= 2L && length(x2) >= 2L
+    if (enough && test == "wilcoxon") {
+      # the p-value does not need the interval, so it is computed on its own and kept if the interval fails
+      if (length(unique(c(x1, x2))) > 1L) {
+        w <- tryCatch(suppressWarnings(stats::wilcox.test(x1, x2)), error = function(e) NULL)
+        if (!is.null(w)) p <- w$p.value
+        wc <- tryCatch(suppressWarnings(stats::wilcox.test(x1, x2, conf.int = TRUE, conf.level = conf_level)),
+                       error = function(e) NULL)
+        if (!is.null(wc) && !is.null(wc$conf.int)) {
+          est <- unname(wc$estimate)
+          lo <- wc$conf.int[1]
+          hi <- wc$conf.int[2]
+        }
+      }
+    } else if (enough && !(stats::sd(x1) == 0 && stats::sd(x2) == 0)) {
       tt <- tryCatch(
-        suppressWarnings(
-          if (test == "wilcoxon") {
-            stats::wilcox.test(x1, x2, conf.int = TRUE, conf.level = conf_level)
-          } else {
-            stats::t.test(x1, x2, var.equal = identical(test, "student"), conf.level = conf_level)
-          }
-        ),
+        suppressWarnings(stats::t.test(x1, x2, var.equal = identical(test, "student"), conf.level = conf_level)),
         error = function(e) NULL
       )
       if (!is.null(tt)) {
         p <- tt$p.value
-        if (test == "wilcoxon") {
-          est <- unname(tt$estimate)
-        } else {
-          est <- unname(tt$estimate[1] - tt$estimate[2])
-        }
-        if (!is.null(tt$conf.int)) {
-          lo <- tt$conf.int[1]
-          hi <- tt$conf.int[2]
-        }
+        est <- unname(tt$estimate[1] - tt$estimate[2])
+        lo <- tt$conf.int[1]
+        hi <- tt$conf.int[2]
       }
     }
     list(

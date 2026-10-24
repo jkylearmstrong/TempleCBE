@@ -103,3 +103,22 @@ test_that("RSE plots build", {
   expect_setequal(unique(pm$data$pct_miss), c(50, 0))
   expect_warning(plot_rse_vs_missingness(dat["x"], rse), "not in `data`")
 })
+
+test_that("all methods of a variable share one baseline, so their RSEs are comparable", {
+  set.seed(2)
+  truth <- rnorm(40, 10, 2)
+  a <- data.frame(variable = "x", method = "a", truth = truth, imputed = mean(truth))
+  b <- data.frame(variable = "x", method = "b", truth = truth[1:30], imputed = mean(truth))
+  expect_warning(r <- compare_imputation_rse(rbind(a, b)), "different numbers of cells")
+  # same constant for both methods
+  base <- mean(c(truth, truth[1:30])) # every row of x counts once
+  expect_equal(r$null_rmse[r$method == "a"], sqrt(mean((truth - base)^2)))
+  expect_equal(r$null_rmse[r$method == "b"], sqrt(mean((truth[1:30] - base)^2)))
+  expect_warning(compare_imputation_rse(rbind(a, transform(a, method = "c"))), NA)
+})
+
+test_that("require_beats_null needs a beats_null column", {
+  orig <- data.frame(x = c(1, NA, 3))
+  best <- data.frame(variable = "x", best_method = "m")
+  expect_error(build_best_imputed_data(orig, list(m = data.frame(x = 1:3)), best, require_beats_null = TRUE), "beats_null")
+})

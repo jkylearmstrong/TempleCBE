@@ -11,7 +11,7 @@ test_that("batch_cox_single() matches single coxph fits and adjusts across featu
   r <- batch_cox_single(d, "time", "status", c("age", "sex_f", "wt.loss"), parallel = FALSE)
   expect_s3_class(r, "cbe_batch_cox")
   expect_named(r, c("feature", "term", "estimate", "conf.low", "conf.high", "std.error", "statistic",
-                    "p.value", "p_overall", "p_adj", "n", "n_events", "status"))
+                    "p.value", "p_overall", "p_adj", "n", "n_events", "status", "warning"))
   fit <- survival::coxph(survival::Surv(time, status) ~ age, data = d)
   row <- r[r$feature == "age", ]
   expect_equal(row$estimate, unname(exp(coef(fit))))
@@ -78,4 +78,24 @@ test_that("batch_cox_single() validates its input", {
   expect_error(batch_cox_single(d, "time", "status", c("age", "time")), "must not include")
   expect_error(batch_cox_single(d, "time", "age", "wt.loss"), "0/1")
   expect_error(batch_cox_single(d, "time", "status", "age", conf_level = 2), "conf_level")
+})
+
+test_that("coxph warnings are reported, not hidden, and unused factor levels do not give empty rows", {
+  d <- lung_b()
+  d$sep <- as.numeric(d$time > 400 & d$status == 1) # every event is in the group sep == 1 only if time > 400
+  d$sep <- ifelse(d$status == 1, 1, 0) # perfect separation: the covariate is the event indicator
+  r <- batch_cox_single(d, "time", "status", c("age", "sep"), parallel = FALSE)
+  expect_true("warning" %in% names(r))
+  expect_match(r$warning[r$feature == "sep"], "infinite|converge")
+  expect_equal(r$warning[r$feature == "age"], "")
+  d$ecog_u <- factor(d$ph.ecog, levels = c(0, 1, 2, 3, 4))
+  u <- batch_cox_single(d, "time", "status", "ecog_u", parallel = FALSE)
+  expect_false(any(is.na(u$estimate)))
+  expect_equal(unique(u$status), "ok")
+})
+
+test_that("a character status is rejected up front", {
+  d <- lung_b()
+  d$st <- as.character(d$status)
+  expect_error(batch_cox_single(d, "time", "st", "age"), "numeric")
 })

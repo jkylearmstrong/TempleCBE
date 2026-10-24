@@ -2,12 +2,32 @@ test_that("LaTeX output wraps the figure in a landscape environment", {
   out <- include_landscape_figure("fig/a.png", caption = "Cap", label = "fig-a", format = "latex")
   expect_s3_class(out, "knit_asis")
   txt <- as.character(out)
-  expect_match(txt, "\\begin{landscape}", fixed = TRUE)
-  expect_match(txt, "\\end{landscape}", fixed = TRUE)
+  expect_match(txt, "```{=latex}\n\\begin{landscape}\n```", fixed = TRUE)
+  expect_match(txt, "```{=latex}\n\\end{landscape}\n```", fixed = TRUE)
   expect_match(txt, "![Cap](fig/a.png){#fig-a width=\"100%\"}", fixed = TRUE)
   b <- as.character(include_landscape_figure("a.png", format = "latex", environment = "blandscape"))
   expect_match(b, "\\blandscape", fixed = TRUE)
   expect_match(b, "\\elandscape", fixed = TRUE)
+})
+
+test_that("pandoc turns the figure into a LaTeX figure inside the landscape environment", {
+  pandoc <- Sys.which("pandoc")
+  skip_if(!nzchar(pandoc), "pandoc is not available")
+  for (env in c("landscape", "blandscape")) {
+    md <- tempfile(fileext = ".md")
+    tex <- tempfile(fileext = ".tex")
+    writeLines(as.character(include_landscape_figure(
+      "fig/flow.png", caption = "Rates & [95% CI] of x_1", label = "fig-flow", format = "latex", environment = env
+    )), md)
+    status <- system2(pandoc, c("-f", "markdown", "-t", "latex", "-o", shQuote(tex), shQuote(md)))
+    expect_equal(status, 0L)
+    out <- paste(readLines(tex), collapse = "\n")
+    expect_match(out, "\\begin{figure}", fixed = TRUE)
+    expect_match(out, "\\includegraphics", fixed = TRUE)
+    expect_false(grepl("![", out, fixed = TRUE))
+    expect_match(out, if (env == "landscape") "\\begin{landscape}" else "\\blandscape", fixed = TRUE)
+    expect_match(out, "Rates \\& ", fixed = TRUE)
+  }
 })
 
 test_that("HTML, Word and other output carry no LaTeX", {

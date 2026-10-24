@@ -16,7 +16,7 @@ include_landscape_figure(
 \arguments{
 \item{path}{Path to the image file, relative to the document.}
 
-\item{caption}{Optional caption text.}
+\item{caption}{Optional caption text. Square brackets in it are escaped.}
 
 \item{label}{Optional cross-reference id (for Quarto use a `"fig-"` prefix, for example `"fig-flow"`).}
 

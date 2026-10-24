@@ -39,8 +39,11 @@ coefficients (log hazard ratios).}
 }
 \value{
 A tibble of class `cbe_batch_cox` ordered by `p_adj`, with `feature`, `term`, `estimate`,
-  `conf.low`, `conf.high`, `std.error`, `statistic`, `p.value`, `p_overall`, `p_adj`, `n`, `n_events`
-  and `status` (`"ok"` or the error message).
+  `conf.high`, `std.error`, `statistic`, `p.value`, `p_overall`, `p_adj`, `n`, `n_events`,
+  `status` (`"ok"`, `"not estimable"` for a coefficient `coxph` could not estimate, or the error message)
+  and `warning` (the warnings `coxph` raised for the feature, joined with `"; "`, otherwise `""`).
+  Look at `warning` before trusting a result: "coefficient may be infinite" means perfect separation,
+  and the hazard ratio and its p-value are then not meaningful.
 }
 \description{
 Fits one Cox model per feature (`Surv(time, status) ~ feature`, or `Surv(start, time, status) ~ feature`

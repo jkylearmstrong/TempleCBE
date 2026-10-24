@@ -2,16 +2,21 @@
 #'
 #' Scores imputation methods on cells whose true value is known (values you masked, then imputed).
 #' For each variable and method it computes the root mean squared error, the RMSE of a **null
-#' baseline** that predicts every cell with one overall value (the variable's mean or median), and
-#' the **relative squared error**
+#' baseline** that predicts every cell with one overall value, and the **relative squared error**
 #' \deqn{\mathrm{RSE} = (\mathrm{RMSE}_{\mathrm{method}} / \mathrm{RMSE}_{\mathrm{null}})^2.}
 #' An RSE below 1 beats the null baseline, 1 matches it, above 1 is worse.
 #'
 #' @section Null baseline:
-#' By default the baseline value is the mean (or median) of the `truth` cells of that variable, which
-#' is the most favourable constant and so the hardest baseline to beat. To use the training data's
-#' mean or median instead, pass `baseline`: a named numeric vector (names are variables) or a data frame
-#' with `variable` and `value`. If the null RMSE is 0 (all truths equal the baseline) the RSE is `NA`.
+#' By default the baseline value is the mean (or median) of the held-out `truth` values of that variable
+#' (every row of `results_df` for the variable counts once), one value per variable shared by all methods. This is an **oracle** baseline: it uses the very values
+#' being predicted, so it is the best constant for the mean (it minimises the RMSE) and a method that
+#' imputes the training mean scores an RSE slightly above 1. (The median minimises the absolute error,
+#' not the RMSE.) Note that [tune_impute_numeric()] defines its RSE differently, with the mean of the
+#' unmasked training values as the baseline, so its `mean` method scores exactly 1. To use the training
+#' data's mean or median here as well, pass `baseline`: a named numeric vector (names are variables) or a
+#' data frame with `variable` and `value`. If the null RMSE is 0 (all truths equal the baseline) the RSE
+#' is `NA`. RSEs of different methods are only comparable when they were scored on the same cells; the
+#' function warns when the cell counts differ.
 #'
 #' @param results_df A data frame with one row per scored cell, with the columns named by
 #'   `variable_col`, `method_col`, `truth_col` and `imputed_col`. Cells with a missing truth or
@@ -96,10 +101,17 @@ compare_imputation_rse <- function(results_df,
     if (length(gap)) stop("`baseline` has no value for: ", paste(gap, collapse = ", "), ".", call. = FALSE)
   }
 
+  # one baseline value per variable, from every non-missing truth of that variable, so that all methods
+  # are compared with the same constant
+  var_base <- vapply(split(df$truth, df$variable), function(x) {
+    x <- x[!is.na(x)]
+    if (length(x)) base_fun(x) else NA_real_
+  }, numeric(1))
+
   pieces <- lapply(split(df, list(df$variable, df$method), drop = TRUE), function(g) {
     ok <- !is.na(g$truth) & !is.na(g$imputed)
     gv <- g$variable[1]
-    b <- if (is.null(base_val)) base_fun(g$truth[ok]) else base_val[[gv]]
+    b <- if (is.null(base_val)) var_base[[gv]] else base_val[[gv]]
     tibble::tibble(
       variable = gv, method = g$method[1],
       n = sum(ok), n_dropped = sum(!ok),
@@ -108,7 +120,13 @@ compare_imputation_rse <- function(results_df,
       pct_miss = if ("pct_miss" %in% names(g)) g$pct_miss[1] else NULL
     )
   })
-  .finish_rse(dplyr::bind_rows(pieces))
+  res <- dplyr::bind_rows(pieces)
+  uneven <- unique(res$variable[ave(res$n, res$variable, FUN = function(z) length(unique(z))) > 1L])
+  if (length(uneven)) {
+    warning("The methods were scored on different numbers of cells for: ", paste(uneven, collapse = ", "),
+            ". Their RSEs are only comparable on the same cells.", call. = FALSE)
+  }
+  .finish_rse(res)
 }
 
 .finish_rse <- function(out) {
@@ -172,6 +190,7 @@ tbl_best_imputation_method <- function(rse_df) {
 #' @param data The original data frame (with its missing values). Columns that are not in `best`
 #'   are returned as they are.
 #' @param imputations A **named list** of data frames, one per method, each the same size as `data`
+#'   and in the same row order (this is not checked beyond the number of rows)
 #'   with the columns imputed by that method. The names are the method names used in `best`.
 #' @param best A [tbl_best_imputation_method()] result.
 #' @param require_beats_null If `TRUE`, a variable whose best method does not beat the null baseline
@@ -189,6 +208,9 @@ build_best_imputed_data <- function(data, imputations, best, require_beats_null 
   }
   if (!is.data.frame(best) || !all(c("variable", "best_method") %in% names(best))) {
     stop("`best` must be the result of `tbl_best_imputation_method()`.", call. = FALSE)
+  }
+  if (isTRUE(require_beats_null) && !"beats_null" %in% names(best)) {
+    stop("`require_beats_null = TRUE` needs a `beats_null` column in `best`.", call. = FALSE)
   }
   for (m in names(imputations)) {
     if (!is.data.frame(imputations[[m]]) || nrow(imputations[[m]]) != nrow(data)) {

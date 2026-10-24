@@ -49,3 +49,10 @@ test_that("degenerate variables give blank test results and bad input errors", {
   expect_error(tbl_two_sample_compare(data.frame(g = c("a", "b"), v = c("x", "y")), "v", "g"), "numeric")
   expect_error(tbl_two_sample_compare(mtcars, "mpg", "am", test = "anova"))
 })
+
+test_that("wilcoxon keeps the p-value when groups are constant at different values", {
+  d <- data.frame(g = rep(c("a", "b"), each = 6), v = rep(c(1, 2), each = 6))
+  tab <- tbl_two_sample_compare(d, "v", "g", test = "wilcoxon")
+  expect_false(tab[["p-value"]] == "")
+  expect_lt(attr(tab, "numeric")$p.value, 0.01)
+})

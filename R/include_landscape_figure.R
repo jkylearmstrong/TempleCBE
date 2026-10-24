@@ -12,7 +12,7 @@
 #' to your document.
 #'
 #' @param path Path to the image file, relative to the document.
-#' @param caption Optional caption text.
+#' @param caption Optional caption text. Square brackets in it are escaped.
 #' @param label Optional cross-reference id (for Quarto use a `"fig-"` prefix, for example `"fig-flow"`).
 #' @param width Image width as a percentage or length (default `"100\%"`).
 #' @param environment `"landscape"` (default) or `"blandscape"`; see PDF requirements.
@@ -61,11 +61,15 @@ include_landscape_figure <- function(path,
   format <- match.arg(format, c("latex", "html", "docx", "other"))
 
   attrs <- c(if (!is.null(label)) paste0("#", label), paste0("width=\"", width, "\""))
-  img <- sprintf("![%s](%s){%s}", caption %||% "", path, paste(attrs, collapse = " "))
+  cap <- gsub("([][])", "\\\\\\1", caption %||% "")
+  img <- sprintf("![%s](%s){%s}", cap, path, paste(attrs, collapse = " "))
   txt <- if (format == "latex") {
     begin <- if (environment == "landscape") "\\begin{landscape}" else "\\blandscape"
     end <- if (environment == "landscape") "\\end{landscape}" else "\\elandscape"
-    paste0("\n\n", begin, "\n\n", img, "\n\n", end, "\n\n")
+    # raw blocks: pandoc passes a bare begin/end pair through as raw LaTeX and would not convert the
+    # markdown image inside it
+    raw_block <- function(x) paste0("```{=latex}\n", x, "\n```")
+    paste0("\n\n", raw_block(begin), "\n\n", img, "\n\n", raw_block(end), "\n\n")
   } else {
     paste0("\n\n", img, "\n\n")
   }
