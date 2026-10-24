@@ -494,6 +494,7 @@ reference:
       - audit_render_parity
       - extract_yaml_formats
       - cbe_docx_review_extract
+      - extract_docx_qa
       - cbe_review_tracker
       - validate_review_tracker
       - review_config

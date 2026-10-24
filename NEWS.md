@@ -1,5 +1,9 @@
 # TempleCBE 0.6.4.9000
 
+## Word documents
+
+* New `extract_docx_qa()` reads a Word document of investigator questions and the answers written for them and returns one row per question with its answer and the report files the answer cites (`question_pattern`, `citation_pattern`). With an index of the deliverables (`index_data`) it also builds Excel `HYPERLINK` formulas for the citations and lists those the index does not know. It reads the document body with `xml2`, so there is no new dependency, and leaves Word comments and tracked changes to `docx_review_extract()`. Requested for the downstream Q&A tracking sheets.
+
 ## Rendering
 
 * New `render_parameterized_pair()` renders one parameterized template for an original and an imputed parameter set (`render_variants()` for exactly two variants). The two parameter sets must name the same parameters, so that a difference forgotten in one of them is an error before anything is rendered; the outputs are named after `output_names`. Requested for the downstream report pairs that were copies of each other.
