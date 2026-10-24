@@ -1,5 +1,9 @@
 # TempleCBE 0.6.4.9000
 
+## Rendering
+
+* New `interactive_render_pipeline()`: a menu in front of `render_pipeline()` for an interactive session. It lists the documents in render order and renders the stale ones, everything again, everything up to one document, or one document only (or nothing). It refuses to run non-interactively. Requested for the downstream render scripts.
+
 ## Data preparation
 
 * New `reconcile_column_dictionary()` checks the columns of a data frame against a dictionary of source names (for example SAS variable names) and target names: exact, then case-insensitive, then normalized matching; unmapped columns on either side; and conflicts (a column matching two entries, an entry matched by two columns, two entries with one target, a target that is already a column). It renames only what is unambiguous, and only when everything required is mapped unless asked otherwise. Requested for the downstream SAS-to-R reconciliation scripts.

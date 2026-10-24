@@ -348,6 +348,7 @@ reference:
       - controls_datasets
       - create_qmd_renderer
       - get_render_plan
+      - interactive_render_pipeline
       - is_stale
       - record_pipeline_hashes
       - save_pipeline
