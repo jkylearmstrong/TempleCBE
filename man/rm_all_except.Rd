@@ -2,12 +2,9 @@
 % Please edit documentation in R/keep_only.R
 \name{rm_all_except}
 \alias{rm_all_except}
-\alias{keep_only}
 \title{Keep Only Specified Objects in an Environment}
 \usage{
 rm_all_except(vector, .dontask = FALSE, env = parent.frame())
-
-keep_only(vector, .dontask = FALSE, env = parent.frame())
 }
 \arguments{
 \item{vector}{Character vector of object names to keep.}
@@ -28,13 +25,13 @@ sessions (scripts, \code{R CMD check}, knitr rendering), since
 }
 \details{
 \code{vector} must be a character vector of object names, so the names are
-quoted: \code{keep_only(c("a", "b"))}, not \code{keep_only(c(a, b))}. Every
+quoted: \code{rm_all_except(c("a", "b"))}, not \code{rm_all_except(c(a, b))}. Every
 name has to be an object of the calling environment itself (not of one
 above it); otherwise the function stops before it removes anything. A
 misspelt name used to pass unnoticed and remove every object, the one that
 was meant to be kept included.
 
-Called from inside a function, \code{keep_only()} works on that function's
+Called from inside a function, \code{rm_all_except()} works on that function's
 own environment, so the function's arguments are removed too unless they
 are named in \code{vector}.
 }

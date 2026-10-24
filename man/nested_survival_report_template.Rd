@@ -11,9 +11,9 @@ File path character string.
 }
 \description{
 Locates and returns the file path to the packaged Quarto child report template
-(`nested_survival_report.qmd`) used by [cbe_domain_children()] to render a
+(`nested_survival_report.qmd`) used by [domain_children()] to render a
 complete nested survival analysis report for a domain run object.
 }
 \seealso{
-[cbe_domain_children()], [cbe_nested_survival_run()]
+[domain_children()], [nested_survival_run()]
 }

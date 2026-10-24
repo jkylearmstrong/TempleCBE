@@ -2,12 +2,9 @@
 % Please edit documentation in R/search_wrappers.R
 \name{find_read_calls}
 \alias{find_read_calls}
-\alias{read_search}
 \title{Search a Directory Tree for File-Read Calls}
 \usage{
 find_read_calls(path, include_comments = TRUE, workers = NULL)
-
-read_search(...)
 }
 \arguments{
 \item{path}{Character. Root directory to search.}
@@ -19,8 +16,6 @@ Defaults to \code{TRUE}.}
 \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 caps at available cores minus one. Falls back to sequential search when
 \pkg{future}/\pkg{furrr} are not installed.}
-
-\item{...}{Passed to \code{find_read_calls()}.}
 }
 \value{
 A tibble of matches (see \code{\link{find_code}}) with an

@@ -6,7 +6,6 @@
 \alias{compare_df.cbe_database}
 \alias{compare_df.igraph}
 \alias{compare_df.visNetwork}
-\alias{cbe_compare_df}
 \title{Compare Two Data Frames (Modelled on SAS PROC COMPARE)}
 \usage{
 compare_df(base, compare, ...)
@@ -35,8 +34,6 @@ compare_df(base, compare, ...)
 \method{compare_df}{igraph}(base, compare, ...)
 
 \method{compare_df}{visNetwork}(base, compare, ...)
-
-cbe_compare_df(...)
 }
 \arguments{
 \item{base}{The base data frame or tibble (equivalent to SAS \code{base=}).}
@@ -44,7 +41,7 @@ cbe_compare_df(...)
 \item{compare}{The comparison data frame or tibble (equivalent to SAS \code{compare=}).}
 
 \item{...}{Passed on to methods (and, for the \code{cbe_database} method,
-on to the per-table \code{cbe_compare_df()} calls -- e.g. \code{by}/\code{tolerance}).}
+on to the per-table \code{compare_df()} calls -- e.g. \code{by}/\code{tolerance}).}
 
 \item{by}{Optional character vector of column names specifying key variables used to align
 observations across datasets (equivalent to SAS \code{id} or \code{by} statement). If \code{NULL}
@@ -121,7 +118,7 @@ The two define some things differently:
     a character variable of different lengths as a differing attribute).
   \item Only absolute differences. \code{METHOD=PERCENT} and \code{RELATIVE}, \code{BY}
     group reports and special missing values are not part of the benchmark.
-  \item \code{cbe_compare_df()} needs no sorted data; \code{PROC COMPARE} does (the
+  \item \code{compare_df()} needs no sorted data; \code{PROC COMPARE} does (the
     benchmark sorts the COMPARE data set).
 }
 }
@@ -129,7 +126,7 @@ The two define some things differently:
 \examples{
 df1 <- data.frame(id = 1:5, x = c(1, 2, 3, 4, 5), y = c("a", "b", "c", "d", "e"))
 df2 <- data.frame(id = 1:5, x = c(1, 2, 3.0001, 4, 5), y = c("a", "b", "c", "d", "f"))
-cmp <- cbe_compare_df(df1, df2, by = "id", tolerance = 1e-3)
+cmp <- compare_df(df1, df2, by = "id", tolerance = 1e-3)
 print(cmp)
 generics::tidy(cmp)
 g1 <- igraph::graph_from_data_frame(

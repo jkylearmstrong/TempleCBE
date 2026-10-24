@@ -26,5 +26,5 @@ Extract Every `.xlsx` File Name From Text
 extract_all_xlsx_tokens(c("read_excel('out/a.xlsx'); write_xlsx(df, 'b c.xlsx')", "none"))
 }
 \seealso{
-[extract_win_posix_paths()]
+[extract_xlsx_paths()]
 }

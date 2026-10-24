@@ -144,7 +144,7 @@ check_renv_guard <- function(project_root = NULL) {
 #' generator seed, execution future plan, and per-node wall times beside render outputs.
 #'
 #' @param output_dir Directory to write `render_manifest.json` into.
-#' @param targets_result Data frame of render timing and status from [render()].
+#' @param targets_result Data frame of render timing and status from [render_pipeline()].
 #' @param seed Optional integer RNG seed used for the run.
 #' @param seed_scheme Task seed generation scheme identifier (defaults to
 #'   `current_seed_scheme()`, `"v0.5.6"`).
@@ -876,18 +876,4 @@ render_pipeline <- function(path,
   times
     }
   )
-}
-
-#' @rdname render_pipeline
-#' @export
-render <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.7.0 to avoid masking rmarkdown::render().")
-  render_pipeline(...)
-}
-
-#' @rdname render_pipeline
-#' @export
-render_me <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "render_me()", "render_pipeline()", details = "Scheduled for complete removal in TempleCBE 0.7.0. Use render_pipeline().")
-  render_pipeline(...)
 }

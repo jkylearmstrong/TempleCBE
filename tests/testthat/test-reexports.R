@@ -1,8 +1,7 @@
-test_that("write_xlsx is supported via deprecated wrapper", {
-  expect_true(is.function(TempleCBE::write_xlsx))
-
+test_that("write_xlsx_file() writes a workbook, and the deprecated write_xlsx() is gone", {
   path <- withr::local_tempfile(fileext = ".xlsx")
-  expect_warning(TempleCBE::write_xlsx(mtcars, path), "deprecated")
+  write_xlsx_file(mtcars, path)
   expect_true(file.exists(path))
   expect_gt(file.size(path), 0)
+  expect_false("write_xlsx" %in% getNamespaceExports("TempleCBE"))
 })

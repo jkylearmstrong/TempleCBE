@@ -2,17 +2,12 @@
 % Please edit documentation in R/R_names.R
 \name{clean_names_keep_labels}
 \alias{clean_names_keep_labels}
-\alias{R_names}
 \title{Clean Column Names, Preserving Originals as Labels}
 \usage{
 clean_names_keep_labels(df)
-
-R_names(...)
 }
 \arguments{
 \item{df}{A data frame or tibble.}
-
-\item{...}{Passed to \code{clean_names_keep_labels()}.}
 }
 \value{
 A tibble with cleaned column names and the original names stored

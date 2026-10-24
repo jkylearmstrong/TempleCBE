@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_review_extract.R
 \name{docx_review_extract}
 \alias{docx_review_extract}
-\alias{cbe_docx_review_extract}
 \title{DOCX Review Extractor & Multi-Reviewer Collaborative Tracker}
 \usage{
 docx_review_extract(
@@ -18,8 +17,6 @@ docx_review_extract(
   docx_limits = NULL,
   fork_mode = NULL
 )
-
-cbe_docx_review_extract(...)
 }
 \arguments{
 \item{input_dir}{Character path to a directory containing `.docx` files, or to
@@ -82,8 +79,6 @@ defaults.}
 \code{"collaborative"}; see \code{\link{review_config}}. In collaborative
 mode every fork workbook also carries the other fork reviewers' sign-off
 and note columns (read-only: only a reviewer's own columns are merged back).}
-
-\item{...}{Passed to \code{docx_review_extract()}.}
 }
 \value{
 An object of class `cbe_review_extract`, which is a named list containing:

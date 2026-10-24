@@ -2,7 +2,6 @@
 % Please edit documentation in R/explain_survival.R
 \name{explain_survival}
 \alias{explain_survival}
-\alias{cbe_explain_survival}
 \title{Explain Survival Models via survex and DALEX}
 \usage{
 explain_survival(
@@ -16,8 +15,6 @@ explain_survival(
   verbose = FALSE,
   ...
 )
-
-cbe_explain_survival(...)
 }
 \arguments{
 \item{model}{A fitted model object: \code{joint_model}, \code{coxnet_model},
@@ -62,7 +59,7 @@ if (requireNamespace("survex", quietly = TRUE) && requireNamespace("survival", q
   lung <- survival::lung
   df <- na.omit(lung[, c("time", "status", "age", "sex")])
   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
-  expl <- cbe_explain_survival(fit)
+  expl <- explain_survival(fit)
   mp <- survex::model_parts(expl)
 }
 }

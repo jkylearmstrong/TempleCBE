@@ -66,7 +66,7 @@ in `metrics` by default.}
 
 \item{importance}{Method for evaluating feature importance on the outer analysis sets.
 Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with MiniPatch ensembles).
-[cbe_loco_mp_coxnet()] is run on each outer analysis set at the `mixture`
+[loco_mp_coxnet()] is run on each outer analysis set at the `mixture`
 and penalty chosen there, with the same glmnet arguments (see `...`). It
 draws its minipatches by subject, so `group` does not apply to it, and a
 warning says so when `group` is set.}
@@ -93,8 +93,8 @@ Details and [cv_coxnet()]. `FALSE` skips the check.}
 
 \item{...}{Further arguments passed to [glmnet::glmnet()], such as `cox.ties`,
 `standardize`, `penalty.factor`, or `nlambda`. With `importance = "loco_mp"`
-they are passed to [cbe_loco_mp_coxnet()] as well, so the minipatch models
-are fit like the tuned ones; arguments that [cbe_loco_mp_coxnet()] sets
+they are passed to [loco_mp_coxnet()] as well, so the minipatch models
+are fit like the tuned ones; arguments that [loco_mp_coxnet()] sets
 itself, such as `B`, are not forwarded.}
 
 \item{x}{A `nested_cv_coxnet` object.}
@@ -185,5 +185,5 @@ if (requireNamespace("glmnet", quietly = TRUE) &&
 }
 }
 \seealso{
-[cv_coxnet()], [coxnet()], [cbe_loco_mp_coxnet()], [tune_race_survival()]
+[cv_coxnet()], [coxnet()], [loco_mp_coxnet()], [tune_race_survival()]
 }

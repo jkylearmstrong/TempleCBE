@@ -93,10 +93,6 @@ testthat::test_that("tune_alpha_by_split calibrate parameter functions correctly
   testthat::expect_true("calibrate" %in% names(args))
   testthat::expect_identical(args$calibrate, TRUE)
 
-  # Check summarize_tune_results also exposes calibrate
-  args_sum <- formals(summarize_tune_results)
-  testthat::expect_true("calibrate" %in% names(args_sum))
-  testthat::expect_identical(args_sum$calibrate, TRUE)
 })
 
 testthat::test_that("core functions run cleanly under lifecycle_verbosity error", {

@@ -1,7 +1,7 @@
 #' Audit Data File Read/Write Calls Against a Project's Files on Disk
 #'
 #' Scans \code{code_path} for read and write calls (via
-#' \code{\link{read_search}}/\code{\link{write_search}}), resolves the file
+#' \code{\link{find_read_calls}}/\code{\link{find_write_calls}}), resolves the file
 #' paths those calls reference — including \code{here::here()} calls, and a
 #' heuristic fallback for indirect references like
 #' \code{excel_file_paths[["ABG"]]} matched against filenames actually
@@ -19,13 +19,13 @@
 #'   were written against). Defaults to \code{code_path}.
 #' @param ext File extension to audit, without the leading dot (e.g.
 #'   \code{"xlsx"}, \code{"csv"}, \code{"rds"}). Defaults to \code{"xlsx"}.
-#' @param strong_read_patterns Character vector of \code{\link{read_search}}
+#' @param strong_read_patterns Character vector of \code{\link{find_read_calls}}
 #'   pattern names that should always count as a read of a file with this
 #'   extension, even on a line that doesn't otherwise mention \code{ext}
 #'   (e.g. a call to a project-specific reader function). Defaults to
 #'   \code{c("read_workbook", "read_excel_multiple_headers")}.
 #' @param include_comments_write Logical, passed through to
-#'   \code{\link{write_search}}. Defaults to \code{FALSE}.
+#'   \code{\link{find_write_calls}}. Defaults to \code{FALSE}.
 #' @param max_depth Maximum folder depth below \code{project_root} to inventory
 #'   files in (default \code{Inf}, no limit).
 #'

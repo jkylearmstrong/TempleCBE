@@ -584,7 +584,7 @@ It is vital to match your statistical strategy to your project question:
    - **How it works**: In each outer split, hyperparameters ($\alpha, \lambda$) are optimized solely on inner resamples, refit on the outer analysis set, and scored on held-out outer subjects.
    - **When to use**: Auditing models prior to clinical presentation, benchmarking expected out-of-sample performance, and guarding against optimization bias.
 
-2. **Random-Alpha Hyperparameter Exploration (`tune_over_alpha` / `summarize_tune_results`)**:
+2. **Random-Alpha Hyperparameter Exploration (`tune_over_alpha` / `tune_alpha_by_split`)**:
    - **Primary Objective**: *Model selection and diagnostic characterization* across the $\alpha \in [0, 1]$ penalty continuum.
    - **How it works**: Evaluates a dense grid or randomized draw of $\alpha$ values across resampling folds, measuring stability, coefficient shrinkage profiles, and Integrated Brier Score sensitivity.
    - **When to use**: Investigating whether Ridge ($L_2$), Lasso ($L_1$), or Elastic Net yields superior feature sparsity and stability, and finalizing a single model specification for deployment.

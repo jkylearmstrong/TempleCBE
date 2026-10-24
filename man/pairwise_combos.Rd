@@ -2,12 +2,9 @@
 % Please edit documentation in R/plot_pairwise_categorical.R
 \name{pairwise_combos}
 \alias{pairwise_combos}
-\alias{cbe_pairwise_combos}
 \title{Generate All Pairwise Categorical Combinations}
 \usage{
 pairwise_combos(data, cols = NULL, labels_df = NULL)
-
-cbe_pairwise_combos(...)
 }
 \arguments{
 \item{data}{A data frame or tibble.}
@@ -16,8 +13,6 @@ cbe_pairwise_combos(...)
 all factor and character columns are included.}
 
 \item{labels_df}{Optional lookup data frame with columns \code{variable} and \code{label}.}
-
-\item{...}{Passed to [pairwise_combos()].}
 }
 \value{
 A tibble with columns \code{id}, \code{var1}, \code{var2}, \code{label1}, \code{label2},

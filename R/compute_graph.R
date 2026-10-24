@@ -32,7 +32,7 @@ NULL
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
 #' @param default_formats Optional character vector of default output formats
 #'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
-#'   the package default across \code{\link{render}} and \code{\link{create_qmd_renderer}}.
+#'   the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
 #' @return A list containing the current configuration options.
 #' @export
 pipeline_config <- function(
@@ -536,7 +536,7 @@ create_qmd_renderer <- function(
 #' The file extension alone cannot say it (`.html` is the output of `html` and of `revealjs`), so
 #' the format is read from the output's name, which create_qmd_renderer() builds as
 #' `"<report> <FORMAT>"`. The name counts only when it names a format that writes this
-#' extension; any other output is its extension, as render() has always read it.
+#' extension; any other output is its extension, as render_pipeline() has always read it.
 #' @param o A FilePath object.
 #' @return Character, lower case; `""` for a path without an extension.
 #' @noRd
@@ -676,7 +676,7 @@ create_qmd_renderer <- function(
 #'
 #' Computes SHA-256 content hashes for all declared input files, producer
 #' scripts, and existing output deliverables in a pipeline and writes them to
-#' `pipeline_hashes.json`. Used by `render(stale_by = "hash")` and
+#' `pipeline_hashes.json`. Used by `render_pipeline(stale_by = "hash")` and
 #' `is_stale(stale_by = "hash")` so reruns across machines or git checkouts
 #' only re-render reports whose inputs or scripts genuinely changed in content.
 #'
@@ -685,7 +685,7 @@ create_qmd_renderer <- function(
 #' @param hash_file Optional file path for the JSON hash store. Defaults to
 #'   `"pipeline_hashes.json"` in the pipeline directory.
 #' @return The path to the written `pipeline_hashes.json` file (invisibly).
-#' @seealso [is_stale()], [get_render_plan()], [render()]
+#' @seealso [is_stale()], [get_render_plan()], [render_pipeline()]
 #' @export
 record_pipeline_hashes <- function(all_objects, hash_file = NULL) {
   if (is(all_objects, "FilePath")) {
@@ -1728,7 +1728,7 @@ print_pipeline <- function(
 #' \code{\link{visualize_pipeline}} and the summaries built on this function make the same checks.
 #'
 #' @param x list of FilePath, FileUses, and FileOutputs objects, or another
-#'   object with an \code{as_igraph} method (e.g. \code{\link{cbe_database_relationships}}).
+#'   object with an \code{as_igraph} method (e.g. \code{\link{database_relationships}}).
 #' @param ... Additional arguments passed to methods.
 #' @return an igraph object containing complete node and edge attributes
 #' @export
@@ -2548,7 +2548,6 @@ get_render_plan <- function(all_objects,
 #' Check if a FileOutputs object produces datasets (outputs an rds, xlsx, etc. file)
 #'
 #' @param obj A FileOutputs object.
-#' @param ... Passed to [produces_data()].
 #' @return Logical.
 #' @export
 produces_data <- function(obj) {
@@ -2571,13 +2570,6 @@ produces_data <- function(obj) {
 
   # Check if any extension is a dataset type (rds, xlsx, csv, etc.)
   any(exts %in% c("rds", "xlsx", "csv", "rdata"))
-}
-
-#' @rdname produces_data
-#' @export
-controls_datasets <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "controls_datasets()", "produces_data()")
-  produces_data(...)
 }
 
 

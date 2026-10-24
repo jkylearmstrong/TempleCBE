@@ -12,7 +12,6 @@
 #'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 #'   caps at available cores minus one. Falls back to sequential search when
 #'   \pkg{future}/\pkg{furrr} are not installed.
-#' @param ... Passed to \code{find_read_calls()}.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which read function matched.
@@ -39,13 +38,6 @@ find_read_calls <- function(path, include_comments = TRUE, workers = NULL) {
   )
 }
 
-#' @rdname find_read_calls
-#' @export
-read_search <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "read_search()", "find_read_calls()")
-  find_read_calls(...)
-}
-
 #' Search a Directory Tree for File-Write Calls
 #'
 #' Convenience wrapper around \code{\link{find_code}} that searches for common
@@ -59,7 +51,6 @@ read_search <- function(...) {
 #'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 #'   caps at available cores minus one. Falls back to sequential search when
 #'   \pkg{future}/\pkg{furrr} are not installed.
-#' @param ... Passed to \code{find_write_calls()}.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which write function matched.
@@ -84,13 +75,6 @@ find_write_calls <- function(path, include_comments = FALSE, workers = NULL) {
     include_comments = include_comments, lines_after = 2,
     workers = workers
   )
-}
-
-#' @rdname find_write_calls
-#' @export
-write_search <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "write_search()", "find_write_calls()")
-  find_write_calls(...)
 }
 
 #' @keywords internal

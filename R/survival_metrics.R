@@ -76,7 +76,7 @@
 #'   and comparison of prognostic classification schemes for survival data.
 #'   *Statistics in Medicine*, 18(17-18), 2529-2545.
 #' @seealso [cv_coxnet()], [nested_cv_coxnet()], [tune_over_alpha()],
-#'   [summarize_tune_results()]
+#'   [tune_alpha_by_split()]
 #' @export
 #' @examples
 #' \donttest{
@@ -1034,7 +1034,7 @@ furrr_worker_packages <- function(pkgs = c("rsample", "yardstick", "survival", "
 #' @return A list named by `alpha`, one element per fit, each the output of
 #'   [purrr::safely()]: a list with `result` (the [glmnet_IBS()] tibble, or
 #'   `NULL`) and `error` (`NULL`, or the condition).
-#' @seealso [glmnet_IBS()], [summarize_tune_results()], [clean_checkpoints()], [cv_coxnet()]
+#' @seealso [glmnet_IBS()], [tune_alpha_by_split()], [clean_checkpoints()], [cv_coxnet()]
 #' @export
 tune_over_alpha <- function(object,
                             ...,
@@ -1384,7 +1384,7 @@ tune_alpha_by_split <- function(object,
       dots = dots,
       seed = seed,
       extra = list(
-        fn = "summarize_tune_results",
+        fn = "summarize_tune_results", # legacy label kept: it is part of existing checkpoint fingerprints
         splits = splits_canon,
         num_alpha_values = num_alpha_values,
         num_fixed = num_fixed,
@@ -1815,42 +1815,6 @@ tune_alpha_by_split <- function(object,
   })
 }
 
-#' @rdname tune_alpha_by_split
-#' @export
-summarize_tune_results <- function(object,
-                                   ...,
-                                   num_alpha_values = 10,
-                                   num_fixed = 6,
-                                   alphas = NULL,
-                                   formulas = NULL,
-                                   progress = FALSE,
-                                   seed = NULL,
-                                   calibrate = TRUE,
-                                   checkpoint_dir = NULL,
-                                   checkpoint_mismatch = c("recompute", "overwrite", "error"),
-                                   shard = NULL,
-                                   chunk_size = NULL,
-                                   on_complete = getOption("templecbe.on_complete", NULL)) {
-  lifecycle::deprecate_warn("0.5.8", "summarize_tune_results()", "tune_alpha_by_split()")
-  tune_alpha_by_split(
-    object = object,
-    ...,
-    num_alpha_values = num_alpha_values,
-    num_fixed = num_fixed,
-    alphas = alphas,
-    formulas = formulas,
-    progress = progress,
-    seed = seed,
-    calibrate = calibrate,
-    checkpoint_dir = checkpoint_dir,
-    checkpoint_mismatch = checkpoint_mismatch,
-    shard = shard,
-    chunk_size = chunk_size,
-    on_complete = on_complete,
-    .fn_name = "summarize_tune_results"
-  )
-}
-
 #' Run an Expression With a Temporary Random Seed
 #'
 #' @keywords internal
@@ -1873,7 +1837,7 @@ with_local_seed <- function(seed, expr) {
 
 #' Collect and Merge Sharded Checkpoints From `checkpoint_dir`
 #'
-#' Merges per-task checkpoint files written by [summarize_tune_results()] or
+#' Merges per-task checkpoint files written by [tune_alpha_by_split()] or
 #' [score_outer()] across multiple machines (`shard = c(i, n)`). Verifies that
 #' all checkpoint files carry the same `checkpoint_run_fingerprint` and
 #' `seed_scheme` so results from different data, recipes, feature sets, seed
@@ -1881,13 +1845,13 @@ with_local_seed <- function(seed, expr) {
 #'
 #' @param checkpoint_dir Directory containing `.rds` checkpoint files.
 #' @param type Optional checkpoint type to collect: `"auto"` (default; inferred
-#'   from files in `checkpoint_dir`), `"tune"` ([summarize_tune_results()]), or
+#'   from files in `checkpoint_dir`), `"tune"` ([tune_alpha_by_split()]), or
 #'   `"score_outer"` ([score_outer()]).
 #' @param allow_incomplete Logical (default `FALSE`). When `FALSE`, stops with
 #'   an error if any tasks from the full run grid are missing.
 #' @return A merged tibble matching the return format of
-#'   [summarize_tune_results()] or [score_outer()].
-#' @seealso [summarize_tune_results()], [score_outer()], [clean_checkpoints()]
+#'   [tune_alpha_by_split()] or [score_outer()].
+#' @seealso [tune_alpha_by_split()], [score_outer()], [clean_checkpoints()]
 #' @export
 collect_checkpoints <- function(checkpoint_dir,
                                 type = c("auto", "tune", "score_outer"),
@@ -2061,7 +2025,7 @@ collect_checkpoints <- function(checkpoint_dir,
 #' @return A tibble of class `cbe_clean_checkpoints` with columns `file`, `path`,
 #'   `family`, `run_fingerprint`, `seed_scheme`, `mtime`, `action` (`"kept"` or
 #'   `"removed"`), and `reason`, plus attributes `n_kept` and `n_removed`.
-#' @seealso [collect_checkpoints()], [summarize_tune_results()], [score_outer()]
+#' @seealso [collect_checkpoints()], [tune_alpha_by_split()], [score_outer()]
 #' @export
 clean_checkpoints <- function(dir,
                               keep = c("current", "matching", "none"),
@@ -2245,7 +2209,7 @@ print.cbe_clean_checkpoints <- function(x, ...) {
 #' Times a small sample of model fits (`n_sample`) and projects the total
 #' wall-clock time for the full grid and per machine.
 #'
-#' @param fn Function to benchmark, such as [summarize_tune_results],
+#' @param fn Function to benchmark, such as [tune_alpha_by_split],
 #'   [score_outer], [tune_over_alpha], or [glmnet_IBS] (or its character name).
 #' @param args Named list of arguments to pass to `fn`.
 #' @param n_sample Number of sample fits to time (default `3`).
@@ -2263,7 +2227,7 @@ print.cbe_clean_checkpoints <- function(x, ...) {
 #'   (`projected_sequential_sec`, `projected_total_sec`,
 #'   `projected_per_machine_sec`, `projected_total_mins`,
 #'   `projected_per_machine_mins`).
-#' @seealso [summarize_tune_results()], [score_outer()]
+#' @seealso [tune_alpha_by_split()], [score_outer()]
 #' @export
 estimate_runtime <- function(fn,
                              args,
@@ -2312,7 +2276,8 @@ estimate_runtime <- function(fn,
   n_domains <- max(1L, as.integer(n_domains))
 
   # Determine total tasks in `args` and build sample calls
-  is_summarize <- identical(fn, summarize_tune_results) || identical(fn_name, "summarize_tune_results")
+  is_summarize <- identical(fn, tune_alpha_by_split) ||
+    fn_name %in% c("tune_alpha_by_split", "summarize_tune_results")
   is_score <- identical(fn, score_outer) || identical(fn_name, "score_outer")
   is_tune_alpha <- identical(fn, tune_over_alpha) || identical(fn_name, "tune_over_alpha")
 

@@ -10,7 +10,6 @@
 #' @param rank_metric Name of the metric to rank by, e.g. `"rmse"` or
 #'   `"brier_survival_integrated"`.
 #' @param .rank Position to return; 1 (default) is the best workflow.
-#' @param ... Additional arguments passed to [workflow_set_params()].
 #' @return A one-row tibble with `wflow_id`, `preproc`, `model`, and one column
 #'   per tuning parameter.
 #' @seealso [workflow_set_rank_fit()] to also fit the chosen configuration.
@@ -33,13 +32,6 @@ workflow_set_params <- function(workflowset_results, rank_metric, .rank = 1) {
   tune_res <- workflowsets::extract_workflow_set_result(workflowset_results, id = wflow_id)
   best <- tune::select_best(tune_res, metric = rank_metric)
   dplyr::bind_cols(workflow_info(workflowset_results, wflow_id), dplyr::select(best, -".config"))
-}
-
-#' @rdname workflow_set_params
-#' @export
-get_model_parameters <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "get_model_parameters()", "workflow_set_params()")
-  workflow_set_params(...)
 }
 
 #' Fit the Configuration Ranked `.rank` in a Workflow Set
@@ -66,7 +58,7 @@ get_model_parameters <- function(...) {
 #'   parameters, and its [workflowsets::rank_results()] row (`.config`,
 #'   `.metric`, `mean`, `std_err`, `n`, `rank`, and `overall_rank` when
 #'   `group_wflow = TRUE`).
-#' @seealso [get_model_parameters()]
+#' @seealso [workflow_set_params()]
 #' @export
 #' @examples
 #' \dontrun{
@@ -74,7 +66,7 @@ get_model_parameters <- function(...) {
 #'   wset, "tune_grid", resamples = folds, grid = 5,
 #'   control = tune::control_grid(save_workflow = TRUE)
 #' )
-#' best <- fit_n_rank(results, rank_metric = "rmse")
+#' best <- workflow_set_rank_fit(results, rank_metric = "rmse")
 #' best$tuned_parameters
 #' predict(best$model, new_data)
 #' }
@@ -118,13 +110,6 @@ workflow_set_rank_fit <- function(grid_results,
   }
 
   list(model = model, tuned_parameters = tuned_parameters)
-}
-
-#' @rdname workflow_set_rank_fit
-#' @export
-fit_n_rank <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "fit_n_rank()", "workflow_set_rank_fit()")
-  workflow_set_rank_fit(...)
 }
 
 #' The `wflow_id`, `preproc` and `model` of One Workflow in a Set

@@ -12,7 +12,7 @@ pca_scree_plot(
 )
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object or output from \code{\link{proc_pca}}.}
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or output from \code{\link{run_pca}}.}
 
 \item{metric}{Which metric to plot: \code{"eigenvalue"} (default, with Kaiser line at 1)
 or \code{"variance"} (percent of variance explained).}

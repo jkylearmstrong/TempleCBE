@@ -13,7 +13,7 @@ pca_variables_plot(
 )
 }
 \arguments{
-\item{pca_model}{A \code{\link[stats]{prcomp}} object or output from \code{\link{proc_pca}}.}
+\item{pca_model}{A \code{\link[stats]{prcomp}} object or output from \code{\link{run_pca}}.}
 
 \item{x, y}{Which principal components to plot (default 1, 2).}
 

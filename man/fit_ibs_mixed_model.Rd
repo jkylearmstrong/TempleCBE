@@ -7,7 +7,7 @@
 fit_ibs_mixed_model(data, log_ibs = TRUE)
 }
 \arguments{
-\item{data}{A data frame containing tuning results from [summarize_tune_results()].
+\item{data}{A data frame containing tuning results from [tune_alpha_by_split()].
 Must contain columns `alpha`, `IBS`, and `inner_resamples_splits`.}
 
 \item{log_ibs}{Logical. When `TRUE` (default), models `log10(IBS)`. When `FALSE`,

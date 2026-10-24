@@ -7,7 +7,7 @@
 \method{autoplot}{cbe_compare_df}(object, type = c("observations", "variables", "discrepancies"), ...)
 }
 \arguments{
-\item{object}{A \code{\link{cbe_compare_df}} object.}
+\item{object}{A \code{\link{compare_df}} object.}
 
 \item{type}{Character string specifying the plot type: \code{"observations"} (default; Venn of rows/keys),
 \code{"variables"} (Venn of common/unique columns), or \code{"discrepancies"} (bar chart of value differences).}

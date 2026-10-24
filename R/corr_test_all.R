@@ -92,11 +92,11 @@ corr_test_all <- function(data,
 #'
 #' Identifies numeric columns to drop for multicollinearity, via
 #' \code{\link[caret]{findCorrelation}} on the pairwise correlation matrix of
-#' \code{data}'s numeric columns. Named \code{find_correlation()} (not
+#' \code{data}'s numeric columns. Named \code{drop_correlated_columns()} (not
 #' \code{findCorrelation()}) so it doesn't shadow \pkg{caret}'s function of
 #' the same name for anyone with both packages loaded.
 #'
-#' **Note:** `find_correlation()` identifies column names or indices to *remove*
+#' **Note:** `drop_correlated_columns()` identifies column names or indices to *remove*
 #' to mitigate multicollinearity. To inspect the pairwise correlation coefficients
 #' themselves in a tidy table, use [correlated_pairs_table()] or [corr_test_all()].
 #'
@@ -109,7 +109,6 @@ corr_test_all <- function(data,
 #' @param exact Passed to \code{\link[caret]{findCorrelation}}; defaults to
 #'   \code{ncol(data) < 100} (the original had a bug here referencing an
 #'   undefined \code{x} instead of \code{data} — fixed).
-#' @param ... Passed to \code{drop_correlated_columns()}.
 #' @return Character vector (or integer indices) of columns to remove.
 #' @seealso [correlated_pairs_table()], [corr_test_all()], [plot_corr_scatter()]
 #' @export
@@ -147,19 +146,12 @@ drop_correlated_columns <- function(data,
   caret::findCorrelation(cor_matrix, cutoff = cutoff, verbose = verbose, names = names, exact = exact)
 }
 
-#' @rdname drop_correlated_columns
-#' @export
-find_correlation <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "find_correlation()", "drop_correlated_columns()")
-  drop_correlated_columns(...)
-}
-
 #' Formatted Table of Highly Correlated Variable Pairs
 #'
 #' Evaluates pairwise correlation between all numeric columns in `data` and returns
 #' a tidy table of variable pairs exceeding a correlation threshold.
 #'
-#' Unlike [find_correlation()], which returns column names or indices to *drop* for multicollinearity,
+#' Unlike [drop_correlated_columns()], which returns column names or indices to *drop* for multicollinearity,
 #' `correlated_pairs_table()` preserves and reports the pairwise correlation metrics, absolute
 #' magnitude, and p-values for all pairs above `cutoff`.
 #'
@@ -170,7 +162,7 @@ find_correlation <- function(...) {
 #' @param sort Sorting order: `"abs_desc"` (default, descending absolute correlation),
 #'   `"desc"` (descending raw correlation), `"p_value"` (ascending p-value), or `"none"`.
 #' @return A tibble with columns `var1`, `var2`, `r`, `abs_r`, `p_value`.
-#' @seealso [find_correlation()], [corr_test_all()], [plot_corr_scatter()]
+#' @seealso [drop_correlated_columns()], [corr_test_all()], [plot_corr_scatter()]
 #' @export
 #' @examples
 #' correlated_pairs_table(mtcars, cutoff = 0.7)

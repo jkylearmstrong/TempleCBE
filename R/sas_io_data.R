@@ -22,7 +22,7 @@
 #'   }
 #' @source Rossi, P. H., Berk, R. A., & Lenihan, K. J. (1980). *Money, work, and crime:
 #'   Some experimental results*. Academic Press.
-#' @seealso [cbe_sas_macro_path()], [run_sas_script()]
+#' @seealso [sas_macro_path()], [run_sas_script()]
 #' @export
 #' @examples
 #' df <- rossi_data()

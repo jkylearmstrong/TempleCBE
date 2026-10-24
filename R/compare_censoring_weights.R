@@ -993,13 +993,13 @@ compare_censoring_weights <- function(object,
 
 #' Select Candidate Models From Tuning Results
 #'
-#' Takes results from [summarize_tune_results()] or [tune_over_alpha()], identifies
+#' Takes results from [tune_alpha_by_split()] or [tune_over_alpha()], identifies
 #' the best-performing `alpha` values (e.g. within the top `ntile` of integrated Brier
 #' scores), and crosses them with candidate formulas to construct an outer evaluation
 #' grid.
 #'
 #' @param tune_results A data frame containing tuning results with at least `alpha`
-#'   and `IBS` columns (e.g. from [summarize_tune_results()]).
+#'   and `IBS` columns (e.g. from [tune_alpha_by_split()]).
 #' @param formulas Character vector of formulas, list of formula objects, or a single
 #'   formula to evaluate.
 #' @param ntile Numeric quantile cutoff (between 0 and 1, default `0.25`) for
@@ -1010,7 +1010,7 @@ compare_censoring_weights <- function(object,
 #'   top `ntile` of individual tune result rows, e.g. `ntile(IBS, 5) == 1`) or `"alpha"`
 #'   (summarizes mean IBS across all rows per alpha before selecting).
 #' @return A tibble with columns `model`, `alpha`, and `formula`.
-#' @seealso [score_outer()], [compare_censoring_weights()], [summarize_tune_results()]
+#' @seealso [score_outer()], [compare_censoring_weights()], [tune_alpha_by_split()]
 #' @export
 select_candidate_models <- function(tune_results,
                                     formulas,
@@ -1320,7 +1320,7 @@ print.templecbe_run_comparison <- function(x, ...) {
 #'
 #' Computes comparative summary statistics (mean, median, 25th and 75th percentiles)
 #' of integrated Brier scores (IBS) across candidate alpha values and formulas between
-#' two tuning runs (e.g. from [summarize_tune_results()] or [tune_over_alpha()]).
+#' two tuning runs (e.g. from [tune_alpha_by_split()] or [tune_over_alpha()]).
 #'
 #' @param tune1 A data frame of tuning results containing `alpha` and `IBS` columns,
 #'   or a path to an `.rds` file.
@@ -1336,7 +1336,7 @@ print.templecbe_run_comparison <- function(x, ...) {
 #' @param n_bins Number of bins when `match = "binned"` (default `10`).
 #' @return An object of class `c("templecbe_tuning_comparison", "tbl_df", "tbl", "data.frame")`
 #'   summarizing per-alpha IBS distributions, distributional shifts, and global IBS statistics.
-#' @seealso [summarize_tune_results()], [compare_runs()]
+#' @seealso [tune_alpha_by_split()], [compare_runs()]
 #' @export
 compare_tuning_runs <- function(tune1,
                                 tune2,

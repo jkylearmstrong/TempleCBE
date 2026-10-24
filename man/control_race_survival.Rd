@@ -2,7 +2,6 @@
 % Please edit documentation in R/racing_workflows.R
 \name{control_race_survival}
 \alias{control_race_survival}
-\alias{cbe_control_race}
 \title{Control Parameters for Racing Survival Workflows}
 \usage{
 control_race_survival(
@@ -15,8 +14,6 @@ control_race_survival(
   randomize = TRUE,
   ...
 )
-
-cbe_control_race(...)
 }
 \arguments{
 \item{save_pred}{Logical; whether to save out-of-fold assessment predictions (default \code{TRUE}).}

@@ -53,7 +53,7 @@ generalized to any graph type via \code{\link{as_database}} rather than
 
 All three are set operations -- which nodes/edges exist where -- not a
 value-level comparison of attributes on nodes/edges that happen to match.
-For that, run \code{\link{cbe_compare_df}} on the two \code{\link{as_database}}
+For that, run \code{\link{compare_df}} on the two \code{\link{as_database}}
 results directly (or on the two graphs themselves).
 }
 \examples{

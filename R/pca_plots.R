@@ -213,7 +213,7 @@ pca_biplot <- function(pca_model, x = 1, y = 2, group = NULL, ellipse = FALSE, t
 #' each principal component, with an optional horizontal reference line at
 #' eigenvalue = 1 (Kaiser-Guttman criterion).
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object or output from \code{\link{proc_pca}}.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or output from \code{\link{run_pca}}.
 #' @param metric Which metric to plot: \code{"eigenvalue"} (default, with Kaiser line at 1)
 #'   or \code{"variance"} (percent of variance explained).
 #' @param kaiser Logical (default \code{TRUE}); draw horizontal dashed line at eigenvalue = 1.
@@ -280,7 +280,7 @@ pca_scree_plot <- function(pca_model, metric = c("eigenvalue", "variance"), kais
 #' Fits truncated with \code{rank.} or \code{tol} are supported: the percent
 #' of variance on the axis labels is still the share of the total variance.
 #'
-#' @param pca_model A \code{\link[stats]{prcomp}} object or output from \code{\link{proc_pca}}.
+#' @param pca_model A \code{\link[stats]{prcomp}} object or output from \code{\link{run_pca}}.
 #' @param x,y Which principal components to plot (default 1, 2).
 #' @param title Optional plot title (default \code{"Variables Correlation Circle"}).
 #' @param data Optional data frame or matrix holding the original variables

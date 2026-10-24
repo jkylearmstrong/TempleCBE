@@ -2,7 +2,6 @@
 % Please edit documentation in R/racing_workflows.R
 \name{tune_race_survival}
 \alias{tune_race_survival}
-\alias{cbe_tune_race_survival}
 \title{Adaptive Racing Tuning for Survival Workflows and Workflow Sets}
 \usage{
 tune_race_survival(
@@ -19,8 +18,6 @@ tune_race_survival(
   checkpoint_mismatch = c("recompute", "overwrite", "error"),
   ...
 )
-
-cbe_tune_race_survival(...)
 }
 \arguments{
 \item{object}{A \code{\link[workflows]{workflow}} or \code{\link[workflowsets]{workflow_set}}

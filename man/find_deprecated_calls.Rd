@@ -5,12 +5,16 @@
 \alias{update_deprecated_calls}
 \title{Find and Update Deprecated Calls Across Project Code}
 \usage{
-find_deprecated_calls(path)
+find_deprecated_calls(path, exclude_dirs = NULL)
 
-update_deprecated_calls(path, dry_run = TRUE)
+update_deprecated_calls(path, dry_run = TRUE, exclude_dirs = NULL)
 }
 \arguments{
 \item{path}{Path to a source file or directory of project scripts.}
+
+\item{exclude_dirs}{Optional character vector of directory names (for example
+`c("ARCHIVE", "renv", "doc")`) to skip when `path` is a directory; a file is
+skipped if any folder on its path below `path` has one of these names.}
 
 \item{dry_run}{Logical; if `TRUE` (default), only previews the proposed
 renames without modifying files. If `FALSE`, rewrites files in place.}
@@ -21,16 +25,21 @@ A `tibble` with columns:
   \item{line}{1-based line number.}
   \item{old_name}{Name of the deprecated function.}
   \item{replacement}{Canonical replacement function name.}
-  \item{call_type}{Whether the call was `"qualified"` or `"unqualified"`.}
+  \item{call_type}{`"qualified"` (`TempleCBE::old()`), `"unqualified"` (`old()`), or
+    `"ambiguous"`: an unqualified `clean_names()`, `render()`, `like()` or `write_xlsx()` in a
+    file that uses TempleCBE. Other packages export these names too, so
+    `update_deprecated_calls()` never rewrites them.}
   \item{context}{The original source code line.}
 }
 \description{
 `find_deprecated_calls()` inspects code files and reports all occurrences of
-deprecated TempleCBE functions scheduled for removal in TempleCBE 0.7.0.
+deprecated TempleCBE functions removed in TempleCBE 0.7.0 (this tool finds them in your own code).
 
 `update_deprecated_calls()` previews or applies in-place renames to update
 both package-qualified calls (`TempleCBE::old()`, `TempleCBE:::old()`) and
 unqualified calls (`old()`).
+Only code is read: string literals and comments are ignored, and in `.Rmd`/`.qmd` files only
+the R chunks. Method calls (`obj$render()`) are ignored.
 }
 \details{
 Scans source files (`.R`, `.Rmd`, `.qmd`) in a project directory or script

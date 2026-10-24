@@ -32,7 +32,7 @@ Evaluates pairwise correlation between all numeric columns in `data` and returns
 a tidy table of variable pairs exceeding a correlation threshold.
 }
 \details{
-Unlike [find_correlation()], which returns column names or indices to *drop* for multicollinearity,
+Unlike [drop_correlated_columns()], which returns column names or indices to *drop* for multicollinearity,
 `correlated_pairs_table()` preserves and reports the pairwise correlation metrics, absolute
 magnitude, and p-values for all pairs above `cutoff`.
 }
@@ -40,5 +40,5 @@ magnitude, and p-values for all pairs above `cutoff`.
 correlated_pairs_table(mtcars, cutoff = 0.7)
 }
 \seealso{
-[find_correlation()], [corr_test_all()], [plot_corr_scatter()]
+[drop_correlated_columns()], [corr_test_all()], [plot_corr_scatter()]
 }

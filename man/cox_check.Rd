@@ -2,18 +2,13 @@
 % Please edit documentation in R/cbe_cox_check.R
 \name{cox_check}
 \alias{cox_check}
-\alias{cbe_cox_check}
 \title{Tidy Proportional Hazards Diagnostics for Cox Models}
 \usage{
 cox_check(fit)
-
-cbe_cox_check(...)
 }
 \arguments{
 \item{fit}{A fitted \code{survival::coxph} model, or a \code{cbe_cox} or
 \code{cbe_cox_multi} object.}
-
-\item{...}{Passed to \code{cox_check()}.}
 }
 \value{
 An object of class \code{cbe_cox_check} containing:
@@ -35,5 +30,5 @@ fitted \code{survival::coxph} model, or on a \code{cbe_cox} or
 per-term table, a per-term violation flag, and an automated text summary.
 }
 \seealso{
-[cbe_cox_single()], [cbe_cox_multi()]
+[cox_single()], [cox_multi()]
 }

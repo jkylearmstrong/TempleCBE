@@ -23,7 +23,7 @@
 #'
 #' @return \code{find_sas()}: the path to the SAS executable, or \code{NULL} if
 #'   none is found. \code{sas_available()}: \code{TRUE} or \code{FALSE}.
-#' @seealso [run_sas_script()], [cbe_sas_macro_path()], [cbe_sas_macro_dir()]
+#' @seealso [run_sas_script()], [sas_macro_path()], [sas_macro_dir()]
 #' @export
 #' @examples
 #' find_sas()
@@ -103,7 +103,7 @@ sas_available <- function() {
 #'   was started is stopped.
 #' @return The exit status of the SAS process (0 on success, 1 for warnings, 2
 #'   for errors). A run that is stopped by `timeout` is an error.
-#' @seealso [find_sas()], [cbe_sas_macro_path()]
+#' @seealso [find_sas()], [sas_macro_path()]
 #' @export
 #' @examples
 #' \dontrun{
@@ -203,13 +203,6 @@ sas_macro_dir <- function() {
   dir
 }
 
-#' @rdname sas_macro_dir
-#' @export
-cbe_sas_macro_dir <- function() {
-  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_dir()", "sas_macro_dir()")
-  sas_macro_dir()
-}
-
 #' Path to a TempleCBE SAS Macro File
 #'
 #' Returns the absolute path to an installed TempleCBE SAS macro or benchmark script.
@@ -219,7 +212,6 @@ cbe_sas_macro_dir <- function() {
 #'   `"cbe_cox_phreg.sas"`, `"cbe_counting_process.sas"`, `"coxtvc.sas"`,
 #'   `"cpdata.sas"`, `"benchmark_brier_lung.sas"`, `"benchmark_brier_lung_full.sas"`,
 #'   and `"example_85_7.sas"`.
-#' @param ... Passed to [sas_macro_path()].
 #' @return Absolute path to the requested `.sas` file.
 #' @seealso [sas_macro_dir()], [run_sas_script()], [find_sas()]
 #' @name sas_macro_path
@@ -244,11 +236,4 @@ sas_macro_path <- function(macro = "cbe_macros.sas") {
     )
   }
   normalizePath(target, winslash = "/", mustWork = TRUE)
-}
-
-#' @rdname sas_macro_path
-#' @export
-cbe_sas_macro_path <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_sas_macro_path()", "sas_macro_path()")
-  sas_macro_path(...)
 }

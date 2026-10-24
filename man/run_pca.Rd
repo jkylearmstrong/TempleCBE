@@ -2,12 +2,9 @@
 % Please edit documentation in R/proc_pca.R
 \name{run_pca}
 \alias{run_pca}
-\alias{proc_pca}
 \title{Process and Plot Principal Component Analysis (PCA)}
 \usage{
 run_pca(data, center = TRUE, scale = TRUE, ...)
-
-proc_pca(...)
 }
 \arguments{
 \item{data}{A `prcomp` object, or a numeric matrix/data frame to fit PCA on.}

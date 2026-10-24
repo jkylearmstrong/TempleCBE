@@ -6,7 +6,6 @@
 #' machine-friendly.
 #'
 #' @param df A data frame or tibble.
-#' @param ... Passed to \code{clean_names_keep_labels()}.
 #' @return A tibble with cleaned column names and the original names stored
 #'   as variable labels (see \code{\link[labelled]{var_label}}).
 #' @export
@@ -24,11 +23,4 @@ clean_names_keep_labels <- function(df) {
   df <- janitor::clean_names(df)
   labelled::var_label(df) <- old_names
   df
-}
-
-#' @rdname clean_names_keep_labels
-#' @export
-R_names <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "R_names()", "clean_names_keep_labels()")
-  clean_names_keep_labels(...)
 }

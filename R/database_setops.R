@@ -39,7 +39,7 @@
 #' yesterday's) for a node present in both keeps \emph{today's}
 #' \code{mtime}/\code{stage}, silently discarding yesterday's -- there is no
 #' reconciliation between the two. To compare attribute values themselves (not
-#' just which nodes exist), run \code{\link{cbe_compare_df}} on the two
+#' just which nodes exist), run \code{\link{compare_df}} on the two
 #' \code{\link{as_database}} results directly instead.
 #'
 #' \strong{\code{union()}: attribute values are coalesced, not taken from one

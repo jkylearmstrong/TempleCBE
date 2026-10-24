@@ -20,7 +20,7 @@
 )
 }
 \arguments{
-\item{x, object}{A [cbe_nested_survival_run()] object.}
+\item{x, object}{A [nested_survival_run()] object.}
 
 \item{type}{Plot type:
 \describe{

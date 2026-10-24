@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_exact2x2.R
 \name{exact2x2}
 \alias{exact2x2}
-\alias{cbe_exact2x2}
 \title{Exact Test for 2x2 Tables with Automatic Zero-Cell Mid-p Default}
 \usage{
 exact2x2(
@@ -23,8 +22,6 @@ exact2x2(
   continuous_variable = NULL,
   ...
 )
-
-cbe_exact2x2(...)
 }
 \arguments{
 \item{x}{A 2x2 numeric matrix, table, or a categorical vector. Can also be a
@@ -95,9 +92,9 @@ binary variable with an empty extra level is still tested as 2x2.
 # 2x2 table with a zero cell: automatically triggers mid-p adjustment
 tab_zero <- matrix(c(0, 10, 5, 15), nrow = 2,
                    dimnames = list(c("Treated", "Control"), c("Event", "No Event")))
-cbe_exact2x2(tab_zero)
+exact2x2(tab_zero)
 
 # 2x2 table without zero cells: standard Central Fisher's exact test
 tab_nonzero <- matrix(c(12, 8, 5, 15), nrow = 2)
-cbe_exact2x2(tab_nonzero)
+exact2x2(tab_nonzero)
 }

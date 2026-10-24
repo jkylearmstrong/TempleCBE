@@ -20,7 +20,7 @@ pipeline_config(
 
 \item{default_formats}{Optional character vector of default output formats
 for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
-the package default across \code{\link{render}} and \code{\link{create_qmd_renderer}}.}
+the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.}
 }
 \value{
 A list containing the current configuration options.

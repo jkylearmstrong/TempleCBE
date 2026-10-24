@@ -408,7 +408,7 @@ fit_status_calibrator <- function(honest, status_fac) {
 #'
 #' The one path from predictors to the status and time sub-models'
 #' predictions, shared by [predict.joint_model()], the scoring in
-#' [cv_joint_model()], and the explainers of [cbe_explain()].
+#' [cv_joint_model()], and the explainers of [explain_joint()].
 #'
 #' @param object A `joint_model`.
 #' @param predictors The `$predictors` of [hardhat::forge()] on new data and the

@@ -5,9 +5,6 @@
 \alias{as_tbl_graph.cbe_database_relationships}
 \alias{find_shared_keys}
 \alias{check_key_integrity}
-\alias{cbe_database_relationships}
-\alias{cbe_find_shared_keys}
-\alias{cbe_check_key_integrity}
 \title{Analyze Relationships and Linkages Across Datasets in an R Database}
 \usage{
 database_relationships(db, id_cols = NULL)
@@ -24,12 +21,6 @@ check_key_integrity(
   tolerance = 1e-07,
   ...
 )
-
-cbe_database_relationships(...)
-
-cbe_find_shared_keys(...)
-
-cbe_check_key_integrity(...)
 }
 \arguments{
 \item{db}{A named list of data frames (an R database).}
@@ -39,7 +30,7 @@ shared keys are automatically detected across datasets.}
 
 \item{x}{A \code{cbe_database_relationships} object.}
 
-\item{...}{Additional arguments passed to \code{\link{cbe_compare_df}}.}
+\item{...}{Additional arguments passed to \code{\link{compare_df}}.}
 
 \item{id_col}{Character string specifying the identifier column to check.}
 
@@ -47,10 +38,10 @@ shared keys are automatically detected across datasets.}
 checks which IDs in other tables are absent from the master cohort table.}
 
 \item{compare}{Logical; if \code{TRUE} and \code{master_dataset} is supplied,
-runs \code{\link{cbe_compare_df}} on overlapping variables between the master dataset
+runs \code{\link{compare_df}} on overlapping variables between the master dataset
 and child datasets, attaching the comparison results.}
 
-\item{tolerance}{Numeric comparison tolerance passed to \code{\link{cbe_compare_df}}.}
+\item{tolerance}{Numeric comparison tolerance passed to \code{\link{compare_df}}.}
 }
 \value{
 A tibble summarizing dataset pairs, shared key columns, record counts,

@@ -1,22 +1,21 @@
 #' Relevel a Factor's Reference Level
 #'
 #' Standalone helper for choosing the reference (baseline) level of a factor before
-#' passing it to [cbe_cox_single()] or [cbe_cox_multi()]. Wraps [stats::relevel()],
+#' passing it to [cox_single()] or [cox_multi()]. Wraps [stats::relevel()],
 #' defaulting to the first level (matching the reference-row convention already used
-#' by \code{cbe_cox_single()}/\code{cbe_cox_multi()}), and attaches a
+#' by \code{cox_single()}/\code{cox_multi()}), and attaches a
 #' \code{"cbe_reference_level"} attribute recording the chosen level.
 #'
-#' \code{cbe_cox_single()} and \code{cbe_cox_multi()} are not rewired to require this
+#' \code{cox_single()} and \code{cox_multi()} are not rewired to require this
 #' helper; it is an optional convenience for callers who want to choose the reference
 #' level explicitly before fitting.
 #'
 #' @param x A factor, or a vector coercible to one via \code{as.factor()}.
 #' @param ref_level Character string naming the level to use as reference. Defaults
 #'   to the first level of \code{x} (its current or natural ordering).
-#' @param ... Passed to [relevel_factor()].
 #' @return The releveled factor, with attribute \code{"cbe_reference_level"} set to
 #'   the chosen reference level.
-#' @seealso [cbe_cox_single()], [cbe_cox_multi()]
+#' @seealso [cox_single()], [cox_multi()]
 #' @export
 relevel_factor <- function(x, ref_level = NULL) {
   f <- if (is.factor(x)) x else as.factor(x)
@@ -31,18 +30,4 @@ relevel_factor <- function(x, ref_level = NULL) {
   attr(f_releveled, "cbe_reference_level") <- ref_level
   message(sprintf("relevel_factor(): reference level set to '%s'.", ref_level))
   f_releveled
-}
-
-#' @rdname relevel_factor
-#' @export
-factor_reference <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "factor_reference()", "relevel_factor()")
-  relevel_factor(...)
-}
-
-#' @rdname relevel_factor
-#' @export
-cbe_factor_reference <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_factor_reference()", "relevel_factor()")
-  relevel_factor(...)
 }

@@ -2,12 +2,9 @@
 % Please edit documentation in R/path_utils.R
 \name{extract_xlsx_paths}
 \alias{extract_xlsx_paths}
-\alias{extract_win_posix_paths}
 \title{Extract Full `.xlsx` Paths From Text}
 \usage{
 extract_xlsx_paths(x, xlsx_token_re = xlsx_name_re)
-
-extract_win_posix_paths(x, xlsx_token_re = xlsx_name_re)
 }
 \arguments{
 \item{x}{Character vector, e.g. code lines.}

@@ -172,15 +172,13 @@ test_that("2. fit_resamples_checkpointed() and tune_grid_checkpointed() work and
 # 3. Canonical Naming and Lifecycle Deprecations
 # ------------------------------------------------------------------------------
 
-test_that("3. Canonical functions execute and deprecated aliases warn", {
+test_that("3. Canonical functions execute", {
   # count_na / SumNa
   df_na <- data.frame(a = c(1, NA, 3), b = c(NA, NA, 4))
   expect_equal(count_na(df_na), 3L)
-  expect_warning(SumNa(df_na), "deprecated")
 
   # normalize_path_safely / normalize_safely
   expect_equal(unname(normalize_path_safely(tempdir())), normalizePath(tempdir(), winslash = "/", mustWork = FALSE))
-  expect_warning(normalize_safely(tempdir()), "deprecated")
 
   # drop_correlated_columns / find_correlation
   if (requireNamespace("caret", quietly = TRUE)) {
@@ -188,45 +186,36 @@ test_that("3. Canonical functions execute and deprecated aliases warn", {
     colnames(mat) <- c("v1", "v2")
     rownames(mat) <- c("v1", "v2")
     expect_equal(drop_correlated_columns(mat, cutoff = 0.9), "v2")
-    expect_warning(find_correlation(mat, cutoff = 0.9), "deprecated")
   }
 
   # describe_columns / proc_contents
   expect_s3_class(describe_columns(iris), "tbl_df")
-  expect_warning(proc_contents(iris), "deprecated")
 
   # relevel_factor / factor_reference
   f <- factor(c("low", "med", "high"))
   expect_equal(levels(relevel_factor(f, "high"))[1], "high")
-  expect_warning(factor_reference(f, "high"), "deprecated")
 
   # std_error / sd.error
   x <- c(1, 2, 3, 4, 5)
   expect_true(is.numeric(std_error(x)))
-  expect_warning(sd.error(x), "deprecated")
 
   # is_integer_valued / is.int
   expect_true(is_integer_valued(5))
   expect_false(is_integer_valued(5.5))
-  expect_warning(is.int(5), "deprecated")
 
   # summary_table / my_summary_table
   expect_s3_class(summary_table(iris, Sepal.Length), "data.frame")
-  expect_warning(my_summary_table(iris, Sepal.Length), "deprecated")
 
   # produces_data / controls_datasets
   fo <- new("FileOutputs", name = "test_script", output = list(new("FilePath", name = "out", path = "data.rds")))
   expect_true(produces_data(fo))
-  expect_warning(controls_datasets(fo), "deprecated")
 
   # match_like / like
   expect_true(match_like("hello world", "world"))
-  expect_warning(like("hello world", "world"), "deprecated")
 
   # extract_xlsx_paths / extract_win_posix_paths
   lines <- c("Reading C:/data/file.xlsx now")
   expect_equal(extract_xlsx_paths(lines)$full_path, "C:/data/file.xlsx")
-  expect_warning(extract_win_posix_paths(lines), "deprecated")
 
   # rm_all_except / keep_only
   e <- new.env()
@@ -235,14 +224,7 @@ test_that("3. Canonical functions execute and deprecated aliases warn", {
   e$c <- 3
   rm_all_except(vector = c("a", "b"), env = e)
   expect_equal(ls(e), c("a", "b"))
-  expect_warning(keep_only(vector = "a", env = e), "deprecated")
-  expect_equal(ls(e), "a")
 
-  # cbe_* aliases converted to canonical
-  expect_warning(cbe_variable_roles(character(0)), "deprecated")
-  expect_warning(cbe_compare_df(data.frame(a = 1), data.frame(a = 1)), "deprecated")
-  expect_warning(cbe_exact2x2(matrix(c(1L, 2L, 3L, 4L), 2, 2)), "deprecated")
-  expect_warning(cbe_find_shared_keys(list(df1 = data.frame(id = 1), df2 = data.frame(id = 1))), "deprecated")
 })
 
 # ------------------------------------------------------------------------------
@@ -570,13 +552,8 @@ test_that("H4: write_xlsx_file() is exported and functional; legacy masking name
   write_xlsx_file(test_df, tmp_file)
   expect_true(file.exists(tmp_file))
 
-  # Deprecation warnings mention removal in 0.7.0
-  expect_warning(TempleCBE::clean_names(test_df), "0\\.7\\.0")
-  expect_warning(TempleCBE::write_xlsx(test_df, tmp_file), "0\\.7\\.0")
-  expect_warning(TempleCBE::like("abc", "b"), "0\\.7\\.0")
-  expect_warning(TempleCBE::`%like%`("abc", "b"), "0\\.7\\.0")
+  # the deprecated wrappers are gone
   expect_false("%notin%" %in% getNamespaceExports("TempleCBE"))
-  expect_warning(TempleCBE:::`%notin%`(1, 2:3), "0\\.7\\.0")
 })
 
 test_that("H5: workflow_map_checkpointed() accepts seed without unused argument warnings", {

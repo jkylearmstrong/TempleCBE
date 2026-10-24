@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_cox_multi.R
 \name{cox_multi}
 \alias{cox_multi}
-\alias{cbe_cox_multi}
 \title{Multivariable Cox Proportional Hazards Modeling Engine}
 \usage{
 cox_multi(
@@ -13,8 +12,6 @@ cox_multi(
   conf_level = 0.95,
   ...
 )
-
-cbe_cox_multi(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate features.}
@@ -55,5 +52,5 @@ formats coefficients with explicit reference levels grouped by variable, and
 gathers model fit and convergence metrics.
 }
 \seealso{
-[cbe_cox_single()], [cbe_cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
+[cox_single()], [cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 }

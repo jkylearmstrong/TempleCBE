@@ -2,7 +2,6 @@
 % Please edit documentation in R/tuning_results.R
 \name{workflow_set_rank_fit}
 \alias{workflow_set_rank_fit}
-\alias{fit_n_rank}
 \title{Fit the Configuration Ranked `.rank` in a Workflow Set}
 \usage{
 workflow_set_rank_fit(
@@ -13,8 +12,6 @@ workflow_set_rank_fit(
   select_best = FALSE,
   ...
 )
-
-fit_n_rank(...)
 }
 \arguments{
 \item{grid_results}{Tuned workflow set results, the output of
@@ -54,11 +51,11 @@ results <- workflowsets::workflow_map(
   wset, "tune_grid", resamples = folds, grid = 5,
   control = tune::control_grid(save_workflow = TRUE)
 )
-best <- fit_n_rank(results, rank_metric = "rmse")
+best <- workflow_set_rank_fit(results, rank_metric = "rmse")
 best$tuned_parameters
 predict(best$model, new_data)
 }
 }
 \seealso{
-[get_model_parameters()]
+[workflow_set_params()]
 }

@@ -104,5 +104,5 @@ tidy_tmerge_cox(measures, events)
 tidy_tmerge_cox(measures, events, post_event = "include")
 }
 \seealso{
-[cbe_cox_multi()]
+[cox_multi()]
 }

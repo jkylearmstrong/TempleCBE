@@ -43,5 +43,5 @@ find_sas()
 sas_available()
 }
 \seealso{
-[run_sas_script()], [cbe_sas_macro_path()], [cbe_sas_macro_dir()]
+[run_sas_script()], [sas_macro_path()], [sas_macro_dir()]
 }

@@ -7,7 +7,7 @@
 plot_tune_coef_boxplot(data, top_n = NULL, label_map = NULL, style = NULL)
 }
 \arguments{
-\item{data}{A data frame from [summarize_tune_results()].}
+\item{data}{A data frame from [tune_alpha_by_split()].}
 
 \item{top_n}{Optional integer limit on the number of features to plot (ordered
 by median absolute effect size).}

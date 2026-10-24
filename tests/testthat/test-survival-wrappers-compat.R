@@ -1,5 +1,5 @@
 # Downstream analysis code calls glmnet_IBS(), tune_over_alpha(), and
-# summarize_tune_results() with the arguments exercised here. These tests pin
+# tune_alpha_by_split() (formerly summarize_tune_results()) with the arguments exercised here. These tests pin
 # that interface: add arguments freely, but don't rename or remove these.
 
 compat_data <- function(n = 60, seed = 11) {
@@ -48,8 +48,8 @@ test_that("glmnet_IBS keeps the arguments downstream call sites use", {
   expect_identical(args[1:2], c("object", "alpha"))
 })
 
-test_that("tune_over_alpha and summarize_tune_results keep their arguments", {
-  for (fn in list(tune_over_alpha, summarize_tune_results)) {
+test_that("tune_over_alpha and tune_alpha_by_split keep their arguments", {
+  for (fn in list(tune_over_alpha, tune_alpha_by_split)) {
     args <- names(formals(fn))
     expect_identical(args[1:2], c("object", "..."))
     expect_true(all(c("num_alpha_values", "num_fixed", "alphas", "formulas") %in% args))
@@ -74,7 +74,7 @@ test_that("a downstream-style glmnet_IBS call runs and returns IBS, lambda, term
   expect_true(is.na(res$IBS[1]) || (res$IBS[1] >= 0 && res$IBS[1] <= 1))
 })
 
-test_that("downstream-style tune_over_alpha and summarize_tune_results calls run", {
+test_that("downstream-style tune_over_alpha and tune_alpha_by_split calls run", {
   skip_if_no_compat_deps()
   skip_if_not_installed("furrr")
   fx <- compat_fixture()

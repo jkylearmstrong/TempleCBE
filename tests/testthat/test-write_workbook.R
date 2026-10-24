@@ -72,8 +72,6 @@ test_that("apply_database_metadata updates dataset labels and variable attribute
 
   expect_equal(database_name(updated_db), "ClinicalDB")
   expect_equal(dataset_label(updated_db$patients), "Cohort Enrollment")
-  expect_warning(cbe_database_name(updated_db), "deprecated")
-  expect_warning(cbe_dataset_label(updated_db$patients), "deprecated")
   expect_equal(as.character(labelled::var_label(updated_db$patients$sbp)), "Systolic Blood Pressure (mmHg)")
   expect_equal(as.character(labelled::var_label(updated_db$patients$id)), "Patient Identifier")
 })

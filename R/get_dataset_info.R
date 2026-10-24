@@ -111,62 +111,6 @@ get_dataset_labels <- function(x) {
   vapply(x, function(df) dataset_label(df) %||% NA_character_, character(1))
 }
 
-#' @rdname dataset_labels
-#' @export
-cbe_dataset_label <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label()", "dataset_label()")
-  dataset_label(x)
-}
-
-#' @rdname dataset_labels
-#' @export
-`cbe_dataset_label<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_dataset_label()", "dataset_label()", details = "Use `dataset_label<-` for assignment.")
-  `dataset_label<-`(x, value)
-}
-
-#' @rdname dataset_labels
-#' @export
-cbe_database_name <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_name()", "database_name()")
-  database_name(x)
-}
-
-#' @rdname dataset_labels
-#' @export
-`cbe_database_name<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_name()", "database_name()", details = "Use `database_name<-` for assignment.")
-  `database_name<-`(x, value)
-}
-
-#' @rdname dataset_labels
-#' @export
-cbe_database_label <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_label()", "database_label()")
-  database_label(x)
-}
-
-#' @rdname dataset_labels
-#' @export
-`cbe_database_label<-` <- function(x, value) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_database_label()", "database_label()", details = "Use `database_label<-` for assignment.")
-  `database_label<-`(x, value)
-}
-
-#' @rdname dataset_labels
-#' @export
-cbe_set_dataset_labels <- function(x, labels) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_set_dataset_labels()", "set_dataset_labels()")
-  set_dataset_labels(x, labels)
-}
-
-#' @rdname dataset_labels
-#' @export
-cbe_get_dataset_labels <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_get_dataset_labels()", "get_dataset_labels()")
-  get_dataset_labels(x)
-}
-
 #' Summarize a Data Frame or Joint Model's Columns and Components
 #'
 #' Per-column metadata: class, variable label (if set via \pkg{labelled}),
@@ -447,10 +391,3 @@ get_dataset_info.joint_model <- function(x, ...) {
 #' @rdname get_dataset_info
 #' @export
 describe_columns <- get_dataset_info
-
-#' @rdname get_dataset_info
-#' @export
-proc_contents <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "proc_contents()", "describe_columns()")
-  describe_columns(...)
-}

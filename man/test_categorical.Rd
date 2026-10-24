@@ -2,7 +2,6 @@
 % Please edit documentation in R/cbe_exact2x2.R
 \name{test_categorical}
 \alias{test_categorical}
-\alias{cbe_test_categorical}
 \title{Institutional Categorical Hypothesis Test for gtsummary and Batch Testing}
 \usage{
 test_categorical(
@@ -24,8 +23,6 @@ test_categorical(
   continuous_variable = NULL,
   ...
 )
-
-cbe_test_categorical(...)
 }
 \arguments{
 \item{data}{Data frame supplied directly or by \pkg{gtsummary}.}
@@ -102,12 +99,12 @@ The function follows a rigorous 4-rule hierarchy:
 library(gtsummary)
 trial |>
   tbl_summary(by = trt, include = c(response, death, grade)) |>
-  add_p(test = all_categorical() ~ cbe_test_categorical) |>
+  add_p(test = all_categorical() ~ test_categorical) |>
   separate_p_footnotes()
 
 # Standalone batch testing across multiple features:
-cbe_test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
+test_categorical(trial, variable = c("response", "death", "grade"), by = "trt")
 
 # Formula interface:
-cbe_test_categorical(trial, response ~ trt)
+test_categorical(trial, response ~ trt)
 }

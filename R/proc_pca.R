@@ -61,10 +61,3 @@ run_pca <- function(data, center = TRUE, scale = TRUE, ...) {
   class(res) <- c("cbe_pca", class(res))
   res
 }
-
-#' @rdname run_pca
-#' @export
-proc_pca <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "proc_pca()", "run_pca()")
-  run_pca(...)
-}

@@ -2,12 +2,9 @@
 % Please edit documentation in R/run_sas_script.R
 \name{sas_macro_dir}
 \alias{sas_macro_dir}
-\alias{cbe_sas_macro_dir}
 \title{Directory of TempleCBE SAS Macros}
 \usage{
 sas_macro_dir()
-
-cbe_sas_macro_dir()
 }
 \value{
 Absolute path to the SAS macro directory.

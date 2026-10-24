@@ -7,7 +7,6 @@
 #' @param x A vector, matrix, or data frame.
 #' @param na_list Optional vector of additional values to treat as missing,
 #'   beyond actual \code{NA}.
-#' @param ... Passed to \code{count_na()}.
 #' @return An integer representing the total count of missing values.
 #' @export
 #' @examples
@@ -23,11 +22,4 @@ count_na <- function(x, na_list = NULL) {
   } else {
     sum(is.na(x) | x %in% na_list)
   }
-}
-
-#' @rdname count_na
-#' @export
-SumNa <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "SumNa()", "count_na()")
-  count_na(...)
 }

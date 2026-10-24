@@ -2,7 +2,6 @@
 % Please edit documentation in R/explain_survival.R
 \name{predict_parts_shap}
 \alias{predict_parts_shap}
-\alias{cbe_predict_parts_shap}
 \title{SHAP Variable Attributions across Survival and Joint Models}
 \usage{
 predict_parts_shap(
@@ -11,12 +10,10 @@ predict_parts_shap(
   type = c("auto", "shap", "survshap"),
   ...
 )
-
-cbe_predict_parts_shap(...)
 }
 \arguments{
-\item{explainer}{An explainer object produced by \code{cbe_explain_survival()},
-\code{cbe_explain()}, or \code{DALEX::explain()}.}
+\item{explainer}{An explainer object produced by \code{explain_survival()},
+\code{explain_joint()}, or \code{DALEX::explain()}.}
 
 \item{new_observation}{A 1-row data frame containing the observation to explain.}
 

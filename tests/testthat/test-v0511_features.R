@@ -49,12 +49,14 @@ testthat::test_that("P2: find_deprecated_calls and update_deprecated_calls are n
   # Script 1: defines its own SumNa, calls janitor::clean_names, and calls TempleCBE::sd.error and summarize_tune_results
   s1 <- file.path(tmp_dir, "report.qmd")
   writeLines(c(
+    "```{r}",
     "SumNa <- function(x) { sum(is.na(x)) }",
     "na_cnt <- SumNa(vec)",
     "cleaned <- janitor::clean_names(dat)",
     "dt_like <- data.table::like(dat$col, 'test')",
     "se <- TempleCBE::sd.error(vals)",
-    "tuned <- summarize_tune_results(splits)"
+    "tuned <- summarize_tune_results(splits)",
+    "```"
   ), s1)
 
   # Binary / invalid files should be skipped cleanly

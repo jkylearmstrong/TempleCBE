@@ -7,7 +7,7 @@
 tbl_tune_alpha(data, label_map = NULL, style = NULL)
 }
 \arguments{
-\item{data}{A data frame from [summarize_tune_results()].}
+\item{data}{A data frame from [tune_alpha_by_split()].}
 
 \item{label_map}{Optional label mapping (see [cbe_labels()]).}
 

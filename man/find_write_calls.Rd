@@ -2,12 +2,9 @@
 % Please edit documentation in R/search_wrappers.R
 \name{find_write_calls}
 \alias{find_write_calls}
-\alias{write_search}
 \title{Search a Directory Tree for File-Write Calls}
 \usage{
 find_write_calls(path, include_comments = FALSE, workers = NULL)
-
-write_search(...)
 }
 \arguments{
 \item{path}{Character. Root directory to search.}
@@ -19,8 +16,6 @@ Defaults to \code{FALSE}.}
 \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
 caps at available cores minus one. Falls back to sequential search when
 \pkg{future}/\pkg{furrr} are not installed.}
-
-\item{...}{Passed to \code{find_write_calls()}.}
 }
 \value{
 A tibble of matches (see \code{\link{find_code}}) with an

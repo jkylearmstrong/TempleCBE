@@ -159,7 +159,7 @@ tbl_cat <- if (length(cat_vars) > 0) {
     ) |>
     gtsummary::add_overall(last = TRUE, col_label = "**Overall**") |>
     gtsummary::add_p(
-      test = gtsummary::all_categorical() ~ TempleCBE::cbe_test_categorical,
+      test = gtsummary::all_categorical() ~ TempleCBE::test_categorical,
       pvalue_fun = ~ scales::pvalue(.x, accuracy = 0.001)
     ) |>
     gtsummary::separate_p_footnotes()

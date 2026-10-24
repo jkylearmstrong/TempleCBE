@@ -33,7 +33,7 @@ NULL
 #'     \item \code{features}: Character vector of feature names used.
 #'     \item \code{var_labels}: Named character vector mapping feature names to labels.
 #'   }
-#' @seealso [cbe_cox_single()], [cbe_cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
+#' @seealso [cox_single()], [cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 #' @export
 cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL, conf_level = 0.95, ...) {
   if (is.null(formula) && is.null(features)) {
@@ -214,12 +214,3 @@ utils::globalVariables(c(
   "estimate", "conf.low", "conf.high", "p.value", "term", "clean_level",
   "Variable", "Level", "Role", "HR", "log(HR)", "95% CI"
 ))
-
-#' @rdname cox_multi
-#' @export
-cbe_cox_multi <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_cox_multi()", "cox_multi()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::cox_multi)
-  eval(mc, parent.frame())
-}

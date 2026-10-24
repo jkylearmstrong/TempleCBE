@@ -2,7 +2,6 @@
 % Please edit documentation in R/nested_survival_run.R
 \name{nested_survival_run}
 \alias{nested_survival_run}
-\alias{cbe_nested_survival_run}
 \title{Run an End-to-End Nested Cross-Validation Survival Pipeline (E1)}
 \usage{
 nested_survival_run(
@@ -41,8 +40,6 @@ nested_survival_run(
   progress = FALSE,
   ...
 )
-
-cbe_nested_survival_run(...)
 }
 \arguments{
 \item{data}{A data frame containing counting-process `(start, stop]` or
@@ -131,7 +128,7 @@ has a mismatched fingerprint: `"recompute"` (default), `"overwrite"`, or
 `"error"`.}
 
 \item{chunk_size}{Optional integer number of tasks per worker chunk passed to
-[summarize_tune_results()] and [score_outer()] (default `NULL`).}
+[tune_alpha_by_split()] and [score_outer()] (default `NULL`).}
 
 \item{seed}{Integer RNG seed for reproducible fold construction, tuning, and
 outer scoring (default `42L`).}
@@ -173,7 +170,7 @@ single call:
   \item Grouped nested resampling fold construction via [rsample::nested_cv()]
     and [rsample::group_vfold_cv()].
   \item Inner hyperparameter tuning across outer folds via
-    [summarize_tune_results()] with per-task fingerprinted checkpoints.
+    [tune_alpha_by_split()] with per-task fingerprinted checkpoints.
   \item Candidate model selection via [select_candidate_models()].
   \item Outer-fold model scoring via [score_outer()] with fingerprinted
     checkpoints.
@@ -193,7 +190,7 @@ with `shard = NULL` (or `collect = TRUE`) to merge checkpoints and finalize
 the run object.
 }
 \seealso{
-[validate_start_stop()], [summarize_tune_results()],
+[validate_start_stop()], [tune_alpha_by_split()],
   [select_candidate_models()], [score_outer()], [summarize_outer_importance()],
   [compare_censoring_weights()], [collect_checkpoints()], [repro_appendix()]
 }

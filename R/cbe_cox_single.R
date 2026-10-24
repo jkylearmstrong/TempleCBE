@@ -29,7 +29,7 @@ NULL
 #'     \item \code{var_label}: Human-readable variable label.
 #'     \item \code{is_numeric}: Logical flag indicating whether predictor is continuous/numeric.
 #'   }
-#' @seealso [cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
+#' @seealso [cox_multi()], [cox_check()], [km_single()], [cbe_cox_table()],
 #'   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 #' @export
 cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ...) {
@@ -198,13 +198,4 @@ utils::globalVariables(c(
   "clean_level", "Variable", "Level", "Role", "HR", "95% CI",
   "txt", "Value"
 ))
-
-#' @rdname cox_single
-#' @export
-cbe_cox_single <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_cox_single()", "cox_single()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::cox_single)
-  eval(mc, parent.frame())
-}
 

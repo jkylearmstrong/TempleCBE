@@ -49,5 +49,5 @@ mismatched fingerprints, or superseded `seed_scheme` versions while keeping
 the active run's checkpoints.
 }
 \seealso{
-[collect_checkpoints()], [summarize_tune_results()], [score_outer()]
+[collect_checkpoints()], [tune_alpha_by_split()], [score_outer()]
 }

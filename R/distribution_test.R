@@ -18,7 +18,6 @@ significance_stars <- function(p_value) {
 #' Is a Vector Composed of Integer-Valued Numbers
 #'
 #' @param col A numeric vector.
-#' @param ... Passed to [is_integer_valued()].
 #' @return A single logical.
 #' @export
 #' @examples
@@ -27,13 +26,6 @@ significance_stars <- function(p_value) {
 is_integer_valued <- function(col) {
   temp_col <- stats::na.omit(col)
   all(temp_col == floor(temp_col))
-}
-
-#' @rdname is_integer_valued
-#' @export
-is.int <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "is.int()", "is_integer_valued()")
-  is_integer_valued(...)
 }
 
 #' Test Whether a Vector Looks Normally Distributed

@@ -33,7 +33,7 @@
 #'   lung <- survival::lung
 #'   df <- na.omit(lung[, c("time", "status", "age", "sex")])
 #'   fit <- joint_model(df, survival::Surv(time, status) ~ age + sex)
-#'   expl <- cbe_explain_survival(fit)
+#'   expl <- explain_survival(fit)
 #'   mp <- survex::model_parts(expl)
 #' }
 #' }
@@ -239,13 +239,6 @@ explain_predict_risk <- function(m, new_data) {
   NULL
 }
 
-#' @rdname explain_survival
-#' @export
-cbe_explain_survival <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_survival()", "explain_survival()")
-  explain_survival(...)
-}
-
 #' TempleCBE Custom Loss Functions for survex
 #'
 #' Provides survival loss functions implementing TempleCBE's inverse-probability-of-censoring
@@ -257,7 +250,6 @@ cbe_explain_survival <- function(...) {
 #' @param max_quantile Upper quantile cutoff for evaluation time window. Default is 1.
 #' @param trunc Lower truncation threshold for censoring survival probabilities to prevent
 #'   inflation by rare tails. Default is 0.05.
-#' @param ... Passed to [survex_loss_ibs()] or [survex_loss_brier()].
 #'
 #' @return A loss function with attributes \code{"loss_type"} (\code{"integrated"} or
 #'   \code{"time-dependent"}) and \code{"loss_name"}, directly passable to \code{survex}.
@@ -370,20 +362,6 @@ survex_loss_brier <- function(trunc = 0.05) {
   attr(loss_fn, "loss_type") <- "time-dependent"
   attr(loss_fn, "loss_name") <- "TempleCBE Brier Score"
   loss_fn
-}
-
-#' @rdname survex_loss_ibs
-#' @export
-cbe_survex_loss_ibs <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_ibs()", "survex_loss_ibs()")
-  survex_loss_ibs(...)
-}
-
-#' @rdname survex_loss_ibs
-#' @export
-cbe_survex_loss_brier <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_survex_loss_brier()", "survex_loss_brier()")
-  survex_loss_brier(...)
 }
 
 #' Explain Joint Model Components via DALEX and survex
@@ -525,22 +503,8 @@ explain_model <- explain_joint
 
 #' @rdname explain_joint
 #' @export
-cbe_explain <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain()", "explain_joint()")
-  explain_joint(...)
-}
-
-#' @rdname explain_joint
-#' @export
 explain_status <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
   explain_joint(model = model, data = data, type = "status", label = label, verbose = verbose, ...)
-}
-
-#' @rdname explain_joint
-#' @export
-cbe_explain_status <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_status()", "explain_status()")
-  explain_status(...)
 }
 
 #' @rdname explain_joint
@@ -551,22 +515,8 @@ explain_time <- function(model, data = NULL, label = NULL, verbose = FALSE, ...)
 
 #' @rdname explain_joint
 #' @export
-cbe_explain_time <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_time()", "explain_time()")
-  explain_time(...)
-}
-
-#' @rdname explain_joint
-#' @export
 explain_stack <- function(model, data = NULL, label = NULL, verbose = FALSE, ...) {
   explain_joint(model = model, data = data, type = "stack", label = label, verbose = verbose, ...)
-}
-
-#' @rdname explain_joint
-#' @export
-cbe_explain_stack <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_explain_stack()", "explain_stack()")
-  explain_stack(...)
 }
 
 #' SHAP Variable Attributions across Survival and Joint Models
@@ -576,8 +526,8 @@ cbe_explain_stack <- function(...) {
 #' explainers, and \code{DALEX::predict_parts(type = "shap")} for classification/regression
 #' explainers.
 #'
-#' @param explainer An explainer object produced by \code{cbe_explain_survival()},
-#'   \code{cbe_explain()}, or \code{DALEX::explain()}.
+#' @param explainer An explainer object produced by \code{explain_survival()},
+#'   \code{explain_joint()}, or \code{DALEX::explain()}.
 #' @param new_observation A 1-row data frame containing the observation to explain.
 #' @param type Character specifying the attribution type: \code{"auto"} (the default),
 #'   \code{"shap"}, or \code{"survshap"}.
@@ -638,11 +588,4 @@ predict_parts_shap <- function(explainer,
   }
 
   stop("`explainer` must be a `survex_explainer`, `cbe_joint_explainer`, or `DALEX` explainer.", call. = FALSE)
-}
-
-#' @rdname predict_parts_shap
-#' @export
-cbe_predict_parts_shap <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_predict_parts_shap()", "predict_parts_shap()")
-  predict_parts_shap(...)
 }

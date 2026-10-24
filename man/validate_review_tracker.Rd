@@ -32,5 +32,5 @@ such as `"TRUE"`, `"FALSE"`, `"done"`, `"yes"`, `"no"`, or `"ok"` are
 rejected.
 }
 \seealso{
-[cbe_review_tracker()], [cbe_docx_review_extract()]
+[review_tracker()], [docx_review_extract()]
 }

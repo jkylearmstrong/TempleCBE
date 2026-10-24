@@ -32,7 +32,7 @@ locate_package_path <- function(subdir, file = NULL) {
 #' inputs become `NA`, and a path that cannot be normalized comes back as it
 #' was. Paths need not exist. Separators are forward slashes on every platform.
 #'
-#' **Note:** `normalize_safely()` normalizes *filesystem paths* using [normalizePath()].
+#' **Note:** `normalize_path_safely()` normalizes *filesystem paths* using [normalizePath()].
 #' It does **not** scale or normalize numeric numbers; for min-max scaling of numeric
 #' vectors, see [min_max_norm()].
 #'
@@ -51,13 +51,6 @@ normalize_path_safely <- function(x) {
                error = function(e) xx)
     }, FUN.VALUE = character(1))
   )
-}
-
-#' @rdname normalize_path_safely
-#' @export
-normalize_safely <- function(x) {
-  lifecycle::deprecate_warn("0.5.8", "normalize_safely()", "normalize_path_safely()")
-  normalize_path_safely(x)
 }
 
 #' Do Two Paths Name the Same File?
@@ -219,19 +212,12 @@ extract_xlsx_paths <- function(x, xlsx_token_re = xlsx_name_re) {
   tibble::tibble(dir = dir, file = file, full_path = full)
 }
 
-#' @rdname extract_xlsx_paths
-#' @export
-extract_win_posix_paths <- function(x, xlsx_token_re = xlsx_name_re) {
-  lifecycle::deprecate_warn("0.5.8", "extract_win_posix_paths()", "extract_xlsx_paths()")
-  extract_xlsx_paths(x, xlsx_token_re = xlsx_token_re)
-}
-
 #' Extract Every `.xlsx` File Name From Text
 #'
-#' @inheritParams extract_win_posix_paths
+#' @inheritParams extract_xlsx_paths
 #' @return A list the length of `x`, each element a character vector of the
 #'   `.xlsx` file names found in that string (empty when none).
-#' @seealso [extract_win_posix_paths()]
+#' @seealso [extract_xlsx_paths()]
 #' @export
 #' @examples
 #' extract_all_xlsx_tokens(c("read_excel('out/a.xlsx'); write_xlsx(df, 'b c.xlsx')", "none"))

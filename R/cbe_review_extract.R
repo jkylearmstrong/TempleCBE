@@ -74,7 +74,6 @@
 #'   \code{"collaborative"}; see \code{\link{review_config}}. In collaborative
 #'   mode every fork workbook also carries the other fork reviewers' sign-off
 #'   and note columns (read-only: only a reviewer's own columns are merged back).
-#' @param ... Passed to \code{docx_review_extract()}.
 #'
 #' @details
 #' \strong{Merging a new round into the tracker.} A comment is identified by what
@@ -555,13 +554,6 @@ docx_review_extract <- function(input_dir = NULL,
   invisible(out)
 }
 
-#' @rdname docx_review_extract
-#' @export
-cbe_docx_review_extract <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_docx_review_extract()", "docx_review_extract()")
-  docx_review_extract(...)
-}
-
 #' @export
 print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
@@ -612,7 +604,7 @@ print.cbe_review_extract <- print.docx_review_extract
 #' Get or set global multi-reviewer review-tracking configuration
 #'
 #' Decouples project-specific reviewer identities from the review-tracking
-#' mechanics in \code{\link{cbe_docx_review_extract}}, mirroring how
+#' mechanics in \code{\link{docx_review_extract}}, mirroring how
 #' \code{\link{pipeline_config}} decouples study name and stage labels from
 #' the core compute-graph classes: the number and names of reviewers are
 #' data supplied by the calling project, not hardcoded here.
@@ -702,7 +694,7 @@ print.cbe_review_extract <- print.docx_review_extract
 #'   Use \code{character(0)} to clear.
 #' @param input_dirs Character vector of folders (relative to the working
 #'   directory or \code{TEMPLECBE_ANALYSIS_ROOT}, or absolute) in which
-#'   \code{\link{cbe_docx_review_extract}} looks, in order, for \code{.docx}
+#'   \code{\link{docx_review_extract}} looks, in order, for \code{.docx}
 #'   files when \code{input_dir} is not given. Defaults to none, so the working
 #'   directory is used. Use \code{character(0)} to clear.
 #' @param reset If \code{TRUE}, forget everything set earlier (every argument
@@ -1636,7 +1628,7 @@ node_text <- function(node) {
 #' Parse One XML Part of a DOCX, Naming the Part in the Error
 #'
 #' A part that cannot be parsed is an error, not an empty result: the caller
-#' (\code{cbe_docx_review_extract()}) lists the file in \code{$errors} instead
+#' (\code{docx_review_extract()}) lists the file in \code{$errors} instead
 #' of writing rows with a missing author and empty text.
 #' @param path Path of the extracted part on disk
 #' @param part Name of the part inside the archive, e.g. \code{"word/comments.xml"}
@@ -2181,7 +2173,7 @@ format_unread_parts_warning <- function(unread) {
 #' with a huge number of entries or a multi-gigabyte entry is reported in
 #' \code{$errors} instead of filling the temporary folder or stalling the run.
 #' Defaults are generous (far above any Word report) and can be changed per call
-#' (\code{docx_limits} of \code{cbe_docx_review_extract()}) or session-wide with
+#' (\code{docx_limits} of \code{docx_review_extract()}) or session-wide with
 #' the options \code{review.docx_max_entries}, \code{review.docx_max_bytes} and
 #' \code{review.docx_max_xml_bytes}; \code{Inf} switches a limit off.
 #' @param limits \code{NULL} (the defaults) or a named list with any of
@@ -4507,14 +4499,14 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #' Build a Structured Review Response Tracker Requiring Location and Rationale
 #'
 #' Constructs a review response tracker table (and optional Excel workbook or
-#' CSV) from the output of [cbe_docx_review_extract()]. Each comment (and
+#' CSV) from the output of [docx_review_extract()]. Each comment (and
 #' optionally each reconstructed redline) is given explicit `status`,
 #' `location` (page, section, table, or figure where addressed), and `rationale`
 #' (reason if not adopted, or summary of changes made) columns for validation
 #' by [validate_review_tracker()].
 #'
 #' @param extract An object of class `cbe_review_extract` from
-#'   [cbe_docx_review_extract()], a data frame of extracted comments, or a path
+#'   [docx_review_extract()], a data frame of extracted comments, or a path
 #'   to a `.docx` file or directory of `.docx` files.
 #' @param file Optional output path (`.xlsx` or `.csv`) to write the tracker
 #'   sheet.
@@ -4523,11 +4515,10 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #'   tracked paragraph redlines in addition to comments.
 #' @param overwrite Logical (default `TRUE`). Overwrite `file` if it already
 #'   exists.
-#' @param ... Passed to \code{review_tracker()}.
 #' @return A tibble of class `cbe_review_tracker` with columns `item_id`,
 #'   `file`, `item_type`, `comment_id`, `author`, `paragraph`, `selected_text`,
 #'   `comment`, `trivial`, `status`, `location`, and `rationale`.
-#' @seealso [validate_review_tracker()], [cbe_docx_review_extract()]
+#' @seealso [validate_review_tracker()], [docx_review_extract()]
 #' @name review_tracker
 #' @export
 review_tracker <- function(extract,
@@ -4665,13 +4656,6 @@ review_tracker <- function(extract,
   out
 }
 
-#' @rdname review_tracker
-#' @export
-cbe_review_tracker <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_review_tracker()", "review_tracker()")
-  review_tracker(...)
-}
-
 #' Validate a Review Response Tracker for Required Location and Rationale
 #'
 #' Verifies that every closed (non-trivial) row in a review tracker records a
@@ -4692,7 +4676,7 @@ cbe_review_tracker <- function(...) {
 #'   `valid` (logical), `n_rows` (integer), `n_invalid` (integer), and
 #'   `issues` (a tibble with columns `row`, `item_id`, `file`, `status`, and
 #'   `reason`).
-#' @seealso [cbe_review_tracker()], [cbe_docx_review_extract()]
+#' @seealso [review_tracker()], [docx_review_extract()]
 #' @export
 validate_review_tracker <- function(tracker,
                                     allow_open = FALSE,

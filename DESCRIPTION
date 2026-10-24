@@ -41,7 +41,6 @@ Imports:
     janitor,
     jsonlite,
     labelled,
-    lifecycle (>= 1.0.3),
     methods,
     nortest,
     openssl,

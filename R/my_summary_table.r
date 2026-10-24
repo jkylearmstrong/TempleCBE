@@ -5,18 +5,17 @@
 #' @param na.rm should NA values be removed, TRUE or FALSE, default is FALSE
 #' @param data.output should the data be output, TRUE or FALSE, default is TRUE
 #' @param table.output should the table be output, TRUE or FALSE, default is FALSE
-#' @param ... Passed to [summary_table()].
 #'
 #' @return either a dataframe or readable table 
 #'
 #' @examples
 #' mtcars |> 
 #'   dplyr::group_by(cyl) |> 
-#'   my_summary_table(mpg)
+#'   summary_table(mpg)
 #'   
 #' mtcars |> 
 #'   dplyr::group_by(cyl) |> 
-#'   my_summary_table(mpg, table.output = TRUE)
+#'   summary_table(mpg, table.output = TRUE)
 #'
 #' @importFrom dplyr %>% ungroup select summarise mutate
 #' @importFrom stats sd
@@ -65,11 +64,4 @@ summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.ou
   }
 
   return(result)
-}
-
-#' @rdname summary_table
-#' @export
-my_summary_table <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "my_summary_table()", "summary_table()")
-  summary_table(...)
 }

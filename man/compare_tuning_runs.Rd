@@ -41,8 +41,8 @@ An object of class `c("templecbe_tuning_comparison", "tbl_df", "tbl", "data.fram
 \description{
 Computes comparative summary statistics (mean, median, 25th and 75th percentiles)
 of integrated Brier scores (IBS) across candidate alpha values and formulas between
-two tuning runs (e.g. from [summarize_tune_results()] or [tune_over_alpha()]).
+two tuning runs (e.g. from [tune_alpha_by_split()] or [tune_over_alpha()]).
 }
 \seealso{
-[summarize_tune_results()], [compare_runs()]
+[tune_alpha_by_split()], [compare_runs()]
 }

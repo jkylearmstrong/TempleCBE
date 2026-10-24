@@ -7,7 +7,7 @@
 \method{autoplot}{cbe_database_relationships}(object, type = c("graph", "venn"), db = NULL, id_col = NULL, ...)
 }
 \arguments{
-\item{object}{A \code{\link{cbe_database_relationships}} object.}
+\item{object}{A \code{\link{database_relationships}} object.}
 
 \item{type}{Plot type: \code{"graph"} for network ER graph, or \code{"venn"} for key overlap.}
 

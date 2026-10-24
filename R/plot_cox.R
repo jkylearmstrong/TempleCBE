@@ -89,11 +89,11 @@ plot_cox_forest <- function(data,
 
 #' Forest Plot of Hazard Ratios for a Multivariable Cox Model
 #'
-#' Generates a forest plot from a [cbe_cox_multi()] result, grouping terms into
+#' Generates a forest plot from a [cox_multi()] result, grouping terms into
 #' per-variable blocks (facets) so factor levels stay visually attached to their
 #' parent variable.
 #'
-#' @param x A \code{cbe_cox_multi} object from [cbe_cox_multi()].
+#' @param x A \code{cbe_cox_multi} object from [cox_multi()].
 #' @param color Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).
 #' @param scale One of \code{"hr"} (default) or \code{"log_hr"}. See [plot_cox_forest()].
 #' @param color_by One of \code{"none"} (default) or \code{"significance"}. See [plot_cox_forest()].
@@ -107,7 +107,7 @@ plot_cox_forest <- function(data,
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A ggplot2 object.
-#' @seealso [cbe_cox_multi()], [plot_cox_forest()]
+#' @seealso [cox_multi()], [plot_cox_forest()]
 #' @export
 plot_cox_forest_multi <- function(x,
                                   color = "#9D2235",

@@ -14,7 +14,7 @@ write_run_manifest(
 \arguments{
 \item{output_dir}{Directory to write `render_manifest.json` into.}
 
-\item{targets_result}{Data frame of render timing and status from [render()].}
+\item{targets_result}{Data frame of render timing and status from [render_pipeline()].}
 
 \item{seed}{Optional integer RNG seed used for the run.}
 

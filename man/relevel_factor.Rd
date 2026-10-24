@@ -2,23 +2,15 @@
 % Please edit documentation in R/cbe_factor_reference.R
 \name{relevel_factor}
 \alias{relevel_factor}
-\alias{factor_reference}
-\alias{cbe_factor_reference}
 \title{Relevel a Factor's Reference Level}
 \usage{
 relevel_factor(x, ref_level = NULL)
-
-factor_reference(...)
-
-cbe_factor_reference(...)
 }
 \arguments{
 \item{x}{A factor, or a vector coercible to one via \code{as.factor()}.}
 
 \item{ref_level}{Character string naming the level to use as reference. Defaults
 to the first level of \code{x} (its current or natural ordering).}
-
-\item{...}{Passed to [relevel_factor()].}
 }
 \value{
 The releveled factor, with attribute \code{"cbe_reference_level"} set to
@@ -26,16 +18,16 @@ The releveled factor, with attribute \code{"cbe_reference_level"} set to
 }
 \description{
 Standalone helper for choosing the reference (baseline) level of a factor before
-passing it to [cbe_cox_single()] or [cbe_cox_multi()]. Wraps [stats::relevel()],
+passing it to [cox_single()] or [cox_multi()]. Wraps [stats::relevel()],
 defaulting to the first level (matching the reference-row convention already used
-by \code{cbe_cox_single()}/\code{cbe_cox_multi()}), and attaches a
+by \code{cox_single()}/\code{cox_multi()}), and attaches a
 \code{"cbe_reference_level"} attribute recording the chosen level.
 }
 \details{
-\code{cbe_cox_single()} and \code{cbe_cox_multi()} are not rewired to require this
+\code{cox_single()} and \code{cox_multi()} are not rewired to require this
 helper; it is an optional convenience for callers who want to choose the reference
 level explicitly before fitting.
 }
 \seealso{
-[cbe_cox_single()], [cbe_cox_multi()]
+[cox_single()], [cox_multi()]
 }

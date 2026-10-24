@@ -1,6 +1,6 @@
 #' Univariable Kaplan-Meier and Cox Screening Engine
 #'
-#' Pairs a univariable [cbe_cox_single()] Cox proportional hazards fit with the
+#' Pairs a univariable [cox_single()] Cox proportional hazards fit with the
 #' matching Kaplan-Meier stratified survival curve for the same predictor, so both
 #' are produced from a single call without refitting the Cox model twice.
 #'
@@ -17,10 +17,9 @@ NULL
 #'   predictors are binned into quartiles for the Kaplan-Meier strata (matching
 #'   [plot_cox_survival()]'s convention), while the Cox side treats them as continuous.
 #' @param conf_level Numeric confidence level (default: 0.95).
-#' @param ... Passed to [km_single()].
 #' @return An object of class \code{cbe_km} containing:
 #'   \itemize{
-#'     \item \code{cox}: The \code{cbe_cox} object from [cbe_cox_single()].
+#'     \item \code{cox}: The \code{cbe_cox} object from [cox_single()].
 #'     \item \code{km_fit}: The \code{survival::survfit} object for the Kaplan-Meier curve.
 #'     \item \code{km_tidy}: \code{broom::tidy()} table of \code{km_fit}.
 #'     \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the Cox
@@ -30,7 +29,7 @@ NULL
 #'     \item \code{feature}: Feature name string.
 #'     \item \code{var_label}: Human-readable variable label.
 #'   }
-#' @seealso [cbe_cox_single()], [plot_cox_survival()]
+#' @seealso [cox_single()], [plot_cox_survival()]
 #' @export
 km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
   cox <- cox_single(data, outcome = outcome, feature = feature, conf_level = conf_level)
@@ -122,12 +121,3 @@ print.cbe_km <- function(x, ...) {
 }
 
 utils::globalVariables(c(".cbe_km_strata"))
-
-#' @rdname km_single
-#' @export
-cbe_km_single <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_km_single()", "km_single()")
-  mc <- match.call()
-  mc[[1L]] <- quote(TempleCBE::km_single)
-  eval(mc, parent.frame())
-}

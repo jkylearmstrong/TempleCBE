@@ -1,3 +1,90 @@
+# TempleCBE 0.6.5.9000
+
+## Removed (breaking): the deprecated wrappers announced for 0.7.0
+
+* **The 71 functions that have warned since 0.5.8 are removed**, with their documentation and `pkgdown` entries, and so is the unexported `%notin%` shim. Each was a one-line wrapper that called its replacement. Code that already uses the new names is unaffected. To find and rename the old names in a project, run `find_deprecated_calls("path/to/project")` and `update_deprecated_calls("path/to/project", dry_run = FALSE)` (they keep their table of old and new names). The old name and its replacement:
+
+  `%like%` -> `match_like`,
+  `cbe_check_key_integrity` -> `check_key_integrity`,
+  `cbe_compare_df` -> `compare_df`,
+  `cbe_control_race` -> `control_race_survival`,
+  `cbe_cox_check` -> `cox_check`,
+  `cbe_cox_multi` -> `cox_multi`,
+  `cbe_cox_single` -> `cox_single`,
+  `cbe_database_label` -> `database_label`,
+  `cbe_database_label<-` -> `database_label<-`,
+  `cbe_database_name` -> `database_name`,
+  `cbe_database_name<-` -> `database_name<-`,
+  `cbe_database_relationships` -> `database_relationships`,
+  `cbe_dataset_label` -> `dataset_label`,
+  `cbe_dataset_label<-` -> `dataset_label<-`,
+  `cbe_docx_review_extract` -> `docx_review_extract`,
+  `cbe_domain_children` -> `domain_children`,
+  `cbe_exact2x2` -> `exact2x2`,
+  `cbe_explain` -> `explain_joint`,
+  `cbe_explain_stack` -> `explain_stack`,
+  `cbe_explain_status` -> `explain_status`,
+  `cbe_explain_survival` -> `explain_survival`,
+  `cbe_explain_time` -> `explain_time`,
+  `cbe_factor_reference` -> `relevel_factor`,
+  `cbe_find_shared_keys` -> `find_shared_keys`,
+  `cbe_get_dataset_labels` -> `get_dataset_labels`,
+  `cbe_get_id_cols` -> `get_id_cols`,
+  `cbe_get_outcomes` -> `get_outcomes`,
+  `cbe_get_predictors` -> `get_predictors`,
+  `cbe_get_roles` -> `get_roles`,
+  `cbe_get_time_cols` -> `get_time_cols`,
+  `cbe_km_single` -> `km_single`,
+  `cbe_loco_mp_coxnet` -> `loco_mp_coxnet`,
+  `cbe_nested_survival_run` -> `nested_survival_run`,
+  `cbe_pairwise_combos` -> `pairwise_combos`,
+  `cbe_predict_parts_shap` -> `predict_parts_shap`,
+  `cbe_read_database` -> `read_database_from_excel`,
+  `cbe_review_tracker` -> `review_tracker`,
+  `cbe_sas_macro_dir` -> `sas_macro_dir`,
+  `cbe_sas_macro_path` -> `sas_macro_path`,
+  `cbe_set_dataset_labels` -> `set_dataset_labels`,
+  `cbe_set_roles` -> `set_roles`,
+  `cbe_survex_loss_brier` -> `survex_loss_brier`,
+  `cbe_survex_loss_ibs` -> `survex_loss_ibs`,
+  `cbe_test_categorical` -> `test_categorical`,
+  `cbe_tune_race_survival` -> `tune_race_survival`,
+  `cbe_variable_roles` -> `variable_roles`,
+  `cbe_write_database` -> `write_database_to_excel`,
+  `clean_names` -> `clean_names_keep_labels`,
+  `controls_datasets` -> `produces_data`,
+  `extract_win_posix_paths` -> `extract_xlsx_paths`,
+  `factor_reference` -> `relevel_factor`,
+  `find_correlation` -> `drop_correlated_columns`,
+  `fit_n_rank` -> `workflow_set_rank_fit`,
+  `get_model_parameters` -> `workflow_set_params`,
+  `install.packages.no_lock` -> `install_package_no_lock`,
+  `is.int` -> `is_integer_valued`,
+  `keep_only` -> `rm_all_except`,
+  `like` -> `match_like`,
+  `my_summary_table` -> `summary_table`,
+  `normalize_safely` -> `normalize_path_safely`,
+  `proc_contents` -> `describe_columns`,
+  `proc_pca` -> `run_pca`,
+  `R_names` -> `clean_names_keep_labels`,
+  `read_search` -> `find_read_calls`,
+  `render` -> `render_pipeline`,
+  `render_me` -> `render_pipeline`,
+  `sd.error` -> `std_error`,
+  `summarize_tune_results` -> `tune_alpha_by_split`,
+  `SumNa` -> `count_na`,
+  `write_search` -> `find_write_calls`,
+  `write_xlsx` -> `write_xlsx_file`.
+
+* **`clean_names()` is not a pure rename.** The wrapper returned plain `janitor::clean_names()` output and rejected other input; its named replacement `clean_names_keep_labels()` also stores the original names as variable labels. For a data frame, `janitor::clean_names()` is the like-for-like replacement. `update_deprecated_calls()` rewrites `clean_names(` to `clean_names_keep_labels(`.
+* **`clean_names()`, `like()`, `render()` and `%like%` no longer mask the functions of `janitor`, `data.table` and `rmarkdown`** when TempleCBE is attached after them.
+* **Internal references to removed names were fixed**: `loco_mp_coxnet()` is what `nested_cv_coxnet()` calls, `estimate_runtime()` recognises `tune_alpha_by_split()` (it compared the name of the removed wrapper), so a projection for it counts every alpha and split, the `eda_tables` templates pass `TempleCBE::test_categorical` to `gtsummary`, and the examples, vignettes and README use the new names. A `gtsummary` call that names `cbe_test_categorical` or `cbe_exact2x2` as its test must name `test_categorical` or `exact2x2`.
+* **Help pages**: links and examples that named a removed function (about 20 pages, and the `compare_df()` example, which stopped `R CMD check`) use the new names, and the `...` argument that only the wrappers had is no longer documented. `lifecycle` is no longer in `Imports`: nothing in the package called it once the wrappers were gone.
+* **`find_deprecated_calls()` and `update_deprecated_calls()` read code only**: string literals, comments, method calls (`obj$render()`), markdown prose and non-R chunks of `.Rmd`/`.qmd` are ignored, and `.md` files are no longer scanned. An unqualified `clean_names()`, `render()`, `like()` or `write_xlsx()` is reported (as `call_type = "ambiguous"`) only in a file that uses TempleCBE, and is never rewritten, because janitor, rmarkdown, data.table and writexl export the same names. The new `exclude_dirs` argument skips folders such as `ARCHIVE`.
+* `find_deprecated_calls()` no longer reports `cbe_exact2x2_ci()`, which is a function that stays (it formats odds ratios and was never deprecated).
+
+
+
 # TempleCBE 0.6.5
 
 This is the last release that still contains the deprecated wrappers (they warn; `find_deprecated_calls()` finds them in a project). They are removed in 0.7.0.

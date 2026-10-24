@@ -57,7 +57,7 @@
 #'   their \code{event_time}. A warning also names the subjects with an interval
 #'   whose \code{tstop} is not after its \code{tstart}, which comes from repeated
 #'   measurement times and which survival models can't use.
-#' @seealso [cbe_cox_multi()]
+#' @seealso [cox_multi()]
 #' @examples
 #' measures <- data.frame(
 #'   subject_id = c(1, 1, 1),

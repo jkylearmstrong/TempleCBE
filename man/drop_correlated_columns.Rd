@@ -2,7 +2,6 @@
 % Please edit documentation in R/corr_test_all.R
 \name{drop_correlated_columns}
 \alias{drop_correlated_columns}
-\alias{find_correlation}
 \title{Find Highly Correlated Columns}
 \usage{
 drop_correlated_columns(
@@ -14,8 +13,6 @@ drop_correlated_columns(
   names = TRUE,
   exact = ncol(data) < 100
 )
-
-find_correlation(...)
 }
 \arguments{
 \item{data}{A data frame or tibble.}
@@ -33,8 +30,6 @@ find_correlation(...)
 \item{exact}{Passed to \code{\link[caret]{findCorrelation}}; defaults to
 \code{ncol(data) < 100} (the original had a bug here referencing an
 undefined \code{x} instead of \code{data} — fixed).}
-
-\item{...}{Passed to \code{drop_correlated_columns()}.}
 }
 \value{
 Character vector (or integer indices) of columns to remove.
@@ -42,12 +37,12 @@ Character vector (or integer indices) of columns to remove.
 \description{
 Identifies numeric columns to drop for multicollinearity, via
 \code{\link[caret]{findCorrelation}} on the pairwise correlation matrix of
-\code{data}'s numeric columns. Named \code{find_correlation()} (not
+\code{data}'s numeric columns. Named \code{drop_correlated_columns()} (not
 \code{findCorrelation()}) so it doesn't shadow \pkg{caret}'s function of
 the same name for anyone with both packages loaded.
 }
 \details{
-**Note:** `find_correlation()` identifies column names or indices to *remove*
+**Note:** `drop_correlated_columns()` identifies column names or indices to *remove*
 to mitigate multicollinearity. To inspect the pairwise correlation coefficients
 themselves in a tidy table, use [correlated_pairs_table()] or [corr_test_all()].
 }

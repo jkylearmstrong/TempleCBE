@@ -2,12 +2,9 @@
 % Please edit documentation in R/cbe_km_single.R
 \name{km_single}
 \alias{km_single}
-\alias{cbe_km_single}
 \title{Univariable Kaplan-Meier and Cox Screening Engine}
 \usage{
 km_single(data, outcome = "outcome", feature, conf_level = 0.95)
-
-cbe_km_single(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate feature.}
@@ -21,13 +18,11 @@ predictors are binned into quartiles for the Kaplan-Meier strata (matching
 [plot_cox_survival()]'s convention), while the Cox side treats them as continuous.}
 
 \item{conf_level}{Numeric confidence level (default: 0.95).}
-
-\item{...}{Passed to [km_single()].}
 }
 \value{
 An object of class \code{cbe_km} containing:
   \itemize{
-    \item \code{cox}: The \code{cbe_cox} object from [cbe_cox_single()].
+    \item \code{cox}: The \code{cbe_cox} object from [cox_single()].
     \item \code{km_fit}: The \code{survival::survfit} object for the Kaplan-Meier curve.
     \item \code{km_tidy}: \code{broom::tidy()} table of \code{km_fit}.
     \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the Cox
@@ -39,10 +34,10 @@ An object of class \code{cbe_km} containing:
   }
 }
 \description{
-Pairs a univariable [cbe_cox_single()] Cox proportional hazards fit with the
+Pairs a univariable [cox_single()] Cox proportional hazards fit with the
 matching Kaplan-Meier stratified survival curve for the same predictor, so both
 are produced from a single call without refitting the Cox model twice.
 }
 \seealso{
-[cbe_cox_single()], [plot_cox_survival()]
+[cox_single()], [plot_cox_survival()]
 }

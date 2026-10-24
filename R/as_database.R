@@ -1,7 +1,7 @@
 #' Convert a Graph Object Back Into an R Database
 #'
 #' Reverses the \code{data.base -> graph_object} direction already covered by
-#' \code{\link{as_igraph}} (and \code{\link{cbe_database_relationships}}):
+#' \code{\link{as_igraph}} (and \code{\link{database_relationships}}):
 #' extracts a graph's node and edge tables into a named list of data frames
 #' (an R database), the same \code{list(nodes = ..., edges = ...)} shape used
 #' throughout this package's \code{data.base <-> excel} tooling (see
@@ -24,7 +24,7 @@
 #' @param ... Additional arguments passed to methods.
 #' @return A named list \code{list(nodes = <tibble>, edges = <tibble>)} of
 #'   class \code{cbe_database} -- the class \code{\link{database_setops}} and
-#'   \code{\link{cbe_compare_df}} dispatch on.
+#'   \code{\link{compare_df}} dispatch on.
 #' @name as_database
 #' @aliases as_database cbe_database
 #' @export

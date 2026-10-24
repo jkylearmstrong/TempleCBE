@@ -86,13 +86,6 @@ write_workbook <- write_database_to_excel
 #' @export
 write_database <- write_database_to_excel
 
-#' @rdname write_database_to_excel
-#' @export
-cbe_write_database <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_write_database()", "write_database_to_excel()")
-  write_database_to_excel(...)
-}
-
 #' Read an R Database from an Excel Workbook
 #'
 #' Reads all worksheets from an Excel workbook into a named list of tibbles,
@@ -136,13 +129,6 @@ read_database_from_excel <- function(path,
 #' @rdname read_database_from_excel
 #' @export
 read_database <- read_database_from_excel
-
-#' @rdname read_database_from_excel
-#' @export
-cbe_read_database <- function(...) {
-  lifecycle::deprecate_warn("0.5.8", "cbe_read_database()", "read_database_from_excel()")
-  read_database_from_excel(...)
-}
 
 #' Export or Import Dataset Metadata
 #'

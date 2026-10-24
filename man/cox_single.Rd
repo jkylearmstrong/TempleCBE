@@ -2,12 +2,9 @@
 % Please edit documentation in R/cbe_cox_single.R
 \name{cox_single}
 \alias{cox_single}
-\alias{cbe_cox_single}
 \title{Univariable Cox Proportional Hazards Screening Engine}
 \usage{
 cox_single(data, outcome = "outcome", feature, conf_level = 0.95, ...)
-
-cbe_cox_single(...)
 }
 \arguments{
 \item{data}{A data frame containing survival data and the candidate feature.}
@@ -43,6 +40,6 @@ hazards assumption, formats coefficients with explicit reference levels,
 generates plain-language clinical interpretations, and gathers model fit metrics.
 }
 \seealso{
-[cbe_cox_multi()], [cbe_cox_check()], [cbe_km_single()], [cbe_cox_table()],
+[cox_multi()], [cox_check()], [km_single()], [cbe_cox_table()],
   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 }

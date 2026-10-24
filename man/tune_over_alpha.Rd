@@ -85,5 +85,5 @@ Random draws use the R session's random number stream, so call
 To tune `alpha` and the penalty together in one call, see [cv_coxnet()].
 }
 \seealso{
-[glmnet_IBS()], [summarize_tune_results()], [clean_checkpoints()], [cv_coxnet()]
+[glmnet_IBS()], [tune_alpha_by_split()], [clean_checkpoints()], [cv_coxnet()]
 }

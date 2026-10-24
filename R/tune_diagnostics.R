@@ -1,7 +1,7 @@
 #' Tuning Diagnostics and Visualization Family
 #'
 #' A comprehensive family of diagnostic plots, summary tables, and mixed-effects
-#' models for evaluating hyperparameter tuning results from [summarize_tune_results()]
+#' models for evaluating hyperparameter tuning results from [tune_alpha_by_split()]
 #' and [tune_over_alpha()].
 #'
 #' @name tune_diagnostics
@@ -17,7 +17,7 @@ NULL
 #'
 #' This dynamic fitting eliminates hard-coded regression coefficients in reports.
 #'
-#' @param data A data frame containing tuning results from [summarize_tune_results()].
+#' @param data A data frame containing tuning results from [tune_alpha_by_split()].
 #'   Must contain columns `alpha`, `IBS`, and `inner_resamples_splits`.
 #' @param log_ibs Logical. When `TRUE` (default), models `log10(IBS)`. When `FALSE`,
 #'   models raw `IBS`.
@@ -123,7 +123,7 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
 #' Integrated Brier Score across resampling folds, overlaying the fitted line
 #' from [fit_ibs_mixed_model()] and its dynamic equation.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param log_ibs Logical. When `TRUE` (default), plots `log10(IBS)`.
 #' @param show_points Logical. Plot individual resample points. Default `TRUE`.
 #' @param show_line Logical. Overlay the fitted regression line. Default `TRUE`.
@@ -176,7 +176,7 @@ plot_tune_alpha_ibs <- function(data,
 #' Visualizes `log10(lambda)` against Integrated Brier Score across resamples,
 #' colored by `alpha`.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
@@ -206,7 +206,7 @@ plot_tune_lambda_ibs <- function(data, label_map = NULL, style = NULL) {
 #'
 #' Displays the distribution of IBS across cross-validation or bootstrap splits.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
@@ -235,7 +235,7 @@ plot_tune_ibs_by_resample <- function(data, label_map = NULL, style = NULL) {
 #' Generates horizontal boxplots showing the stability and shrinkage of coefficient
 #' estimates for each feature across resamples.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param top_n Optional integer limit on the number of features to plot (ordered
 #'   by median absolute effect size).
 #' @param label_map Optional label mapping (see [cbe_labels()]).
@@ -281,7 +281,7 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style =
 #' Calculates summary statistics (mean, SD, median, IQR, min, max) of the
 #' Integrated Brier Score for each evaluated `alpha` value.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble of per-alpha IBS statistics.
@@ -313,7 +313,7 @@ tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
 #' Calculates selection frequency and distribution of coefficient estimates for
 #' each feature across resamples.
 #'
-#' @param data A data frame from [summarize_tune_results()].
+#' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A tibble of feature coefficient stability statistics.

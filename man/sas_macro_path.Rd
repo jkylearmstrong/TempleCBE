@@ -2,12 +2,9 @@
 % Please edit documentation in R/run_sas_script.R
 \name{sas_macro_path}
 \alias{sas_macro_path}
-\alias{cbe_sas_macro_path}
 \title{Path to a TempleCBE SAS Macro File}
 \usage{
 sas_macro_path(macro = "cbe_macros.sas")
-
-cbe_sas_macro_path(...)
 }
 \arguments{
 \item{macro}{Filename of the SAS macro or script (default: `"cbe_macros.sas"`).
@@ -15,8 +12,6 @@ Available files include `"cbe_macros.sas"`, `"cbe_brier_score.sas"`,
 `"cbe_cox_phreg.sas"`, `"cbe_counting_process.sas"`, `"coxtvc.sas"`,
 `"cpdata.sas"`, `"benchmark_brier_lung.sas"`, `"benchmark_brier_lung_full.sas"`,
 and `"example_85_7.sas"`.}
-
-\item{...}{Passed to [sas_macro_path()].}
 }
 \value{
 Absolute path to the requested `.sas` file.

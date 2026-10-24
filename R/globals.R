@@ -32,7 +32,6 @@ if (getRversion() >= "2.15.1") {
     "parameter",
     "pct",
     "Role",
-    "sd.error",
     "se",
     "Statistic",
     "status",
