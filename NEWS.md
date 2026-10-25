@@ -1,3 +1,14 @@
+# TempleCBE 0.7.5
+
+Three downstream requests (GAP-09 to GAP-11). Nothing is removed or renamed.
+
+## New
+
+* **`tbl_feature_importance_dalex()`**: min, Q1, median, mean, Q3 and max of the dropout loss over the permutations of a `DALEX::feature_importance()` result, ranked by a chosen statistic (`top_n`, `id` columns for stacking models). Replaces four copies of a hand-written aggregation.
+* **`batch_cutpoint_survdiff()`**: scans midpoint or quantile cutpoints of several numeric features, dichotomises at each, and returns the log-rank statistic and p-value, the group sizes, a significance bin (`p_breaks`) and the univariate Cox coefficient.
+* **`first_significant_cutpoint()`**: the first cutpoint below each `alpha` per feature, scanning in the direction of the Cox coefficient.
+* **`calc_grouped_summary()`**: long tibble of n, missingness, mean, SD, median, quartiles, IQR and range per variable and group, unformatted, for programmatic filtering.
+
 # TempleCBE 0.7.4
 
 Eight downstream requests (GAP-01 to GAP-08). Nothing is removed or renamed.
