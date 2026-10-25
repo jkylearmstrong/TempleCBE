@@ -77,8 +77,7 @@ batch_cutpoint_survdiff <- function(data,
       nh <- sum(high)
       nl <- sum(!high)
       if (nh < max(min_n, 1) || nl < max(min_n, 1)) return(NULL)
-      sdf <- tryCatch(survival::survdiff(sv ~ high), error = function(e) NULL)
-      if (is.null(sdf)) return(NULL)
+      sdf <- survival::survdiff(sv ~ high)
       tibble::tibble(feature = feat, cutpoint = cp, n_low = nl, n_high = nh,
                      chisq = unname(sdf$chisq), p = unname(sdf$pvalue),
                      cox_coef = unname(cox[1L]), cox_p = unname(cox[2L]))
