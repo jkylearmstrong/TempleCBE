@@ -1,3 +1,7 @@
+## Docker image
+
+* **Images are also published to GHCR.** When the Docker Hub credentials are set, the merge job of `docker-publish.yml` copies the multi-architecture manifest (`linux/amd64` and `linux/arm64`) it just pushed to `ghcr.io/<owner>/templecbe` under the same tags (`latest` and `master` from master, the version from a release tag), so `docker pull ghcr.io/jkylearmstrong/templecbe:<tag>` works on the DGX Spark. Without Docker Hub credentials GHCR was already the only registry. The GHCR package must be made public once in its settings.
+
 # TempleCBE 0.7.6
 
 Downstream requests GAP-12 to GAP-20. Nothing is removed or renamed. GAP-21 (`validate_data_manifest()`, `stop_if_invalid_manifest()`) already exists with the arguments `dir`, `manifest` and `project_root`, and was not changed.
