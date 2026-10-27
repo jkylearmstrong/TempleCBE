@@ -95,18 +95,14 @@ COPY renv/activate.R renv/settings.json ./renv/
 # Use the specified cache directory for renv to speed restores across builds
 RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); renv::restore(prompt = FALSE)'
 
-# Packages that are Suggests of TempleCBE (so renv.lock does not record them) but that its
-# features need at run time: boot_lmer() (lme4), tune_alpha_by_split() (furrr, glmnet, rsample),
-# the Word review exports (openxlsx) and the Word/zip helpers (zip). Pinned to exact versions
-# (the ones current on CRAN on 2026-10-21) so both architectures and every rebuild get the same
-# ones; their own dependencies (nloptr, RcppEigen, ...) are not pinned. Installed after the
-# lockfile restore so that layer stays cached. Moving these into renv.lock is the stricter fix.
-# (yardstick, which joint_model() and glmnet_IBS() need, is the exception: renv.lock pins it.)
-RUN Rscript -e 'renv::install(c("lme4@2.0-6", "furrr@0.4.0", "glmnet@5.1", "rsample@1.3.2", "openxlsx@4.2.9", "zip@3.0.2"), prompt = FALSE)'
+# The Suggests that TempleCBE needs at run time (lme4, furrr, glmnet, rsample, openxlsx, zip, yardstick,
+# probably, quarto, baguette, missRanger, missForest, FactoMineR, finetune and their dependencies) are
+# recorded in renv.lock, so the restore above installs them: one install phase, and the same versions
+# on amd64 and arm64.
 
-# Fail the build if installing the packages above changed any package that renv.lock pins
-# (a newer release can require a newer Matrix, future, ...), so renv.lock keeps describing the image.
-RUN Rscript -e 'lock <- renv::lockfile_read("renv.lock")$Packages; ip <- installed.packages(); bad <- vapply(lock, function(p) !(p$Package %in% rownames(ip)) || ip[p$Package, "Version"] != p$Version, logical(1)); if (any(bad)) stop("Packages differ from renv.lock after installing the extra packages: ", paste(names(lock)[bad], collapse = ", "), call. = FALSE)'
+# Fail the build if the installed packages differ from renv.lock (a restore that fell back to another
+# version), so renv.lock keeps describing the image.
+RUN Rscript -e 'lock <- renv::lockfile_read("renv.lock")$Packages; ip <- installed.packages(); bad <- vapply(lock, function(p) !(p$Package %in% rownames(ip)) || ip[p$Package, "Version"] != p$Version, logical(1)); if (any(bad)) stop("Packages differ from renv.lock after the restore: ", paste(names(lock)[bad], collapse = ", "), call. = FALSE)'
 
 COPY . .
 
@@ -120,6 +116,6 @@ RUN Rscript -e 'renv::install(".", prompt = FALSE, INSTALL_opts = c("--no-multia
 # every package installed above. A DGX Spark run reported that the extra packages were installed but
 # masked at run time (renv put another library on .libPaths()); this fails the build, with the
 # library paths printed, instead of shipping an image in which about 30 tests error and 400 skip.
-RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip", "yardstick"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
+RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip", "yardstick", "probably", "quarto", "baguette", "missRanger", "missForest", "FactoMineR", "finetune"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
 
 CMD ["R"]
