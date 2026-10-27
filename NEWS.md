@@ -1,3 +1,23 @@
+# TempleCBE 0.7.6
+
+Downstream requests GAP-12 to GAP-20. Nothing is removed or renamed. GAP-21 (`validate_data_manifest()`, `stop_if_invalid_manifest()`) already exists with the arguments `dir`, `manifest` and `project_root`, and was not changed.
+
+## New
+
+* **`tbl_contingency_2x2()`**: 2x2 table of `n (percent)` cells with row, column or total percentages, marginal totals, Fisher and/or Pearson p-values, odds ratio and relative risk with Wald intervals (0.5 added to every cell when a cell is zero) and the standard footnote. `table_two_by_two()` stays the institutional layout with the conditional-MLE odds ratio.
+* **`pca_equation_latex()`** and **`pca_component_cutoff()`**: one component as a LaTeX linear combination with real feature names (`pca_eqns()` uses `f1`, `f2`, ...), and the number of components that reaches a cumulative variance threshold.
+* **`tune_breakpoint_lmm()`** and **`impute_piecewise_lmm()`**: sweep candidate change points of a piecewise-linear mixed model (AIC, BIC, RMSE) and fill missing longitudinal values from it (a single imputation; needs `lme4`).
+* **`classify_quadrants()`**, **`tbl_quadrant_distribution()`** and **`quadrant_n()`**: quadrant assignment from two cuts, counts of strata per quadrant, and one count for inline prose.
+* **`tbl_paired_assay_agreement()`**: bias, SD of the differences, Bland-Altman limits, Lin's CCC and missingness for each pair of methods.
+* **`tbl_correlated_pairs()`**: labelled table of feature pairs at or above a correlation cutoff with the caption "X of the Y features (Z%) are at least W% correlated" (`kable`, `gt` or tibble).
+* **`inspect_rank_deficiency()`**: which fixed-effect columns `lmer`/`glmer` (or `lm`/`glm`) dropped, with a markdown callout.
+* **`plot_imputation_hazard_stability()`**: density overlay of bootstrap hazard ratios on complete cases and on imputed data, with optional Tukey fences.
+* **`tbl_tuning_by_quantile()`**: tuning candidates in performance tiers, with the mean `lambda` and `alpha`, or term retention per tier.
+
+## Docker image
+
+* **`yardstick` is in `renv.lock` (1.4.0) and in the build check of the image.** `joint_model()`, `glmnet_IBS()`, `score_outer()` and `step_lencode_joint_model()` need it; without it 4 errors and 6 failures remained on aarch64 (DGX Spark). It is recorded in the lockfile, not installed after the restore, so the "Packages differ from renv.lock" check cannot trip over it (every dependency of `yardstick` was already pinned).
+
 # TempleCBE 0.7.5
 
 Three downstream requests (GAP-09 to GAP-11). Nothing is removed or renamed.

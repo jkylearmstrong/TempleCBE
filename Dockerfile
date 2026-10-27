@@ -101,6 +101,7 @@ RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); r
 # (the ones current on CRAN on 2026-10-21) so both architectures and every rebuild get the same
 # ones; their own dependencies (nloptr, RcppEigen, ...) are not pinned. Installed after the
 # lockfile restore so that layer stays cached. Moving these into renv.lock is the stricter fix.
+# (yardstick, which joint_model() and glmnet_IBS() need, is the exception: renv.lock pins it.)
 RUN Rscript -e 'renv::install(c("lme4@2.0-6", "furrr@0.4.0", "glmnet@5.1", "rsample@1.3.2", "openxlsx@4.2.9", "zip@3.0.2"), prompt = FALSE)'
 
 # Fail the build if installing the packages above changed any package that renv.lock pins
@@ -119,6 +120,6 @@ RUN Rscript -e 'renv::install(".", prompt = FALSE, INSTALL_opts = c("--no-multia
 # every package installed above. A DGX Spark run reported that the extra packages were installed but
 # masked at run time (renv put another library on .libPaths()); this fails the build, with the
 # library paths printed, instead of shipping an image in which about 30 tests error and 400 skip.
-RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
+RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip", "yardstick"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
 
 CMD ["R"]

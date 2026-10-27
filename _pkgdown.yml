@@ -117,6 +117,8 @@ reference:
       - pca_loading_diff
       - pca_loading_diff_heatmap
       - pca_accessors
+      - pca_equation_latex
+      - pca_component_cutoff
 
   - title: Penalized Cox Models for Survival Data
     desc: >
@@ -169,6 +171,9 @@ reference:
       - fit_ibs_mixed_model
       - fit_lmer_safely
       - boot_lmer
+      - tune_breakpoint_lmm
+      - impute_piecewise_lmm
+      - inspect_rank_deficiency
       - boot_p_value
       - plot_tune_alpha_ibs
       - plot_tune_lambda_ibs
@@ -475,6 +480,14 @@ reference:
       - plot_imputed_vs_observed
       - plot_comissingness_matrix
       - plot_marginal_effect_contrast
+      - tbl_contingency_2x2
+      - classify_quadrants
+      - tbl_quadrant_distribution
+      - quadrant_n
+      - tbl_paired_assay_agreement
+      - tbl_correlated_pairs
+      - plot_imputation_hazard_stability
+      - tbl_tuning_by_quantile
 
   - title: Categorical Association & Contingency Tables
     desc: >
