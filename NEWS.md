@@ -2,6 +2,18 @@
 
 Downstream backlog for 0.7.7. Nothing is removed or renamed.
 
+## New (GAP-22 to GAP-29)
+
+* **`tbl_longitudinal_cox_screen()`**: per-subject percent change, variance, excursion (max - min) and SD of repeated measurements, each as the single covariate of a Cox model (hazard ratio, interval, p-value, optional labels and domains).
+* **`plot_trajectory_group_ci()`**: group mean trajectories with empirical quantile ribbons, faceted by group.
+* **`tbl_landmark_cutpoints()`**: low/high split of a feature and its Cox/log-rank comparison at several landmark times (clock restarted at each landmark; data-driven cutpoints give optimistic p-values, see the help).
+* **`tbl_domain_correlations()`**: correlated pairs labelled within or between domains, with a per domain-pair count.
+* **`batch_glm_single()`** and **`batch_lmm_single()`**: `glm_single()` / `lmm_single()` over all input by output combinations, with the normalized estimate, the original-scale marginal effect (`_dy_dx`), a rank within each output, a significance label and a Benjamini-Hochberg adjusted p-value.
+* **`compute_longitudinal_composite_index()`**: composite score per subject and time from baseline-standardised variables with +1/-1 polarities (the baseline mean of the score is 0).
+* **`cut_with_missing_category()`** and **`tbl_cox_binned_missing()`**: equal-count bins with a reference level first and an explicit `Missing` level last, and the Cox model on them.
+* **`sample_weighted_formulas()`**, **`adaptive_cox_formulas()`** and **`expand_feature_formulas()`**: front ends to `sample_candidate_formulas()` / `sample_candidate_formulas_adaptive()` for weighted draws, ratio-filtered adaptive draws and exhaustive combinations (with a size limit).
+* GAP-30 to GAP-32 exist already: `adapter_tidymodels_survex()`, `pca_loading()` / `pca_variance_pct()` and `words_list()` (argument names differ from the proposals).
+
 ## Docker image
 
 * **All run-time Suggests are in `renv.lock`**: `probably` (with `parsnip`, `workflows`, `tune`), `quarto`, `baguette`, `missRanger`, `missForest`, `FactoMineR`, `finetune`, `stacks`, `lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx` and `zip`, with their dependencies (95 records, all additions; no pinned package changed). The image gets them from the one `renv::restore()`, so the second install phase is gone and both architectures get the same versions. On the DGX Spark this should remove the `joint_model()` calibration errors and about 100 skipped tests (`quarto`, `baguette`, imputation and tuning packages). The build check now also requires these packages to load in a fresh session.
