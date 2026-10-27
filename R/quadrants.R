@@ -59,9 +59,9 @@ classify_quadrants <- function(data, x_col, y_col, x_cut = 0, y_cut = 0,
 tbl_quadrant_distribution <- function(data, quadrant_col = "quadrant", strat_vars,
                                       include_total = TRUE) {
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  if (missing(strat_vars) || length(strat_vars) == 0L) stop("`strat_vars` must name at least one column.", call. = FALSE)
   gone <- setdiff(c(quadrant_col, strat_vars), names(data))
   if (length(gone)) stop("Column(s) not in `data`: ", paste(gone, collapse = ", "), ".", call. = FALSE)
-  if (missing(strat_vars) || length(strat_vars) == 0L) stop("`strat_vars` must name at least one column.", call. = FALSE)
   q <- as.factor(data[[quadrant_col]])
   ok <- !is.na(q)
   qn <- as.integer(table(q[ok]))

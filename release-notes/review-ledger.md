@@ -38,6 +38,7 @@ Kept as `REVIEW.md` ("Full and delta audits") requires: per file, the review tie
 Reviewer: a fresh-context agent, read-only, high effort. Verdict: approve with conditions. It confirmed that each fix closes its finding and that the four original tests go from red to green.
 
 | # | Finding | Severity | Action |
+| `Dockerfile`, `renv.lock`, `DESCRIPTION`, `NEWS.md` | L3 | 0.7.7 (lock PR) | 95 packages added to `renv.lock` (Suggests needed at run time plus dependencies; all additions, versions of the six former post-restore packages kept); the post-restore install is removed and the fresh-session check lists them. Dependency constraints of the new records checked against the lock with a script (no conflict). **Not built locally; verified only by CI. Not independently reviewed and not signed off.** |
 |---|---------|----------|--------|
 | 1 | A branch name that collides with an existing branch (`feat` and `feat/x`), or the two names with each other, still pushed first and failed afterwards | Medium | Fixed: `.cp_check_branch_conflicts()` in the pre-flight; test `CP-L3-02 ... collides` |
 | 2 | `Encoding<-` applied blindly: a non-UTF-8 tracked-ignored name made `fs::path_norm()` fail with an unhelpful error | Low | Fixed: such names are never allowed and are shown with escaped bytes |
