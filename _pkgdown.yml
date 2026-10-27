@@ -448,6 +448,8 @@ reference:
       - km_cutpoint_search
       - km_cutpoint_time_varying
       - plot_km_cutpoints
+      - batch_cutpoint_survdiff
+      - first_significant_cutpoint
       - relevel_factor
       - plot_cox_forest
       - plot_cox_forest_multi
@@ -468,6 +470,8 @@ reference:
       - table_two_by_two
       - tbl_two_sample_compare
       - tbl_table_one
+      - calc_grouped_summary
+      - tbl_feature_importance_dalex
       - plot_imputed_vs_observed
       - plot_comissingness_matrix
       - plot_marginal_effect_contrast
