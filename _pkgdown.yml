@@ -488,6 +488,17 @@ reference:
       - tbl_correlated_pairs
       - plot_imputation_hazard_stability
       - tbl_tuning_by_quantile
+      - tbl_longitudinal_cox_screen
+      - plot_trajectory_group_ci
+      - tbl_landmark_cutpoints
+      - tbl_domain_correlations
+      - batch_glm_single
+      - compute_longitudinal_composite_index
+      - cut_with_missing_category
+      - tbl_cox_binned_missing
+      - sample_weighted_formulas
+      - adaptive_cox_formulas
+      - expand_feature_formulas
 
   - title: Categorical Association & Contingency Tables
     desc: >
