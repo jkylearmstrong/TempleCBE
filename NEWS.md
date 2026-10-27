@@ -18,6 +18,8 @@ Downstream backlog for 0.7.7. Nothing is removed or renamed.
 
 * **All run-time Suggests are in `renv.lock`**: `probably` (with `parsnip`, `workflows`, `tune`), `quarto`, `baguette`, `missRanger`, `missForest`, `FactoMineR`, `finetune`, `stacks`, `lme4`, `furrr`, `glmnet`, `rsample`, `openxlsx` and `zip`, with their dependencies (95 records, all additions; no pinned package changed). The image gets them from the one `renv::restore()`, so the second install phase is gone and both architectures get the same versions. On the DGX Spark this should remove the `joint_model()` calibration errors and about 100 skipped tests (`quarto`, `baguette`, imputation and tuning packages). The build check now also requires these packages to load in a fresh session.
 
+* **Images are also published to GHCR.** When the Docker Hub credentials are set, the merge job of `docker-publish.yml` copies the multi-architecture manifest (`linux/amd64` and `linux/arm64`) it just pushed to `ghcr.io/<owner>/templecbe` under the same tags (`latest` and `master` from master, the version from a release tag), so `docker pull ghcr.io/jkylearmstrong/templecbe:<tag>` works on the DGX Spark. Without Docker Hub credentials GHCR was already the only registry. The GHCR package must be made public once in its settings.
+
 # TempleCBE 0.7.6
 
 Downstream requests GAP-12 to GAP-20. Nothing is removed or renamed. GAP-21 (`validate_data_manifest()`, `stop_if_invalid_manifest()`) already exists with the arguments `dir`, `manifest` and `project_root`, and was not changed.

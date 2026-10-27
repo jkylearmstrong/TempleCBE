@@ -29,6 +29,7 @@ concurrency:
 # What is published:
 #   - master (after R-CMD-check succeeds on its tip): `master` and `latest`
 #   - a release tag that is on master: the version (`0.6.3`), never `latest`
+#   - with Docker Hub credentials, the same tags are copied to GHCR (ghcr.io/<owner>/templecbe)
 #   - a manual run from any other branch: built to check that the image builds, nothing is pushed
 # A run for a commit that is no longer the master tip is skipped.
 
@@ -232,8 +233,9 @@ jobs:
             echo "images=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/templecbe" >> "$GITHUB_OUTPUT"
           fi
 
+      # GHCR is logged in to in every case: it is the primary registry without Docker Hub
+      # credentials and the mirror with them (see "Mirror to GHCR" below).
       - name: Log in to GHCR
-        if: ${{ steps.registry.outputs.dockerhub != 'true' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
@@ -277,6 +279,25 @@ jobs:
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf "${IMAGES}@sha256:%s " *)
+
+      # With Docker Hub as the primary registry, the same multi-architecture manifest is copied to
+      # GHCR under the same tags, so `docker pull ghcr.io/<owner>/templecbe:<tag>` works on the
+      # DGX Spark (arm64) as well as on amd64. The copy is made from the image just pushed to Docker
+      # Hub (no rebuild), so both registries hold the same digest. A new GHCR package is private
+      # until its visibility is set to public once (Package settings), which GITHUB_TOKEN cannot do.
+      - name: Mirror to GHCR
+        if: ${{ steps.registry.outputs.dockerhub == 'true' }}
+        env:
+          IMAGES: ${{ steps.registry.outputs.images }}
+          TAGS_JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          set -euo pipefail
+          ghcr="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/templecbe"
+          for ref in $(jq -r '.tags[]' <<< "$TAGS_JSON"); do
+            tag="${ref##*:}"
+            docker buildx imagetools create -t "${ghcr}:${tag}" "${ref}"
+            docker buildx imagetools inspect "${ghcr}:${tag}" | grep -E "linux/(amd64|arm64)"
+          done
 
       - name: Inspect image
         env:
