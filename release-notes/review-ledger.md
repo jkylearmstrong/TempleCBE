@@ -44,6 +44,7 @@ Reviewer: a fresh-context agent, read-only, high effort. Verdict: approve with c
 | 2 | `Encoding<-` applied blindly: a non-UTF-8 tracked-ignored name made `fs::path_norm()` fail with an unhelpful error | Low | Fixed: such names are never allowed and are shown with escaped bytes |
 | 3 | The hook's credential strip depended on `sed` and failed open on a mixed msys setup | Low | Fixed: parameter expansion only (as `_tcbe_norm_url` does); no new hook dependency |
 | 4 | Missing tests (valid names, other URL shapes, unnormalizable URL, quoted tab path) | Low | Added; the tab test skips on Windows |
+| `.github/workflows/docker-publish.yml`, `NEWS.md` | L3 | after 0.7.6 (GHCR PR) | The merge job also logs in to GHCR and copies the pushed manifest to `ghcr.io/<owner>/templecbe` under the same tags (`docker buildx imagetools create`, no rebuild). Uses only `GITHUB_TOKEN` with the existing `packages: write`. **Cannot be exercised by a pull request** (publishing runs only on master or a release tag); first real run is the next master build. Not independently reviewed and not signed off. |
 | 5 | Stale comment on `.cp_check_branch_name()`; NEWS did not say old hooks need a refresh; ledger worded the review as done | Low | Fixed |
 | 6 | `head`/`Head` pass the name check | Nit | Fixed: `HEAD` is refused in any case |
 
