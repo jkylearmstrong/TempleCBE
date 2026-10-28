@@ -111,3 +111,15 @@ test_that("sample_weighted_formulas and the adaptive sampler drop zero-variance 
                  "Zero-variance")
   expect_false("b" %in% attr(out, "adaptive")$pool)
 })
+
+test_that("tbl_fine_gray_single rejects negative times and reports a missing cmprsk", {
+  skip_if_not_installed("cmprsk")
+  d <- fg_data()
+  d$time[1] <- -1
+  expect_error(tbl_fine_gray_single(d, "time", "type", "age"), "negative")
+  d <- fg_data()
+  d$late <- d$age > 60
+  expect_equal(tbl_fine_gray_single(d, "time", "type", "late")$term, "late")
+  testthat::local_mocked_bindings(requireNamespace = function(...) FALSE, .package = "base")
+  expect_error(tbl_fine_gray_single(d, "time", "type", "age"), "cmprsk")
+})
