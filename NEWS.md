@@ -1,3 +1,7 @@
+# TempleCBE 0.7.9
+
+See the "Also in 0.7.9" list under 0.7.8 below: Fine-Gray regression (`tbl_fine_gray_single()`, `tbl_fine_gray_multi()`, `tbl_fine_gray_screen()`), `glance_imputations()` with `df_complete`, the zero-variance filter for the formula samplers, and the pinned explainability and graph packages in `renv.lock`.
+
 # TempleCBE 0.7.8
 
 * **`pool_imputations()`**: a term that is absent from the first imputation is no longer dropped silently; terms are the union over imputations and a term missing in any one is an error. New `df_complete` argument gives the Barnard-Rubin (1999) small-sample degrees of freedom.
@@ -7,7 +11,7 @@
 * **`tbl_missingness_patterns()`**: counts and percentages of each missing/observed combination across columns.
 * **Docker/renv**: `future` is 1.80.0 in `renv.lock`, matching what the image installs.
 
-## Unreleased additions (after 0.7.8)
+## Also in 0.7.9 (additions after 0.7.8)
 
 * **`tbl_fine_gray_single()`**: Fine-Gray subdistribution hazard ratio for one predictor (`cmprsk::crr()`), the regression counterpart of `tbl_cumulative_incidence()`. `cmprsk` is now in `Suggests`.
 * **`glance_imputations()`**: pools model-level fit statistics (concordance, Brier, AIC, df) over imputations; statistics with a `std.error.<stat>` column use Rubin's rules.
