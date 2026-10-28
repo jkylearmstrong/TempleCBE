@@ -11,7 +11,8 @@
 #' interact it with a function of time (`survival::coxph(..., tt = )`) or split follow-up
 #' (`survival::survSplit()`) and report a hazard ratio per period.
 #'
-#' @param fit A model fitted by [survival::coxph()].
+#' @param fit A model fitted by [survival::coxph()], or a tidymodels `workflow` / parsnip
+#'   `model_fit` wrapping one (unwrapped to the engine fit).
 #' @param transform Time transform passed to [survival::cox.zph()]: `"km"` (default), `"rank"`,
 #'   `"identity"` or `"log"`.
 #' @param alpha p-value below which a term is flagged.
@@ -23,6 +24,8 @@
 #' fit <- survival::coxph(survival::Surv(time, status) ~ age + sex + ph.ecog, data = survival::lung)
 #' tbl_schoenfeld_audit(fit)
 tbl_schoenfeld_audit <- function(fit, transform = "km", alpha = 0.05) {
+  if (inherits(fit, "workflow")) fit <- workflows::extract_fit_engine(fit)
+  if (inherits(fit, "model_fit")) fit <- fit$fit
   if (!inherits(fit, "coxph")) stop("`fit` must be a model from survival::coxph().", call. = FALSE)
   if (!is.numeric(alpha) || length(alpha) != 1L || alpha <= 0 || alpha >= 1) {
     stop("`alpha` must be a number in (0, 1).", call. = FALSE)

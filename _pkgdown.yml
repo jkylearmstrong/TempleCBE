@@ -135,6 +135,7 @@ reference:
       - nested_cv_coxnet
       - surv_subject_truth
       - validate_start_stop
+      - prune_start_stop
       - censoring_km
       - graf_weights
       - add_graf_weights
@@ -479,6 +480,7 @@ reference:
       - tbl_feature_importance_dalex
       - plot_imputed_vs_observed
       - plot_comissingness_matrix
+      - tbl_missingness_patterns
       - plot_marginal_effect_contrast
       - tbl_contingency_2x2
       - classify_quadrants
@@ -493,6 +495,7 @@ reference:
       - tbl_landmark_cutpoints
       - tbl_schoenfeld_audit
       - tbl_cumulative_incidence
+      - plot_cumulative_incidence
       - pool_imputations
       - tbl_domain_correlations
       - batch_glm_single

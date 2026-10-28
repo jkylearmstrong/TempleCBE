@@ -7,7 +7,8 @@
 tbl_schoenfeld_audit(fit, transform = "km", alpha = 0.05)
 }
 \arguments{
-\item{fit}{A model fitted by [survival::coxph()].}
+\item{fit}{A model fitted by [survival::coxph()], or a tidymodels `workflow` / parsnip
+`model_fit` wrapping one (unwrapped to the engine fit).}
 
 \item{transform}{Time transform passed to [survival::cox.zph()]: `"km"` (default), `"rank"`,
 `"identity"` or `"log"`.}
