@@ -119,7 +119,76 @@ test_that("tbl_fine_gray_single rejects negative times and reports a missing cmp
   expect_error(tbl_fine_gray_single(d, "time", "type", "age"), "negative")
   d <- fg_data()
   d$late <- d$age > 60
-  expect_equal(tbl_fine_gray_single(d, "time", "type", "late")$term, "late")
+  expect_equal(tbl_fine_gray_single(d, "time", "type", "late")$term, "lateTRUE")
   testthat::local_mocked_bindings(requireNamespace = function(...) FALSE, .package = "base")
   expect_error(tbl_fine_gray_single(d, "time", "type", "age"), "cmprsk")
+})
+
+# ---- follow-ups: df_complete in glance_imputations, interaction cascade, Fine-Gray multi/screen ----
+
+test_that("glance_imputations forwards df_complete to the Rubin interval", {
+  g <- lapply(1:5, function(i) data.frame(concordance = 0.7 + 0.01 * i, std.error.concordance = 0.03))
+  wide <- glance_imputations(g)
+  small <- glance_imputations(g, df_complete = 10)
+  expect_gt(small$conf.high - small$conf.low, wide$conf.high - wide$conf.low)
+  expect_error(glance_imputations(g, df_complete = -1), "df_complete")
+})
+
+test_that("zero-variance filter cascades to interactions and transforms", {
+  d <- data.frame(a = c(1, 2, 3, 4), b = 1, x = c(2, 2, 2, 2), y = c(1, 4, 9, 16))
+  z <- TempleCBE:::.zero_variance_terms(d, c("a", "b", "a:b", "a*b", "log(x)", "I(x^2)", "log(y)", "a:y", "zz(a)"))
+  expect_setequal(z, c("b", "a:b", "a*b", "log(x)", "I(x^2)"))
+  s <- suppressWarnings(suppressMessages(sample_candidate_formulas(
+    c("a", "b", "a:b", "y"), n = 5, min_size = 1, max_size = 2, hierarchy = FALSE, data = d, seed = 1)))
+  expect_false(any(vapply(s$terms, function(t) any(c("b", "a:b") %in% t), logical(1))))
+})
+
+test_that("tbl_fine_gray_multi fits a multivariable model and names terms like tidy()", {
+  skip_if_not_installed("cmprsk")
+  d <- fg_data()
+  d$flag <- d$age > 60
+  r <- tbl_fine_gray_multi(d, "time", "type", ~ age + arm + flag)
+  expect_equal(r$term, c("age", "armB", "armC", "flagTRUE"))
+  mm <- stats::model.matrix(~ age + arm + flag, d)[, -1]
+  f <- cmprsk::crr(d$time, d$type, mm)
+  expect_equal(r$estimate, unname(exp(f$coef)), tolerance = 1e-6)
+  expect_error(tbl_fine_gray_multi(d, "time", "type", age ~ arm), "one-sided")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", ~ nope), "Not columns")
+  d$k <- 1
+  expect_error(tbl_fine_gray_multi(d, "time", "type", ~ age + k), "Zero-variance")
+})
+
+test_that("tbl_fine_gray_screen stacks univariable fits, adjusts p and skips bad columns", {
+  skip_if_not_installed("cmprsk")
+  d <- fg_data()
+  d$k <- 1
+  expect_warning(r <- tbl_fine_gray_screen(d, "time", "type", c("age", "arm", "k")), "`k` skipped")
+  expect_setequal(unique(r$feature), c("age", "arm"))
+  expect_equal(r$p.adj, stats::p.adjust(r$p.value, "BH"))
+  expect_error(suppressWarnings(tbl_fine_gray_screen(d, "time", "type", "k")), "No feature")
+})
+
+test_that("tbl_fine_gray_multi and _screen validate their input and handle edge cases", {
+  skip_if_not_installed("cmprsk")
+  d <- fg_data()
+  f <- ~ age + arm
+  expect_error(tbl_fine_gray_multi(1, "time", "type", f), "data frame")
+  expect_error(tbl_fine_gray_multi(d, "nope", "type", f), "not a column")
+  expect_error(tbl_fine_gray_multi(d, "arm", "type", f), "numeric")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, conf_level = 1), "conf_level")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, failcode = 0), "different")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, failcode = 9), "failcode")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, cencode = 9), "cencode")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", ~ 1), "no predictor")
+  d2 <- d
+  d2$time[1] <- -1
+  expect_error(tbl_fine_gray_multi(d2, "time", "type", f), "negative")
+  d3 <- d
+  d3$type <- factor(d3$type)
+  d3$age[1:5] <- NA
+  r <- tbl_fine_gray_multi(d3, "time", "type", f, failcode = "1", cencode = "0", exponentiate = FALSE)
+  expect_equal(r$n[1], nrow(d) - 5L)
+  expect_error(tbl_fine_gray_screen(d, "time", "type", character()), "features")
+  expect_error(tbl_fine_gray_screen(d, "time", "type", "age", p_adjust = "zzz"))
+  expect_equal(nrow(tbl_fine_gray_screen(d, "time", "type", c("age", "age"), p_adjust = "holm")), 1L)
 })

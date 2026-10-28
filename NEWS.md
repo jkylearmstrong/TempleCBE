@@ -1,3 +1,7 @@
+# TempleCBE 0.7.9
+
+See the "Also in 0.7.9" list under 0.7.8 below: Fine-Gray regression (`tbl_fine_gray_single()`, `tbl_fine_gray_multi()`, `tbl_fine_gray_screen()`), `glance_imputations()` with `df_complete`, the zero-variance filter for the formula samplers, and the pinned explainability and graph packages in `renv.lock`.
+
 # TempleCBE 0.7.8
 
 * **`pool_imputations()`**: a term that is absent from the first imputation is no longer dropped silently; terms are the union over imputations and a term missing in any one is an error. New `df_complete` argument gives the Barnard-Rubin (1999) small-sample degrees of freedom.
@@ -7,11 +11,15 @@
 * **`tbl_missingness_patterns()`**: counts and percentages of each missing/observed combination across columns.
 * **Docker/renv**: `future` is 1.80.0 in `renv.lock`, matching what the image installs.
 
-## Unreleased additions (after 0.7.8)
+## Also in 0.7.9 (additions after 0.7.8)
 
 * **`tbl_fine_gray_single()`**: Fine-Gray subdistribution hazard ratio for one predictor (`cmprsk::crr()`), the regression counterpart of `tbl_cumulative_incidence()`. `cmprsk` is now in `Suggests`.
 * **`glance_imputations()`**: pools model-level fit statistics (concordance, Brier, AIC, df) over imputations; statistics with a `std.error.<stat>` column use Rubin's rules.
 * **Formula samplers**: `sample_candidate_formulas()`, `sample_weighted_formulas()` and `sample_candidate_formulas_adaptive()` take an optional `data`; a zero-variance column is kept out of the candidates, with a message, so degenerate fits (and their divide-by-zero warnings) are not drawn. No change without `data`.
+* **`glance_imputations()`**: new `df_complete` argument, forwarded to `pool_imputations()` for the Barnard-Rubin small-sample interval of statistics with a `std.error.<stat>` column.
+* **Formula samplers**: the zero-variance filter now also catches expressions of columns (`log(x)`, `I(x^2)`, `rcs(x, 3)`) and interactions (`a:b`, `a*b`) with a constant parent, so they are not drawn even with `hierarchy = FALSE`. Expressions that cannot be evaluated in `data` are left alone.
+* **`tbl_fine_gray_multi()`**, **`tbl_fine_gray_screen()`**: multivariable Fine-Gray model from a one-sided formula (the counterpart of `cox_multi()`), and a univariable screen with a BH-adjusted p-value.
+* **`tbl_fine_gray_single()`**: terms are named as `broom::tidy()` names them, so a logical predictor gives `<feature>TRUE` (was `<feature>`).
 * **Docker/renv**: `survex`, `DALEX`, `DALEXtra`, `ingredients`, `iBreakDown`, `kernelshap`, `doFuture`, `DiagrammeR`, `DiagrammeRsvg` and `visNetwork` are in `renv.lock` (10 additions), and the image check loads `survex`, `DALEXtra`, `DiagrammeR` and `visNetwork`, so the explainability and graph tests no longer skip in the image.
 * **Vignette**: new article on the Schoenfeld audit, cumulative incidence, Fine-Gray regression and pooling over imputations.
 
