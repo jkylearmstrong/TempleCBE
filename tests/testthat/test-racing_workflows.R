@@ -1,7 +1,7 @@
 # Unit and Integration Tests for Racing Workflows (tests/testthat/test-racing_workflows.R)
 
 skip_if_no_racing_deps <- function() {
-  for (pkg in c("finetune", "parsnip", "workflows", "rsample", "yardstick", "survival", "glmnet")) {
+  for (pkg in c("finetune", "censored", "parsnip", "workflows", "rsample", "yardstick", "survival", "glmnet")) {
     testthat::skip_if_not_installed(pkg)
   }
 }

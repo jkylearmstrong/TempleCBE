@@ -15,9 +15,33 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "censored": {
+      "Package": "censored",
+      "Version": "0.3.4",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "checkmate": {
+      "Package": "checkmate",
+      "Version": "2.3.4",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "cmprsk": {
+      "Package": "cmprsk",
+      "Version": "2.2-12",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "Cubist": {
       "Package": "Cubist",
       "Version": "0.6.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "doParallel": {
+      "Package": "doParallel",
+      "Version": "1.0.17",
       "Source": "Repository",
       "Repository": "CRAN"
     },
@@ -51,6 +75,13 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "foreign": {
+      "Package": "foreign",
+      "Version": "0.8-91",
+      "Priority": "recommended",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "Formula": {
       "Package": "Formula",
       "Version": "1.2-6",
@@ -60,6 +91,24 @@
     "GauPro": {
       "Package": "GauPro",
       "Version": "0.2.17",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "gridExtra": {
+      "Package": "gridExtra",
+      "Version": "2.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "Hmisc": {
+      "Package": "Hmisc",
+      "Version": "5.2-6",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "htmlTable": {
+      "Package": "htmlTable",
+      "Version": "2.5.0",
       "Source": "Repository",
       "Repository": "CRAN"
     },
@@ -177,6 +226,60 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "mboost": {
+      "Package": "mboost",
+      "Version": "2.9-12",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "mets": {
+      "Package": "mets",
+      "Version": "1.3.11",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "multcomp": {
+      "Package": "multcomp",
+      "Version": "1.4-31",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "nnls": {
+      "Package": "nnls",
+      "Version": "1.6",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "pec": {
+      "Package": "pec",
+      "Version": "2025.06.24",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "plotrix": {
+      "Package": "plotrix",
+      "Version": "3.8-14",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "polspline": {
+      "Package": "polspline",
+      "Version": "1.1.25",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "Publish": {
+      "Package": "Publish",
+      "Version": "2025.07.24",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "quadprog": {
+      "Package": "quadprog",
+      "Version": "1.5-8",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "R6": {
       "Package": "R6",
       "Version": "2.6.1",
@@ -271,6 +374,18 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "riskRegression": {
+      "Package": "riskRegression",
+      "Version": "2026.03.11",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "rms": {
+      "Package": "rms",
+      "Version": "8.1-1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "S7": {
       "Package": "S7",
       "Version": "0.2.2",
@@ -334,6 +449,24 @@
     "SparseM": {
       "Package": "SparseM",
       "Version": "1.84-2",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "stabs": {
+      "Package": "stabs",
+      "Version": "0.7-1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "TH.data": {
+      "Package": "TH.data",
+      "Version": "1.1-5",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "timereg": {
+      "Package": "timereg",
+      "Version": "2.0.7",
       "Source": "Repository",
       "Repository": "CRAN"
     },

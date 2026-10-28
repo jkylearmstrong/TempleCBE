@@ -1,5 +1,13 @@
 # TempleCBE 0.7.7
 
+## Unreleased additions (after 0.7.7)
+
+* **`tbl_schoenfeld_audit()`**: Schoenfeld-residual proportional-hazards test per Cox term and globally, with a flag.
+* **`tbl_cumulative_incidence()`**: Aalen-Johansen cumulative incidence per cause (optionally by group) with competing risks. It is descriptive; it does not fit Fine-Gray models.
+* **`pool_imputations()`**: Rubin's rules (within/between variance, Rubin degrees of freedom, fraction of missing information) over per-imputation tidy fits.
+* **Tests**: the racing and SurvSet tests skip cleanly when `censored` or `pec` are missing instead of erroring.
+* **Docker/renv**: `censored` and the packages that `pec` and `censored` pull in (`mboost`, `stabs`, `nnls`, `quadprog`, `rms`, `riskRegression`, `cmprsk`, ...) are in `renv.lock` (22 additions), and the image build checks that `censored` loads.
+
 Downstream backlog for 0.7.7. Nothing is removed or renamed.
 
 ## New (GAP-22 to GAP-29)

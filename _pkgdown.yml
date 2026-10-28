@@ -491,6 +491,9 @@ reference:
       - tbl_longitudinal_cox_screen
       - plot_trajectory_group_ci
       - tbl_landmark_cutpoints
+      - tbl_schoenfeld_audit
+      - tbl_cumulative_incidence
+      - pool_imputations
       - tbl_domain_correlations
       - batch_glm_single
       - compute_longitudinal_composite_index
