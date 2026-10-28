@@ -45,3 +45,18 @@ test_that("tbl_cumulative_incidence: causes sum to 1 - overall survival and grou
   expect_true(all(g$conf.low <= g$cif + 1e-12 & g$cif <= g$conf.high + 1e-12))
   expect_error(tbl_cumulative_incidence(d[d$type < 2, ], "time", "type"), "at least two causes")
 })
+
+test_that("input validation errors are informative", {
+  fit <- survival::coxph(survival::Surv(time, status) ~ age, data = survival::lung)
+  expect_error(tbl_schoenfeld_audit(fit, alpha = 2), "alpha")
+  d <- data.frame(time = c(1, 2, 3, 4), type = c(0, 1, 2, 1), arm = "A")
+  expect_error(tbl_cumulative_incidence("x", "time", "type"), "data frame")
+  expect_error(tbl_cumulative_incidence(d, "nope", "type"), "not a column")
+  expect_error(tbl_cumulative_incidence(d, "time", "type", times = -1), "non-negative")
+  expect_error(tbl_cumulative_incidence(d, "time", "type", conf_level = 2), "conf_level")
+  est <- data.frame(term = "x", estimate = 1, std.error = 1)
+  expect_error(pool_imputations(est), "imputation")
+  expect_error(pool_imputations(list(est, est), conf_level = 0), "conf_level")
+  expect_error(pool_imputations(list(est, data.frame(term = "y", estimate = 1, std.error = 1))), "missing")
+  expect_equal(pool_imputations(list(est, est))$df, Inf)
+})
