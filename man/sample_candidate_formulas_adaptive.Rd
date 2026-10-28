@@ -17,7 +17,8 @@ sample_candidate_formulas_adaptive(
   response = NULL,
   required = character(),
   seed = NULL,
-  env = parent.frame()
+  env = parent.frame(),
+  data = NULL
 )
 }
 \arguments{
@@ -50,6 +51,9 @@ each term (for example from [cox_single()] or [glm_single()]).}
 \item{seed}{Optional integer; see [sample_candidate_formulas()].}
 
 \item{env}{Environment of the formulas.}
+
+\item{data}{Optional data frame (training rows): winning terms that are zero-variance columns
+of it are dropped from the pool unless `required`; see [sample_candidate_formulas()].}
 }
 \value{
 The tibble of [sample_candidate_formulas()]; the pool, size range and weights used are in

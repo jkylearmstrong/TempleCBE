@@ -69,6 +69,7 @@ Suggests:
     callr,
     caret,
     censored (>= 0.3.0),
+    cmprsk,
     DALEX (>= 2.5.0),
     DALEXtra (>= 2.3.0),
     devtools,

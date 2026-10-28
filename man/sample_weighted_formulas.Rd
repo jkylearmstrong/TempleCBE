@@ -11,7 +11,8 @@ sample_weighted_formulas(
   max_terms = length(feature_weights),
   include_full = TRUE,
   response = NULL,
-  seed = NULL
+  seed = NULL,
+  data = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ produce it, so the result can have `n_samples + 1` rows).}
 \item{response}{Optional left-hand side as text, for example `"Surv(time, status)"`.}
 
 \item{seed}{Optional integer; the caller's random-number state is restored.}
+
+\item{data}{Optional data frame (training rows). Features that are zero-variance columns of it
+are removed before sampling (also from the full formula), with a message.}
 }
 \value{
 The tibble of [sample_candidate_formulas()] (`id`, `formula`, `terms`, `n_terms`).

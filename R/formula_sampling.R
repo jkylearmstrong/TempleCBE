@@ -49,8 +49,13 @@
 #' @param unique Logical; drop repeated term sets (default `TRUE`).
 #' @param seed Optional integer. The random-number state of the caller is restored afterwards.
 #' @param env Environment of the formulas (default: the caller's).
+#' @param data Optional data frame. A term that is a column of `data` with fewer than two distinct
+#'   non-missing values (zero variance) cannot be estimated, so it gets weight 0 and is never drawn
+#'   unless it is `required`; a message lists the terms. Terms that are not plain column names
+#'   (transformations, interactions) are not checked. Only use training rows.
 #' @return A tibble with one row per formula: `id`, `formula` (list of formulas), `terms` (list of
-#'   character vectors, required terms first) and `n_terms`.
+#'   character vectors, required terms first) and `n_terms`. The terms kept out for zero variance
+#'   are in the attribute `"degenerate"`.
 #' @seealso [calculate_feature_weights()]
 #' @export
 #' @examples
@@ -71,7 +76,8 @@ sample_candidate_formulas <- function(predictors,
                                       hierarchy = TRUE,
                                       unique = TRUE,
                                       seed = NULL,
-                                      env = parent.frame()) {
+                                      env = parent.frame(),
+                                      data = NULL) {
   if (!is.character(predictors) || length(predictors) < 1L || anyNA(predictors) || any(!nzchar(predictors))) {
     stop("`predictors` must be a non-empty character vector of terms.", call. = FALSE)
   }
@@ -137,6 +143,15 @@ sample_candidate_formulas <- function(predictors,
     }
   }
 
+  degenerate <- character()
+  if (!is.null(data)) {
+    degenerate <- setdiff(.zero_variance_terms(data, pool), required)
+    if (length(degenerate)) {
+      message("Zero-variance terms kept out of the candidates: ", paste(degenerate, collapse = ", "), ".")
+      w[pool %in% degenerate] <- 0
+    }
+  }
+
   parents_of <- function(term) if (grepl(":", term, fixed = TRUE)) trimws(strsplit(term, ":", fixed = TRUE)[[1]]) else character()
   valid <- function(terms) {
     if (isTRUE(hierarchy)) {
@@ -189,12 +204,26 @@ sample_candidate_formulas <- function(predictors,
     rhs <- paste(terms, collapse = " + ")
     stats::as.formula(paste(if (is.null(response)) "" else response, "~", rhs), env = env)
   }
-  tibble::tibble(
+  out <- tibble::tibble(
     id = seq_along(found),
     formula = lapply(found, mk),
     terms = found,
     n_terms = vapply(found, length, integer(1))
   )
+  attr(out, "degenerate") <- degenerate
+  out
+}
+
+# Terms that are plain columns of `data` without two distinct non-missing values (var(x) == 0).
+.zero_variance_terms <- function(data, terms) {
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  cols <- intersect(terms, names(data))
+  const <- vapply(cols, function(tm) {
+    x <- data[[tm]]
+    x <- x[!is.na(x)]
+    if (is.numeric(x)) length(x) < 2L || !isTRUE(stats::var(x) > 0) else length(unique(x)) < 2L
+  }, logical(1))
+  cols[const]
 }
 
 #' Weight Features by the Candidate Models That Use Them

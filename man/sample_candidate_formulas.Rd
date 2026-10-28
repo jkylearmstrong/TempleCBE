@@ -16,7 +16,8 @@ sample_candidate_formulas(
   hierarchy = TRUE,
   unique = TRUE,
   seed = NULL,
-  env = parent.frame()
+  env = parent.frame(),
+  data = NULL
 )
 }
 \arguments{
@@ -47,10 +48,16 @@ use `level = "term"` there and pass `setNames(w$weight, w$feature)`.}
 \item{seed}{Optional integer. The random-number state of the caller is restored afterwards.}
 
 \item{env}{Environment of the formulas (default: the caller's).}
+
+\item{data}{Optional data frame. A term that is a column of `data` with fewer than two distinct
+non-missing values (zero variance) cannot be estimated, so it gets weight 0 and is never drawn
+unless it is `required`; a message lists the terms. Terms that are not plain column names
+(transformations, interactions) are not checked. Only use training rows.}
 }
 \value{
 A tibble with one row per formula: `id`, `formula` (list of formulas), `terms` (list of
-  character vectors, required terms first) and `n_terms`.
+  character vectors, required terms first) and `n_terms`. The terms kept out for zero variance
+  are in the attribute `"degenerate"`.
 }
 \description{
 Draws a reproducible set of distinct model formulas from a pool of predictors, for the

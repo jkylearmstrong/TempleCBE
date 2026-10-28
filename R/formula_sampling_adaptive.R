@@ -30,6 +30,8 @@
 #' @param required Terms that are in every formula.
 #' @param seed Optional integer; see [sample_candidate_formulas()].
 #' @param env Environment of the formulas.
+#' @param data Optional data frame (training rows): winning terms that are zero-variance columns
+#'   of it are dropped from the pool unless `required`; see [sample_candidate_formulas()].
 #' @return The tibble of [sample_candidate_formulas()]; the pool, size range and weights used are in
 #'   the attribute `"adaptive"`.
 #' @seealso [sample_candidate_formulas()], [as_tuning_results()]
@@ -52,7 +54,8 @@ sample_candidate_formulas_adaptive <- function(prior_results_df,
                                                response = NULL,
                                                required = character(),
                                                seed = NULL,
-                                               env = parent.frame()) {
+                                               env = parent.frame(),
+                                               data = NULL) {
   effect_scale <- match.arg(effect_scale)
   if (!is.data.frame(prior_results_df) || nrow(prior_results_df) == 0L) {
     stop("`prior_results_df` must be a data frame with at least one row.", call. = FALSE)
@@ -107,6 +110,15 @@ sample_candidate_formulas_adaptive <- function(prior_results_df,
     } else {
       share <- share[!pool %in% drop]
       pool <- pool[!pool %in% drop]
+    }
+  }
+
+  if (!is.null(data)) {
+    zero <- setdiff(.zero_variance_terms(data, pool), required)
+    if (length(zero) && length(zero) < length(setdiff(pool, required))) {
+      message("Zero-variance terms kept out of the candidates: ", paste(zero, collapse = ", "), ".")
+      share <- share[!pool %in% zero]
+      pool <- pool[!pool %in% zero]
     }
   }
 

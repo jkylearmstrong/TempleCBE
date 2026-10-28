@@ -16,6 +16,8 @@
 #'   produce it, so the result can have `n_samples + 1` rows).
 #' @param response Optional left-hand side as text, for example `"Surv(time, status)"`.
 #' @param seed Optional integer; the caller's random-number state is restored.
+#' @param data Optional data frame (training rows). Features that are zero-variance columns of it
+#'   are removed before sampling (also from the full formula), with a message.
 #' @return The tibble of [sample_candidate_formulas()] (`id`, `formula`, `terms`, `n_terms`).
 #' @seealso [adaptive_cox_formulas()], [expand_feature_formulas()], [calculate_feature_weights()]
 #' @export
@@ -24,12 +26,20 @@
 #' sample_weighted_formulas(w, n_samples = 4, min_terms = 2, max_terms = 3, seed = 1)
 sample_weighted_formulas <- function(feature_weights, n_samples = 25, min_terms = 2,
                                      max_terms = length(feature_weights), include_full = TRUE,
-                                     response = NULL, seed = NULL) {
+                                     response = NULL, seed = NULL, data = NULL) {
   if (!is.numeric(feature_weights) || is.null(names(feature_weights)) || anyNA(names(feature_weights)) ||
       anyDuplicated(names(feature_weights))) {
     stop("`feature_weights` must be a numeric vector with unique names.", call. = FALSE)
   }
   if (anyNA(feature_weights) || any(feature_weights < 0)) stop("`feature_weights` must be non-negative and not missing.", call. = FALSE)
+  if (!is.null(data)) {
+    zero <- .zero_variance_terms(data, names(feature_weights))
+    if (length(zero)) {
+      message("Zero-variance features removed: ", paste(zero, collapse = ", "), ".")
+      feature_weights <- feature_weights[!names(feature_weights) %in% zero]
+      if (length(feature_weights) == 0L) stop("Every feature has zero variance in `data`.", call. = FALSE)
+    }
+  }
   feats <- names(feature_weights)
   positive <- sum(feature_weights > 0)
   min_terms <- max(1L, as.integer(min_terms))
