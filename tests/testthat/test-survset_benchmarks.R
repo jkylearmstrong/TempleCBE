@@ -82,6 +82,7 @@ test_that("SurvSet lung cohort benchmarks joint_model across glmnet, baguette, a
 
   # 2. baguette engine
   skip_if_not_installed("baguette")
+  testthat::skip_if_not_installed("pec")
   jm_baguette <- joint_model(
     data = lung,
     outcome = survival::Surv(time, event) ~ age + sex + ph.karno,
@@ -179,7 +180,7 @@ test_that("SurvSet heart counting-process cohort benchmarks start/stop survival 
 
 test_that("SurvSet veteran cohort tunes via finetune racing anova and win-fraction", {
   skip_if_no_survset_deps()
-  for (pkg in c("finetune", "parsnip", "workflows")) {
+  for (pkg in c("finetune", "censored", "parsnip", "workflows")) {
     testthat::skip_if_not_installed(pkg)
   }
 
