@@ -1,0 +1,153 @@
+---
+title: "08. Proportional Hazards, Competing Risks and Imputation Pooling"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{08. Proportional Hazards, Competing Risks and Imputation Pooling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 7,
+  fig.height = 4.5,
+  dev = "png"
+)
+library(TempleCBE)
+library(survival)
+```
+
+This article shows four tools for time-to-event reports: a proportional-hazards audit,
+cumulative incidence with competing events, a Fine-Gray regression, and pooling over multiple
+imputations. All data are simulated.
+
+## 1. Is the proportional hazards assumption reasonable?
+
+`tbl_schoenfeld_audit()` runs the Schoenfeld-residual test (`survival::cox.zph()`) for each term and
+for the model as a whole, and flags terms below `alpha`.
+
+```{r schoenfeld}
+fit <- coxph(Surv(time, status) ~ age + sex + ph.ecog, data = lung)
+tbl_schoenfeld_audit(fit)
+```
+
+A small p-value is a prompt to look at the scaled residuals (`plot(cox.zph(fit))`), not proof of a
+problem: with many events a trivial departure is flagged. Typical remedies are a time-varying
+coefficient, stratification on the term, or a restricted mean survival analysis. A tidymodels
+`workflow` or parsnip `model_fit` that wraps a `coxph` engine is accepted as well.
+
+## 2. Competing risks: cumulative incidence
+
+When a patient can have more than one kind of event (progression or death without progression),
+`1 - Kaplan-Meier` with the other cause censored overstates the incidence of each. The Aalen-Johansen
+estimate does not.
+
+```{r cif-data}
+set.seed(2026)
+n <- 400
+d <- data.frame(
+  id = seq_len(n),
+  arm = rep(c("Control", "Treatment"), each = n / 2),
+  age = round(rnorm(n, 62, 9))
+)
+rate1 <- 0.06 * ifelse(d$arm == "Treatment", 0.6, 1) * exp(0.02 * (d$age - 62))
+rate2 <- 0.04
+t1 <- rexp(n, rate1)
+t2 <- rexp(n, rate2)
+cens <- runif(n, 5, 30)
+d$time <- pmin(t1, t2, cens)
+d$type <- ifelse(d$time == cens, 0L, ifelse(d$time == t1, 1L, 2L))
+table(d$type, d$arm)
+```
+
+```{r cif-table}
+cif <- tbl_cumulative_incidence(d, "time", "type", group_col = "arm", times = c(5, 10, 20))
+cif
+```
+
+```{r cif-plot}
+plot_cumulative_incidence(cif, facet = TRUE)
+```
+
+Code `1` is the cause of interest and `2` the competing event; `0` is censoring. The table and plot
+are descriptive: they do not test or adjust for anything.
+
+## 3. Competing risks: Fine-Gray regression
+
+`tbl_fine_gray_single()` fits the subdistribution hazard model of one cause for one predictor at a
+time (it uses `cmprsk::crr()`).
+
+```{r fine-gray, eval = requireNamespace("cmprsk", quietly = TRUE)}
+rbind(
+  tbl_fine_gray_single(d, "time", "type", "arm"),
+  tbl_fine_gray_single(d, "time", "type", "age")
+)
+```
+
+The estimate is a **subdistribution hazard ratio**: it speaks about the cumulative incidence of the
+cause of interest. It is not the hazard ratio of a Cox model that censors the competing event, and
+the two answer different questions. Report the one that matches the question (the incidence a
+patient faces, or the rate among those still at risk), and say which.
+
+## 4. Pooling multiple imputations
+
+Fit the same model to each of `m` imputed data sets, collect the tidy results, and pool with
+Rubin's rules. Here the imputations are simulated draws of a covariate with missing values.
+
+```{r impute}
+set.seed(7)
+lung2 <- na.omit(lung[, c("time", "status", "age", "sex")])
+lung2$ph.ecog <- lung$ph.ecog[as.integer(rownames(lung2))]
+miss <- is.na(lung2$ph.ecog)
+m <- 10
+fits <- lapply(seq_len(m), function(i) {
+  x <- lung2
+  x$ph.ecog[is.na(x$ph.ecog)] <- sample(na.omit(lung2$ph.ecog), sum(miss), replace = TRUE)
+  coxph(Surv(time, status) ~ age + sex + ph.ecog, data = x)
+})
+tidy_fits <- lapply(fits, function(f) {
+  s <- summary(f)$coefficients
+  data.frame(term = rownames(s), estimate = s[, "coef"], std.error = s[, "se(coef)"])
+})
+```
+
+`pool_imputations()` pools each term. Pool on the log hazard ratio scale and use `exponentiate = TRUE`
+to report hazard ratios.
+
+```{r pool}
+pool_imputations(tidy_fits, exponentiate = TRUE)
+```
+
+With few observations the large-sample degrees of freedom are too optimistic. Give the complete-data
+degrees of freedom (for example `N - k`) as `df_complete` to get the Barnard-Rubin small-sample
+adjustment:
+
+```{r pool-br}
+n_obs <- nrow(lung2)
+pool_imputations(tidy_fits, df_complete = n_obs - 3)[, c("term", "df", "p.value", "fmi")]
+```
+
+A term that is missing from any imputation is an error, not a silent drop.
+
+### Model-level fit
+
+`glance_imputations()` pools the one-row summaries (`broom::glance()` output) in the same way: the mean over
+the imputations with its spread, and, where the glance has a `std.error.<statistic>` column (such as the
+concordance), a Rubin standard error and interval.
+
+```{r glance}
+glances <- lapply(fits, function(f) {
+  s <- summary(f)
+  data.frame(concordance = unname(s$concordance[1]),
+             std.error.concordance = unname(s$concordance[2]),
+             logLik = f$loglik[2])
+})
+glance_imputations(glances)
+```
+
+The pooled concordance is the mean of C-indices from separately completed data sets, not the C-index of
+a pooled model.

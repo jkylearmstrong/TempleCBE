@@ -39,6 +39,36 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "DALEX": {
+      "Package": "DALEX",
+      "Version": "2.5.3",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "DALEXtra": {
+      "Package": "DALEXtra",
+      "Version": "2.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "DiagrammeR": {
+      "Package": "DiagrammeR",
+      "Version": "1.0.11",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "DiagrammeRsvg": {
+      "Package": "DiagrammeRsvg",
+      "Version": "0.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "doFuture": {
+      "Package": "doFuture",
+      "Version": "1.2.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "doParallel": {
       "Package": "doParallel",
       "Version": "1.0.17",
@@ -109,6 +139,24 @@
     "htmlTable": {
       "Package": "htmlTable",
       "Version": "2.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "iBreakDown": {
+      "Package": "iBreakDown",
+      "Version": "2.1.2",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "ingredients": {
+      "Package": "ingredients",
+      "Version": "2.3.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "kernelshap": {
+      "Package": "kernelshap",
+      "Version": "0.9.1",
       "Source": "Repository",
       "Repository": "CRAN"
     },
@@ -455,6 +503,12 @@
     "stabs": {
       "Package": "stabs",
       "Version": "0.7-1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "survex": {
+      "Package": "survex",
+      "Version": "1.2.0",
       "Source": "Repository",
       "Repository": "CRAN"
     },
@@ -6053,6 +6107,12 @@
       "NeedsCompilation": "no",
       "Author": "Simon Garnier [aut, cre], Noam Ross [ctb, cph], Bob Rudis [ctb, cph], Marco Sciaini [ctb, cph], Antônio Pedro Camargo [ctb, cph], Cédric Scherer [ctb, cph]",
       "Repository": "RSPM"
+    },
+    "visNetwork": {
+      "Package": "visNetwork",
+      "Version": "2.1.4",
+      "Source": "Repository",
+      "Repository": "CRAN"
     },
     "vroom": {
       "Package": "vroom",

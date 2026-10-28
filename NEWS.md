@@ -7,6 +7,14 @@
 * **`tbl_missingness_patterns()`**: counts and percentages of each missing/observed combination across columns.
 * **Docker/renv**: `future` is 1.80.0 in `renv.lock`, matching what the image installs.
 
+## Unreleased additions (after 0.7.8)
+
+* **`tbl_fine_gray_single()`**: Fine-Gray subdistribution hazard ratio for one predictor (`cmprsk::crr()`), the regression counterpart of `tbl_cumulative_incidence()`. `cmprsk` is now in `Suggests`.
+* **`glance_imputations()`**: pools model-level fit statistics (concordance, Brier, AIC, df) over imputations; statistics with a `std.error.<stat>` column use Rubin's rules.
+* **Formula samplers**: `sample_candidate_formulas()`, `sample_weighted_formulas()` and `sample_candidate_formulas_adaptive()` take an optional `data`; a zero-variance column is kept out of the candidates, with a message, so degenerate fits (and their divide-by-zero warnings) are not drawn. No change without `data`.
+* **Docker/renv**: `survex`, `DALEX`, `DALEXtra`, `ingredients`, `iBreakDown`, `kernelshap`, `doFuture`, `DiagrammeR`, `DiagrammeRsvg` and `visNetwork` are in `renv.lock` (10 additions), and the image check loads `survex`, `DALEXtra`, `DiagrammeR` and `visNetwork`, so the explainability and graph tests no longer skip in the image.
+* **Vignette**: new article on the Schoenfeld audit, cumulative incidence, Fine-Gray regression and pooling over imputations.
+
 # TempleCBE 0.7.7
 
 ## Unreleased additions (after 0.7.7)

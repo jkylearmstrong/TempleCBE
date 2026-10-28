@@ -37,6 +37,7 @@ articles:
       - R_to_SAS
       - reticulate_export
       - pca_analysis
+      - competing_risks_and_imputation
 
 reference:
   - title: Data Quality & Missingness Analysis
@@ -496,7 +497,9 @@ reference:
       - tbl_schoenfeld_audit
       - tbl_cumulative_incidence
       - plot_cumulative_incidence
+      - glance_imputations
       - pool_imputations
+      - tbl_fine_gray_single
       - tbl_domain_correlations
       - batch_glm_single
       - compute_longitudinal_composite_index
