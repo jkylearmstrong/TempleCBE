@@ -695,6 +695,74 @@ validate_start_stop <- function(data,
   out
 }
 
+#' Clean Counting-Process Intervals
+#'
+#' Companion to [validate_start_stop()]: drops intervals with `stop <= start`, drops rows recorded
+#' after a subject's first event, and closes tiny gaps or overlaps (smaller than `tol`) between a
+#' subject's consecutive intervals by moving the later `start` to the earlier `stop`. Rows with a
+#' missing id, time or status are dropped too. Gaps and overlaps larger than `tol` are real and
+#' left alone; check them with [validate_start_stop()].
+#'
+#' @param data A data frame of counting-process intervals.
+#' @param id,start,stop,status Column names (strings). Status is 0/1, logical or a 0/1 factor.
+#' @param tol Largest gap or overlap treated as rounding error (default `1e-6`).
+#' @return `data` with the offending rows removed, sorted by `id`, `start`, `stop`. The counts are in
+#'   `attr(x, "pruned")`: `missing`, `nonpositive`, `after_event` and `gaps_closed`.
+#' @seealso [validate_start_stop()]
+#' @export
+#' @examples
+#' df <- data.frame(id = c(1, 1, 1, 2), tstart = c(0, 5.0000001, 10, 0),
+#'                  tstop = c(5, 10, 12, 0), status = c(0, 1, 0, 0))
+#' prune_start_stop(df)
+prune_start_stop <- function(data, id = "id", start = "tstart", stop = "tstop", status = "status",
+                             tol = 1e-6) {
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  if (!is.numeric(tol) || length(tol) != 1L || is.na(tol) || tol < 0) {
+    stop("`tol` must be a single non-negative number.", call. = FALSE)
+  }
+  cols <- c(id, start, stop, status)
+  if (!is.character(cols) || length(cols) != 4L) stop("Column names must be single strings.", call. = FALSE)
+  gone <- setdiff(cols, names(data))
+  if (length(gone)) stop("`data` is missing required column(s): ", paste(gone, collapse = ", "), call. = FALSE)
+
+  st <- data[[status]]
+  st <- if (is.factor(st)) as.numeric(as.character(st)) else as.numeric(st)
+  t0 <- as.numeric(data[[start]])
+  t1 <- as.numeric(data[[stop]])
+  sid <- data[[id]]
+
+  ok <- !(is.na(sid) | is.na(t0) | is.na(t1) | is.na(st))
+  n_missing <- sum(!ok)
+  data <- data[ok, , drop = FALSE]
+  st <- st[ok]; t0 <- t0[ok]; t1 <- t1[ok]; sid <- sid[ok]
+
+  pos <- t1 > t0
+  n_nonpos <- sum(!pos)
+  data <- data[pos, , drop = FALSE]
+  st <- st[pos]; t0 <- t0[pos]; t1 <- t1[pos]; sid <- sid[pos]
+
+  ord <- order(sid, t0, t1)
+  data <- data[ord, , drop = FALSE]
+  st <- st[ord]; t0 <- t0[ord]; t1 <- t1[ord]; sid <- sid[ord]
+
+  prior_event <- as.logical(stats::ave(st == 1, sid, FUN = function(v) {
+    c(FALSE, cumsum(v)[-length(v)] > 0)
+  }))
+  n_after <- sum(prior_event)
+  keep <- !prior_event
+  data <- data[keep, , drop = FALSE]
+  t0 <- t0[keep]; t1 <- t1[keep]; sid <- sid[keep]
+
+  first <- !duplicated(sid)
+  prev_stop <- c(NA_real_, t1[-length(t1)])
+  near <- !first & !is.na(prev_stop) & t0 != prev_stop & abs(t0 - prev_stop) < tol & t1 > prev_stop
+  data[[start]][near] <- prev_stop[near]
+  rownames(data) <- NULL
+  attr(data, "pruned") <- list(missing = n_missing, nonpositive = n_nonpos, after_event = n_after,
+                               gaps_closed = sum(near))
+  data
+}
+
 #' @export
 print.cbe_start_stop_validation <- function(x, ...) {
   cat("TempleCBE Start/Stop Survival Data Check\n")

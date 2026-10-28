@@ -8,7 +8,8 @@ pool_imputations(
   x,
   imputation_col = "imputation",
   conf_level = 0.95,
-  exponentiate = FALSE
+  exponentiate = FALSE,
+  df_complete = NULL
 )
 }
 \arguments{
@@ -19,6 +20,13 @@ pool_imputations(
 \item{conf_level}{Confidence level.}
 
 \item{exponentiate}{Return `estimate`, `conf.low` and `conf.high` exponentiated.}
+
+\item{df_complete}{Optional complete-data degrees of freedom (for example `N - k`). When given,
+the Barnard-Rubin (1999) small-sample adjustment is used,
+\eqn{\nu_{adj} = (1/\nu + 1/\nu_{obs})^{-1}} with
+\eqn{\nu_{obs} = \frac{df+1}{df+3} df (1 - \lambda)}, instead of the large-sample
+\eqn{\nu}. Terms are pooled over the union of terms across imputations; a term missing in
+any imputation is an error.}
 }
 \value{
 A tibble with `term`, `m`, `estimate`, `std.error` (of the pooled estimate),

@@ -19,6 +19,12 @@
 #' @param imputation_col Name of the imputation column when `x` is stacked.
 #' @param conf_level Confidence level.
 #' @param exponentiate Return `estimate`, `conf.low` and `conf.high` exponentiated.
+#' @param df_complete Optional complete-data degrees of freedom (for example `N - k`). When given,
+#'   the Barnard-Rubin (1999) small-sample adjustment is used,
+#'   \eqn{\nu_{adj} = (1/\nu + 1/\nu_{obs})^{-1}} with
+#'   \eqn{\nu_{obs} = \frac{df+1}{df+3} df (1 - \lambda)}, instead of the large-sample
+#'   \eqn{\nu}. Terms are pooled over the union of terms across imputations; a term missing in
+#'   any imputation is an error.
 #' @return A tibble with `term`, `m`, `estimate`, `std.error` (of the pooled estimate),
 #'   `within_var`, `between_var`, `total_var`, `df`, `statistic`, `p.value`, `conf.low`,
 #'   `conf.high` and `fmi` (fraction of missing information).
@@ -30,7 +36,12 @@
 #'              std.error = c(0.1, 0.08))
 #' })
 #' pool_imputations(fits)
-pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95, exponentiate = FALSE) {
+pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95, exponentiate = FALSE,
+                             df_complete = NULL) {
+  if (!is.null(df_complete) &&
+      (!is.numeric(df_complete) || length(df_complete) != 1L || is.na(df_complete) || df_complete <= 0)) {
+    stop("`df_complete` must be a single positive number.", call. = FALSE)
+  }
   if (is.data.frame(x)) {
     if (!imputation_col %in% names(x)) stop("`x` has no column `", imputation_col, "`.", call. = FALSE)
     x <- split(x, x[[imputation_col]])
@@ -44,7 +55,7 @@ pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95
       stop("Each imputation needs columns `term`, `estimate` and `std.error`.", call. = FALSE)
     }
   }
-  terms <- unique(as.character(x[[1]]$term))
+  terms <- unique(unlist(lapply(x, function(d) as.character(d$term))))
   m <- length(x)
   rows <- lapply(terms, function(tm) {
     est <- vapply(x, function(d) d$estimate[as.character(d$term) == tm][1], numeric(1))
@@ -58,6 +69,11 @@ pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95
     tot <- ubar + (1 + 1 / m) * b
     r <- (1 + 1 / m) * b / ubar
     df <- if (b == 0) Inf else (m - 1) * (1 + 1 / r)^2
+    if (!is.null(df_complete) && b > 0) {
+      lambda <- (1 + 1 / m) * b / tot
+      df_obs <- (df_complete + 1) / (df_complete + 3) * df_complete * (1 - lambda)
+      df <- 1 / (1 / df + 1 / df_obs)
+    }
     se_pool <- sqrt(tot)
     stat <- qbar / se_pool
     crit <- stats::qt(1 - (1 - conf_level) / 2, df)

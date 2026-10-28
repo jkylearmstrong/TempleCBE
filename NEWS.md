@@ -1,3 +1,12 @@
+# TempleCBE 0.7.8
+
+* **`pool_imputations()`**: a term that is absent from the first imputation is no longer dropped silently; terms are the union over imputations and a term missing in any one is an error. New `df_complete` argument gives the Barnard-Rubin (1999) small-sample degrees of freedom.
+* **`tbl_schoenfeld_audit()`**: accepts a tidymodels `workflow` or parsnip `model_fit` wrapping a `coxph` engine.
+* **`plot_cumulative_incidence()`**: step curves with shaded intervals for `tbl_cumulative_incidence()`.
+* **`prune_start_stop()`**: drops non-positive intervals and rows after an event, and closes rounding gaps smaller than `tol` (companion to `validate_start_stop()`).
+* **`tbl_missingness_patterns()`**: counts and percentages of each missing/observed combination across columns.
+* **Docker/renv**: `future` is 1.80.0 in `renv.lock`, matching what the image installs.
+
 # TempleCBE 0.7.7
 
 ## Unreleased additions (after 0.7.7)

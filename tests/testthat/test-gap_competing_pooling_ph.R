@@ -60,3 +60,70 @@ test_that("input validation errors are informative", {
   expect_error(pool_imputations(list(est, data.frame(term = "y", estimate = 1, std.error = 1))), "missing")
   expect_equal(pool_imputations(list(est, est))$df, Inf)
 })
+
+test_that("pool_imputations pools terms absent from the first imputation and applies Barnard-Rubin", {
+  fits <- list(
+    data.frame(term = "x", estimate = 1, std.error = 0.5),
+    data.frame(term = c("x", "z"), estimate = c(2, 1), std.error = 0.5),
+    data.frame(term = c("x", "z"), estimate = c(3, 2), std.error = 0.5)
+  )
+  expect_error(pool_imputations(fits), "`z`")
+
+  full <- lapply(1:3, function(i) data.frame(term = "x", estimate = i, std.error = 0.5))
+  big <- pool_imputations(full)
+  small <- pool_imputations(full, df_complete = 10)
+  tot <- big$total_var
+  lambda <- (1 + 1 / 3) * 1 / tot
+  nu_obs <- (11 / 13) * 10 * (1 - lambda)
+  expect_equal(small$df, 1 / (1 / big$df + 1 / nu_obs))
+  expect_lt(small$df, big$df)
+  expect_equal(small$estimate, big$estimate)
+  expect_error(pool_imputations(full, df_complete = -1), "df_complete")
+})
+
+test_that("tbl_schoenfeld_audit unwraps parsnip model_fit objects", {
+  skip_if_not_installed("parsnip")
+  skip_if_not_installed("censored")
+  spec <- parsnip::set_engine(parsnip::set_mode(parsnip::proportional_hazards(), "censored regression"), "survival")
+  fit <- suppressWarnings(parsnip::fit(spec, survival::Surv(time, status) ~ age + sex, data = survival::lung))
+  expect_equal(tbl_schoenfeld_audit(fit)$term, tbl_schoenfeld_audit(fit$fit)$term)
+})
+
+test_that("prune_start_stop drops bad rows and closes rounding gaps", {
+  df <- data.frame(
+    id = c(1, 1, 1, 1, 2, 2, 3),
+    tstart = c(0, 5 + 1e-8, 10, 12, 0, 3, 0),
+    tstop = c(5, 10, 12, 15, 3, 3, NA),
+    status = c(0, 0, 1, 0, 0, 0, 0)
+  )
+  out <- prune_start_stop(df)
+  expect_equal(nrow(out), 4L)
+  expect_equal(out$tstart[out$id == 1], c(0, 5, 10))
+  expect_equal(attr(out, "pruned"),
+               list(missing = 1L, nonpositive = 1L, after_event = 1L, gaps_closed = 1L))
+  expect_true(validate_start_stop(out, warn_no_censoring = FALSE)$valid)
+  expect_error(prune_start_stop(df, id = "nope"), "missing required")
+})
+
+test_that("tbl_missingness_patterns counts distinct patterns", {
+  d <- data.frame(a = c(1, NA, 3, NA, 5, 6), b = c(1, NA, 3, NA, 5, NA), c = c(NA, 2, 3, 4, 5, 6))
+  r <- tbl_missingness_patterns(d)
+  expect_equal(sum(r$n), 6L)
+  expect_equal(sum(r$percent), 100)
+  expect_equal(r$n[1], 2L)
+  expect_true(all(r$n[-1] <= r$n[1]))
+  expect_equal(sort(r$n_missing_vars[r$n == 2L]), c(0L, 2L))
+  expect_error(tbl_missingness_patterns(d, "zzz"), "not in")
+})
+
+test_that("plot_cumulative_incidence returns a ggplot for grouped and ungrouped input", {
+  set.seed(3)
+  d <- data.frame(time = rexp(200, 0.1), type = sample(0:2, 200, TRUE), arm = rep(c("A", "B"), 100))
+  g <- tbl_cumulative_incidence(d, "time", "type", group_col = "arm", times = seq(0, 15, 3))
+  expect_s3_class(plot_cumulative_incidence(g), "ggplot")
+  expect_s3_class(plot_cumulative_incidence(g, facet = TRUE), "ggplot")
+  u <- tbl_cumulative_incidence(d, "time", "type", times = seq(0, 15, 3))
+  p <- plot_cumulative_incidence(u, facet = TRUE)
+  expect_no_error(ggplot2::ggplot_build(p))
+  expect_error(plot_cumulative_incidence(data.frame(a = 1)), "tbl_cumulative_incidence")
+})
