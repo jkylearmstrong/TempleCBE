@@ -167,3 +167,28 @@ test_that("tbl_fine_gray_screen stacks univariable fits, adjusts p and skips bad
   expect_equal(r$p.adj, stats::p.adjust(r$p.value, "BH"))
   expect_error(suppressWarnings(tbl_fine_gray_screen(d, "time", "type", "k")), "No feature")
 })
+
+test_that("tbl_fine_gray_multi and _screen validate their input and handle edge cases", {
+  skip_if_not_installed("cmprsk")
+  d <- fg_data()
+  f <- ~ age + arm
+  expect_error(tbl_fine_gray_multi(1, "time", "type", f), "data frame")
+  expect_error(tbl_fine_gray_multi(d, "nope", "type", f), "not a column")
+  expect_error(tbl_fine_gray_multi(d, "arm", "type", f), "numeric")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, conf_level = 1), "conf_level")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, failcode = 0), "different")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, failcode = 9), "failcode")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", f, cencode = 9), "cencode")
+  expect_error(tbl_fine_gray_multi(d, "time", "type", ~ 1), "no predictor")
+  d2 <- d
+  d2$time[1] <- -1
+  expect_error(tbl_fine_gray_multi(d2, "time", "type", f), "negative")
+  d3 <- d
+  d3$type <- factor(d3$type)
+  d3$age[1:5] <- NA
+  r <- tbl_fine_gray_multi(d3, "time", "type", f, failcode = "1", cencode = "0", exponentiate = FALSE)
+  expect_equal(r$n[1], nrow(d) - 5L)
+  expect_error(tbl_fine_gray_screen(d, "time", "type", character()), "features")
+  expect_error(tbl_fine_gray_screen(d, "time", "type", "age", p_adjust = "zzz"))
+  expect_equal(nrow(tbl_fine_gray_screen(d, "time", "type", c("age", "age"), p_adjust = "holm")), 1L)
+})
