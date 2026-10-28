@@ -4,7 +4,12 @@
 \alias{glance_imputations}
 \title{Pool Model-Level Fit Statistics over Imputations}
 \usage{
-glance_imputations(x, imputation_col = "imputation", conf_level = 0.95)
+glance_imputations(
+  x,
+  imputation_col = "imputation",
+  conf_level = 0.95,
+  df_complete = NULL
+)
 }
 \arguments{
 \item{x}{A list of one-row data frames (or tibbles), or a stacked data frame with a column
@@ -13,6 +18,11 @@ naming the imputation.}
 \item{imputation_col}{Name of the imputation column when `x` is stacked.}
 
 \item{conf_level}{Confidence level for statistics that have a standard error.}
+
+\item{df_complete}{Complete-data degrees of freedom (for example `N - k`) for the Barnard-Rubin
+(1999) small-sample adjustment of the interval, passed to [pool_imputations()]. `NULL`
+(default) uses the large-sample Rubin degrees of freedom. Only affects statistics that have a
+`std.error.<stat>` column.}
 }
 \value{
 A tibble with `statistic`, `m`, `estimate`, `between_sd`, `min`, `max`, and, where a

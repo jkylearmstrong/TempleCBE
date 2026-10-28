@@ -18,6 +18,10 @@
 #'   naming the imputation.
 #' @param imputation_col Name of the imputation column when `x` is stacked.
 #' @param conf_level Confidence level for statistics that have a standard error.
+#' @param df_complete Complete-data degrees of freedom (for example `N - k`) for the Barnard-Rubin
+#'   (1999) small-sample adjustment of the interval, passed to [pool_imputations()]. `NULL`
+#'   (default) uses the large-sample Rubin degrees of freedom. Only affects statistics that have a
+#'   `std.error.<stat>` column.
 #' @return A tibble with `statistic`, `m`, `estimate`, `between_sd`, `min`, `max`, and, where a
 #'   standard error was available, `std.error`, `conf.low`, `conf.high` and `fmi` (otherwise `NA`).
 #' @seealso [pool_imputations()]
@@ -28,7 +32,7 @@
 #'                                         std.error.concordance = 0.03, AIC = 400 + rnorm(1, sd = 2),
 #'                                         df = 3))
 #' glance_imputations(g)
-glance_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95) {
+glance_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95, df_complete = NULL) {
   if (is.data.frame(x)) {
     if (!imputation_col %in% names(x)) stop("`x` has no column `", imputation_col, "`.", call. = FALSE)
     x <- split(x, x[[imputation_col]])
@@ -54,7 +58,7 @@ glance_imputations <- function(x, imputation_col = "imputation", conf_level = 0.
     se_col <- paste0("std.error.", s)
     if (se_col %in% num) {
       fits <- lapply(x, function(d) data.frame(term = s, estimate = d[[s]], std.error = d[[se_col]]))
-      p <- pool_imputations(fits, conf_level = conf_level)
+      p <- pool_imputations(fits, conf_level = conf_level, df_complete = df_complete)
       out$estimate <- p$estimate
       out$std.error <- p$std.error
       out$conf.low <- p$conf.low

@@ -12,6 +12,10 @@
 * **`tbl_fine_gray_single()`**: Fine-Gray subdistribution hazard ratio for one predictor (`cmprsk::crr()`), the regression counterpart of `tbl_cumulative_incidence()`. `cmprsk` is now in `Suggests`.
 * **`glance_imputations()`**: pools model-level fit statistics (concordance, Brier, AIC, df) over imputations; statistics with a `std.error.<stat>` column use Rubin's rules.
 * **Formula samplers**: `sample_candidate_formulas()`, `sample_weighted_formulas()` and `sample_candidate_formulas_adaptive()` take an optional `data`; a zero-variance column is kept out of the candidates, with a message, so degenerate fits (and their divide-by-zero warnings) are not drawn. No change without `data`.
+* **`glance_imputations()`**: new `df_complete` argument, forwarded to `pool_imputations()` for the Barnard-Rubin small-sample interval of statistics with a `std.error.<stat>` column.
+* **Formula samplers**: the zero-variance filter now also catches expressions of columns (`log(x)`, `I(x^2)`, `rcs(x, 3)`) and interactions (`a:b`, `a*b`) with a constant parent, so they are not drawn even with `hierarchy = FALSE`. Expressions that cannot be evaluated in `data` are left alone.
+* **`tbl_fine_gray_multi()`**, **`tbl_fine_gray_screen()`**: multivariable Fine-Gray model from a one-sided formula (the counterpart of `cox_multi()`), and a univariable screen with a BH-adjusted p-value.
+* **`tbl_fine_gray_single()`**: terms are named as `broom::tidy()` names them, so a logical predictor gives `<feature>TRUE` (was `<feature>`).
 * **Docker/renv**: `survex`, `DALEX`, `DALEXtra`, `ingredients`, `iBreakDown`, `kernelshap`, `doFuture`, `DiagrammeR`, `DiagrammeRsvg` and `visNetwork` are in `renv.lock` (10 additions), and the image check loads `survex`, `DALEXtra`, `DiagrammeR` and `visNetwork`, so the explainability and graph tests no longer skip in the image.
 * **Vignette**: new article on the Schoenfeld audit, cumulative incidence, Fine-Gray regression and pooling over imputations.
 

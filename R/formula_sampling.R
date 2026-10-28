@@ -214,16 +214,60 @@ sample_candidate_formulas <- function(predictors,
   out
 }
 
-# Terms that are plain columns of `data` without two distinct non-missing values (var(x) == 0).
+# Terms of `terms` that carry no variation in `data`. A term is degenerate when
+#  * it is a column (or an expression of columns, e.g. log(x), I(x^2), rcs(x, 3)) with fewer than
+#    two distinct non-missing values; or
+#  * it is an interaction (a:b, a*b) and any of its parents is degenerate.
+# Expressions that cannot be evaluated in `data` (unknown function, missing package) are left alone.
 .zero_variance_terms <- function(data, terms) {
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
-  cols <- intersect(terms, names(data))
-  const <- vapply(cols, function(tm) {
-    x <- data[[tm]]
-    x <- x[!is.na(x)]
-    if (is.numeric(x)) length(x) < 2L || !isTRUE(stats::var(x) > 0) else length(unique(x)) < 2L
-  }, logical(1))
-  cols[const]
+  cache <- new.env(parent = emptyenv())
+  degenerate <- function(tm) {
+    hit <- cache[[tm]]
+    if (!is.null(hit)) return(hit)
+    par <- .term_parents(tm)
+    res <- if (length(par) > 1L) any(vapply(par, degenerate, logical(1))) else .constant_expr(data, tm)
+    assign(tm, res, envir = cache)
+    res
+  }
+  terms <- unique(terms)
+  terms[vapply(terms, degenerate, logical(1))]
+}
+
+# Split a term at top-level `:` and `*` (not inside brackets), so `a:b` has parents a and b but
+# `I(x * 2)` and `rcs(x, 3)` are single terms.
+.term_parents <- function(term) {
+  ch <- strsplit(term, "", fixed = TRUE)[[1L]]
+  parts <- character()
+  cur <- character()
+  depth <- 0L
+  for (c1 in ch) {
+    if (c1 %in% c("(", "[")) depth <- depth + 1L
+    if (c1 %in% c(")", "]")) depth <- depth - 1L
+    if (depth == 0L && c1 %in% c(":", "*")) {
+      parts <- c(parts, paste(cur, collapse = ""))
+      cur <- character()
+    } else {
+      cur <- c(cur, c1)
+    }
+  }
+  trimws(c(parts, paste(cur, collapse = "")))
+}
+
+# TRUE when the expression evaluates, from the columns of `data`, to a constant; FALSE when it
+# varies or cannot be evaluated.
+.constant_expr <- function(data, expr) {
+  e <- tryCatch(parse(text = expr, keep.source = FALSE), error = function(err) NULL)
+  if (is.null(e) || length(e) != 1L) return(FALSE)
+  vars <- all.vars(e[[1L]])
+  if (length(vars) == 0L || !all(vars %in% names(data))) return(FALSE)
+  x <- tryCatch(eval(e[[1L]], data, globalenv()), error = function(err) NULL, warning = function(w) suppressWarnings(eval(e[[1L]], data, globalenv())))
+  if (is.null(x)) return(FALSE)
+  one <- function(v) {
+    v <- v[!is.na(v)]
+    if (is.numeric(v)) length(v) < 2L || !isTRUE(stats::var(v) > 0) else length(unique(v)) < 2L
+  }
+  if (is.matrix(x)) all(apply(x, 2L, one)) else one(x)
 }
 
 #' Weight Features by the Candidate Models That Use Them

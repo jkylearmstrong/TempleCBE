@@ -55,7 +55,8 @@ incidence of the cause of interest, not on the rate among those still event-free
 comparable to a cause-specific hazard ratio from [cox_single()] with the competing events
 censored. Subjects with a competing event stay in the risk set, which is what `crr()` does.
 Rows with a missing time, event code or predictor are dropped. A factor or character predictor
-gets one row per non-reference level (the first level is the reference).
+gets one row per non-reference level (the first level is the reference). Terms are named as
+`broom::tidy()` names them: a logical predictor gives `<feature>TRUE`, a factor `<feature><level>`.
 }
 
 \examples{

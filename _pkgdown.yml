@@ -500,6 +500,8 @@ reference:
       - glance_imputations
       - pool_imputations
       - tbl_fine_gray_single
+      - tbl_fine_gray_multi
+      - tbl_fine_gray_screen
       - tbl_domain_correlations
       - batch_glm_single
       - compute_longitudinal_composite_index

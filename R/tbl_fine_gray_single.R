@@ -11,7 +11,8 @@
 #' comparable to a cause-specific hazard ratio from [cox_single()] with the competing events
 #' censored. Subjects with a competing event stay in the risk set, which is what `crr()` does.
 #' Rows with a missing time, event code or predictor are dropped. A factor or character predictor
-#' gets one row per non-reference level (the first level is the reference).
+#' gets one row per non-reference level (the first level is the reference). Terms are named as
+#' `broom::tidy()` names them: a logical predictor gives `<feature>TRUE`, a factor `<feature><level>`.
 #'
 #' @param data A data frame, one row per subject.
 #' @param time_col Follow-up time.
@@ -79,7 +80,8 @@ tbl_fine_gray_single <- function(data, time_col, event_col, feature, failcode = 
   z <- beta / se
   crit <- stats::qnorm(1 - (1 - conf_level) / 2)
   tf <- if (isTRUE(exponentiate)) exp else identity
-  terms <- if (is.factor(d$x)) paste0(feature, levels(d$x)[-1L]) else feature
+  # same labels as broom::tidy(): the feature name plus the level (`armB`, `chemoTRUE`)
+  terms <- paste0(feature, sub("^x", "", colnames(mm)))
   tibble::tibble(
     feature = feature, term = terms, estimate = tf(beta), std.error = se, statistic = z,
     p.value = 2 * stats::pnorm(-abs(z)), conf.low = tf(beta - crit * se),
