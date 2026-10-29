@@ -1,0 +1,92 @@
+# Map Over Elements With Fingerprinted Checkpoints
+
+A purrr/furrr-style mapping function that caches individual task results
+to disk under cryptographic fingerprints. Tasks that have already been
+evaluated into \`checkpoint_dir\` with a matching fingerprint are loaded
+from disk and skipped. When \`shard = c(i, n)\` is supplied, only shard
+\`i\` of \`n\` tasks is evaluated; other tasks are returned from disk if
+available or as \`NULL\`.
+
+## Usage
+
+``` r
+checkpoint_map(
+  .x,
+  .f,
+  ...,
+  checkpoint_dir = NULL,
+  key = NULL,
+  fingerprint = NULL,
+  shard = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  progress = FALSE
+)
+```
+
+## Arguments
+
+- .x:
+
+  A list, vector, or data frame of inputs to iterate over.
+
+- .f:
+
+  A function, specified or formula, to apply to each element of \`.x\`.
+
+- ...:
+
+  Additional arguments passed to \`.f\`.
+
+- checkpoint_dir:
+
+  Optional directory path where per-task \`.rds\` checkpoint files are
+  stored. If \`NULL\`, executes normally without disk caching.
+
+- key:
+
+  Optional vector or function producing safe, unique character keys for
+  each element of \`.x\`. Defaults to names of \`.x\`, or \`item_0001\`,
+  \`item_0002\`, etc.
+
+- fingerprint:
+
+  Optional character vector of pre-computed fingerprints per item, or a
+  function \`function(x, ...)\` returning a fingerprint string. When
+  \`NULL\`, fingerprints are derived from \`.x\[\[i\]\]\`, \`...\`, and
+  package version.
+
+- shard:
+
+  Optional integer vector \`c(i, n)\` specifying that this execution
+  evaluates shard \`i\` of \`n\` items.
+
+- checkpoint_mismatch:
+
+  Action when an existing checkpoint file has a mismatched fingerprint:
+  \`"recompute"\` (default), \`"overwrite"\`, or \`"error"\`.
+
+- progress:
+
+  Logical (default \`FALSE\`). Display progress indication.
+
+## Value
+
+A list of evaluated (or loaded) results with names preserved from
+\`.x\`.
+
+## See also
+
+\[collect_checkpoints()\], \[clean_checkpoints()\],
+\[tune_grid_checkpointed()\]
+
+## Examples
+
+``` r
+# \donttest{
+tmp <- file.path(tempdir(), "ckpt_map_demo")
+res <- checkpoint_map(1:3, function(x) x^2, checkpoint_dir = tmp)
+# Second run loads from disk instantaneously
+res2 <- checkpoint_map(1:3, function(x) x^2, checkpoint_dir = tmp)
+unlink(tmp, recursive = TRUE)
+# }
+```

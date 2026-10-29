@@ -1,0 +1,1081 @@
+# Package index
+
+## Data Quality & Missingness Analysis
+
+Functions for missing data auditing, summary tables, and visualizations.
+
+- [`count_na()`](https://jkylearmstrong.github.io/TempleCBE/reference/count_na.md)
+  : Count Total Missing (NA) Values
+- [`features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/features_percent_miss.md)
+  : Calculate Percentage of Missing Data Per Feature
+- [`plot(`*`<features_percent_miss>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md)
+  [`plot_features_percent_miss()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_features_percent_miss.md)
+  : Plot method for features_percent_miss objects
+- [`missmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/missmap.md)
+  : Missingness Map
+- [`add_missing()`](https://jkylearmstrong.github.io/TempleCBE/reference/add_missing.md)
+  : Add Missing Values Completely at Random
+- [`summary_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/summary_table.md)
+  : Summary Table Function
+- [`get_dataset_info()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
+  [`describe_columns()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_dataset_info.md)
+  : Summarize a Data Frame or Joint Model's Columns and Components
+- [`compare_df()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_df.md)
+  : Compare Two Data Frames (Modelled on SAS PROC COMPARE)
+- [`autoplot(`*`<cbe_compare_df>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_compare_df.md)
+  : Autoplot Method for CBE Data Frame Comparison
+- [`reconcile_column_dictionary()`](https://jkylearmstrong.github.io/TempleCBE/reference/reconcile_column_dictionary.md)
+  : Reconcile a Data Frame's Column Names With a Column Dictionary
+
+## Clinical Databases & Multi-Table Management
+
+Functions for multi-table clinical databases, metadata export/import,
+variable role assignment, and relational linkage analysis.
+
+- [`dataset_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`` `dataset_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`database_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`` `database_name<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`database_label()`](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`` `database_label<-`() ``](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`set_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  [`get_dataset_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/dataset_labels.md)
+  : Get or Set Dataset and Database Labels
+- [`write_database_to_excel()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  [`write_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  [`write_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_database_to_excel.md)
+  : Write an R Database or Data Frames to an Excel Workbook
+- [`read_database_from_excel()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_database_from_excel.md)
+  [`read_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_database_from_excel.md)
+  : Read an R Database from an Excel Workbook
+- [`write_xlsx_file()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_xlsx_file.md)
+  : Write Data Frame to Excel (.xlsx) File
+- [`write_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_metadata_io.md)
+  [`read_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_metadata_io.md)
+  : Export or Import Dataset Metadata
+- [`apply_database_metadata()`](https://jkylearmstrong.github.io/TempleCBE/reference/apply_database_metadata.md)
+  : Apply Metadata and Variable Roles to an R Database
+- [`variable_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`set_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`get_roles()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`get_predictors()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`get_outcomes()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`get_id_cols()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  [`get_time_cols()`](https://jkylearmstrong.github.io/TempleCBE/reference/variable_roles.md)
+  : Define and Manage Clinical Variable Roles
+- [`database_relationships()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_relationships.md)
+  [`as_tbl_graph(`*`<cbe_database_relationships>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/database_relationships.md)
+  [`find_shared_keys()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_relationships.md)
+  [`check_key_integrity()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_relationships.md)
+  : Analyze Relationships and Linkages Across Datasets in an R Database
+- [`autoplot(`*`<cbe_database_relationships>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_database_relationships.md)
+  : Autoplot Method for Database Relationships
+- [`cbe_database_venn()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_venn.md)
+  [`database_venn()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_database_venn.md)
+  : Multi-Dataset Key Overlap Venn Diagram
+- [`autoplot(`*`<cbe_key_integrity>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cbe_key_integrity.md)
+  : Autoplot Method for Key Integrity
+- [`as_database()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_database.md)
+  : Convert a Graph Object Back Into an R Database
+- [`database_setops`](https://jkylearmstrong.github.io/TempleCBE/reference/database_setops.md)
+  : Set Operations on R Databases
+- [`database_to_igraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/database_to_igraph.md)
+  : Build an igraph From an R Database's Nodes/Edges Tables
+
+## Normalization & Outlier Detection
+
+Functions for scaling numeric features and flagging statistical
+outliers.
+
+- [`min_max_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/min_max_norm.md)
+  : Min-Max Data Normalization
+- [`z_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/z_norm.md)
+  : Z-Score Standard Normalization
+- [`range_norm()`](https://jkylearmstrong.github.io/TempleCBE/reference/range_norm.md)
+  : Range Normalization
+- [`detect_outliers()`](https://jkylearmstrong.github.io/TempleCBE/reference/detect_outliers.md)
+  : Detect Outliers Across a Data Frame's Numeric Columns
+- [`calculate_fences()`](https://jkylearmstrong.github.io/TempleCBE/reference/calculate_fences.md)
+  : Calculate Inner and Outer IQR Fences
+- [`flag_outliers()`](https://jkylearmstrong.github.io/TempleCBE/reference/flag_outliers.md)
+  : Flag and Classify Outliers
+
+## Principal Component Analysis & Dimension Reduction
+
+Unsupervised dimensionality reduction matching SAS PROC PRINCOMP output:
+variance decomposition, eigenvalue tables, Kaiser-Guttman scree plots,
+biplots with concentration ellipses, and variable correlation circles.
+
+- [`run_pca()`](https://jkylearmstrong.github.io/TempleCBE/reference/run_pca.md)
+  : Process and Plot Principal Component Analysis (PCA)
+- [`pca_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_plot.md)
+  : Plot a PCA Fit
+- [`pca_scree_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_scree_plot.md)
+  : PCA Scree Plot
+- [`pca_variables_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_variables_plot.md)
+  : PCA Variable Correlation Circle
+- [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
+  : PCA Loadings Biplot
+- [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
+  : PCA Biplot
+- [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md)
+  : Percent Variance Explained by Each Principal Component
+- [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)
+  : PCA Feature-Loading Heatmap
+- [`rotation_matrix()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  [`pca_loadings()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  : PCA Rotation Matrix (Loadings)
+- [`pca_eqns()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_eqns.md)
+  : PCA Equations
+- [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md)
+  : Difference in PCA Loadings Between Two Fits
+- [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md)
+  : Heatmap of PCA Loading Differences Between Two Fits
+- [`pca_loading()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_accessors.md)
+  [`pca_variance_pct()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_accessors.md)
+  [`pca_top_features()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_accessors.md)
+  : Scalar Accessors for PCA Results (for Inline Prose)
+- [`pca_equation_latex()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_equation_latex.md)
+  : PCA Component as a LaTeX Linear Combination
+- [`pca_component_cutoff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_component_cutoff.md)
+  : Number of Components Needed to Reach a Cumulative Variance Threshold
+
+## Penalized Cox Models for Survival Data
+
+Elastic-net Cox regression for right-censored and start/stop outcomes,
+cross-validation and nested cross-validation with yardstick survival
+metrics, and helpers for scoring start/stop models correctly.
+
+- [`coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet.md)
+  : Penalized Cox Regression for Right-Censored or Start/Stop Survival
+  Data
+- [`coxnet_train()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet_train.md)
+  [`predict_coxnet_linear_pred()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet_train.md)
+  [`predict_coxnet_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet_train.md)
+  [`predict_coxnet_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/coxnet_train.md)
+  : The \`coxnet\` Engine for \`parsnip::proportional_hazards()\`
+- [`predict(`*`<coxnet_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/predict.coxnet_model.md)
+  : Predict From a \`coxnet\` Model
+- [`tidy(`*`<coxnet_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy.coxnet_model.md)
+  : Tidy the Coefficients of a \`coxnet\` Model
+- [`cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet.md)
+  : Cross-Validate a Penalized Cox Model With yardstick Survival Metrics
+- [`predict(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`tidy(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`collect_metrics(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  [`autoplot(`*`<cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_coxnet-methods.md)
+  : Use a \`cv_coxnet\` Result
+- [`nested_cv_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  [`collect_metrics(`*`<nested_cv_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_coxnet.md)
+  : Nested Cross-Validation of a Penalized Cox Model
+- [`surv_subject_truth()`](https://jkylearmstrong.github.io/TempleCBE/reference/surv_subject_truth.md)
+  : Collapse Survival Outcomes to One Row per Subject
+- [`validate_start_stop()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_start_stop.md)
+  : Pre-Flight Validation for Counting-Process (Start/Stop) Survival
+  Data
+- [`prune_start_stop()`](https://jkylearmstrong.github.io/TempleCBE/reference/prune_start_stop.md)
+  : Clean Counting-Process Intervals
+- [`censoring_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
+  [`predict(`*`<censoring_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/censoring_km.md)
+  : Kaplan-Meier Estimate of the Censoring Distribution
+- [`graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/graf_weights.md)
+  : Inverse Probability of Censoring Weights (Graf et al.)
+- [`add_graf_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/add_graf_weights.md)
+  : Add Censoring Weights to Survival Predictions for yardstick
+- [`glmnet_IBS()`](https://jkylearmstrong.github.io/TempleCBE/reference/glmnet_IBS.md)
+  : Integrated Brier Score of a Penalized Cox Model on Start/Stop
+  Survival Data
+- [`tune_over_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_over_alpha.md)
+  : Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
+- [`tune_alpha_by_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_alpha_by_split.md)
+  : Tune Over \`alpha\` for Every Split of a Resample
+- [`checkpoint_map()`](https://jkylearmstrong.github.io/TempleCBE/reference/checkpoint_map.md)
+  : Map Over Elements With Fingerprinted Checkpoints
+- [`tune_grid_checkpointed()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_grid_checkpointed.md)
+  : Checkpointed Tuning Over Resamples (\`tune_grid_checkpointed\`)
+- [`get_templecbe_cox_ties()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_templecbe_cox_ties.md)
+  [`with_quiet_cox_ties()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_templecbe_cox_ties.md)
+  [`apply_workflow_cox_ties()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_templecbe_cox_ties.md)
+  : Cox Tie-Handling Configuration and Quiet Scopes
+- [`fit_resamples_checkpointed()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_resamples_checkpointed.md)
+  : Checkpointed Model Evaluation Across Resamples
+  (\`fit_resamples_checkpointed\`)
+- [`workflow_map_checkpointed()`](https://jkylearmstrong.github.io/TempleCBE/reference/workflow_map_checkpointed.md)
+  : Checkpointed Workflow Sets Mapping (\`workflow_map_checkpointed\`)
+- [`tune_race_survival_checkpointed()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_race_survival_checkpointed.md)
+  : Checkpointed Survival Racing Optimization
+  (\`tune_race_survival_checkpointed\`)
+- [`collect_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/collect_checkpoints.md)
+  : Collect and Merge Sharded Checkpoints From \`checkpoint_dir\`
+- [`clean_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/clean_checkpoints.md)
+  : Clean Up Mismatched or Superseded Checkpoint Files (E5)
+- [`invalidate_downstream_checkpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/invalidate_downstream_checkpoints.md)
+  : Delete the Checkpoints Downstream of a Changed Node
+- [`estimate_runtime()`](https://jkylearmstrong.github.io/TempleCBE/reference/estimate_runtime.md)
+  : Estimate Runtime Before a Long Tuning or Scoring Run
+- [`nested_survival_run()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_survival_run.md)
+  : Run an End-to-End Nested Cross-Validation Survival Pipeline (E1)
+- [`summary(`*`<cbe_nested_survival_run>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/summary.cbe_nested_survival_run.md)
+  : Summarize a \`cbe_nested_survival_run\` Object
+- [`plot(`*`<cbe_nested_survival_run>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.cbe_nested_survival_run.md)
+  [`autoplot(`*`<cbe_nested_survival_run>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/plot.cbe_nested_survival_run.md)
+  : Plot a \`cbe_nested_survival_run\` Object
+- [`tidy(`*`<cbe_nested_survival_run>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy.cbe_nested_survival_run.md)
+  : Tidy a \`cbe_nested_survival_run\` Object
+- [`nested_survival_report_template()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_survival_report_template.md)
+  : Packaged Nested Survival Report Quarto Child Template
+- [`as_tuning_results()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_tuning_results.md)
+  : Coerce Historical or Tidymodels Tuning Outputs to Standardized
+  Schema (G5)
+- [`compare_censoring_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_censoring_weights.md)
+  : Compare Model Performance Under Unweighted and IPCW Censoring
+  Weights
+- [`score_outer()`](https://jkylearmstrong.github.io/TempleCBE/reference/score_outer.md)
+  : Score Candidate Models on Outer Resampling Split(s)
+- [`select_candidate_models()`](https://jkylearmstrong.github.io/TempleCBE/reference/select_candidate_models.md)
+  : Select Candidate Models From Tuning Results
+- [`sample_candidate_formulas()`](https://jkylearmstrong.github.io/TempleCBE/reference/sample_candidate_formulas.md)
+  : Sample Candidate Model Formulas
+- [`sample_candidate_formulas_adaptive()`](https://jkylearmstrong.github.io/TempleCBE/reference/sample_candidate_formulas_adaptive.md)
+  : Sample Candidate Formulas Conditioned on Earlier Tuning Results
+- [`calculate_feature_weights()`](https://jkylearmstrong.github.io/TempleCBE/reference/calculate_feature_weights.md)
+  : Weight Features by the Candidate Models That Use Them
+- [`tidy_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
+  [`unnest_outer_coefficients()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_outer_coefficients.md)
+  : Tidy Outer Model Coefficients into Long Format
+- [`summarize_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_outer_importance.md)
+  : Summarize Predictor Importance and Selection Stability Across Outer
+  Folds
+- [`plot_outer_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_outer_importance.md)
+  : Plot Outer-Fold Coefficient Importance and Selection Frequency
+- [`fit_ibs_mixed_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_ibs_mixed_model.md)
+  : Fit a Mixed-Effects Model for Integrated Brier Score Against Alpha
+- [`fit_lmer_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/fit_lmer_safely.md)
+  : Fit a Linear Mixed-Effects Model With Safe Fallback
+- [`boot_lmer()`](https://jkylearmstrong.github.io/TempleCBE/reference/boot_lmer.md)
+  : Cluster Bootstrap of a Linear Mixed-Effects Model
+- [`tune_breakpoint_lmm()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_breakpoint_lmm.md)
+  : Sweep Candidate Knots of a Piecewise-Linear Mixed Model
+- [`impute_piecewise_lmm()`](https://jkylearmstrong.github.io/TempleCBE/reference/impute_piecewise_lmm.md)
+  : Impute Missing Values with a Piecewise-Linear Mixed Model
+- [`inspect_rank_deficiency()`](https://jkylearmstrong.github.io/TempleCBE/reference/inspect_rank_deficiency.md)
+  : Audit Rank Deficiency of a Model's Fixed-Effects Matrix
+- [`boot_p_value()`](https://jkylearmstrong.github.io/TempleCBE/reference/boot_p_value.md)
+  : Two-Tailed Bootstrap P-Value
+- [`plot_tune_alpha_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_alpha_ibs.md)
+  : Plot Integrated Brier Score Against Alpha With Dynamic Model Fit
+- [`plot_tune_lambda_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_lambda_ibs.md)
+  : Plot Penalty Lambda Versus Integrated Brier Score
+- [`plot_tune_coef_boxplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_coef_boxplot.md)
+  : Plot Coefficient Estimates Distribution Across Tuning Resamples
+- [`plot_tune_ibs_by_resample()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_tune_ibs_by_resample.md)
+  : Plot Integrated Brier Score Distribution Across Resampling Splits
+- [`tbl_tune_alpha()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_alpha.md)
+  : Summary Table of Tuning Performance Across Alpha Values
+- [`tbl_tune_coef()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tune_coef.md)
+  : Summary Table of Coefficient Stability Across Tuning Resamples
+- [`tbl_censoring_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_censoring_comparison.md)
+  : Render Censoring Weight Sensitivity and Rank Agreement Table
+- [`compare_runs()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_runs.md)
+  : Compare and Diff Outer-Fold Runs Across Platforms With Tolerance
+- [`compare_tuning_runs()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_tuning_runs.md)
+  : Compare and Summarize Two Tuning Runs
+- [`tune_diagnostics`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_diagnostics.md)
+  : Tuning Diagnostics and Visualization Family
+- [`workflow_tuning`](https://jkylearmstrong.github.io/TempleCBE/reference/workflow_tuning.md)
+  : Tidymodels Workflow Tuning and Feature Importance Summaries
+- [`racing_workflows`](https://jkylearmstrong.github.io/TempleCBE/reference/racing_workflows.md)
+  : Racing Methods and Controls for Survival Workflows
+- [`control_race_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/control_race_survival.md)
+  : Control Parameters for Racing Survival Workflows
+- [`tune_race_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_race_survival.md)
+  : Adaptive Racing Tuning for Survival Workflows and Workflow Sets
+- [`step_lencode_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
+  [`tunable(`*`<step_lencode_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
+  [`required_pkgs(`*`<step_lencode_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_coxnet.md)
+  : Supervised Linear Encoding of Factors via Penalized Cox Models
+- [`loco_mp_coxnet()`](https://jkylearmstrong.github.io/TempleCBE/reference/loco_mp_coxnet.md)
+  : Leave-One-Covariate-Out Inference with MiniPatch Ensembles (LOCO-MP)
+  for Cox Models
+- [`autoplot(`*`<loco_mp_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.loco_mp_coxnet.md)
+  : Autoplot Method for LOCO-MP Feature Importance
+- [`tidy(`*`<loco_mp_coxnet>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy.loco_mp_coxnet.md)
+  : Tidy a LOCO-MP Cox Model Object
+
+## Joint Survival-Status-Time Models
+
+Coordinated multi-paradigm modeling blending penalized Cox survival,
+binary event classification, follow-up duration regression, and
+calibrated stacked ensembles.
+
+- [`joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/joint_model.md)
+  : Joint Survival-Status-Time Model
+- [`predict(`*`<joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/predict.joint_model.md)
+  : Predict Method for Joint Models
+- [`tidy(`*`<joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy.joint_model.md)
+  : Tidy Method for Joint Models
+- [`print(`*`<joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.joint_model.md)
+  : Print Method for Joint Models
+- [`cv_joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/cv_joint_model.md)
+  : Cross-Validation for Joint Models
+- [`nested_cv_joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/nested_cv_joint_model.md)
+  : Nested Cross-Validation for Joint Models
+- [`autoplot(`*`<cv_joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/autoplot.cv_joint_model.md)
+  : Autoplot Method for Cross-Validated Joint Models
+- [`extract_surv_components()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_surv_components.md)
+  : Extract Survival Outcome Components and Predictors
+- [`step_lencode_joint_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_joint_model.md)
+  [`required_pkgs(`*`<step_lencode_joint_model>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_lencode_joint_model.md)
+  : Supervised Linear Encoding of Factors via the Cox Component of a
+  Joint Model
+
+## Model Explainability & Variable Attributions
+
+Unified explainability across survival and joint models using survex and
+DALEX, custom IPCW Integrated Brier loss functions, and SurvSHAP(t)
+attributions.
+
+- [`explain_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_survival.md)
+  : Explain Survival Models via survex and DALEX
+- [`adapter_tidymodels_survex()`](https://jkylearmstrong.github.io/TempleCBE/reference/adapter_tidymodels_survex.md)
+  : Survival Probabilities From a Tidymodels Workflow as a Matrix (for
+  survex)
+- [`explain_joint()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_joint.md)
+  [`explain_model()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_joint.md)
+  [`explain_status()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_joint.md)
+  [`explain_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_joint.md)
+  [`explain_stack()`](https://jkylearmstrong.github.io/TempleCBE/reference/explain_joint.md)
+  : Explain Joint Model Components via DALEX and survex
+- [`predict_parts_shap()`](https://jkylearmstrong.github.io/TempleCBE/reference/predict_parts_shap.md)
+  : SHAP Variable Attributions across Survival and Joint Models
+- [`survex_loss_ibs()`](https://jkylearmstrong.github.io/TempleCBE/reference/survex_loss_ibs.md)
+  [`survex_loss_brier()`](https://jkylearmstrong.github.io/TempleCBE/reference/survex_loss_ibs.md)
+  : TempleCBE Custom Loss Functions for survex
+
+## Tidymodels Recipe Steps & Modeling Utilities
+
+Recipe steps and workflow set helpers.
+
+- [`step_famd()`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  [`tidy(`*`<step_famd>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/step_famd.md)
+  : Factor Analysis of Mixed Data (FAMD) Recipe Step
+- [`workflow_set_params()`](https://jkylearmstrong.github.io/TempleCBE/reference/workflow_set_params.md)
+  : Tuning Parameters of a Ranked Workflow in a Workflow Set
+- [`workflow_set_rank_fit()`](https://jkylearmstrong.github.io/TempleCBE/reference/workflow_set_rank_fit.md)
+  : Fit the Configuration Ranked \`.rank\` in a Workflow Set
+- [`tune_best_glmnet_workflow()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_best_glmnet_workflow.md)
+  : Select and Finalize Best Penalized Cox Workflow
+- [`summarize_dalex_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_dalex_importance.md)
+  : Extract and Summarize Permutation Variable Importance
+- [`plot_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_permutation_importance.md)
+  : Plot Permutation Variable Importance
+- [`tbl_permutation_importance()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_permutation_importance.md)
+  : Summary Table of Permutation Variable Importance
+
+## Missing Data Imputation
+
+Per-column mtry sweeps for missForest and missRanger imputation.
+
+- [`missforest_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_sweep_mtry.md)
+  : Impute a Data Frame by Sweeping \`missForest\` Over \`mtry\`
+- [`missforest_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_oob_by_mtry.md)
+  : Run \`missForest\` at a Single \`mtry\` and Report Variablewise OOB
+  Error
+- [`missforest_impute_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missforest_impute_by_mtry.md)
+  : Assemble Imputed Columns From Their Best-\`mtry\` Runs
+- [`missranger_sweep_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_sweep_mtry.md)
+  : Impute a Data Frame by Sweeping \`missRanger\` Over \`mtry\`
+- [`missranger_oob_by_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_oob_by_mtry.md)
+  : Run \`missRanger\` at a Single \`mtry\` and Report Per-Column OOB
+  Error
+- [`missranger_max_mtry()`](https://jkylearmstrong.github.io/TempleCBE/reference/missranger_max_mtry.md)
+  : Largest \`mtry\` \`missRanger\` Will Accept For a Data Set
+- [`tune_impute_numeric()`](https://jkylearmstrong.github.io/TempleCBE/reference/tune_impute_numeric.md)
+  : Benchmark Numeric Imputation Methods Using Relative Squared Error
+  (RSE)
+- [`compare_imputation_rse()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_imputation_rse.md)
+  : Relative Squared Error of Imputation Methods Against a Null Baseline
+- [`tbl_best_imputation_method()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_best_imputation_method.md)
+  : Best Imputation Method per Column
+- [`build_best_imputed_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/build_best_imputed_data.md)
+  : Assemble the Final Imputed Data From the Winning Methods
+- [`plot_rse_by_column()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_rse_by_column.md)
+  : Plot Imputation Performance Across Columns
+- [`plot_rse_vs_missingness()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_rse_vs_missingness.md)
+  : Plot Imputation Error Against the Percent Missing
+- [`compare_domain_datasets()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_domain_datasets.md)
+  : Compare an Original and an Imputed Version of One Domain's Dataset
+- [`compare_imputed_ecdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/compare_imputed_ecdf.md)
+  : Compare Original vs Imputed Empirical Cumulative Distribution
+  Functions
+- [`test_imputed_distributions()`](https://jkylearmstrong.github.io/TempleCBE/reference/test_imputed_distributions.md)
+  : Statistical Distribution Comparison of Original vs Imputed Values
+- [`plot_imputed_ridgeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputed_ridgeline.md)
+  : Ridgeline Density Comparison of Original vs Imputed Distributions
+- [`imputation_diagnostics`](https://jkylearmstrong.github.io/TempleCBE/reference/imputation_diagnostics.md)
+  : Imputation Quality Auditing and Method Comparison Toolkit
+
+## Statistical Testing & EDA
+
+Biostatistical test wrappers, correlation matrices, and distribution
+tests.
+
+- [`single_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/single_t_test.md)
+  : Single T-Test, Tidied
+- [`multiple_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/multiple_t_test.md)
+  : Multiple T-Tests Against One Classifier
+- [`one_vs_rest_t_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/one_vs_rest_t_test.md)
+  : One-vs-Rest T-Tests Across a Multi-Level Factor
+- [`corr_test_all()`](https://jkylearmstrong.github.io/TempleCBE/reference/corr_test_all.md)
+  : Pairwise Correlation Tests Across All Numeric Columns
+- [`correlation_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot.md)
+  : Correlation Plot
+- [`correlation_plot_split()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_plot_split.md)
+  : Correlation Plot, Split Into Legible Sub-Plots
+- [`plot_target_correlation_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_target_correlation_heatmap.md)
+  : Correlation of One Target With Many Candidate Predictors
+- [`plot_scatter_glm()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_scatter_glm.md)
+  : Scatter Plot With a Regression Line and an Automatic Statistics
+  Sentence
+- [`correlation_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff.md)
+  : Difference in Correlation Matrices Between Two Datasets
+- [`correlation_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlation_diff_heatmap.md)
+  : Heatmap of Correlation Differences Between Two Datasets
+- [`drop_correlated_columns()`](https://jkylearmstrong.github.io/TempleCBE/reference/drop_correlated_columns.md)
+  : Find Highly Correlated Columns
+- [`correlated_pairs_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/correlated_pairs_table.md)
+  : Formatted Table of Highly Correlated Variable Pairs
+- [`plot_corr_scatter()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_corr_scatter.md)
+  : Scatter Plot of Two Correlated Variables With Regression Fit and
+  Statistics
+- [`plot_rank_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_rank_heatmap.md)
+  : Heatmap of Variable or Model Ranks Across Resamples or Metrics
+- [`distribution_test()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_test.md)
+  : Check a Vector or Data Frame's Distribution
+- [`distribution_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/distribution_plot.md)
+  : Distribution Plot
+- [`is_normal()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_normal.md)
+  : Test Whether a Vector Looks Normally Distributed
+- [`is_poisson()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_poisson.md)
+  : Test Whether a Vector Looks Poisson-Distributed
+- [`is_integer_valued()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_integer_valued.md)
+  : Is a Vector Composed of Integer-Valued Numbers
+- [`significance_stars()`](https://jkylearmstrong.github.io/TempleCBE/reference/significance_stars.md)
+  : P-value Significance Stars
+
+## Composite Clinical & Biomarker Indices
+
+Construct composite indices, center variables, and generate summary
+tables and correlation structures of index components.
+
+- [`compute_composite_index()`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_composite_index.md)
+  : Compute a Composite Clinical or Biomarker Index
+- [`composite_index`](https://jkylearmstrong.github.io/TempleCBE/reference/composite_index.md)
+  : Composite Index Construction and Variable Correlation Table
+- [`center()`](https://jkylearmstrong.github.io/TempleCBE/reference/center.md)
+  : Center a Numeric Vector
+- [`index_variable_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/index_variable_table.md)
+  : Summary Table of Composite Index Component Variables
+
+## PCA & Dimensionality Reduction
+
+Principal Component Analysis utilities, loadings, and biplots.
+
+- [`rotation_matrix()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  [`pca_loadings()`](https://jkylearmstrong.github.io/TempleCBE/reference/rotation_matrix.md)
+  : PCA Rotation Matrix (Loadings)
+- [`pca_eqns()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_eqns.md)
+  : PCA Equations
+- [`pca_percent_var_explained()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_percent_var_explained.md)
+  : Percent Variance Explained by Each Principal Component
+- [`pca_feature_loading_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_feature_loading_heatmap.md)
+  : PCA Feature-Loading Heatmap
+- [`plot_pca_bi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_pca_bi.md)
+  : PCA Biplot
+- [`pca_biplot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_biplot.md)
+  : PCA Loadings Biplot
+- [`pca_loading_diff()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff.md)
+  : Difference in PCA Loadings Between Two Fits
+- [`pca_loading_diff_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_loading_diff_heatmap.md)
+  : Heatmap of PCA Loading Differences Between Two Fits
+- [`pca_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/pca_plot.md)
+  : Plot a PCA Fit
+
+## Visualization & Reporting
+
+Manhattan/volcano plots, report generation, and document conversions.
+
+- [`manhattan_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/manhattan_plot.md)
+  : Manhattan Plot
+- [`volcano_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/volcano_plot.md)
+  : Volcano Plot
+- [`create_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_report.md)
+  : Scaffold a New Report From a Template
+- [`zip_render()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_render.md)
+  : Render a Quarto Document and Zip It With Its Dependencies
+- [`pdf_to_rtf()`](https://jkylearmstrong.github.io/TempleCBE/reference/pdf_to_rtf.md)
+  : Convert a PDF's Text to Rich Text Format (RTF)
+- [`create_toc_from_sas_pdf()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_toc_from_sas_pdf.md)
+  : Build a Table of Contents from a SAS-Generated PDF
+- [`read_excel_multiple_headers()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_excel_multiple_headers.md)
+  : Read Excel Data With Multi-Row Column Headers
+- [`read_workbook()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_workbook.md)
+  : Read Every Sheet of an Excel Workbook
+- [`reexports`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  [`%>%`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  : Objects exported from other packages
+- [`km_summary_to_prism()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_summary_to_prism.md)
+  : Convert a Kaplan-Meier Summary Table to a GraphPad Prism Survival
+  Table
+- [`convert_pdf_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdf_to_docx.md)
+  : Convert a Single PDF to DOCX Using the Best Available Backend
+- [`convert_pdfs_to_docx()`](https://jkylearmstrong.github.io/TempleCBE/reference/convert_pdfs_to_docx.md)
+  : Convert PDFs to DOCX Using the Best Available Backend
+- [`check_docx_toolchain()`](https://jkylearmstrong.github.io/TempleCBE/reference/check_docx_toolchain.md)
+  : Report Which PDF -\> DOCX Backends Are Usable on This Machine
+- [`find_python()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_python.md)
+  : Locate a Python Interpreter That Can Import a Module
+- [`find_soffice()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_soffice.md)
+  : Locate a LibreOffice Headless Binary
+- [`run_sas_script()`](https://jkylearmstrong.github.io/TempleCBE/reference/run_sas_script.md)
+  : Run a SAS Program in Batch Mode
+- [`find_sas()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_sas.md)
+  [`sas_available()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_sas.md)
+  : Locate a SAS Executable
+- [`sas_macro_dir()`](https://jkylearmstrong.github.io/TempleCBE/reference/sas_macro_dir.md)
+  : Directory of TempleCBE SAS Macros
+- [`sas_macro_path()`](https://jkylearmstrong.github.io/TempleCBE/reference/sas_macro_path.md)
+  : Path to a TempleCBE SAS Macro File
+- [`rossi_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/rossi_data.md)
+  : Rossi Recidivism Dataset
+- [`render_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_pipeline.md)
+  : Render Pipeline Documents and Reports
+- [`render_variants()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_variants.md)
+  : Render One Report Template for Several Variants of Its Parameters
+- [`render_parameterized_pair()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_parameterized_pair.md)
+  : Render One Template Twice: the Original and the Imputed Analysis
+- [`render_parameterized_study()`](https://jkylearmstrong.github.io/TempleCBE/reference/render_parameterized_study.md)
+  : Render a Whole Folder of Reports Once per Parameter Set
+- [`expand_child_template()`](https://jkylearmstrong.github.io/TempleCBE/reference/expand_child_template.md)
+  : Expand and Knit a Child Template Once per Row of a Parameter Grid
+- [`zip_reports()`](https://jkylearmstrong.github.io/TempleCBE/reference/zip_reports.md)
+  : Package Multiple Already-Rendered Reports Into an Indexed Zip
+- [`write_run_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/write_run_manifest.md)
+  : Write a Run Manifest JSON Beside Render Outputs
+- [`repro_appendix()`](https://jkylearmstrong.github.io/TempleCBE/reference/repro_appendix.md)
+  : Generate a Self-Rendering Reproducibility Appendix (E2)
+- [`repro_appendix_template()`](https://jkylearmstrong.github.io/TempleCBE/reference/repro_appendix_template.md)
+  : Path to the Ready-Made Quarto Reproducibility Appendix Child
+  Template
+- [`domain_children()`](https://jkylearmstrong.github.io/TempleCBE/reference/domain_children.md)
+  : Expand and Knit Per-Domain Child Templates With Failure Isolation
+  (E4)
+- [`check_renv_guard()`](https://jkylearmstrong.github.io/TempleCBE/reference/check_renv_guard.md)
+  : Guard Against Inactive renv or Lockfile Disagreements
+- [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
+  : Extract Output Formats From Document YAML Front Matter
+- [`scan_data_io()`](https://jkylearmstrong.github.io/TempleCBE/reference/scan_data_io.md)
+  : Audit Data File Read/Write Calls Against a Project's Files on Disk
+- [`find_read_calls()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_read_calls.md)
+  : Search a Directory Tree for File-Read Calls
+- [`find_write_calls()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_write_calls.md)
+  : Search a Directory Tree for File-Write Calls
+
+## Pipeline & Computational Graph Architecture
+
+Language-, format-, and tool-agnostic dependency graphs, file-level
+metadata tracking, and interactive DAG visualizations for reproducible
+biostatistical pipelines.
+
+- [`compute_graph`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_graph.md)
+  : Computational Pipeline Dependency Graphs
+- [`pipeline_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_config.md)
+  : Get or set global pipeline configuration options
+- [`pipeline_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
+  [`summarize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_summary.md)
+  : Produce an executive summary of the computational pipeline
+- [`as_pipeline_graph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_pipeline_graph.md)
+  : Convert pipeline objects or igraph to a tidygraph tbl_graph
+- [`as_igraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/as_igraph.md)
+  : Convert to an enriched igraph graph with rich metadata
+- [`as_tbl_graph(`*`<list>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/as_tbl_graph.list.md)
+  : Convert pipeline list to tidygraph
+- [`summary(`*`<tbl_graph>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/summary.tbl_graph.md)
+  : S3 summary method for tbl_graph objects
+- [`visualize_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline.md)
+  : Visualize FilePath dependencies with stage-based coloring and
+  staleness check
+- [`visualize_pipeline_interactive()`](https://jkylearmstrong.github.io/TempleCBE/reference/visualize_pipeline_interactive.md)
+  : Generate an interactive visNetwork visualization of the computation
+  graph
+- [`print_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/print_pipeline.md)
+  : Print the dependency graph as a PNG image
+- [`collapse_by_stage()`](https://jkylearmstrong.github.io/TempleCBE/reference/collapse_by_stage.md)
+  : Collapse an igraph pipeline graph to one node per pipeline \`stage\`
+- [`export_subgraph()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_subgraph.md)
+  : Export a focused interactive subgraph centered around a focal report
+  or stage
+- [`export_interactive_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_interactive_pipeline.md)
+  : Export the computational graph to a self-contained interactive HTML
+  file for stakeholders
+- [`list_stage_data_artifacts()`](https://jkylearmstrong.github.io/TempleCBE/reference/list_stage_data_artifacts.md)
+  : Inspect and categorize all on-disk data artifacts for a pipeline
+  stage
+- [`produces_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/produces_data.md)
+  : Check if a FileOutputs object produces datasets (outputs an rds,
+  xlsx, etc. file)
+- [`create_qmd_renderer()`](https://jkylearmstrong.github.io/TempleCBE/reference/create_qmd_renderer.md)
+  : Create a FileOutputs object for a rendering QMD or R Markdown
+  document
+- [`get_render_plan()`](https://jkylearmstrong.github.io/TempleCBE/reference/get_render_plan.md)
+  : Get the topologically sorted list of QMDs that need to be
+  re-rendered
+- [`interactive_render_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/interactive_render_pipeline.md)
+  : Choose Interactively What \`render_pipeline()\` Renders
+- [`is_stale()`](https://jkylearmstrong.github.io/TempleCBE/reference/is_stale.md)
+  : Check if an Output File is Stale
+- [`record_pipeline_hashes()`](https://jkylearmstrong.github.io/TempleCBE/reference/record_pipeline_hashes.md)
+  : Record or Update Content Hashes in \`pipeline_hashes.json\`
+- [`save_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
+  [`load_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/pipeline_storage.md)
+  : Save and Load Computational Pipeline Graph
+- [`join_pipelines()`](https://jkylearmstrong.github.io/TempleCBE/reference/join_pipelines.md)
+  : Join two computational pipeline graphs
+- [`dedupe_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/dedupe_pipeline.md)
+  : Deduplicate Pipeline Objects by Name
+- [`refresh_pipeline()`](https://jkylearmstrong.github.io/TempleCBE/reference/refresh_pipeline.md)
+  : Refresh Modification Timestamps Across Pipeline Objects
+- [`export_pipeline_diagram()`](https://jkylearmstrong.github.io/TempleCBE/reference/export_pipeline_diagram.md)
+  : Export Pipeline Diagram to Static Vector or Raster Format
+- [`graph_intersect()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
+  [`graph_subtract()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
+  [`graph_union()`](https://jkylearmstrong.github.io/TempleCBE/reference/graph_setops.md)
+  : Intersect, Subtract, or Union Two Graph Objects
+- [`FilePath()`](https://jkylearmstrong.github.io/TempleCBE/reference/FilePath.md)
+  : Construct a FilePath object
+- [`show(`*`<FilePath>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FilePath-class.md)
+  : FilePath S4 Class
+- [`FileUses()`](https://jkylearmstrong.github.io/TempleCBE/reference/FileUses.md)
+  : Construct a FileUses object
+- [`show(`*`<FileUses>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FileUses-class.md)
+  : FileUses S4 Class
+- [`FileOutputs()`](https://jkylearmstrong.github.io/TempleCBE/reference/FileOutputs.md)
+  : Construct a FileOutputs object
+- [`show(`*`<FileOutputs>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/FileOutputs-class.md)
+  : FileOutputs S4 Class
+
+## Investigator Name Pseudonyms
+
+Generate synthetic investigator names and replace real investigator
+names with pseudonyms in reports. Scope: investigator names only. These
+functions do not de-identify dates, record numbers, or free text.
+
+- [`pi_anonymizer`](https://jkylearmstrong.github.io/TempleCBE/reference/pi_anonymizer.md)
+  : Investigator Name Pseudonymization Helpers
+- [`generate_last_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_last_names.md)
+  : Procedural Synthetic Last Name Generator
+- [`generate_pseudonym_token()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_pseudonym_token.md)
+  : Generate Pseudonym Tokens (Cryptographic Hash)
+- [`generate_pi_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/generate_pi_names.md)
+  : Generate Random PI Names or Tokens
+- [`anonymize_pi()`](https://jkylearmstrong.github.io/TempleCBE/reference/anonymize_pi.md)
+  : Pseudonymize Investigator Names (Vectorized)
+
+## Temple Brand
+
+Temple University colors, ggplot2 scales and theme, and setup for the
+quarto_temple_brand Quarto extension.
+
+- [`temple_colors()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_colors.md)
+  : Temple University Brand Colors
+- [`temple_pal()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_pal.md)
+  : Temple Color Palettes
+- [`scale_colour_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  [`scale_color_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  [`scale_fill_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_colour_temple.md)
+  : Temple Color and Fill Scales for ggplot2
+- [`theme_temple()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_temple.md)
+  : Temple ggplot2 Theme
+- [`temple_brand_path()`](https://jkylearmstrong.github.io/TempleCBE/reference/temple_brand_path.md)
+  : Path to the Bundled Temple brand.yml
+- [`use_temple_brand()`](https://jkylearmstrong.github.io/TempleCBE/reference/use_temple_brand.md)
+  : Install the Temple Brand Quarto Extension Into a Project
+
+## Temple CBE Themes, Decks, & Formatters
+
+Center for Biostatistics & Epidemiology ggplot2 themes, institutional
+cherry palettes, deck styling, and clinical reporting formatters.
+
+- [`cbe_palette`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_palette.md)
+  : Temple CBE Color Palette
+- [`theme_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe.md)
+  : Temple University CBE ggplot2 Themes, Palettes, and Formatters
+- [`theme_cbe_deck()`](https://jkylearmstrong.github.io/TempleCBE/reference/theme_cbe_deck.md)
+  : CBE ggplot2 Theme for Presentation Decks
+- [`scale_color_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_color_cbe.md)
+  : Discrete Color Scale for Temple CBE
+- [`scale_fill_cbe()`](https://jkylearmstrong.github.io/TempleCBE/reference/scale_fill_cbe.md)
+  : Discrete Fill Scale for Temple CBE
+- [`fmt_pct()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_pct.md)
+  : Format a Percentage
+- [`fmt_num()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_num.md)
+  : Format Numbers to Fixed Decimals
+- [`fmt_sig()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_sig.md)
+  : Format Significant Figures
+- [`fmt_p()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_p.md)
+  : Format P-Values
+- [`pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md)
+  [`cbe_pformat()`](https://jkylearmstrong.github.io/TempleCBE/reference/pformat.md)
+  : Format p-values for Biostatistical and Clinical Reporting
+- [`fmt_hr()`](https://jkylearmstrong.github.io/TempleCBE/reference/fmt_hr.md)
+  : Format Hazard Ratio and Confidence Interval
+- [`words()`](https://jkylearmstrong.github.io/TempleCBE/reference/words.md)
+  : Combine Character Vector into Natural-Language Words
+- [`words_list()`](https://jkylearmstrong.github.io/TempleCBE/reference/words_list.md)
+  : Oxford-Comma List With a Fallback for Empty Input
+- [`pluralize()`](https://jkylearmstrong.github.io/TempleCBE/reference/pluralize.md)
+  : Count and Word With the Right Plural
+- [`include_landscape_figure()`](https://jkylearmstrong.github.io/TempleCBE/reference/include_landscape_figure.md)
+  : Include a Figure on a Landscape Page (PDF Only)
+- [`plot_normalization_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_normalization_comparison.md)
+  : Compare One Variable Before and After Normalization
+- [`read_positional_excel_headers()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_positional_excel_headers.md)
+  : Read an Excel Sheet Whose Header Spans Several Rows
+
+## Cox Models, Kaplan-Meier, & Diagnostics
+
+Univariable and multivariable Cox proportional hazards screening engines
+with automated clinical interpretations, shared proportional hazards
+diagnostics, presentation tables, a paired Kaplan-Meier/Cox helper, a
+factor-releveling utility, and forest, survival-curve, and marginal-risk
+visualizations.
+
+- [`cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/cox_single.md)
+  : Univariable Cox Proportional Hazards Screening Engine
+- [`batch_cox_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/batch_cox_single.md)
+  : Univariate Cox Screening of Many Features
+- [`tbl_cox_glance_compare()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_cox_glance_compare.md)
+  : Compare the Fit of Several Cox Models in One Table
+- [`glm_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/coef_single.md)
+  [`lmm_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/coef_single.md)
+  [`plot_coef_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/coef_single.md)
+  [`tbl_coef_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/coef_single.md)
+  : Univariate GLM and Mixed-Model Screens, With Coefficient Forest
+  Plots and Tables
+- [`transform_longitudinal_features()`](https://jkylearmstrong.github.io/TempleCBE/reference/transform_longitudinal_features.md)
+  : Per-Subject Summaries of Repeated Measurements
+- [`plot_feature_transform_heatmap()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_feature_transform_heatmap.md)
+  : Heatmap of Features by Transformation, Coloured by Significance
+- [`print(`*`<cbe_cox>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox.md)
+  : Print Method for cbe_cox Object
+- [`cox_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/cox_multi.md)
+  : Multivariable Cox Proportional Hazards Modeling Engine
+- [`print(`*`<cbe_cox_multi>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_multi.md)
+  : Print Method for cbe_cox_multi Object
+- [`cox_check()`](https://jkylearmstrong.github.io/TempleCBE/reference/cox_check.md)
+  : Tidy Proportional Hazards Diagnostics for Cox Models
+- [`print(`*`<cbe_cox_check>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_cox_check.md)
+  : Print Method for cbe_cox_check Object
+- [`cbe_cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  [`cox_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  [`tbl_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_cox_table.md)
+  : Presentation-Ready Cox Coefficient Table
+- [`km_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_single.md)
+  : Univariable Kaplan-Meier and Cox Screening Engine
+- [`print(`*`<cbe_km>`*`)`](https://jkylearmstrong.github.io/TempleCBE/reference/print.cbe_km.md)
+  : Print Method for cbe_km Object
+- [`km_cutpoints`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoints.md)
+  : Kaplan-Meier Optimal Cutpoint Search and Visualization
+- [`km_cutpoint_search()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_search.md)
+  : Search for Optimal Survival Cutpoint via Log-Rank Separation
+- [`km_cutpoint_time_varying()`](https://jkylearmstrong.github.io/TempleCBE/reference/km_cutpoint_time_varying.md)
+  : Optimal Survival Cutpoint Search for Time-Varying Counting Process
+  Data
+- [`plot_km_cutpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_km_cutpoints.md)
+  : Plot Cutpoint Search Profile
+- [`batch_cutpoint_survdiff()`](https://jkylearmstrong.github.io/TempleCBE/reference/batch_cutpoint_survdiff.md)
+  : Scan Cutpoints of Several Features with the Log-Rank Test
+- [`first_significant_cutpoint()`](https://jkylearmstrong.github.io/TempleCBE/reference/first_significant_cutpoint.md)
+  : First Significant Cutpoint per Feature
+- [`relevel_factor()`](https://jkylearmstrong.github.io/TempleCBE/reference/relevel_factor.md)
+  : Relevel a Factor's Reference Level
+- [`plot_cox_forest()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest.md)
+  : Forest Plot of Hazard Ratios with Confidence Intervals
+- [`plot_cox_forest_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_forest_multi.md)
+  : Forest Plot of Hazard Ratios for a Multivariable Cox Model
+- [`plot_cox_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_survival.md)
+  : Model-Predicted Survival Curves Stratified by Predictor
+- [`plot_cox_marginal()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cox_marginal.md)
+  : Marginal Event Probability / Relative Hazard Diagnostic Plot
+- [`cbe_theme_survival()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_theme_survival.md)
+  : CBE ggplot2 Theme for Survival Analysis Visualizations
+- [`tidy_tmerge_cox()`](https://jkylearmstrong.github.io/TempleCBE/reference/tidy_tmerge_cox.md)
+  : Tidy Construction of Counting-Process (Start-Stop) Survival Data
+
+## Presentation Deck & Clinical Summary Plots
+
+Presentation-ready Kaplan-Meier curves, longitudinal biomarker
+trajectories, group comparisons, data quality audits, and 2x2
+contingency tables.
+
+- [`plot_survival_km()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_survival_km.md)
+  : Standardized Kaplan-Meier Survival Curve
+- [`plot_dynamic_trajectory()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_dynamic_trajectory.md)
+  : Longitudinal Biomarker Trajectories by Cohort / Outcome
+- [`plot_group_comparison()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_group_comparison.md)
+  : Group Comparison Bar Chart with Standard Errors
+- [`plot_missingness()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_missingness.md)
+  : Missing Data Audit Plot
+- [`table_two_by_two()`](https://jkylearmstrong.github.io/TempleCBE/reference/table_two_by_two.md)
+  : Formatted 2x2 Contingency Table with Exact Test
+- [`tbl_two_sample_compare()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_two_sample_compare.md)
+  : Two-Group Comparison Table for Continuous Variables
+- [`tbl_table_one()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_table_one.md)
+  : Stratified Baseline "Table 1"
+- [`calc_grouped_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/calc_grouped_summary.md)
+  : Compact Groupwise Numeric Summary
+- [`tbl_feature_importance_dalex()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_feature_importance_dalex.md)
+  : Table of DALEX Permutation Feature Importance
+- [`plot_imputed_vs_observed()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputed_vs_observed.md)
+  : Observed Versus Imputed Values, per Cross-Validation Fold
+- [`plot_comissingness_matrix()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_comissingness_matrix.md)
+  : Co-Missingness Correlation Matrix
+- [`tbl_missingness_patterns()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_missingness_patterns.md)
+  : Missingness Patterns Table
+- [`plot_marginal_effect_contrast()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_marginal_effect_contrast.md)
+  : Forest Plot Contrasting the Raw and the Normalized Effect Scale
+- [`tbl_contingency_2x2()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_contingency_2x2.md)
+  : Publication-Ready 2x2 Contingency Table with Tests and Risk Measures
+- [`classify_quadrants()`](https://jkylearmstrong.github.io/TempleCBE/reference/classify_quadrants.md)
+  : Assign Observations to Bivariate Quadrants
+- [`tbl_quadrant_distribution()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_quadrant_distribution.md)
+  : Distribution of Clinical Strata Across Quadrants
+- [`quadrant_n()`](https://jkylearmstrong.github.io/TempleCBE/reference/quadrant_n.md)
+  : One Quadrant Count for Inline Prose
+- [`tbl_paired_assay_agreement()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_paired_assay_agreement.md)
+  : Paired Assay Agreement Table (Bias, Limits of Agreement, Lin's CCC)
+- [`tbl_correlated_pairs()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_correlated_pairs.md)
+  : Table of Highly Correlated Feature Pairs
+- [`plot_imputation_hazard_stability()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_imputation_hazard_stability.md)
+  : Compare Bootstrap Hazard Ratios Between Complete and Imputed Data
+- [`tbl_tuning_by_quantile()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_tuning_by_quantile.md)
+  : Tuning Results Summarised by Performance Quantile Tier
+- [`tbl_longitudinal_cox_screen()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_longitudinal_cox_screen.md)
+  : Cox Screen of Longitudinal Summary Statistics
+- [`plot_trajectory_group_ci()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_trajectory_group_ci.md)
+  : Group Trajectories with Empirical Quantile Ribbons
+- [`tbl_landmark_cutpoints()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_landmark_cutpoints.md)
+  : Survival Cutpoints at Several Landmark Times
+- [`tbl_schoenfeld_audit()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_schoenfeld_audit.md)
+  : Proportional-Hazards Audit of a Cox Model
+- [`tbl_cumulative_incidence()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_cumulative_incidence.md)
+  : Cumulative Incidence with Competing Risks
+- [`plot_cumulative_incidence()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_cumulative_incidence.md)
+  : Plot Cumulative Incidence Curves
+- [`glance_imputations()`](https://jkylearmstrong.github.io/TempleCBE/reference/glance_imputations.md)
+  : Pool Model-Level Fit Statistics over Imputations
+- [`pool_imputations()`](https://jkylearmstrong.github.io/TempleCBE/reference/pool_imputations.md)
+  : Pool Estimates from Several Imputations with Rubin's Rules
+- [`tbl_fine_gray_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_fine_gray_single.md)
+  : Fine-Gray Subdistribution Hazard Regression for One Predictor
+- [`tbl_fine_gray_multi()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_fine_gray_multi.md)
+  : Multivariable Fine-Gray Subdistribution Hazard Regression
+- [`tbl_fine_gray_screen()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_fine_gray_screen.md)
+  : Screen Many Predictors with Univariable Fine-Gray Models
+- [`tbl_domain_correlations()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_domain_correlations.md)
+  : Correlations Within and Between Feature Domains
+- [`batch_glm_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/batch_glm_single.md)
+  [`batch_lmm_single()`](https://jkylearmstrong.github.io/TempleCBE/reference/batch_glm_single.md)
+  : Univariable GLM / LMM Screens Over Inputs and Outputs
+- [`compute_longitudinal_composite_index()`](https://jkylearmstrong.github.io/TempleCBE/reference/compute_longitudinal_composite_index.md)
+  : Baseline-Anchored Longitudinal Composite Index
+- [`cut_with_missing_category()`](https://jkylearmstrong.github.io/TempleCBE/reference/cut_with_missing_category.md)
+  : Quantile Bins with an Explicit Missing Level
+- [`tbl_cox_binned_missing()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_cox_binned_missing.md)
+  : Cox Model on Quantile Bins with an Explicit Missing Level
+- [`sample_weighted_formulas()`](https://jkylearmstrong.github.io/TempleCBE/reference/sample_weighted_formulas.md)
+  : Candidate Formulas Weighted by Feature Importance
+- [`adaptive_cox_formulas()`](https://jkylearmstrong.github.io/TempleCBE/reference/adaptive_cox_formulas.md)
+  : Adaptive Candidate Formulas from Top Models
+- [`expand_feature_formulas()`](https://jkylearmstrong.github.io/TempleCBE/reference/expand_feature_formulas.md)
+  : All Formulas with k Terms
+
+## Categorical Association & Contingency Tables
+
+Biostatistical testing, exact 2x2 inference, 4-quadrant reporting, and
+publication-ready association visualizations (balloon, bar, contingency,
+mosaic, heatmap, and square plots).
+
+- [`exact2x2()`](https://jkylearmstrong.github.io/TempleCBE/reference/exact2x2.md)
+  : Exact Test for 2x2 Tables with Automatic Zero-Cell Mid-p Default
+- [`cbe_exact2x2_ci()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.md)
+  [`exact2x2_ci()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_exact2x2_ci.md)
+  : Format Exact 2x2 Odds Ratio and Confidence Interval
+- [`test_categorical()`](https://jkylearmstrong.github.io/TempleCBE/reference/test_categorical.md)
+  : Institutional Categorical Hypothesis Test for gtsummary and Batch
+  Testing
+- [`cbe_four_quadrant_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_four_quadrant_report.md)
+  : Standard 4-Quadrant Clinical Contingency Report
+- [`cbe_contingency_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`contingency_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`balloon_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`bar_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`mosaic_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`heatmap_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`four_quadrant_report()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  [`square_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_contingency_plot.md)
+  : Visualizations for 2-Way Contingency Tables and Categorical Tests
+- [`cbe_balloon_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_balloon_plot.md)
+  : Balloon Plot for 2-Way Contingency Tables
+- [`cbe_bar_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_bar_plot.md)
+  : Bar Chart for 2-Way Contingency Tables
+- [`cbe_mosaic_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_mosaic_plot.md)
+  : Mosaic Plot for 2-Way Contingency Tables
+- [`cbe_heatmap_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_heatmap_plot.md)
+  : Heatmap Plot for 2-Way Contingency Tables
+- [`cbe_square_plot()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_square_plot.md)
+  : Square Plot: Standard 4-Quadrant Contingency Report
+- [`pairwise_combos()`](https://jkylearmstrong.github.io/TempleCBE/reference/pairwise_combos.md)
+  : Generate All Pairwise Categorical Combinations
+- [`plot_categorical_associations()`](https://jkylearmstrong.github.io/TempleCBE/reference/plot_categorical_associations.md)
+  : Plot Categorical Association Matrix Using corrplot
+
+## Data Snapshot Manifest & Schema Engine
+
+Tools to freeze, snapshot, and verify dataset copies against upstream
+sources via MD5 hashes, enforce schema mapping dictionaries, and
+simulate synthetic patient cohorts.
+
+- [`read_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_data_manifest.md)
+  : Read Data Manifest File
+- [`copy_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_data_manifest.md)
+  : Copy Datasets to Snapshot Directory
+- [`validate_data_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_data_manifest.md)
+  : Validate Data Snapshot Copies Against Upstream Sources
+- [`stop_if_invalid_manifest()`](https://jkylearmstrong.github.io/TempleCBE/reference/stop_if_invalid_manifest.md)
+  : Stop Execution if Data Copies are Invalid or Stale
+- [`validate_column_mapping()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_column_mapping.md)
+  : Validate a Plug-and-Play Column Mapping
+- [`find_section_file()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_section_file.md)
+  : Find Section Data File in a Directory
+- [`read_raw_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_raw_table.md)
+  : Read Raw Table with Multi-Row Header Support
+- [`read_mapped_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/read_mapped_section_data.md)
+  : Read One Section's Data Using a Column Mapping
+- [`summarize_section_by_time()`](https://jkylearmstrong.github.io/TempleCBE/reference/summarize_section_by_time.md)
+  : Summarize One Section By Its Time Variable
+- [`demo_cbe_mapping()`](https://jkylearmstrong.github.io/TempleCBE/reference/demo_cbe_mapping.md)
+  : Create Sample Plug-and-Play Mapping Dictionary
+- [`simulate_section_data()`](https://jkylearmstrong.github.io/TempleCBE/reference/simulate_section_data.md)
+  : Simulate Synthetic Section Data From a Schema Mapping
+
+## Deliverable Packaging & Code Auditing
+
+Package pipeline outputs (PDF/DOCX/HTML reports and data deliverables)
+into structured distribution archives, audit source scripts for
+referenced deliverable tokens, and extract YAML metadata formats.
+
+- [`package_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/package_deliverables.md)
+  : Package Pipeline Deliverables into a Structured Zip Archive
+- [`diff_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/diff_deliverables.md)
+  : Compare Two Deliverable Bundles and Diff DOCX Reports
+- [`audit_report_deliverables()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_report_deliverables.md)
+  : Audit Deliverable File Tokens in Analysis Scripts
+- [`audit_render_parity()`](https://jkylearmstrong.github.io/TempleCBE/reference/audit_render_parity.md)
+  : Audit a Rendered PDF Against the Word Version of the Same Report
+- [`extract_yaml_formats()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_yaml_formats.md)
+  : Extract Output Formats From Document YAML Front Matter
+- [`docx_review_extract()`](https://jkylearmstrong.github.io/TempleCBE/reference/docx_review_extract.md)
+  : DOCX Review Extractor & Multi-Reviewer Collaborative Tracker
+- [`extract_docx_qa()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_docx_qa.md)
+  : Extract Questions, Answers and Cited Reports From a Word Document
+- [`review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/review_tracker.md)
+  : Build a Structured Review Response Tracker Requiring Location and
+  Rationale
+- [`validate_review_tracker()`](https://jkylearmstrong.github.io/TempleCBE/reference/validate_review_tracker.md)
+  : Validate a Review Response Tracker for Required Location and
+  Rationale
+- [`review_config()`](https://jkylearmstrong.github.io/TempleCBE/reference/review_config.md)
+  : Get or set global multi-reviewer review-tracking configuration
+
+## Example Datasets
+
+Clinical oncology and time-to-event datasets for testing and vignette
+demonstrations.
+
+- [`tumor_long()`](https://jkylearmstrong.github.io/TempleCBE/reference/tumor_long.md)
+  : Convert Wide Tumor Data to Counting Process (Start/Stop) Format
+- [`tumor_wide()`](https://jkylearmstrong.github.io/TempleCBE/reference/tumor_wide.md)
+  : Internal SAS Benchmark Tumor Dataset (Wide Format)
+
+## Helper & Infix Operators
+
+Clean column naming, string matching, and vector manipulation.
+
+- [`clean_names_keep_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/clean_names_keep_labels.md)
+  : Clean Column Names, Preserving Originals as Labels
+- [`make_excel_names()`](https://jkylearmstrong.github.io/TempleCBE/reference/make_excel_names.md)
+  : Generate Excel-Compatible Column Names
+- [`excel_colnames()`](https://jkylearmstrong.github.io/TempleCBE/reference/excel_colnames.md)
+  : Sanitize Column Names for Excel Worksheets
+- [`pretty_name()`](https://jkylearmstrong.github.io/TempleCBE/reference/pretty_name.md)
+  : Convert Raw Variable Names to Human-Readable Display Labels
+- [`copy_var_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/copy_var_labels.md)
+  : Copy Variable Labels and Attributes Across Data Frames
+- [`cbe_labels()`](https://jkylearmstrong.github.io/TempleCBE/reference/cbe_labels.md)
+  : Set or Retrieve the Package-Level Variable Label Map
+- [`tbl_label_map()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  [`cbe_label_table()`](https://jkylearmstrong.github.io/TempleCBE/reference/tbl_label_map.md)
+  : Format a Variable Label Map Table for Report Appendices
+- [`label_helpers`](https://jkylearmstrong.github.io/TempleCBE/reference/label_helpers.md)
+  : Variable Label and Excel Header Helpers
+- [`rm_all_except()`](https://jkylearmstrong.github.io/TempleCBE/reference/rm_all_except.md)
+  : Keep Only Specified Objects in an Environment
+- [`delete_nul_files()`](https://jkylearmstrong.github.io/TempleCBE/reference/delete_nul_files.md)
+  : Delete Stray 'nul' Files
+- [`find_code()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_code.md)
+  : Search for Code Patterns Across a Directory Tree
+- [`std_error()`](https://jkylearmstrong.github.io/TempleCBE/reference/std_error.md)
+  : Compute standard error
+- [`profvis_summary()`](https://jkylearmstrong.github.io/TempleCBE/reference/profvis_summary.md)
+  : Summarize a \`profvis\` Profile
+- [`normalize_path_safely()`](https://jkylearmstrong.github.io/TempleCBE/reference/normalize_path_safely.md)
+  : Normalize File Paths Without Failing
+- [`parse_here_call_vec()`](https://jkylearmstrong.github.io/TempleCBE/reference/parse_here_call_vec.md)
+  : Resolve \`here::here()\` Calls Found in Code Text
+- [`file_meta_fs()`](https://jkylearmstrong.github.io/TempleCBE/reference/file_meta_fs.md)
+  : File Metadata as a Tibble
+- [`extract_xlsx_paths()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_xlsx_paths.md)
+  : Extract Full \`.xlsx\` Paths From Text
+- [`extract_all_xlsx_tokens()`](https://jkylearmstrong.github.io/TempleCBE/reference/extract_all_xlsx_tokens.md)
+  : Extract Every \`.xlsx\` File Name From Text
+- [`install_package_no_lock()`](https://jkylearmstrong.github.io/TempleCBE/reference/install_package_no_lock.md)
+  : Install a Package, Bypassing an Existing Lock
+- [`reexports`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  [`%>%`](https://jkylearmstrong.github.io/TempleCBE/reference/reexports.md)
+  : Objects exported from other packages
+- [`match_like()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`ilike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%ilike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`flike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%flike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`plike()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%plike%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`notin()`](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  [`` `%!in%` ``](https://jkylearmstrong.github.io/TempleCBE/reference/infix_helpers.md)
+  : Pattern Matching and Logical-Negation Infix Operators
+
+## Package Development & Release Tooling
+
+Maintainer-facing helpers for package release and documentation
+artifacts.
+
+- [`build_manual_versioned()`](https://jkylearmstrong.github.io/TempleCBE/reference/build_manual_versioned.md)
+  : Build a Versioned PDF Reference Manual
+- [`clean_publish()`](https://jkylearmstrong.github.io/TempleCBE/reference/clean_publish.md)
+  : Publish a Clean Snapshot of the Current Commit to a Remote
+- [`guard_public_remote()`](https://jkylearmstrong.github.io/TempleCBE/reference/guard_public_remote.md)
+  : Guard a Public Remote Against Accidental Direct Push
+- [`find_deprecated_calls()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_deprecated_calls.md)
+  [`update_deprecated_calls()`](https://jkylearmstrong.github.io/TempleCBE/reference/find_deprecated_calls.md)
+  : Find and Update Deprecated Calls Across Project Code

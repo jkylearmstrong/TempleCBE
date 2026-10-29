@@ -1,0 +1,172 @@
+# Cluster Bootstrap of a Linear Mixed-Effects Model
+
+Refits a linear mixed model (\[lme4::lmer()\]) on bootstrap resamples of
+whole groups (for example subjects), drops outlying bootstrap estimates
+of each fixed effect with Tukey's fences (\[calculate_fences()\]) and
+summarises what is left: mean, standard error, median, percentile
+interval and a two-tailed bootstrap p-value (\[boot_p_value()\]). It is
+the "resample, fit with a fallback, tidy, drop outlying coefficients,
+summarise" block that report templates otherwise repeat.
+
+## Usage
+
+``` r
+boot_lmer(
+  formula,
+  data,
+  group,
+  n_boot = 1000L,
+  normalize = NULL,
+  fence = c("outer", "inner", "none"),
+  fallback_formula = NULL,
+  conf_level = 0.95,
+  include_intercept = FALSE,
+  seed = NULL,
+  parallel = FALSE,
+  ...
+)
+```
+
+## Arguments
+
+- formula:
+
+  A mixed-model formula with a random-effect term, for example \`y ~
+  x1 + x2 + (1 \| id)\`.
+
+- data:
+
+  A data frame.
+
+- group:
+
+  Name of the column that identifies the groups to resample (the
+  grouping factor of the random effect; a warning is given when it is
+  not one of the formula's grouping factors). Missing values are an
+  error; unused factor levels are ignored.
+
+- n_boot:
+
+  Number of bootstrap replicates (default 1000).
+
+- normalize:
+
+  \`NULL\` or the names of numeric columns to rescale to \\0, 1\\ within
+  each resample.
+
+- fence:
+
+  \`"outer"\` (default), \`"inner"\` or \`"none"\`; see Details.
+
+- fallback_formula:
+
+  \`NULL\` or a formula used when the model fails.
+
+- conf_level:
+
+  Confidence level of the percentile interval (default 0.95).
+
+- include_intercept:
+
+  If \`TRUE\`, the intercept is summarised too (default \`FALSE\`).
+
+- seed:
+
+  Optional integer. With it the result is reproducible, and the random
+  number generator state of the session is restored afterwards.
+
+- parallel:
+
+  If \`TRUE\`, the replicates are fitted with \`furrr::future_map()\`
+  under the current future plan (set it with \`future::plan()\`, for
+  example \`future::plan("multisession")\`; under the default sequential
+  plan nothing runs in parallel). Default \`FALSE\`, the sequential
+  loop. In parallel mode each replicate has its own random-number
+  stream, so the result for a given \`seed\` is the same under any plan
+  and any number of workers, but it is not the result of the sequential
+  loop for that \`seed\`. \`seed\` must be a single number in this mode.
+  The same version of TempleCBE must be installed on the workers (they
+  load the installed package, not a \`load_all()\` source tree, and
+  resolve its helper functions from it), and the arguments in \`...\`
+  are evaluated before fitting (they cannot name columns of \`data\`,
+  such as \`weights = n\`).
+
+- ...:
+
+  Passed to \[lme4::lmer()\].
+
+## Value
+
+A tibble of class \`boot_lmer\`, one row per fixed effect: \`term\`,
+\`n\` (kept estimates), \`mean\`, \`sd\`, \`std.error\`, \`median\`,
+\`lower\`, \`upper\`, \`p.value\`. Attributes: \`draws\` (every
+bootstrap estimate: \`boot\`, \`term\`, \`estimate\`, \`fallback\`,
+\`comparable\`, \`kept\`), \`n_boot\`, \`n_failed\`, \`n_fallback\`,
+\`n_incomparable\`, \`n_singular\`, \`n_nonconverged\`, \`fence\`,
+\`conf_level\`.
+
+## Details
+
+Each replicate draws as many groups as there are, with replacement, and
+uses all rows of every drawn group. A group drawn twice keeps its
+identifier, so it is still one level of the random effect (as with
+\`rsample::group_bootstraps()\`).
+
+\`normalize\` names numeric columns that are rescaled to \\0, 1\\ by
+their minimum and maximum *within each resample* (\[min_max_norm()\])
+before the model is fitted, so the estimates are per full range of the
+predictor.
+
+A replicate whose model cannot be fitted is refitted with
+\`fallback_formula\`, if one is given (for example the intercept-only
+\`y ~ -1 + (1 \| id)\`); a fallback model contributes only the fixed
+effects it has, and those estimates come from another model than the
+rest (they are flagged \`fallback\` in \`draws\`). A replicate that
+cannot be fitted at all is counted in \`n_failed\` and contributes
+nothing. Warnings and messages from the fits are not shown; the number
+of singular and of non-converged fits is returned in \`n_singular\` and
+\`n_nonconverged\`.
+
+**Rank-deficient resamples.** When a resample lacks a level of a factor
+(or a predictor is constant in it), \`lme4\` drops the columns it cannot
+estimate, and the remaining contrasts then mean something else (with
+level A absent, \`fC\` estimates C - B and not C - A). The columns of
+the model fitted to the whole data are the reference: a replicate whose
+columns differ is not comparable, contributes to no term and is counted
+in \`n_incomparable\`. A predictor named in \`normalize\` that is
+constant in a resample is mapped to 0 and dropped by \`lme4\` in the
+same way.
+
+The fences are applied to the bootstrap estimates of each term
+separately: an estimate is kept when it lies strictly between the lower
+and upper fence (the inner fences at 1.5 x IQR, the outer at 3 x IQR);
+when the interquartile range is 0 the fences coincide with the bulk
+value and the bulk is kept, so that only the values off it are dropped.
+\`fence = "none"\` keeps every estimate.
+
+**\`std.error\`** is the standard deviation of the kept estimates
+divided by the square root of their number. That is the Monte Carlo
+error of the bootstrap mean, not the standard error of the estimate
+(which is \`sd\`), and it shrinks as \`n_boot\` grows. It is kept
+because the report templates used it, and because the p-value uses it as
+the tolerance \`epsilon\` around the null value. Percentile limits use
+all kept estimates. Terms are returned in model order. A p-value of 0
+means no kept estimate lay on the other side of the null; it is not
+exact (see \[boot_p_value()\]).
+
+A group drawn twice keeps its identifier and so counts as one level of
+the random effect, which slightly inflates the random-effect variance;
+fixed effects are not affected in practice.
+
+## See also
+
+\[fit_lmer_safely()\], \[calculate_fences()\], \[boot_p_value()\]
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+boot_lmer(Reaction ~ Days + (1 | Subject), lme4::sleepstudy, group = "Subject",
+          n_boot = 200, normalize = "Days", seed = 1)
+} # }
+```

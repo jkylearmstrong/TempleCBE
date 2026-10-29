@@ -1,0 +1,67 @@
+# Estimate Runtime Before a Long Tuning or Scoring Run
+
+Times a small sample of model fits (\`n_sample\`) and projects the total
+wall-clock time for the full grid and per machine.
+
+## Usage
+
+``` r
+estimate_runtime(
+  fn,
+  args,
+  n_sample = 3,
+  workers = NULL,
+  n_machines = NULL,
+  n_outer_folds = 1L,
+  n_domains = 1L
+)
+```
+
+## Arguments
+
+- fn:
+
+  Function to benchmark, such as \[tune_alpha_by_split\],
+  \[score_outer\], \[tune_over_alpha\], or \[glmnet_IBS\] (or its
+  character name).
+
+- args:
+
+  Named list of arguments to pass to \`fn\`.
+
+- n_sample:
+
+  Number of sample fits to time (default \`3\`).
+
+- workers:
+
+  Number of parallel workers per machine. Defaults to
+  \[future::nbrOfWorkers()\] when future is installed, or \`1L\`.
+
+- n_machines:
+
+  Number of machines used for sharding (default \`1L\`, or inferred from
+  \`args\$shard\[2\]\` when present).
+
+- n_outer_folds:
+
+  Optional multiplier for outer CV folds when \`args\` represents a
+  single outer fold (default \`1L\`).
+
+- n_domains:
+
+  Optional multiplier for domains when \`args\` represents a single
+  domain (default \`1L\`).
+
+## Value
+
+A tibble of class \`cbe_runtime_estimate\` with per-fit timing
+statistics (\`mean_sec_per_fit\`, \`median_sec_per_fit\`,
+\`sd_sec_per_fit\`), grid size (\`n_tasks\`, \`n_total_fits\`), and
+projected wall-clock times (\`projected_sequential_sec\`,
+\`projected_total_sec\`, \`projected_per_machine_sec\`,
+\`projected_total_mins\`, \`projected_per_machine_mins\`).
+
+## See also
+
+\[tune_alpha_by_split()\], \[score_outer()\]

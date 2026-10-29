@@ -1,0 +1,66 @@
+# Model-Predicted Survival Curves Stratified by Predictor
+
+Generates stratified predicted survival curves from a Cox model. For
+continuous predictors, values are automatically binned into quantile
+strata (e.g. quartiles).
+
+## Usage
+
+``` r
+plot_cox_survival(
+  fit,
+  data,
+  feature = NULL,
+  id_col = NULL,
+  n_tiles = 4,
+  label_endpoints = TRUE,
+  overlay_km = FALSE,
+  base_size = 12
+)
+```
+
+## Arguments
+
+- fit:
+
+  A fitted
+  [`survival::coxph`](https://rdrr.io/pkg/survival/man/coxph.html) model
+  or a `cbe_cox` object.
+
+- data:
+
+  Data frame used for fitting the model.
+
+- feature:
+
+  Character name of the predictor column.
+
+- id_col:
+
+  Character name of the subject ID column (default: `NULL`, which uses
+  the row number).
+
+- n_tiles:
+
+  Number of quantile bins for continuous predictors (default: 4).
+
+- label_endpoints:
+
+  Logical; if TRUE, repels labels for stratum values at the final time
+  point.
+
+- overlay_km:
+
+  Logical (default: `FALSE`). If `TRUE`, overlays observed Kaplan-Meier
+  step curves (dashed) for each stratum on top of the Cox-predicted
+  curves (solid), sharing color by stratum, with a linetype legend
+  distinguishing "Cox-predicted" from "KM observed". The event
+  time/status used are those the model was fit with (`fit$y`).
+
+- base_size:
+
+  Base font size (default: 12).
+
+## Value
+
+A ggplot2 object.
