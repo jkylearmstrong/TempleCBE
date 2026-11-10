@@ -31,6 +31,17 @@ NULL
 #'   gives a warning and no p-value.
 #' @param pval Same as `p_value`; the short name used by other survival plotting packages
 #'   (`survminer::ggsurvplot(pval = TRUE)`). If both are given, `pval` wins.
+#' @param time_breaks Optional numeric vector of follow-up times. They become the x-axis breaks and,
+#'   with `risk_table = TRUE`, the labeled columns of the number-at-risk table. Default `NULL` lets
+#'   `ggsurvfit` choose.
+#' @param start_col Optional name of an interval start column for counting-process (start, stop]
+#'   data; `time_col` is then the interval stop time and the curve is fitted to
+#'   `Surv(start, stop, status)`. With a `group_col` that changes within a subject, each interval
+#'   counts in the group it belongs to (an extended Kaplan-Meier estimate), so the curves describe
+#'   the hazard while in a group, not cohorts fixed at baseline. The log-rank test of
+#'   [survival::survdiff()] does not accept such data; the p-value shown is the score (log-rank)
+#'   test of the Cox model `Surv(start, stop, status) ~ group`, which treats intervals of one subject
+#'   as independent given the group.
 #' @return A ggplot2 object, or (with `risk_table = TRUE`) a `ggsurvfit` plot that draws the risk table
 #'   under the curve when printed.
 #' @export
@@ -44,14 +55,23 @@ plot_survival_km <- function(data,
                              base_size = 13,
                              risk_table = FALSE,
                              p_value = FALSE,
-                             pval = p_value) {
+                             pval = p_value,
+                             time_breaks = NULL,
+                             start_col = NULL) {
   show_p <- isTRUE(pval)
-  surv_fmla_str <- if (!is.null(group_col)) {
-    sprintf("survival::Surv(%s, %s) ~ %s", time_col, status_col, group_col)
-  } else {
-    sprintf("survival::Surv(%s, %s) ~ 1", time_col, status_col)
+  if (!is.null(time_breaks) &&
+      (!is.numeric(time_breaks) || anyNA(time_breaks) || is.unsorted(time_breaks, strictly = TRUE))) {
+    stop("`time_breaks` must be increasing numbers.", call. = FALSE)
   }
-  surv_fmla <- stats::as.formula(surv_fmla_str)
+  if (!is.null(start_col) && !start_col %in% names(data)) {
+    stop("`start_col` \"", start_col, "\" is not a column of `data`.", call. = FALSE)
+  }
+  lhs <- if (is.null(start_col)) {
+    sprintf("survival::Surv(%s, %s)", time_col, status_col)
+  } else {
+    sprintf("survival::Surv(%s, %s, %s)", start_col, time_col, status_col)
+  }
+  surv_fmla <- stats::as.formula(paste(lhs, "~", if (is.null(group_col)) "1" else group_col))
 
   fit <- ggsurvfit::survfit2(surv_fmla, data = data)
 
@@ -78,14 +98,23 @@ plot_survival_km <- function(data,
     n_groups <- length(fit$strata)
     if (n_groups < 2L) {
       warning("A log-rank p-value needs `group_col` with at least two groups; none is shown.", call. = FALSE)
-    } else {
+    } else if (is.null(start_col)) {
       # "annotation" keeps the caption free for the user's own text
       p <- p + ggsurvfit::add_pvalue(location = "annotation")
+    } else {
+      sc <- summary(survival::coxph(surv_fmla, data = data))$sctest[["pvalue"]]
+      p <- p + ggplot2::annotate(
+        "text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = base_size / 3.2,
+        label = if (sc < 0.001) "p < 0.001" else paste0("p = ", formatC(sc, format = "f", digits = 3))
+      )
     }
   }
 
+  if (!is.null(time_breaks)) {
+    p <- p + ggplot2::scale_x_continuous(breaks = time_breaks)
+  }
   if (isTRUE(risk_table)) {
-    p <- p + ggsurvfit::add_risktable()
+    p <- p + if (is.null(time_breaks)) ggsurvfit::add_risktable() else ggsurvfit::add_risktable(times = time_breaks)
   }
 
   p

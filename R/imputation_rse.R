@@ -24,6 +24,12 @@
 #'   `rmse` and `null_rmse` columns per variable and method.
 #' @param null_method `"mean"` (default) or `"median"`.
 #' @param baseline Optional baseline values; see Null baseline.
+#' @param group_col Optional column of `results_df` (a time point, a subject id). The null baseline
+#'   is then the mean (or median) of the held-out truths of the variable **within each group**
+#'   instead of one value per variable: a time-grouped or subject-grouped null model. This baseline
+#'   is harder to beat, so RSEs are larger than with the overall baseline. A group with a single
+#'   scored cell predicts that cell exactly (error 0), which makes a subject-grouped baseline
+#'   uninformative when subjects have one held-out cell each. Cannot be combined with `baseline`.
 #' @param variable_col,method_col,truth_col,imputed_col Column names in `results_df`.
 #' @return A tibble of class `cbe_rse` with `variable`, `method`, `n`, `n_dropped`, `rmse`,
 #'   `null_rmse`, `rse`, ordered by variable and RSE. Extra columns named `pct_miss` are kept.
@@ -46,8 +52,19 @@ compare_imputation_rse <- function(results_df,
                                    variable_col = "variable",
                                    method_col = "method",
                                    truth_col = "truth",
-                                   imputed_col = "imputed") {
+                                   imputed_col = "imputed",
+                                   group_col = NULL) {
   null_method <- match.arg(null_method)
+  if (!is.null(group_col)) {
+    if (!is.character(group_col) || length(group_col) != 1L || !group_col %in% names(results_df)) {
+      stop("`group_col` must name one column of `results_df`.", call. = FALSE)
+    }
+    if (!is.null(baseline)) stop("Give `group_col` or `baseline`, not both.", call. = FALSE)
+    if (all(c("rmse", "null_rmse") %in% names(results_df))) {
+      stop("`group_col` needs the scored cells (`truth` and `imputed`), not a table of `rmse` and `null_rmse`.",
+           call. = FALSE)
+    }
+  }
   if (!is.data.frame(results_df)) stop("`results_df` must be a data frame.", call. = FALSE)
   need <- c(variable_col, method_col)
   miss <- setdiff(need, names(results_df))
@@ -108,10 +125,27 @@ compare_imputation_rse <- function(results_df,
     if (length(x)) base_fun(x) else NA_real_
   }, numeric(1))
 
+  # with `group_col`: one baseline per variable and group, from the cells of one method (a cell scored
+  # by several methods would otherwise weigh more in its group)
+  grp_base <- NULL
+  if (!is.null(group_col)) {
+    df$.group <- as.character(results_df[[group_col]])
+    if (anyNA(df$.group)) stop("`", group_col, "` must not be missing.", call. = FALSE)
+    ref_method <- tapply(df$method, df$variable, function(m) m[1])
+    ref <- df[df$method == ref_method[df$variable] & !is.na(df$truth), , drop = FALSE]
+    grp_base <- vapply(split(ref$truth, paste(ref$variable, ref$.group, sep = "\r")), base_fun, numeric(1))
+  }
+
   pieces <- lapply(split(df, list(df$variable, df$method), drop = TRUE), function(g) {
     ok <- !is.na(g$truth) & !is.na(g$imputed)
     gv <- g$variable[1]
-    b <- if (is.null(base_val)) var_base[[gv]] else base_val[[gv]]
+    b <- if (!is.null(grp_base)) {
+      unname(grp_base[paste(g$variable, g$.group, sep = "\r")])[ok]
+    } else if (is.null(base_val)) {
+      var_base[[gv]]
+    } else {
+      base_val[[gv]]
+    }
     tibble::tibble(
       variable = gv, method = g$method[1],
       n = sum(ok), n_dropped = sum(!ok),

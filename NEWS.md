@@ -1,3 +1,61 @@
+# TempleCBE 0.7.10
+
+Downstream request list (Parts A to D). Most of it already existed under the current names; the
+table at the end maps every requested name to the function to call. Nothing is removed or renamed.
+
+## Extended
+
+* **`plot_cox_forest()`**: `color_by = "p_tier"` colors and shapes the points by p-value tier (`p_breaks`, default `c(0.001, 0.01, 0.05)`). `color_by_sig = TRUE` and `order_by_magnitude = TRUE` are logical shortcuts for `color_by = "p_tier"` and `order_by = "magnitude"`. (`exponentiate = FALSE` for log(HR) with the reference line at 0 was already there.)
+* **`plot_survival_km()`**: `time_breaks` sets the axis breaks and the columns of the risk table; `start_col` fits counting-process data, `Surv(start, stop, status)`. With `start_col` the p-value is the Cox score test, because the log-rank test does not accept such data.
+* **`km_cutpoint_search()`**, **`km_cutpoint_time_varying()`**: the result has a `criteria` table with one row per selection rule (median split, `maxstat`, largest log-rank, first cutpoint below each `alpha` scanned in the direction of the Cox coefficient, lowest p-value), and `cutpoints = "midpoints"` scans every midpoint between distinct values. `plot_km_cutpoints()` draws reference lines at `alpha`.
+* **`fit_lmer_safely()`**: retries with other optimizers (`optimizers`) after an error such as "Downdated VtV is not positive definite" or a convergence warning, then tries `fallback_formula`, then `lm()`. The result has `converged`, `used_fallback`, `optimizer` and `messages`. `singular_ok = TRUE` keeps a singular fit.
+* **`compute_composite_index()`**: `polarities` (+1 / -1 per variable), `method = "min_max"` and `center`. **`index_variable_table()`**: `min` and `max` columns, and `polarity` / `weight` columns when given.
+* **`compare_imputation_rse()`**: `group_col` gives a time-grouped or subject-grouped null baseline (mean or median within the group).
+* **`summarize_dalex_importance()`**: accepts a `DALEX::model_parts()` / `survex::model_parts()` result and adds `min`, `q1`, `median`, `mean`, `q3`, `max` over the permutations. **`plot_permutation_importance()`**: `type = "boxplot"` shows the dropout loss of each permutation.
+* **`pretty_name()`**: `dict` and `form = c("short", "full", "unit")` look names up in a label dictionary, with the automatic name as the fallback.
+* **`pca_loading()`**, **`pca_variance_pct()`**: `digits` returns formatted text for inline prose.
+* **`plot_rank_heatmap()`**: `fill_col` colors the tiles by another column (diverging scale, for mean estimates); `palette` takes a ColorBrewer name such as `"Blues"`.
+
+## New
+
+* **Tuning diagnostics**: `plot_tune_coefficients()` (estimate against IBS, full grid and best share), `plot_tune_grid()` (four-panel overview), `plot_tune_ibs_density()` and `tbl_tune_mixed_model()` (`IBS ~ alpha * log10(lambda) + (1 | resample)`; tibble, or `gtsummary` with `format = "gtsummary"`).
+* **Cutpoint plots**: `plot_cutpoint_bar()`, `plot_cutpoint_scatter()` (criteria side by side, for one feature or a list) and `plot_km_cutpoint()` (Kaplan-Meier curves at the cutpoint of one criterion).
+* **Paired comparison of two versions of a measurement** (original against imputed): `compare_distributions_ks()`, `compare_paired_correlation()`, `paired_diff_tests()`, `paired_diff_histogram()`, `paired_diff_ribbon_by_group()`, `paired_diff_ridgeline()`.
+* **`tune_impute_workflows()`**: tunes every recipe by model combination for one numeric variable (`workflowsets` with racing), returns the ranking, out-of-fold predictions, RMSE against the null model and the data with the variable filled in. `plot_tune_grid_rmse()` and `tbl_tune_best_model()` display it. (`tune_impute_numeric()` is unchanged: it benchmarks mean, median and KNN on masked cells.)
+* **Report text**: `tbl_abbreviations_glossary()`, `format_contrast_labels()` (`"Head Shape: Hemis (relative to Flathead)"`), `sanitize_model_table()` (escaped pipes, unrounded conditioning values, `NumDF` / `DenDF` headers, rank-deficiency footnote), `pca_loading_range()`, `excel_col_letters()` and `rename_to_excel()`.
+
+## Not done, and why
+
+* **`normalize_safely()` and `find_correlation()` aliases**: these were renamed to `normalize_path_safely()` and `drop_correlated_columns()`, deprecated in 0.5.8 and removed in 0.7.0. They are not brought back; `update_deprecated_calls()` rewrites old calls. The help of `drop_correlated_columns()` already says that it returns the columns to drop and points to `correlated_pairs_table()`.
+* **`cbe_glm_single()` / `cbe_lmm_single()`**: the functions are `glm_single()` and `lmm_single()` (`cbe_` is kept for formatting functions). There is no multinomial family and the output is not from `broom.helpers::tidy_plus_plus()`.
+* **`min_max_norm_vector()`** stays internal: `min_max_norm()` is exported and takes a vector or a data frame.
+* **`paired_diff_tests()`** returns a table, not a `ggpubr::ggpaired()` plot.
+
+## Requested name and the function to use
+
+| Requested | Use |
+|---|---|
+| `min_max_norm()` export | `min_max_norm()` (exported) |
+| `normalize_safely()` | `normalize_path_safely()` |
+| `find_correlation()` | `drop_correlated_columns()`; pairs: `correlated_pairs_table()`, with labels `tbl_correlated_pairs()` |
+| `plot_survival_km(risktable =, pvalue =)` | `risk_table =`, `p_value =` (or `pval =`) |
+| `plot_dynamic_trajectory(ribbon =)` | `ribbon_type = c("se", "quantile", "iqr")`, `palette =` |
+| `cbe_glm_single()`, `cbe_lmm_single()` | `glm_single()`, `lmm_single()`, `batch_glm_single()`, `batch_lmm_single()` (with `_dy_dx`) |
+| `relative_squared_error()` | `compare_imputation_rse()` |
+| `tune_impute_numeric(recipes, models, folds)` | `tune_impute_workflows()` |
+| `tidymodels_survival_predict_fn()` | `adapter_tidymodels_survex()` |
+| `plot_tune_ibs_boxplot()` | `plot_tune_ibs_by_resample()` |
+| `plot_variable_importance()`, `tbl_variable_importance()` | `plot_outer_importance()`, `summarize_outer_importance()`, `plot_tune_coef_boxplot()`, `tbl_tune_coef()` |
+| `plot_km_cutpoint_scan()` | `plot_km_cutpoints()` |
+| `tbl_cox_training_errors()` | `tbl_cox_glance_compare()` |
+| `compare_distributions_ks()` on data frames | also `compare_imputed_ecdf()`, `test_imputed_distributions()`, `plot_imputed_ridgeline()` |
+| `n_word()` | `pluralize()` |
+| `copy_var_labels(source, target)` | `copy_var_labels(from, to)` |
+
+## Docker image
+
+* `workflowsets`, `maxstat`, `exactRankTests`, `broom.helpers`, `broom.mixed` and `coda` are in `renv.lock` (6 additions, no pinned package changed) and in `Suggests` where they were not, and the image check loads `workflowsets`, `maxstat`, `broom.helpers` and `broom.mixed`. `tune_impute_workflows()`, the `maxstat` cutpoint criterion and `tbl_tune_mixed_model(format = "gtsummary")` therefore work in the image.
+
 # TempleCBE 0.7.9
 
 See the "Also in 0.7.9" list under 0.7.8 below: Fine-Gray regression (`tbl_fine_gray_single()`, `tbl_fine_gray_multi()`, `tbl_fine_gray_screen()`), `glance_imputations()` with `df_complete`, the zero-variance filter for the formula samplers, and the pinned explainability and graph packages in `renv.lock`.

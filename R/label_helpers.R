@@ -15,13 +15,33 @@ NULL
 #'
 #' @param x Character vector of variable names.
 #' @param acronyms Optional character vector of terms to keep uppercase.
+#' @param dict Optional label dictionary: a data frame with a term column (`term`, `variable`,
+#'   `name`, ...) and any of `short`, `full` and `unit` columns, or a named character vector
+#'   (`c(raw_name = "Label")`). Names found in the dictionary take its label; the others fall back
+#'   to the automatic title-cased name, so a partial dictionary is fine.
+#' @param form Which dictionary label to return: `"short"` (default; for crowded figures, falling back
+#'   to the full label), `"full"` (for tables and prose, falling back to the short label) or `"unit"`
+#'   (the full label followed by the unit in parentheses, when the dictionary has one and the label
+#'   does not already end with it). Ignored without `dict`.
 #' @return Character vector of formatted display labels.
+#' @seealso [tbl_abbreviations_glossary()], [cbe_labels()]
 #' @export
 #' @examples
 #' pretty_name(c("patient_bmi", "follow_up_time", "hr_ratio_sd"))
-pretty_name <- function(x, acronyms = c("BMI", "ID", "IBS", "HR", "SD", "IQR", "CBE", "RNA", "DNA", "CV", "AUC", "ROC", "IPCW")) {
+#' dict <- data.frame(term = "pao2", short = "PaO2", full = "Arterial oxygen pressure", unit = "mmHg")
+#' pretty_name(c("pao2", "heart_rate"), dict = dict, form = "unit")
+pretty_name <- function(x, acronyms = c("BMI", "ID", "IBS", "HR", "SD", "IQR", "CBE", "RNA", "DNA", "CV", "AUC", "ROC", "IPCW"),
+                        dict = NULL, form = c("short", "full", "unit")) {
   if (is.null(x)) return(character())
   x <- as.character(x)
+  if (!is.null(dict)) {
+    form <- match.arg(form)
+    found <- .dict_lookup(x, dict, form)
+    out <- found
+    out[is.na(found)] <- pretty_name(x[is.na(found)], acronyms = acronyms)
+    out[is.na(x)] <- NA_character_
+    return(out)
+  }
 
   # Replace underscores, dots, hyphens with spaces
   clean <- gsub("[._-]+", " ", x)

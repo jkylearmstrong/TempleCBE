@@ -33,10 +33,18 @@ center <- function(x, na.rm = TRUE) {
 #' @param cols Character vector of numeric column names to include in the index.
 #' @param method Index construction method: `"zscore"` (default, mean of z-scores),
 #'   `"pca"` (first principal component score, scaled so higher values indicate greater severity),
-#'   or `"sum"` (weighted sum).
+#'   `"sum"` (weighted sum), or `"min_max"` (each variable rescaled to the range 0 to 1 over its
+#'   observed values, optionally centered, then the weighted sum; a constant variable contributes 0).
 #' @param weights Optional numeric vector of weights matching `cols`. If `NULL`,
 #'   equal weights are used.
 #' @param index_name Character string naming the output index column (default `"composite_index"`).
+#' @param polarities Optional vector of `+1` / `-1`, one per column of `cols` (in that order, or
+#'   named by column): `-1` for a variable whose larger values mean a *lower* index, so that all
+#'   components push the index in the same direction. Multiplies the weights. Not used by
+#'   `method = "pca"`, which chooses its own signs (giving `polarities` there is an error).
+#' @param center For `method = "min_max"`: if `TRUE` (default) each rescaled variable is centered on
+#'   its mean, so an average subject scores 0. To center on a baseline visit instead of all rows,
+#'   use [compute_longitudinal_composite_index()].
 #' @return The input data frame augmented with the new composite index column.
 #' @seealso [index_variable_table()], [center()]
 #' @export
@@ -45,9 +53,11 @@ center <- function(x, na.rm = TRUE) {
 #' compute_composite_index(df, cols = c("sbp", "dbp", "bmi"), method = "zscore")
 compute_composite_index <- function(data,
                                     cols,
-                                    method = c("zscore", "pca", "sum"),
+                                    method = c("zscore", "pca", "sum", "min_max"),
                                     weights = NULL,
-                                    index_name = "composite_index") {
+                                    index_name = "composite_index",
+                                    polarities = NULL,
+                                    center = TRUE) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
   }
@@ -59,6 +69,10 @@ compute_composite_index <- function(data,
   method <- match.arg(method)
   mat <- as.matrix(data[, cols, drop = FALSE])
   p <- length(cols)
+  polarities <- .index_polarities(polarities, cols)
+  if (!is.null(polarities) && method == "pca") {
+    stop("`polarities` cannot be used with `method = \"pca\"`.", call. = FALSE)
+  }
 
   if (!is.null(weights)) {
     if (length(weights) != p) {
@@ -67,8 +81,16 @@ compute_composite_index <- function(data,
   } else {
     weights <- rep(1 / p, p)
   }
+  if (!is.null(polarities)) weights <- weights * polarities
 
-  if (method == "zscore") {
+  if (method == "min_max") {
+    scaled_mat <- apply(mat, 2, function(x) {
+      r <- range(x, na.rm = TRUE)
+      z <- if (!all(is.finite(r)) || r[1] == r[2]) ifelse(is.na(x), NA_real_, 0) else (x - r[1]) / (r[2] - r[1])
+      if (isTRUE(center)) z - mean(z, na.rm = TRUE) else z
+    })
+    score <- as.vector(matrix(scaled_mat, ncol = p) %*% weights)
+  } else if (method == "zscore") {
     # Scale each column to mean 0, sd 1
     scaled_mat <- apply(mat, 2, function(x) {
       s <- stats::sd(x, na.rm = TRUE)
@@ -95,6 +117,23 @@ compute_composite_index <- function(data,
   data
 }
 
+# +1/-1 per column, in `cols` order; NULL stays NULL
+.index_polarities <- function(polarities, cols) {
+  if (is.null(polarities)) return(NULL)
+  if (!is.numeric(polarities) || anyNA(polarities) || !all(polarities %in% c(-1, 1))) {
+    stop("`polarities` must be +1 or -1 for every column.", call. = FALSE)
+  }
+  if (!is.null(names(polarities))) {
+    gap <- setdiff(cols, names(polarities))
+    if (length(gap)) stop("`polarities` has no value for: ", paste(gap, collapse = ", "), ".", call. = FALSE)
+    return(unname(polarities[cols]))
+  }
+  if (length(polarities) != length(cols)) {
+    stop("`polarities` length (", length(polarities), ") must match `cols` length (", length(cols), ").", call. = FALSE)
+  }
+  polarities
+}
+
 #' Summary Table of Composite Index Component Variables
 #'
 #' Generates a tidy summary table of component variables comprising a composite index,
@@ -104,7 +143,11 @@ compute_composite_index <- function(data,
 #' @param cols Character vector of component variable names.
 #' @param index_col Character name of the composite index column.
 #' @param method Correlation method: `"pearson"` (default) or `"spearman"`.
-#' @return A tibble with one row per component variable.
+#' @param polarities Optional `+1` / `-1` per component, as in [compute_composite_index()]; adds a
+#'   `polarity` column.
+#' @param weights Optional weights per component (in `cols` order); adds a `weight` column.
+#' @return A tibble with one row per component variable: `variable`, `polarity` and `weight` (when
+#'   given), `mean`, `sd`, `min`, `max`, `r_with_index` and `p_value`.
 #' @seealso [compute_composite_index()]
 #' @export
 #' @examples
@@ -114,7 +157,9 @@ compute_composite_index <- function(data,
 index_variable_table <- function(data,
                                  cols,
                                  index_col = "composite_index",
-                                 method = c("pearson", "spearman")) {
+                                 method = c("pearson", "spearman"),
+                                 polarities = NULL,
+                                 weights = NULL) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
   }
@@ -127,6 +172,10 @@ index_variable_table <- function(data,
   }
 
   method <- match.arg(method)
+  polarities <- .index_polarities(polarities, cols)
+  if (!is.null(weights) && (!is.numeric(weights) || length(weights) != length(cols))) {
+    stop("`weights` must be numeric, one per column of `cols`.", call. = FALSE)
+  }
 
   rows <- lapply(cols, function(col) {
     x <- data[[col]]
@@ -141,14 +190,20 @@ index_variable_table <- function(data,
       error = function(e) list(estimate = NA_real_, p.value = NA_real_)
     )
 
+    rng <- if (all(is.na(x))) c(NA_real_, NA_real_) else range(x, na.rm = TRUE)
     tibble::tibble(
       variable = col,
       mean = m,
       sd = s,
+      min = rng[1],
+      max = rng[2],
       r_with_index = unname(ct$estimate),
       p_value = unname(ct$p.value)
     )
   })
 
-  dplyr::bind_rows(rows)
+  out <- dplyr::bind_rows(rows)
+  if (!is.null(weights)) out <- tibble::add_column(out, weight = weights, .after = "variable")
+  if (!is.null(polarities)) out <- tibble::add_column(out, polarity = polarities, .after = "variable")
+  out
 }

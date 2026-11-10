@@ -4,12 +4,22 @@
 \alias{pca_accessors}
 \alias{pca_loading}
 \alias{pca_variance_pct}
+\alias{pca_loading_range}
 \alias{pca_top_features}
 \title{Scalar Accessors for PCA Results (for Inline Prose)}
 \usage{
-pca_loading(pca_mod, feature, pc)
+pca_loading(pca_mod, feature, pc, digits = NULL)
 
-pca_variance_pct(pca_mod, pc, cumulative = FALSE)
+pca_variance_pct(pca_mod, pc, cumulative = FALSE, digits = NULL)
+
+pca_loading_range(
+  pca_mod,
+  features,
+  pc,
+  digits = 2,
+  absolute = FALSE,
+  sep = " to "
+)
 
 pca_top_features(pca_mod, pc, n = 5L, by = c("abs", "positive", "negative"))
 }
@@ -22,8 +32,20 @@ An unknown name is an error that lists the available names.}
 \item{pc}{Component number or name (`"PC2"`). `pca_loading()` takes exactly one;
 `pca_variance_pct()` accepts several.}
 
+\item{digits}{`NULL` (default for `pca_loading()` and `pca_variance_pct()`) returns numbers. A
+number of decimals returns text formatted with that many decimals, ready for inline prose
+(`pca_variance_pct(fit, 1, digits = 1)` is `"62.8"`). `pca_loading_range()` formats with 2
+decimals by default; `digits = NULL` there returns the numeric minimum and maximum.}
+
 \item{cumulative}{If `TRUE`, the percentage of variance explained by components 1 to `pc`
 together (each value of `pc` gives the cumulative share up to it).}
+
+\item{features}{Names of two or more original variables.}
+
+\item{absolute}{If `TRUE`, the range of the absolute loadings (sizes regardless of sign).
+Default `FALSE` gives the signed minimum and maximum.}
+
+\item{sep}{Text between the two ends of the range (default `" to "`).}
 
 \item{n}{Number of features to return (default 5; fewer if the fit has fewer variables).}
 
@@ -33,6 +55,8 @@ the variables in the fit.}
 }
 \value{
 `pca_loading()`: one number. `pca_variance_pct()`: a numeric vector, one value per `pc`.
+  Both return character when `digits` is given. `pca_loading_range()`: one string such as
+  `"0.31 to 0.52"`, the smallest and largest loading of `features` on `pc`.
   `pca_top_features()`: a tibble with `feature`, `loading` (signed), `abs_loading` and `rank`.
 }
 \description{

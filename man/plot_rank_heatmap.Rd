@@ -12,7 +12,9 @@ plot_rank_heatmap(
   low_color = "#9D2235",
   high_color = "#F4F4F4",
   title = "Rank Stability Across Resamples",
-  base_size = 12
+  base_size = 12,
+  fill_col = NULL,
+  palette = NULL
 )
 }
 \arguments{
@@ -31,6 +33,14 @@ plot_rank_heatmap(
 \item{title}{Optional plot title.}
 
 \item{base_size}{Base font size (default 12).}
+
+\item{fill_col}{Optional name of a numeric column to color the tiles by instead of the rank, for
+example the mean coefficient estimate. The fill is then a diverging scale centered on 0
+(blue below, white at 0, `low_color` above) and the rank is still the text in each tile.}
+
+\item{palette}{Optional name of a sequential ColorBrewer palette (for example `"Blues"`) for the
+rank fill, with the best rank darkest; used instead of `low_color` / `high_color`. Ignored with
+`fill_col`.}
 }
 \value{
 A `ggplot2` object.

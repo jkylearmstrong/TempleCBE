@@ -7,13 +7,25 @@
 pretty_name(
   x,
   acronyms = c("BMI", "ID", "IBS", "HR", "SD", "IQR", "CBE", "RNA", "DNA", "CV", "AUC",
-    "ROC", "IPCW")
+    "ROC", "IPCW"),
+  dict = NULL,
+  form = c("short", "full", "unit")
 )
 }
 \arguments{
 \item{x}{Character vector of variable names.}
 
 \item{acronyms}{Optional character vector of terms to keep uppercase.}
+
+\item{dict}{Optional label dictionary: a data frame with a term column (`term`, `variable`,
+`name`, ...) and any of `short`, `full` and `unit` columns, or a named character vector
+(`c(raw_name = "Label")`). Names found in the dictionary take its label; the others fall back
+to the automatic title-cased name, so a partial dictionary is fine.}
+
+\item{form}{Which dictionary label to return: `"short"` (default; for crowded figures, falling back
+to the full label), `"full"` (for tables and prose, falling back to the short label) or `"unit"`
+(the full label followed by the unit in parentheses, when the dictionary has one and the label
+does not already end with it). Ignored without `dict`.}
 }
 \value{
 Character vector of formatted display labels.
@@ -25,4 +37,9 @@ acronyms (e.g. BMI, ID, IBS, HR, SD, IQR, CBE, RNA, DNA).
 }
 \examples{
 pretty_name(c("patient_bmi", "follow_up_time", "hr_ratio_sd"))
+dict <- data.frame(term = "pao2", short = "PaO2", full = "Arterial oxygen pressure", unit = "mmHg")
+pretty_name(c("pao2", "heart_rate"), dict = dict, form = "unit")
+}
+\seealso{
+[tbl_abbreviations_glossary()], [cbe_labels()]
 }

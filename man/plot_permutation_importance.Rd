@@ -11,11 +11,13 @@ plot_permutation_importance(
   title = "Feature Permutation Importance",
   base_size = 12,
   label_map = NULL,
-  style = NULL
+  style = NULL,
+  type = c("bar", "boxplot")
 )
 }
 \arguments{
-\item{data}{A data frame from [summarize_dalex_importance()] containing `variable` and `importance`.}
+\item{data}{A data frame from [summarize_dalex_importance()] containing `variable` and `importance`,
+or a permutation importance result itself ([DALEX::model_parts()], `survex::model_parts()`).}
 
 \item{top_n}{Optional integer limit on the number of features to plot (default 20).}
 
@@ -28,12 +30,18 @@ plot_permutation_importance(
 \item{label_map}{Optional label mapping (see [cbe_labels()]).}
 
 \item{style}{Optional label style (`"short"` or `"full"`).}
+
+\item{type}{`"bar"` (default; mean importance, the loss above the full model) or `"boxplot"`
+(the dropout loss of each permutation, with a dashed line at the full-model loss). The box plot
+needs the per-permutation values: a `model_parts` result, or a [summarize_dalex_importance()]
+summary of one.}
 }
 \value{
 A `ggplot2` object.
 }
 \description{
-Generates a horizontal bar chart of the top features ranked by permutation importance.
+Generates a horizontal bar chart of the top features ranked by permutation importance, or a
+box plot of the dropout loss over the permutations.
 }
 \seealso{
 [summarize_dalex_importance()], [tbl_permutation_importance()]

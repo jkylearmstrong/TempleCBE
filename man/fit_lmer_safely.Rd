@@ -4,7 +4,15 @@
 \alias{fit_lmer_safely}
 \title{Fit a Linear Mixed-Effects Model With Safe Fallback}
 \usage{
-fit_lmer_safely(formula, data, warn_on_fallback = TRUE, ...)
+fit_lmer_safely(
+  formula,
+  data,
+  warn_on_fallback = TRUE,
+  ...,
+  fallback_formula = NULL,
+  optimizers = c("bobyqa", "Nelder_Mead"),
+  singular_ok = FALSE
+)
 }
 \arguments{
 \item{formula}{Model formula, typically containing random effects (e.g. `y ~ x + (1 | id)`).}
@@ -14,13 +22,28 @@ fit_lmer_safely(formula, data, warn_on_fallback = TRUE, ...)
 \item{warn_on_fallback}{Logical. Emit a warning when falling back to `lm`. Default `TRUE`.}
 
 \item{...}{Additional arguments passed to [lme4::lmer()] or [stats::lm()].}
+
+\item{fallback_formula}{Optional simpler formula to try before the fixed-effects fallback, for
+example a random intercept in place of random slopes (`y ~ x + (1 | id)`).}
+
+\item{optimizers}{Optimizers to retry with, names accepted by [lme4::lmerControl()]
+(default `c("bobyqa", "Nelder_Mead")`). `NULL` or `character()` for no retries.}
+
+\item{singular_ok}{If `TRUE`, a singular mixed model (a variance estimated as zero, or a
+correlation of plus or minus 1) is kept instead of falling back. Default `FALSE`.}
 }
 \value{
 A list of class `"cbe_lmer_safely"` containing:
   \item{model}{The fitted `merMod` or `lm` object}
   \item{method}{Character indicating `"lmer"` or `"lm"`}
-  \item{is_singular}{Logical indicating whether the mixed model had a singular fit}
+  \item{is_singular}{Logical indicating whether the mixed model of `formula` had a singular fit}
   \item{formula}{The formula used for the final fit}
+  \item{converged}{`TRUE` when the returned model is the mixed model of `formula` itself, fitted
+    without a convergence warning; `FALSE` after any fallback or with a convergence warning}
+  \item{used_fallback}{`"none"`, `"fallback_formula"` or `"lm"`}
+  \item{optimizer}{The optimizer of the returned mixed model (`"default"` for the first attempt),
+    `NA` for an `lm` fit}
+  \item{messages}{Error and convergence messages collected on the way (character vector)}
 }
 \description{
 Fits a linear mixed model via [lme4::lmer()], catching non-convergence,
@@ -30,6 +53,22 @@ back to a fixed-effects linear model ([stats::lm()]).
 \details{
 Replaces inline tryCatch / fallback copies across longitudinal reports.
 }
+\section{What is tried, in order}{
+
+1. `lmer(formula)` with the default optimizer.
+2. If that stops with an error (for example "Downdated VtV is not positive definite") or gives a
+   convergence warning, the same model with each of `optimizers` in turn. The first fit without
+   an error or convergence warning is kept.
+3. If no fit of `formula` is usable (every attempt failed, or the fit is singular and
+   `singular_ok = FALSE`), `fallback_formula` when given: with [lme4::lmer()] (same optimizer
+   retries) if it has a random-effects term, otherwise with [stats::lm()].
+4. Otherwise [stats::lm()] on `formula` with its random-effects terms removed.
+
+A fit of `formula` that only has a convergence warning under every optimizer is returned as it is,
+with `converged = FALSE` and a warning, as before. Optimizer retries are skipped when you pass
+your own `control` in `...`.
+}
+
 \examples{
 df <- data.frame(
   id = rep(1:5, each = 4),
@@ -38,4 +77,5 @@ df <- data.frame(
 )
 fit <- fit_lmer_safely(y ~ time + (1 | id), data = df)
 fit$method
+fit$converged
 }

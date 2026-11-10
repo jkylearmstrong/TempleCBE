@@ -7,7 +7,11 @@
 summarize_dalex_importance(explainer, data = NULL, y = NULL, B = 10, ...)
 }
 \arguments{
-\item{explainer}{A DALEX explainer object, or a fitted model / function supported by DALEX.}
+\item{explainer}{A DALEX explainer object, a ready-made permutation importance result
+([DALEX::model_parts()] / `feature_importance()`, or `survex::model_parts()` for a survival
+model, or a data frame with `variable`, `permutation` and `dropout_loss`), or a fitted model with
+coefficients. For a result object the summary is taken over its permutations; `data`, `y`, `B`
+and `...` are not used.}
 
 \item{data}{Optional test dataset for computing importance.}
 
@@ -18,12 +22,23 @@ summarize_dalex_importance(explainer, data = NULL, y = NULL, B = 10, ...)
 \item{...}{Additional arguments passed to [DALEX::model_parts()].}
 }
 \value{
-A tibble with columns `variable`, `dropout_loss`, `importance`, and `rank`.
+A tibble with columns `variable`, `dropout_loss`, `importance`, and `rank`. For a
+  permutation importance result it also has the distribution of the dropout loss over the
+  permutations (`min`, `q1`, `median`, `mean`, `q3`, `max`), and the per-permutation values are
+  kept in `attr(, "permutations")` for [plot_permutation_importance()].
 }
 \description{
 Computes permutation feature importance from a fitted model or DALEX explainer,
 returning a tidy table of variable importance rankings and dropout losses.
 }
+\section{Survival models}{
+
+`survex::model_parts()` returns the loss at every evaluation time, in one column per variable.
+The summary averages each permutation over the evaluation times, so one number per variable and
+permutation remains.
+}
+
 \seealso{
-[plot_permutation_importance()], [tbl_permutation_importance()]
+[plot_permutation_importance()], [tbl_permutation_importance()],
+  [tbl_feature_importance_dalex()], [adapter_tidymodels_survex()]
 }

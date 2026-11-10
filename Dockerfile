@@ -97,7 +97,7 @@ RUN Rscript -e 'Sys.setenv(RENV_PATHS_CACHE = Sys.getenv("RENV_PATHS_CACHE")); r
 
 # The Suggests that TempleCBE needs at run time (lme4, furrr, glmnet, rsample, openxlsx, zip, yardstick,
 # probably, quarto, baguette, missRanger, missForest, FactoMineR, finetune, censored, survex, DALEXtra,
-# DiagrammeR, visNetwork and their dependencies) are
+# DiagrammeR, visNetwork, workflowsets, maxstat, broom.helpers, broom.mixed and their dependencies) are
 # recorded in renv.lock, so the restore above installs them: one install phase, and the same versions
 # on amd64 and arm64.
 
@@ -117,6 +117,6 @@ RUN Rscript -e 'renv::install(".", prompt = FALSE, INSTALL_opts = c("--no-multia
 # every package installed above. A DGX Spark run reported that the extra packages were installed but
 # masked at run time (renv put another library on .libPaths()); this fails the build, with the
 # library paths printed, instead of shipping an image in which about 30 tests error and 400 skip.
-RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip", "yardstick", "probably", "quarto", "baguette", "missRanger", "missForest", "FactoMineR", "finetune", "censored", "survex", "DALEXtra", "DiagrammeR", "visNetwork"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
+RUN Rscript -e 'need <- c("TempleCBE", "lme4", "furrr", "glmnet", "rsample", "openxlsx", "zip", "yardstick", "probably", "quarto", "baguette", "missRanger", "missForest", "FactoMineR", "finetune", "censored", "survex", "DALEXtra", "DiagrammeR", "visNetwork", "workflowsets", "maxstat", "broom.helpers", "broom.mixed"); have <- vapply(need, requireNamespace, logical(1), quietly = TRUE); if (!all(have)) { print(.libPaths()); stop("not found in a fresh R session in /pkg: ", paste(need[!have], collapse = ", "), call. = FALSE) }'
 
 CMD ["R"]
