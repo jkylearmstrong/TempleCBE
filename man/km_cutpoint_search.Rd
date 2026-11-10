@@ -10,7 +10,9 @@ km_cutpoint_search(
   status_col,
   var_col,
   min_prop = 0.1,
-  n_cuts = 50
+  n_cuts = 50,
+  cutpoints = c("quantiles", "midpoints"),
+  alpha = c(0.1, 0.05, 0.001)
 )
 }
 \arguments{
@@ -25,6 +27,13 @@ km_cutpoint_search(
 \item{min_prop}{Minimum proportion of subjects required in each stratified subgroup (default 0.10).}
 
 \item{n_cuts}{Number of quantile evaluation points between `min_prop` and `1 - min_prop` (default 50).}
+
+\item{cutpoints}{Candidate cutpoints: `"quantiles"` (default; `n_cuts` quantiles between `min_prop`
+and `1 - min_prop`) or `"midpoints"` (every midpoint between consecutive distinct values, still
+subject to `min_prop`).}
+
+\item{alpha}{Significance levels for the `first_p<alpha` criteria (default `c(0.1, 0.05, 0.001)`;
+`NULL` for none).}
 }
 \value{
 A list with class `"cbe_km_cutpoint"` containing:
@@ -32,6 +41,9 @@ A list with class `"cbe_km_cutpoint"` containing:
   \item{optimal_p}{P-value at the optimal cutpoint}
   \item{optimal_hr}{Hazard ratio of high vs low group at the optimal cutpoint}
   \item{candidates}{A tibble of evaluated candidate cutpoints and statistics}
+  \item{criteria}{A tibble with one row per selection criterion (see Selection criteria): `criterion`,
+    the columns of `candidates`, and `neg_log10_p`}
+  \item{cox_coef}{Coefficient of the continuous variable in a univariable Cox model}
   \item{data}{The input data frame augmented with a \code{<var_col>_strata} binary factor column}
   \item{time_col}{Name of time column}
   \item{status_col}{Name of status column}
@@ -45,6 +57,26 @@ Cox hazard ratios across candidate percentiles to identify the optimal stratific
 \details{
 Replaces inline cutpoint selection scripts across clinical survival reports.
 }
+\section{Selection criteria}{
+
+`criteria` has one row per rule, each a split of the cohort at `value > cutpoint`:
+* `median`: the median of the variable (scored even when it is not a candidate).
+* `maxstat`: the maximally selected log-rank statistic of `maxstat::maxstat.test()`, which is what
+  `survminer::surv_cutpoint()` reports. Present only when the \pkg{maxstat} package is installed.
+* `max_logrank`: the candidate with the largest log-rank chi-square. The optimum of the object
+  (`optimal_cutpoint`) is this row.
+* `first_p<alpha`, one per value of `alpha`: the first candidate with a p-value below `alpha`,
+  scanning up from the lowest candidate when the Cox coefficient of the continuous variable is
+  positive and down from the highest otherwise (the most inclusive split on the risk side). Absent
+  when no candidate reaches that level.
+* `lowest_p`: the candidate with the smallest p-value (the same split as `max_logrank` for
+  right-censored data, where the p-value is a function of the chi-square).
+
+All of these except `median` choose the cutpoint by looking at the outcome, so their p-values and
+hazard ratios are optimistic and are not valid tests; report them as exploratory or validate the
+cutpoint in other data.
+}
+
 \examples{
 if (requireNamespace("survival", quietly = TRUE)) {
   set.seed(123)
@@ -55,8 +87,10 @@ if (requireNamespace("survival", quietly = TRUE)) {
   )
   res <- km_cutpoint_search(df, "time", "status", "marker")
   res$optimal_cutpoint
+  res$criteria
 }
 }
 \seealso{
-[plot_km_cutpoints()], [km_cutpoint_time_varying()]
+[plot_km_cutpoints()], [plot_km_cutpoint()], [plot_cutpoint_bar()], [km_cutpoint_time_varying()],
+  [batch_cutpoint_survdiff()]
 }

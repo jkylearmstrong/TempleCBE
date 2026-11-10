@@ -275,6 +275,12 @@ plot_corr_scatter <- function(data,
 #' @param high_color Color for worst rank (default light grey `"#F4F4F4"`).
 #' @param title Optional plot title.
 #' @param base_size Base font size (default 12).
+#' @param fill_col Optional name of a numeric column to color the tiles by instead of the rank, for
+#'   example the mean coefficient estimate. The fill is then a diverging scale centered on 0
+#'   (blue below, white at 0, `low_color` above) and the rank is still the text in each tile.
+#' @param palette Optional name of a sequential ColorBrewer palette (for example `"Blues"`) for the
+#'   rank fill, with the best rank darkest; used instead of `low_color` / `high_color`. Ignored with
+#'   `fill_col`.
 #' @return A `ggplot2` object.
 #' @export
 plot_rank_heatmap <- function(data,
@@ -284,9 +290,14 @@ plot_rank_heatmap <- function(data,
                               low_color = "#9D2235",
                               high_color = "#F4F4F4",
                               title = "Rank Stability Across Resamples",
-                              base_size = 12) {
+                              base_size = 12,
+                              fill_col = NULL,
+                              palette = NULL) {
   if (!all(c(item_col, group_col, rank_col) %in% names(data))) {
     stop("Required columns '", item_col, "', '", group_col, "', and '", rank_col, "' must be in `data`.", call. = FALSE)
+  }
+  if (!is.null(fill_col) && (!fill_col %in% names(data) || !is.numeric(data[[fill_col]]))) {
+    stop("`fill_col` must name a numeric column of `data`.", call. = FALSE)
   }
 
   df <- data[!is.na(data[[item_col]]) & !is.na(data[[group_col]]) & !is.na(data[[rank_col]]), , drop = FALSE]
@@ -299,10 +310,18 @@ plot_rank_heatmap <- function(data,
   df[[item_col]] <- factor(df[[item_col]], levels = rev(avg_rank[[item_col]]))
   df[[group_col]] <- factor(df[[group_col]])
 
-  ggplot2::ggplot(df, ggplot2::aes(x = .data[[group_col]], y = .data[[item_col]], fill = .data[[rank_col]])) +
+  fill_scale <- if (!is.null(fill_col)) {
+    ggplot2::scale_fill_gradient2(low = "#2166AC", mid = "white", high = low_color, midpoint = 0, name = fill_col)
+  } else if (!is.null(palette)) {
+    ggplot2::scale_fill_distiller(palette = palette, direction = -1, name = "Rank")
+  } else {
+    ggplot2::scale_fill_gradient(low = low_color, high = high_color, name = "Rank")
+  }
+  fill_var <- if (is.null(fill_col)) rank_col else fill_col
+  ggplot2::ggplot(df, ggplot2::aes(x = .data[[group_col]], y = .data[[item_col]], fill = .data[[fill_var]])) +
     ggplot2::geom_tile(color = "white", linewidth = 0.5) +
     ggplot2::geom_text(ggplot2::aes(label = round(.data[[rank_col]], 0)), size = 3.5, color = "black") +
-    ggplot2::scale_fill_gradient(low = low_color, high = high_color, name = "Rank") +
+    fill_scale +
     theme_cbe(base_size = base_size) +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) +
     ggplot2::labs(

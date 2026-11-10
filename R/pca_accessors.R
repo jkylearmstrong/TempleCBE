@@ -24,7 +24,13 @@
 #'   An unknown name is an error that lists the available names.
 #' @param pc Component number or name (`"PC2"`). `pca_loading()` takes exactly one;
 #'   `pca_variance_pct()` accepts several.
+#' @param digits `NULL` (default for `pca_loading()` and `pca_variance_pct()`) returns numbers. A
+#'   number of decimals returns text formatted with that many decimals, ready for inline prose
+#'   (`pca_variance_pct(fit, 1, digits = 1)` is `"62.8"`). `pca_loading_range()` formats with 2
+#'   decimals by default; `digits = NULL` there returns the numeric minimum and maximum.
 #' @return `pca_loading()`: one number. `pca_variance_pct()`: a numeric vector, one value per `pc`.
+#'   Both return character when `digits` is given. `pca_loading_range()`: one string such as
+#'   `"0.31 to 0.52"`, the smallest and largest loading of `features` on `pc`.
 #'   `pca_top_features()`: a tibble with `feature`, `loading` (signed), `abs_loading` and `rank`.
 #' @seealso [run_pca()], [pca_percent_var_explained()], [pca_feature_loading_heatmap()]
 #' @name pca_accessors
@@ -66,7 +72,8 @@ NULL
 
 #' @rdname pca_accessors
 #' @export
-pca_loading <- function(pca_mod, feature, pc) {
+pca_loading <- function(pca_mod, feature, pc, digits = NULL) {
+  if (!is.null(digits)) return(.pca_fmt(pca_loading(pca_mod, feature, pc), digits))
   rot <- .pca_rotation(pca_mod)
   if (!is.character(feature) || length(feature) != 1L || is.na(feature)) {
     stop("`feature` must be one variable name.", call. = FALSE)
@@ -84,11 +91,45 @@ pca_loading <- function(pca_mod, feature, pc) {
 #' @param cumulative If `TRUE`, the percentage of variance explained by components 1 to `pc`
 #'   together (each value of `pc` gives the cumulative share up to it).
 #' @export
-pca_variance_pct <- function(pca_mod, pc, cumulative = FALSE) {
+pca_variance_pct <- function(pca_mod, pc, cumulative = FALSE, digits = NULL) {
+  if (!is.null(digits)) return(.pca_fmt(pca_variance_pct(pca_mod, pc, cumulative = cumulative), digits))
   fit <- extract_prcomp(pca_mod, "pca_mod")
   pct <- 100 * fit$sdev^2 / sum(fit$sdev^2)
   idx <- .pca_pc_index(pc, length(pct))
   if (isTRUE(cumulative)) cumsum(pct)[idx] else pct[idx]
+}
+
+#' @rdname pca_accessors
+#' @param features Names of two or more original variables.
+#' @param absolute If `TRUE`, the range of the absolute loadings (sizes regardless of sign).
+#'   Default `FALSE` gives the signed minimum and maximum.
+#' @param sep Text between the two ends of the range (default `" to "`).
+#' @export
+pca_loading_range <- function(pca_mod, features, pc, digits = 2, absolute = FALSE, sep = " to ") {
+  rot <- .pca_rotation(pca_mod)
+  if (!is.character(features) || length(features) < 1L || anyNA(features)) {
+    stop("`features` must be variable names.", call. = FALSE)
+  }
+  if (length(pc) != 1L) stop("`pc` must be a single component for `pca_loading_range()`.", call. = FALSE)
+  j <- .pca_pc_index(pc, ncol(rot))
+  gone <- setdiff(features, rownames(rot))
+  if (length(gone)) {
+    stop("`features` not in the PCA: ", paste(gone, collapse = ", "), ". Available: ",
+         paste(rownames(rot), collapse = ", "), ".", call. = FALSE)
+  }
+  v <- unname(rot[features, j])
+  if (isTRUE(absolute)) v <- abs(v)
+  if (is.null(digits)) return(range(v))
+  paste(.pca_fmt(range(v), digits), collapse = sep)
+}
+
+# fixed-decimal text for inline prose; a rounded negative zero is written as zero
+.pca_fmt <- function(v, digits) {
+  if (!is.numeric(digits) || length(digits) != 1L || is.na(digits) || digits < 0) {
+    stop("`digits` must be a non-negative number or NULL.", call. = FALSE)
+  }
+  out <- formatC(round(v, digits) + 0, format = "f", digits = digits)
+  sub("^-(0(\\.0+)?)$", "\\1", out)
 }
 
 #' @rdname pca_accessors

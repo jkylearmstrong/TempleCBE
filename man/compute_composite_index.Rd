@@ -7,9 +7,11 @@
 compute_composite_index(
   data,
   cols,
-  method = c("zscore", "pca", "sum"),
+  method = c("zscore", "pca", "sum", "min_max"),
   weights = NULL,
-  index_name = "composite_index"
+  index_name = "composite_index",
+  polarities = NULL,
+  center = TRUE
 )
 }
 \arguments{
@@ -19,12 +21,22 @@ compute_composite_index(
 
 \item{method}{Index construction method: `"zscore"` (default, mean of z-scores),
 `"pca"` (first principal component score, scaled so higher values indicate greater severity),
-or `"sum"` (weighted sum).}
+`"sum"` (weighted sum), or `"min_max"` (each variable rescaled to the range 0 to 1 over its
+observed values, optionally centered, then the weighted sum; a constant variable contributes 0).}
 
 \item{weights}{Optional numeric vector of weights matching `cols`. If `NULL`,
 equal weights are used.}
 
 \item{index_name}{Character string naming the output index column (default `"composite_index"`).}
+
+\item{polarities}{Optional vector of `+1` / `-1`, one per column of `cols` (in that order, or
+named by column): `-1` for a variable whose larger values mean a *lower* index, so that all
+components push the index in the same direction. Multiplies the weights. Not used by
+`method = "pca"`, which chooses its own signs (giving `polarities` there is an error).}
+
+\item{center}{For `method = "min_max"`: if `TRUE` (default) each rescaled variable is centered on
+its mean, so an average subject scores 0. To center on a baseline visit instead of all rows,
+use [compute_longitudinal_composite_index()].}
 }
 \value{
 The input data frame augmented with the new composite index column.

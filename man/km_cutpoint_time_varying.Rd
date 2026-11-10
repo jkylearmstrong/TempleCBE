@@ -12,7 +12,9 @@ km_cutpoint_time_varying(
   var_col,
   id_col,
   min_prop = 0.1,
-  n_cuts = 30
+  n_cuts = 30,
+  cutpoints = c("quantiles", "midpoints"),
+  alpha = c(0.1, 0.05, 0.001)
 )
 }
 \arguments{
@@ -31,9 +33,13 @@ km_cutpoint_time_varying(
 \item{min_prop}{Minimum proportion of total records in each subgroup (default 0.10).}
 
 \item{n_cuts}{Number of candidate cutpoints (default 30).}
+
+\item{cutpoints, alpha}{As in [km_cutpoint_search()]. The criteria use the robust (clustered) Wald
+test of the Cox model in place of the log-rank test, and there is no `maxstat` criterion.}
 }
 \value{
-A list with class `"cbe_km_cutpoint"` containing optimal cutpoint and candidate statistics.
+A list with class `"cbe_km_cutpoint"` containing optimal cutpoint, candidate statistics and
+  the `criteria` table described in [km_cutpoint_search()].
 }
 \description{
 Evaluates candidate biomarker cutpoints on start-stop survival data

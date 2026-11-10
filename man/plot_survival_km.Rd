@@ -15,7 +15,9 @@ plot_survival_km(
   base_size = 13,
   risk_table = FALSE,
   p_value = FALSE,
-  pval = p_value
+  pval = p_value,
+  time_breaks = NULL,
+  start_col = NULL
 )
 }
 \arguments{
@@ -46,6 +48,19 @@ gives a warning and no p-value.}
 
 \item{pval}{Same as `p_value`; the short name used by other survival plotting packages
 (`survminer::ggsurvplot(pval = TRUE)`). If both are given, `pval` wins.}
+
+\item{time_breaks}{Optional numeric vector of follow-up times. They become the x-axis breaks and,
+with `risk_table = TRUE`, the labeled columns of the number-at-risk table. Default `NULL` lets
+`ggsurvfit` choose.}
+
+\item{start_col}{Optional name of an interval start column for counting-process (start, stop]
+data; `time_col` is then the interval stop time and the curve is fitted to
+`Surv(start, stop, status)`. With a `group_col` that changes within a subject, each interval
+counts in the group it belongs to (an extended Kaplan-Meier estimate), so the curves describe
+the hazard while in a group, not cohorts fixed at baseline. The log-rank test of
+[survival::survdiff()] does not accept such data; the p-value shown is the score (log-rank)
+test of the Cox model `Surv(start, stop, status) ~ group`, which treats intervals of one subject
+as independent given the group.}
 }
 \value{
 A ggplot2 object, or (with `risk_table = TRUE`) a `ggsurvfit` plot that draws the risk table

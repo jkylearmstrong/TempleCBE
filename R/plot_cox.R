@@ -24,9 +24,10 @@ NULL
 #'   \code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with
 #'   a reference line at 0). Equivalent to \code{exponentiate = TRUE} and \code{FALSE}; kept for
 #'   existing code. Give \code{scale} or \code{exponentiate}, not both with different meanings.
-#' @param color_by One of \code{"none"} (default) or \code{"significance"}, which colors points/error
+#' @param color_by One of \code{"none"} (default), \code{"significance"}, which colors points/error
 #'   bars by whether \code{p_col} is below \code{sig_level} (a term is significant when
-#'   \code{p < sig_level}; a missing p-value counts as not significant) and adds a legend.
+#'   \code{p < sig_level}; a missing p-value counts as not significant) and adds a legend, or
+#'   \code{"p_tier"}, which colors and shapes the points by p-value tier (see \code{p_breaks}).
 #' @param order_by One of \code{"none"} (default; original row order), \code{"magnitude"} (sorts by
 #'   \code{abs(log(estimate))} descending), or \code{"pvalue"} (sorts by \code{p_col} ascending).
 #' @param x_limits Optional 2-element numeric vector for x-axis limits.
@@ -45,6 +46,13 @@ NULL
 #'   separate choice from `exponentiate`; `log_scale = TRUE` with `exponentiate = FALSE` is an error,
 #'   because the coefficients are already logs. All HR and confidence limits must be positive.
 #' @param sig_level Significance threshold for `color_by = "significance"` (default 0.05).
+#' @param p_breaks Increasing p-value cut-offs for `color_by = "p_tier"` (default
+#'   `c(0.001, 0.01, 0.05)`, at most 5). A term is in the tier of the first break its p-value is
+#'   strictly below; the last tier (open circle, grey) is `p >=` the last break and also holds
+#'   missing p-values.
+#' @param color_by_sig,order_by_magnitude Optional logical shortcuts. `color_by_sig = TRUE` is
+#'   `color_by = "p_tier"` and `order_by_magnitude = TRUE` is `order_by = "magnitude"`; `FALSE` is
+#'   `"none"`. `NULL` (default) leaves `color_by` / `order_by` as given.
 #' @return A ggplot2 object.
 #' @seealso [plot_cox_forest_multi()]
 #' @export
@@ -56,7 +64,7 @@ plot_cox_forest <- function(data,
                             p_col = NULL,
                             color = "#9D2235",
                             scale = c("hr", "log_hr"),
-                            color_by = c("none", "significance"),
+                            color_by = c("none", "significance", "p_tier"),
                             order_by = c("none", "magnitude", "pvalue"),
                             x_limits = NULL,
                             x_breaks = NULL,
@@ -67,11 +75,29 @@ plot_cox_forest <- function(data,
                             style = NULL,
                             exponentiate = NULL,
                             log_scale = FALSE,
-                            sig_level = 0.05) {
+                            sig_level = 0.05,
+                            p_breaks = c(0.001, 0.01, 0.05),
+                            color_by_sig = NULL,
+                            order_by_magnitude = NULL) {
   disp <- resolve_forest_display(scale, missing(scale), exponentiate, log_scale, sig_level)
   scale <- match.arg(scale)
   color_by <- match.arg(color_by)
   order_by <- match.arg(order_by)
+  flag <- function(x, arg) {
+    if (!is.null(x) && (!is.logical(x) || length(x) != 1L || is.na(x))) {
+      stop("`", arg, "` must be TRUE, FALSE or NULL.", call. = FALSE)
+    }
+    x
+  }
+  if (!is.null(flag(color_by_sig, "color_by_sig"))) color_by <- if (color_by_sig) "p_tier" else "none"
+  if (!is.null(flag(order_by_magnitude, "order_by_magnitude"))) {
+    order_by <- if (order_by_magnitude) "magnitude" else "none"
+  }
+  if (color_by == "p_tier" &&
+      (!is.numeric(p_breaks) || length(p_breaks) < 1L || length(p_breaks) > 5L || anyNA(p_breaks) ||
+       is.unsorted(p_breaks, strictly = TRUE) || any(p_breaks <= 0 | p_breaks > 1))) {
+    stop("`p_breaks` must be 1 to 5 increasing numbers in (0, 1].", call. = FALSE)
+  }
 
   if (inherits(data, "cbe_cox")) {
     conf_level <- data$conf_level %||% 0.95
@@ -99,7 +125,8 @@ plot_cox_forest <- function(data,
     p_col = p_col, color = color, x_limits = x_limits, x_breaks = x_breaks,
     title = title, caption = caption, base_size = base_size,
     scale = scale, color_by = color_by, order_by = order_by,
-    exponentiate = disp$exponentiate, log_scale = disp$log_scale, sig_level = sig_level
+    exponentiate = disp$exponentiate, log_scale = disp$log_scale, sig_level = sig_level,
+    p_breaks = p_breaks
   )
 }
 
@@ -221,9 +248,9 @@ forest_plot_engine <- function(df,
                                color, x_limits, x_breaks, title, caption, base_size,
                                scale = "hr", color_by = "none", order_by = "none",
                                facet_col = NULL, exponentiate = identical(scale, "hr"),
-                               log_scale = FALSE, sig_level = 0.05) {
-  if (color_by == "significance" && is.null(p_col)) {
-    stop("`color_by = \"significance\"` requires `p_col`.", call. = FALSE)
+                               log_scale = FALSE, sig_level = 0.05, p_breaks = c(0.001, 0.01, 0.05)) {
+  if (color_by %in% c("significance", "p_tier") && is.null(p_col)) {
+    stop("`color_by = \"", color_by, "\"` requires `p_col`.", call. = FALSE)
   }
   if (order_by == "pvalue" && is.null(p_col)) {
     stop("`order_by = \"pvalue\"` requires `p_col`.", call. = FALSE)
@@ -277,6 +304,22 @@ forest_plot_engine <- function(df,
       ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.xmin, xmax = .data$.xmax), width = 0.25, linewidth = 0.8) +
       ggplot2::geom_point(size = 3.5) +
       ggplot2::scale_color_manual(values = color_values, name = "Significance")
+  } else if (color_by == "p_tier") {
+    nb <- length(p_breaks)
+    brk <- format(p_breaks, scientific = FALSE, drop0trailing = TRUE, trim = TRUE)
+    tiers <- c(paste0("p < ", brk), paste0("p \u2265 ", brk[nb]))
+    idx <- vapply(df$.p, function(v) if (is.na(v)) nb + 1L else sum(p_breaks <= v) + 1L, integer(1))
+    df$.tier <- factor(tiers[idx], levels = tiers)
+    tier_cols <- stats::setNames(
+      c(grDevices::colorRampPalette(c(color, "grey45"))(nb + 1L)[seq_len(nb)], "grey65"), tiers
+    )
+    tier_shapes <- stats::setNames(c(c(16, 17, 15, 18, 8)[seq_len(nb)], 1), tiers)
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, y = .data$.y, color = .data$.tier, shape = .data$.tier)) +
+      ggplot2::geom_vline(xintercept = x_intercept, linetype = "dashed", color = "grey50") +
+      ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.xmin, xmax = .data$.xmax), width = 0.25, linewidth = 0.8) +
+      ggplot2::geom_point(size = 3.5) +
+      ggplot2::scale_color_manual(values = tier_cols, name = "p-value", drop = FALSE) +
+      ggplot2::scale_shape_manual(values = tier_shapes, name = "p-value", drop = FALSE)
   } else {
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, y = .data$.y)) +
       ggplot2::geom_vline(xintercept = x_intercept, linetype = "dashed", color = "grey50") +

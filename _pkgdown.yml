@@ -178,6 +178,10 @@ reference:
       - inspect_rank_deficiency
       - boot_p_value
       - plot_tune_alpha_ibs
+      - plot_tune_coefficients
+      - plot_tune_grid
+      - plot_tune_ibs_density
+      - tbl_tune_mixed_model
       - plot_tune_lambda_ibs
       - plot_tune_coef_boxplot
       - plot_tune_ibs_by_resample
@@ -243,6 +247,9 @@ reference:
       - missranger_oob_by_mtry
       - missranger_max_mtry
       - tune_impute_numeric
+      - tune_impute_workflows
+      - plot_tune_grid_rmse
+      - tbl_tune_best_model
       - compare_imputation_rse
       - tbl_best_imputation_method
       - build_best_imputed_data
@@ -250,6 +257,12 @@ reference:
       - plot_rse_vs_missingness
       - compare_domain_datasets
       - compare_imputed_ecdf
+      - compare_distributions_ks
+      - compare_paired_correlation
+      - paired_diff_tests
+      - paired_diff_histogram
+      - paired_diff_ribbon_by_group
+      - paired_diff_ridgeline
       - test_imputed_distributions
       - plot_imputed_ridgeline
       - imputation_diagnostics
@@ -422,6 +435,9 @@ reference:
       - fmt_hr
       - words
       - words_list
+      - tbl_abbreviations_glossary
+      - format_contrast_labels
+      - sanitize_model_table
       - pluralize
       - include_landscape_figure
       - plot_normalization_comparison
@@ -453,6 +469,9 @@ reference:
       - print.cbe_km
       - km_cutpoints
       - km_cutpoint_search
+      - plot_cutpoint_bar
+      - plot_cutpoint_scatter
+      - plot_km_cutpoint
       - km_cutpoint_time_varying
       - plot_km_cutpoints
       - batch_cutpoint_survdiff
@@ -575,6 +594,8 @@ reference:
       - clean_names_keep_labels
       - make_excel_names
       - excel_colnames
+      - excel_col_letters
+      - rename_to_excel
       - pretty_name
       - copy_var_labels
       - cbe_labels

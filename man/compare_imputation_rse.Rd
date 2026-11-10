@@ -11,7 +11,8 @@ compare_imputation_rse(
   variable_col = "variable",
   method_col = "method",
   truth_col = "truth",
-  imputed_col = "imputed"
+  imputed_col = "imputed",
+  group_col = NULL
 )
 }
 \arguments{
@@ -25,6 +26,13 @@ imputed value are dropped and counted in `n_dropped`. Alternatively, a table tha
 \item{baseline}{Optional baseline values; see Null baseline.}
 
 \item{variable_col, method_col, truth_col, imputed_col}{Column names in `results_df`.}
+
+\item{group_col}{Optional column of `results_df` (a time point, a subject id). The null baseline
+is then the mean (or median) of the held-out truths of the variable **within each group**
+instead of one value per variable: a time-grouped or subject-grouped null model. This baseline
+is harder to beat, so RSEs are larger than with the overall baseline. A group with a single
+scored cell predicts that cell exactly (error 0), which makes a subject-grouped baseline
+uninformative when subjects have one held-out cell each. Cannot be combined with `baseline`.}
 }
 \value{
 A tibble of class `cbe_rse` with `variable`, `method`, `n`, `n_dropped`, `rmse`,

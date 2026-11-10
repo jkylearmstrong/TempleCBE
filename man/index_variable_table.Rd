@@ -8,7 +8,9 @@ index_variable_table(
   data,
   cols,
   index_col = "composite_index",
-  method = c("pearson", "spearman")
+  method = c("pearson", "spearman"),
+  polarities = NULL,
+  weights = NULL
 )
 }
 \arguments{
@@ -19,9 +21,15 @@ index_variable_table(
 \item{index_col}{Character name of the composite index column.}
 
 \item{method}{Correlation method: `"pearson"` (default) or `"spearman"`.}
+
+\item{polarities}{Optional `+1` / `-1` per component, as in [compute_composite_index()]; adds a
+`polarity` column.}
+
+\item{weights}{Optional weights per component (in `cols` order); adds a `weight` column.}
 }
 \value{
-A tibble with one row per component variable.
+A tibble with one row per component variable: `variable`, `polarity` and `weight` (when
+  given), `mean`, `sd`, `min`, `max`, `r_with_index` and `p_value`.
 }
 \description{
 Generates a tidy summary table of component variables comprising a composite index,

@@ -13,7 +13,7 @@ plot_cox_forest(
   p_col = NULL,
   color = "#9D2235",
   scale = c("hr", "log_hr"),
-  color_by = c("none", "significance"),
+  color_by = c("none", "significance", "p_tier"),
   order_by = c("none", "magnitude", "pvalue"),
   x_limits = NULL,
   x_breaks = NULL,
@@ -24,7 +24,10 @@ plot_cox_forest(
   style = NULL,
   exponentiate = NULL,
   log_scale = FALSE,
-  sig_level = 0.05
+  sig_level = 0.05,
+  p_breaks = c(0.001, 0.01, 0.05),
+  color_by_sig = NULL,
+  order_by_magnitude = NULL
 )
 }
 \arguments{
@@ -48,9 +51,10 @@ and \code{order_by = "pvalue"}.}
 a reference line at 0). Equivalent to \code{exponentiate = TRUE} and \code{FALSE}; kept for
 existing code. Give \code{scale} or \code{exponentiate}, not both with different meanings.}
 
-\item{color_by}{One of \code{"none"} (default) or \code{"significance"}, which colors points/error
+\item{color_by}{One of \code{"none"} (default), \code{"significance"}, which colors points/error
 bars by whether \code{p_col} is below \code{sig_level} (a term is significant when
-\code{p < sig_level}; a missing p-value counts as not significant) and adds a legend.}
+\code{p < sig_level}; a missing p-value counts as not significant) and adds a legend, or
+\code{"p_tier"}, which colors and shapes the points by p-value tier (see \code{p_breaks}).}
 
 \item{order_by}{One of \code{"none"} (default; original row order), \code{"magnitude"} (sorts by
 \code{abs(log(estimate))} descending), or \code{"pvalue"} (sorts by \code{p_col} ascending).}
@@ -80,6 +84,15 @@ separate choice from `exponentiate`; `log_scale = TRUE` with `exponentiate = FAL
 because the coefficients are already logs. All HR and confidence limits must be positive.}
 
 \item{sig_level}{Significance threshold for `color_by = "significance"` (default 0.05).}
+
+\item{p_breaks}{Increasing p-value cut-offs for `color_by = "p_tier"` (default
+`c(0.001, 0.01, 0.05)`, at most 5). A term is in the tier of the first break its p-value is
+strictly below; the last tier (open circle, grey) is `p >=` the last break and also holds
+missing p-values.}
+
+\item{color_by_sig, order_by_magnitude}{Optional logical shortcuts. `color_by_sig = TRUE` is
+`color_by = "p_tier"` and `order_by_magnitude = TRUE` is `order_by = "magnitude"`; `FALSE` is
+`"none"`. `NULL` (default) leaves `color_by` / `order_by` as given.}
 }
 \value{
 A ggplot2 object.
