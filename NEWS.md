@@ -54,7 +54,8 @@ table at the end maps every requested name to the function to call. Nothing is r
 
 ## Docker image
 
-* `workflowsets`, `broom.helpers`, `broom.mixed` and `coda` are in `renv.lock` (4 additions, no pinned package changed) and the image check loads `workflowsets`, `broom.helpers` and `broom.mixed`, so `tune_impute_workflows()` and `tbl_tune_mixed_model(format = "gtsummary")` work in the image. `maxstat` is in `Suggests` but not in the image (`renv::restore()` failed on its dependency `exactRankTests`), so the `maxstat` row of the cutpoint criteria is absent there; `max_logrank` is the grid version of the same rule.
+* `workflowsets`, `maxstat`, `exactRankTests`, `broom.helpers`, `broom.mixed` and `coda` are in `renv.lock` (6 additions) and the image check loads `workflowsets`, `maxstat`, `broom.helpers` and `broom.mixed`, so `tune_impute_workflows()`, the `maxstat` cutpoint criterion and `tbl_tune_mixed_model(format = "gtsummary")` work in the image.
+* `partykit` is pinned at 1.3-2 (was 1.3-1). Once 1.3-2 reached the repository, `renv::restore()` took the dependencies of the older pin from crandb, where the duplicated `utils` import of 1.3-1 reads as a package named `utils.1`; that one unavailable package made renv discard the whole restore, so every image build that could not reuse the cached restore layer failed.
 
 # TempleCBE 0.7.9
 
