@@ -54,7 +54,7 @@ table at the end maps every requested name to the function to call. Nothing is r
 
 ## Docker image
 
-* `workflowsets`, `maxstat`, `exactRankTests`, `broom.helpers`, `broom.mixed` and `coda` are in `renv.lock` (6 additions, no pinned package changed) and in `Suggests` where they were not, and the image check loads `workflowsets`, `maxstat`, `broom.helpers` and `broom.mixed`. `tune_impute_workflows()`, the `maxstat` cutpoint criterion and `tbl_tune_mixed_model(format = "gtsummary")` therefore work in the image.
+* `workflowsets`, `broom.helpers`, `broom.mixed` and `coda` are in `renv.lock` (4 additions, no pinned package changed) and the image check loads `workflowsets`, `broom.helpers` and `broom.mixed`, so `tune_impute_workflows()` and `tbl_tune_mixed_model(format = "gtsummary")` work in the image. `maxstat` is in `Suggests` but not in the image (`renv::restore()` failed on its dependency `exactRankTests`), so the `maxstat` row of the cutpoint criteria is absent there; `max_logrank` is the grid version of the same rule.
 
 # TempleCBE 0.7.9
 

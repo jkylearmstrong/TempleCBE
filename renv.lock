@@ -111,12 +111,6 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
-    "exactRankTests": {
-      "Package": "exactRankTests",
-      "Version": "0.8-37",
-      "Source": "Repository",
-      "Repository": "CRAN"
-    },
     "FNN": {
       "Package": "FNN",
       "Version": "1.1.4.1",
@@ -295,12 +289,6 @@
     "MatrixModels": {
       "Package": "MatrixModels",
       "Version": "0.5-4",
-      "Source": "Repository",
-      "Repository": "CRAN"
-    },
-    "maxstat": {
-      "Package": "maxstat",
-      "Version": "0.7-26",
       "Source": "Repository",
       "Repository": "CRAN"
     },
