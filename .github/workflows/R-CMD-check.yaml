@@ -275,11 +275,17 @@ jobs:
             )
             old <- Sys.getenv("LD_LIBRARY_PATH")
             if (clean_env) { Sys.unsetenv("LD_LIBRARY_PATH"); on.exit(Sys.setenv(LD_LIBRARY_PATH = old)) }
-            out <- suppressWarnings(system2(soffice, args, stdout = !quiet, stderr = !quiet, timeout = timeout))
-            print(out)
+            log <- tempfile("lo_log_")
+            out <- try(suppressWarnings(system2(
+              soffice, args,
+              stdout = if (quiet) FALSE else log, stderr = if (quiet) FALSE else log, timeout = timeout
+            )))
+            cat("status: "); print(out)
+            if (file.exists(log)) writeLines(readLines(log, warn = FALSE))
             cat("written:", paste(list.files(work, all.files = TRUE, no.. = TRUE), collapse = ", "), "\n")
           }
           run("as the package but output shown")
+          run("output shown and no ld library path", clean_env = TRUE)
           run("as the package", quiet = TRUE)
           run("plain outdir", outname = "out", quiet = TRUE)
           run("no timeout", quiet = TRUE, timeout = 0)
