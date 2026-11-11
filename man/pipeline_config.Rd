@@ -23,20 +23,22 @@ pipeline_config(
 for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.}
 
-\item{reset}{Logical (default \code{FALSE}). When \code{TRUE}, clears everything set
-with \code{pipeline_config()} and falls back to the session options (or the
+\item{reset}{Logical (default `FALSE`). When `TRUE`, clears everything set
+with `pipeline_config()` and falls back to the session options (or the
 package defaults when those are unset). It does not erase the options
-themselves.}
+themselves. The reset is done first, so other arguments given in the same
+call are then set: `pipeline_config(study_name = "X", reset = TRUE)` leaves
+only the study name set.}
 }
 \value{
 A list containing the current configuration options, with the
-attribute \code{"previous"}: the configuration as it was before the call,
-named the way \code{options()} names the session options
-(\code{pipeline.study_name} and so on). \code{pipeline_config()} no longer writes
-those options, so \code{options(attr(cfg, "previous"))} only restores the
-option layer; to drop what a call set and fall back to the session
-options, use \code{pipeline_config(reset = TRUE)}. A call with no arguments
-returns the current configuration.
+  attribute `"previous"`: the configuration as it was before the call,
+  named the way [options()] names the session options
+  (`pipeline.study_name` and so on). `pipeline_config()` no longer writes
+  those options, so `options(attr(cfg, "previous"))` only restores the
+  option layer; to drop what a call set and fall back to the session
+  options, use `pipeline_config(reset = TRUE)`. A call with no arguments
+  returns the current configuration.
 }
 \description{
 Decouples project-specific parameters (study name, stage display labels,
@@ -44,17 +46,16 @@ stage color palettes) from core pipeline mechanics and classes.
 }
 \details{
 The configuration is kept in one place, inside the package, for the
-session: calling \code{pipeline_config()} with arguments changes what the
-pipeline functions (\code{\link{create_qmd_renderer}},
-\code{\link{visualize_pipeline}}, \code{\link{collapse_by_stage}},
-\code{\link{visualize_pipeline_interactive}},
-\code{\link{export_interactive_pipeline}}, \code{\link{render_pipeline}}) read, but it does
+session: calling `pipeline_config()` with arguments changes what the
+pipeline functions (`create_qmd_renderer()`, `visualize_pipeline()`,
+`collapse_by_stage()`, `visualize_pipeline_interactive()`,
+`export_interactive_pipeline()`, `render_pipeline()`) read, but it does
 not write the session options, so a call cannot leak a changed option
 into later, unrelated work. The session options
-\code{pipeline.study_name}, \code{pipeline.stage_labels}, \code{pipeline.stage_colors}
-and \code{pipeline.default_formats} are only read, as a legacy default for
-each value that has not been set with \code{pipeline_config()} (set one
-yourself, in \code{.Rprofile} for example, to supply a default). This mirrors
-\code{\link{cbe_labels}}, which likewise keeps its map in the package and only
-reads the \code{templecbe.label_map} option.
+`pipeline.study_name`, `pipeline.stage_labels`, `pipeline.stage_colors`
+and `pipeline.default_formats` are only read, as a legacy default for
+each value that has not been set with `pipeline_config()` (set one
+yourself, in `.Rprofile` for example, to supply a default). This mirrors
+`cbe_labels()`, which likewise keeps its map in the package and only
+reads the `templecbe.label_map` option.
 }

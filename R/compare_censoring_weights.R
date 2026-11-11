@@ -266,9 +266,9 @@ score_outer <- function(object,
               found_run_fp <- if (is.null(cached_of)) {
                 NULL
               } else {
+                # the two places write_verified_checkpoint() records it
                 attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) %||%
-                  attr(cached_of, "checkpoint_meta", exact = TRUE)$run_fingerprint %||%
-                  (if (is.list(cached_of) && !is.data.frame(cached_of)) cached_of$checkpoint_run_fingerprint else NULL)
+                  attr(cached_of, "checkpoint_meta", exact = TRUE)$run_fingerprint
               }
               if (!is.null(found_run_fp) && identical(found_run_fp, run_fp)) {
                 unlink(of)

@@ -8,7 +8,7 @@ visualize_pipeline_interactive(
   all_objects,
   direction = "LR",
   hierarchical = TRUE,
-  title = getOption("pipeline.study_name", "Computational Pipeline"),
+  title = .pipeline_config_value("study_name", "Computational Pipeline"),
   subtitle = "Computational Pipeline",
   font_size = 12,
   node_size = 25
@@ -21,7 +21,7 @@ visualize_pipeline_interactive(
 
 \item{hierarchical}{Logical, whether to use a hierarchical DAG layout. Default is TRUE.}
 
-\item{title}{Character, main title -- defaults to getOption("pipeline.study_name", "Computational Pipeline").}
+\item{title}{Character, main title -- defaults to the study name from \code{\link{pipeline_config}}.}
 
 \item{subtitle}{Character, the document-specific name (e.g. "Computational
 Pipeline", or a subgraph's own name from export_subgraph()).}

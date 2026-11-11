@@ -206,6 +206,9 @@ test_that("remove_dir_tree() removes links as links and leaves their targets", {
 
 test_that("pipeline_config() returns the previous options and cbe_labels() leaves its option alone", {
   withr::local_options(pipeline.study_name = "Before", templecbe.label_map = NULL)
+  # pipeline_config() keeps its settings in the package since 0.8.2, so they are cleared on exit
+  pipeline_config(reset = TRUE)
+  withr::defer(pipeline_config(reset = TRUE))
   cfg <- pipeline_config(study_name = "After")
   expect_equal(cfg$study_name, "After")
   expect_equal(attr(cfg, "previous")$pipeline.study_name, "Before")

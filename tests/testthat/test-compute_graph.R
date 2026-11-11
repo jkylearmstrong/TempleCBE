@@ -151,6 +151,27 @@ test_that("pipeline_config() leaves the session options alone and reads them onl
   expect_equal(pipeline_config()$default_formats, "gfm")
 })
 
+test_that("pipeline_config(reset = TRUE) clears first and then sets the other arguments", {
+  pipeline_config(reset = TRUE)
+  withr::defer(pipeline_config(reset = TRUE))
+  withr::local_options(
+    pipeline.study_name = NULL,
+    pipeline.stage_labels = NULL,
+    pipeline.stage_colors = NULL,
+    pipeline.default_formats = NULL
+  )
+
+  pipeline_config(study_name = "First", default_formats = "html")
+  cfg <- pipeline_config(study_name = "Second", reset = TRUE)
+  expect_equal(cfg$study_name, "Second")
+  expect_null(cfg$default_formats)
+  expect_equal(attr(cfg, "previous")$pipeline.study_name, "First")
+  expect_equal(attr(cfg, "previous")$pipeline.default_formats, "html")
+
+  expect_error(pipeline_config(reset = NA), "`reset` must be")
+  expect_error(pipeline_config(reset = "yes"), "`reset` must be")
+})
+
 test_that("get_render_plan validates inputs, duplicate names, and circular dependencies", {
   # Empty input
   expect_equal(get_render_plan(list()), list())

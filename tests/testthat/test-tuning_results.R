@@ -61,3 +61,18 @@ test_that("fit_n_rank with group_wflow = FALSE fits the ranked configuration, no
   metrics <- tune::collect_metrics(tune_res)
   expect_equal(fitted$tuned_parameters$penalty, metrics$penalty[metrics$.config == target$.config][1])
 })
+
+test_that("tune_parameter_names() reads the parameters attribute and says so when there is none", {
+  res <- structure(list(), parameters = data.frame(name = c("penalty", "mixture"), id = c("penalty", "mix")))
+  expect_equal(tune_parameter_names(res), c("penalty", "mix"))
+
+  # nothing tuned: an empty parameter set gives no names
+  none <- structure(list(), parameters = data.frame(name = character(), id = character()))
+  expect_equal(tune_parameter_names(none), character())
+
+  expect_error(tune_parameter_names(list()), "no usable `parameters` attribute")
+  expect_error(
+    tune_parameter_names(structure(list(), parameters = data.frame(name = "penalty"))),
+    "no usable `parameters` attribute"
+  )
+})

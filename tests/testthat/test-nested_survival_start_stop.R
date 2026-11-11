@@ -39,7 +39,10 @@ test_that("nested_survival_run() completes on multi-interval start-stop data", {
   run_dir <- file.path(tempdir(), paste0("nested_ss_", floor(stats::runif(1, 1e5, 9e5))))
   on.exit(unlink(run_dir, recursive = TRUE), add = TRUE)
 
-  run <- nested_survival_run(
+  # 36 subjects in 2 x 2 x 2 folds leave very little data per Cox fit, so many
+  # of them stop at the iteration limit. That warning is expected here and is
+  # muffled; any other warning still reaches testthat.
+  run <- withCallingHandlers(nested_survival_run(
     data = d,
     id = "subject_id",
     start = "tstart",
@@ -56,7 +59,11 @@ test_that("nested_survival_run() completes on multi-interval start-stop data", {
     internal_folds = 2,
     cox.ties = "breslow",
     seed = 67025
-  )
+  ), warning = function(w) {
+    if (grepl("did not converge", conditionMessage(w), fixed = TRUE)) {
+      invokeRestart("muffleWarning")
+    }
+  })
 
   # The run completes (the point of this test) and returns the expected object.
   expect_s3_class(run, "cbe_nested_survival_run")

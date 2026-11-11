@@ -50,7 +50,9 @@ NULL
 #' @param reset Logical (default `FALSE`). When `TRUE`, clears everything set
 #'   with `pipeline_config()` and falls back to the session options (or the
 #'   package defaults when those are unset). It does not erase the options
-#'   themselves.
+#'   themselves. The reset is done first, so other arguments given in the same
+#'   call are then set: `pipeline_config(study_name = "X", reset = TRUE)` leaves
+#'   only the study name set.
 #' @return A list containing the current configuration options, with the
 #'   attribute `"previous"`: the configuration as it was before the call,
 #'   named the way [options()] names the session options
@@ -67,18 +69,21 @@ pipeline_config <- function(
   default_formats = NULL,
   reset = FALSE
 ) {
-  if (isTRUE(reset)) {
-    .pipeline_config_env$study_name <- NULL
-    .pipeline_config_env$stage_labels <- NULL
-    .pipeline_config_env$stage_colors <- NULL
-    .pipeline_config_env$default_formats <- NULL
-    return(invisible(.pipeline_config_current()))
+  if (!is.logical(reset) || length(reset) != 1L || is.na(reset)) {
+    stop("`reset` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
-
   previous <- .pipeline_config_current()
   names(previous) <- c(
     "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
   )
+  # `reset` comes first, so `pipeline_config(study_name = "X", reset = TRUE)`
+  # ends with only `study_name` set instead of dropping the argument.
+  if (reset) {
+    .pipeline_config_env$study_name <- NULL
+    .pipeline_config_env$stage_labels <- NULL
+    .pipeline_config_env$stage_colors <- NULL
+    .pipeline_config_env$default_formats <- NULL
+  }
   if (!is.null(study_name)) {
     .pipeline_config_env$study_name <- study_name
   }
