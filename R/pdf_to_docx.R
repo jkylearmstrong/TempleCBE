@@ -430,6 +430,18 @@ check_docx_toolchain <- function(quiet = FALSE) {
     if (startsWith(profile_path, "/")) profile_path else paste0("/", profile_path)
   )
 
+  # R exports its own LD_LIBRARY_PATH (R's lib folder, /usr/local/lib, the JVM)
+  # to every child process. With it soffice.bin does not find its own libraries
+  # ("error while loading shared libraries: libreglo.so", status 127), so
+  # LibreOffice is started without it.
+  if (.Platform$OS.type != "windows") {
+    ld_path <- Sys.getenv("LD_LIBRARY_PATH", unset = NA)
+    if (!is.na(ld_path)) {
+      Sys.unsetenv("LD_LIBRARY_PATH")
+      on.exit(Sys.setenv(LD_LIBRARY_PATH = ld_path), add = TRUE)
+    }
+  }
+
   st <- .run_status(
     soffice,
     c(

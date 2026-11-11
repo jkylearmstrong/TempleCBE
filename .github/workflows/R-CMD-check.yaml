@@ -251,50 +251,6 @@ jobs:
             any::pkgload
           needs: test
 
-      - name: LibreOffice conversion through the package, with its output shown
-        # the package hides the converter's output; this shows what LibreOffice says
-        # when it is started the way the package starts it
-        run: |
-          # the arguments of .convert_soffice(), varied one thing at a time
-          dir <- tempfile("lo_"); dir.create(dir)
-          pdf <- file.path(dir, "sample.pdf")
-          grDevices::pdf(pdf, width = 6, height = 3); plot.new(); text(0.5, 0.5, "TempleCBE2026", cex = 2); dev.off()
-          soffice <- unname(Sys.which("soffice"))
-          cat("LD_LIBRARY_PATH:", Sys.getenv("LD_LIBRARY_PATH"), "\n")
-          run <- function(label, outname = ".docx_part_x", quiet = FALSE, timeout = 120, clean_env = FALSE) {
-            cat("\n==== ", label, "\n", sep = "")
-            work <- file.path(dir, paste0(outname, "_", gsub("[^a-z]", "", label)))
-            dir.create(work)
-            profile <- tempfile("lo_profile_"); dir.create(profile)
-            args <- c(
-              shQuote(paste0("-env:UserInstallation=file://", profile)),
-              "--headless", "--norestore", "--invisible", "--nolockcheck",
-              shQuote("--infilter=writer_pdf_import"),
-              "--convert-to", shQuote("docx:MS Word 2007 XML"),
-              "--outdir", shQuote(work), shQuote(pdf)
-            )
-            old <- Sys.getenv("LD_LIBRARY_PATH")
-            if (clean_env) { Sys.unsetenv("LD_LIBRARY_PATH"); on.exit(Sys.setenv(LD_LIBRARY_PATH = old)) }
-            log <- tempfile("lo_log_")
-            out <- try(suppressWarnings(system2(
-              soffice, args,
-              stdout = if (quiet) FALSE else log, stderr = if (quiet) FALSE else log, timeout = timeout
-            )))
-            cat("status: "); print(out)
-            if (file.exists(log)) writeLines(readLines(log, warn = FALSE))
-            cat("written:", paste(list.files(work, all.files = TRUE, no.. = TRUE), collapse = ", "), "\n")
-          }
-          run("as the package but output shown")
-          run("output shown and no ld library path", clean_env = TRUE)
-          run("as the package", quiet = TRUE)
-          run("plain outdir", outname = "out", quiet = TRUE)
-          run("no timeout", quiet = TRUE, timeout = 0)
-          run("no ld library path", quiet = TRUE, clean_env = TRUE)
-          pkgload::load_all(".")
-          print(try(convert_pdf_to_docx(pdf, file.path(dir, "sample.docx"), backend = "libreoffice", timeout = 120)))
-          print(list.files(dir, all.files = TRUE, recursive = TRUE))
-        shell: Rscript {0}
-
       - name: Run the PDF to DOCX tests with the live backends
         run: |
           pkgload::load_all(".")
