@@ -50,3 +50,29 @@ test_that("test_imputed_distributions() gives NA means, quietly, for factors", {
   expect_no_warning(r <- test_imputed_distributions(o, i, "f"))
   expect_true(is.na(r$mean_observed) && is.na(r$mean_imputed))
 })
+
+test_that("test_imputed_distributions() reports the variance of imputed over observed values", {
+  o <- data.frame(x = c(1, 2, 3, 4, NA, NA, NA), f = factor(c("a", "b", "a", "b", NA, "a", "b")))
+  # mean imputation (2.5) has variance 0; spread imputation (0, 5, 2.5) has variance 6.25
+  i_mean <- o
+  i_mean$x[is.na(o$x)] <- 2.5
+  r0 <- test_imputed_distributions(o, i_mean, "x")
+  expect_equal(r0$var_observed, var(c(1, 2, 3, 4)))
+  expect_equal(r0$var_imputed, 0)
+  expect_equal(r0$variance_ratio, 0)
+  expect_true(is.na(r0$var_p_value)) # an F test needs a positive variance
+
+  i_wide <- o
+  i_wide$x[is.na(o$x)] <- c(0, 5, 2.5)
+  r1 <- test_imputed_distributions(o, i_wide, "x")
+  expect_equal(r1$var_imputed, var(c(0, 5, 2.5)))
+  expect_equal(r1$variance_ratio, var(c(0, 5, 2.5)) / var(1:4))
+  expect_equal(r1$var_p_value, var.test(c(0, 5, 2.5), 1:4)$p.value)
+
+  # factors and variables without imputed values have no variance ratio
+  rf <- test_imputed_distributions(o, transform(i_wide, f = factor(ifelse(is.na(o$f), "a", as.character(o$f)))), "f")
+  expect_true(is.na(rf$variance_ratio))
+  rn <- test_imputed_distributions(o, o, "x")
+  expect_true(is.na(rn$variance_ratio))
+  expect_equal(rn$var_observed, var(1:4))
+})
