@@ -9,15 +9,16 @@ tbl_tune_alpha(data, label_map = NULL, style = NULL)
 \arguments{
 \item{data}{A data frame from [tune_alpha_by_split()].}
 
-\item{label_map}{Optional label mapping (see [cbe_labels()]). The column
-names are looked up as terms in the map (`"alpha"`, `"n_fits"`,
+\item{label_map}{Optional label mapping, in a form [cbe_labels()] takes. The
+column names are looked up as terms in the map (`"alpha"`, `"n_fits"`,
 `"mean_ibs"`, `"sd_ibs"`, `"median_ibs"`, `"iqr_ibs"`, `"min_ibs"`,
 `"max_ibs"`); a column whose name is in the map takes its label, and any
-other column keeps its default name. With no map (explicit or active
-package-level), the default column names are returned unchanged.}
+other column keeps its default name. Only a map given here renames
+columns: the map set for the session with [cbe_labels()] is not used, so
+that the column names of the result do not depend on session state.}
 
 \item{style}{Optional label style (`"short"` or `"full"`): which label from
-the map a renamed column takes.}
+`label_map` a renamed column takes. It has no effect without `label_map`.}
 }
 \value{
 A tibble of per-alpha IBS statistics. Columns renamed through

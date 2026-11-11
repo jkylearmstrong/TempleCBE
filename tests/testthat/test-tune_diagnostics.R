@@ -140,6 +140,18 @@ test_that("tbl_tune_alpha honours label_map and style", {
   tbl_default <- tbl_tune_alpha(df, label_map = map)
   expect_true(any(c("Alpha", "Elastic Net Mixing Parameter (alpha)") %in% names(tbl_default)))
 
+  # The session map set with cbe_labels() does not rename the columns, with
+  # or without `style`: the names of the result do not depend on session state.
+  withr::defer(cbe_labels(reset = TRUE))
+  cbe_labels(map)
+  expect_equal(
+    names(tbl_tune_alpha(df)),
+    c("alpha", "n_fits", "mean_ibs", "sd_ibs", "median_ibs", "iqr_ibs", "min_ibs", "max_ibs")
+  )
+  expect_equal(names(tbl_tune_alpha(df, style = "full")), names(tbl_tune_alpha(df)))
+  expect_equal(names(tbl_tune_alpha(df, label_map = map, style = "short")), names(tbl_short))
+  cbe_labels(reset = TRUE)
+
   # A named character vector map works too, and a map with no matching terms
   # leaves the table untouched.
   tbl_chr <- tbl_tune_alpha(df, label_map = c(alpha = "Mixing"))
