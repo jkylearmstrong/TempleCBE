@@ -1,3 +1,29 @@
+# TempleCBE 0.8.0
+
+Five requests (recurrent readmissions, imputation variance ratio, review tracker formats, covariate
+balance, validation curves), each checked against 0.7.10 first. New functions only; nothing is removed
+or renamed, and every default behaves as before.
+
+## New
+
+* **Recurrent events** (`(tstart, tstop, event)` readmissions): `recurrent_cox()` fits Andersen-Gill (`"ag"`), Prentice-Williams-Peterson with total or gap time (`"pwp_total"`, `"pwp_gap"`), Wei-Lin-Weissfeld (`"wlw"`) and gamma-frailty (`"frailty"`) Cox models with robust (subject-clustered) standard errors, and returns a tibble of log hazard ratios, hazard ratios, intervals and p-values (`tidy()` too). `recurrent_cox_windows()` fits it over 30-, 60- and 90-day windows. `recurrent_intervals()` builds the intervals from one row per readmission plus the end of follow-up (events at time zero, after follow-up, tied or within `min_gap` of the previous event are dropped with a warning), and `truncate_start_stop()` cuts start/stop data at a window.
+* **Balance diagnostics**: `balance_smd()` returns standardized mean differences (and variance ratios) for numeric, binary and factor covariates against a reference group, before and after weighting; `plot_balance_love()` draws the Love plot. No new dependency (`cobalt` is not needed).
+* **Validation outputs for predicted risks**, binary or, with `horizon`, right-censored: `calibration_table()` and `plot_calibration()` (binned observed against predicted risk with intervals, calibration slope and intercept, Brier score) and `decision_curve()` and `plot_decision_curve()` (net benefit against treat-all and treat-none). Competing events are treated as censoring.
+* **`format_review_tracker()`** writes a review tracker as Markdown, a Word table, Excel or CSV.
+
+## Extended
+
+* **`surv_subject_truth()`**: `recurrent = "first"` scores a subject with several events on the time to the first event, instead of stopping with "Recurrent events are not supported" (`"error"` stays the default).
+* **`validate_start_stop()`, `prune_start_stop()`**: `recurrent = TRUE` accepts events before the last interval and rows after an event, which are valid when events recur. Without it both behave as before.
+* **`test_imputed_distributions()`**: new columns `var_observed`, `var_imputed`, `variance_ratio` (imputed over observed) and `var_p_value` (F test), at the end of the table.
+* **`review_tracker()`**: `format = c("auto", "xlsx", "excel", "csv", "docx", "markdown")`; `"auto"` follows the extension of `file` (`.xlsx`, `.docx`, `.md`; anything else is CSV, as before).
+
+## Not done, and why
+
+* **`plot_imputation_overlay()`**: withdrawn. `plot_imputed_vs_observed()`, `plot_imputed_ridgeline()`, `compare_imputed_ecdf()` and `test_imputed_distributions()` already draw and test observed against imputed values; the one gap, the variance ratio, is a column of `test_imputed_distributions()`.
+* **A tracker built from Git commit messages**: a commit message has neither the reviewer's comment nor the page and section it was addressed in. Extract the tracker from the marked-up document with `review_tracker()`.
+* **Frailty with competing risks, joint models of readmission and death**: death ends follow-up (censoring), the usual assumption of the Andersen-Gill and PWP models, which is informative when death is common. This is stated in the help of `recurrent_intervals()`.
+
 # TempleCBE 0.7.10
 
 Downstream request list (Parts A to D). Most of it already existed under the current names; the

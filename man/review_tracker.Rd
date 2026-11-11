@@ -8,7 +8,8 @@ review_tracker(
   extract,
   file = NULL,
   include_redlines = FALSE,
-  overwrite = TRUE
+  overwrite = TRUE,
+  format = c("auto", "xlsx", "excel", "csv", "docx", "markdown")
 )
 }
 \arguments{
@@ -16,8 +17,8 @@ review_tracker(
 [docx_review_extract()], a data frame of extracted comments, or a path
 to a `.docx` file or directory of `.docx` files.}
 
-\item{file}{Optional output path (`.xlsx` or `.csv`) to write the tracker
-sheet.}
+\item{file}{Optional output path to write the tracker to: `.xlsx`, `.csv`,
+`.docx` or `.md`.}
 
 \item{include_redlines}{Logical (default `FALSE`). When `TRUE` and `extract`
 is a `cbe_review_extract` object with non-empty `$redlines`, includes
@@ -25,6 +26,12 @@ tracked paragraph redlines in addition to comments.}
 
 \item{overwrite}{Logical (default `TRUE`). Overwrite `file` if it already
 exists.}
+
+\item{format}{How to write `file`: `"auto"` (default) takes it from the file
+extension (`.xlsx`, `.docx`, `.md` / `.markdown`; anything else is `.csv`), or
+`"xlsx"` / `"excel"`, `"csv"`, `"docx"`, `"markdown"`. A `format` other than
+`"auto"` needs `file`. See [format_review_tracker()] to format a tracker without
+extracting it again.}
 }
 \value{
 A tibble of class `cbe_review_tracker` with columns `item_id`,

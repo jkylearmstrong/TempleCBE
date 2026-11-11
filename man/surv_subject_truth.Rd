@@ -4,7 +4,7 @@
 \alias{surv_subject_truth}
 \title{Collapse Survival Outcomes to One Row per Subject}
 \usage{
-surv_subject_truth(truth, subject_id = NULL)
+surv_subject_truth(truth, subject_id = NULL, recurrent = c("error", "first"))
 }
 \arguments{
 \item{truth}{A [survival::Surv()] object: `Surv(time, event)` or
@@ -13,6 +13,9 @@ surv_subject_truth(truth, subject_id = NULL)
 \item{subject_id}{Subject identifiers, one per element of `truth`. Required
 for counting-process data; for right-censored data each row is its own
 subject when `subject_id` is `NULL`.}
+
+\item{recurrent}{`"error"` (default) stops when a subject has an event before
+their last interval; `"first"` keeps each subject's time to first event.}
 }
 \value{
 A tibble with one row per subject, sorted by `subject_id`:
@@ -28,7 +31,14 @@ metrics require.
 For counting-process data, a subject's time is the stop time of their last
 interval and their event status is the status of that interval. Rows are
 checked first: within a subject, intervals must not overlap, and an event
-may only occur in the last interval (recurrent events are not supported).
+may only occur in the last interval, unless `recurrent = "first"`.
+
+With `recurrent = "first"` (recurrent events, such as repeated readmissions)
+a subject is scored on the time to their **first** event: the rows after the
+first event are ignored, and a subject without an event is censored at the
+stop of their last interval. That is the one-row-per-subject outcome that
+yardstick's survival metrics can score. The recurrent process itself is
+modelled with [recurrent_cox()].
 }
 \examples{
 if (requireNamespace("survival", quietly = TRUE)) {

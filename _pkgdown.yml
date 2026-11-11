@@ -137,6 +137,11 @@ reference:
       - surv_subject_truth
       - validate_start_stop
       - prune_start_stop
+      - recurrent_intervals
+      - truncate_start_stop
+      - recurrent_cox
+      - tidy.recurrent_cox
+      - recurrent_cox_windows
       - censoring_km
       - graf_weights
       - add_graf_weights
@@ -579,8 +584,22 @@ reference:
       - docx_review_extract
       - extract_docx_qa
       - review_tracker
+      - format_review_tracker
       - validate_review_tracker
       - review_config
+
+  - title: Covariate Balance & Model Validation
+    desc: >
+      Standardized mean differences and Love plots for comparing groups before and after
+      weighting, and calibration plots and decision curves for predicted risks (binary or
+      time-to-event).
+    contents:
+      - balance_smd
+      - plot_balance_love
+      - calibration_table
+      - plot_calibration
+      - decision_curve
+      - plot_decision_curve
 
   - title: Example Datasets
     desc: Clinical oncology and time-to-event datasets for testing and vignette demonstrations.

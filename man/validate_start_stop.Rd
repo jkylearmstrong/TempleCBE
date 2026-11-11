@@ -11,7 +11,8 @@ validate_start_stop(
   stop = "tstop",
   status = "status",
   warn_no_censoring = TRUE,
-  error_on_invalid = FALSE
+  error_on_invalid = FALSE,
+  recurrent = FALSE
 )
 }
 \arguments{
@@ -29,6 +30,12 @@ subject experiences an event (`n_censored == 0`).}
 error if any structural issue (missing values, `stop <= start`, overlapping
 intervals, events before the last interval, or rows after an event) is
 detected.}
+
+\item{recurrent}{Logical (default `FALSE`). Set `TRUE` for recurrent-event data
+(repeated readmissions, Andersen-Gill / PWP input): an event does not end a
+subject's follow-up, so events before the last interval and rows after an
+event are counted (`n_events_before_last`, `n_rows_after_event`) but are not
+structural issues, and `n_censored` counts the subjects with no event.}
 }
 \value{
 A 1-row tibble of class `cbe_start_stop_validation` with columns:
