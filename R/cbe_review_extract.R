@@ -4510,8 +4510,13 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #' @param extract An object of class `cbe_review_extract` from
 #'   [docx_review_extract()], a data frame of extracted comments, or a path
 #'   to a `.docx` file or directory of `.docx` files.
-#' @param file Optional output path (`.xlsx` or `.csv`) to write the tracker
-#'   sheet.
+#' @param file Optional output path to write the tracker to: `.xlsx`, `.csv`,
+#'   `.docx` or `.md`.
+#' @param format How to write `file`: `"auto"` (default) takes it from the file
+#'   extension (`.xlsx`, `.docx`, `.md` / `.markdown`; anything else is `.csv`), or
+#'   `"xlsx"` / `"excel"`, `"csv"`, `"docx"`, `"markdown"`. A `format` other than
+#'   `"auto"` needs `file`. See [format_review_tracker()] to format a tracker without
+#'   extracting it again.
 #' @param include_redlines Logical (default `FALSE`). When `TRUE` and `extract`
 #'   is a `cbe_review_extract` object with non-empty `$redlines`, includes
 #'   tracked paragraph redlines in addition to comments.
@@ -4526,7 +4531,12 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 review_tracker <- function(extract,
                            file = NULL,
                            include_redlines = FALSE,
-                           overwrite = TRUE) {
+                           overwrite = TRUE,
+                           format = c("auto", "xlsx", "excel", "csv", "docx", "markdown")) {
+  format <- match.arg(format)
+  if (format != "auto" && is.null(file)) {
+    stop("`format` = \"", format, "\" needs `file`; use format_review_tracker() to format a tracker in memory.", call. = FALSE)
+  }
   if (is.character(extract) && length(extract) == 1L) {
     extract <- docx_review_extract(extract, verbose = FALSE)
   }
@@ -4636,26 +4646,219 @@ review_tracker <- function(extract,
     out
   )
 
+  class(out) <- c("review_tracker", "cbe_review_tracker", class(out))
   if (!is.null(file) && is.character(file) && length(file) == 1L && nzchar(file)) {
     if (file.exists(file) && !isTRUE(overwrite)) {
       stop(sprintf("File '%s' already exists and `overwrite = FALSE`.", file), call. = FALSE)
     }
-    dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
-    ext <- tolower(tools::file_ext(file))
-    if (ext == "xlsx") {
-      require_packages("openxlsx", "cbe_review_tracker")
-      wb <- openxlsx::createWorkbook()
-      openxlsx::addWorksheet(wb, "Review Tracker")
-      openxlsx::writeDataTable(wb, "Review Tracker", out, withFilter = TRUE)
-      openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
-    } else {
-      write_review_csv(out, file)
-    }
+    write_review_tracker_file(out, file, format, compact = TRUE)
     attr(out, "file") <- file
   }
 
-  class(out) <- c("review_tracker", "cbe_review_tracker", class(out))
   out
+}
+
+# Formatting and writing of review trackers: Excel, CSV, Word and Markdown.
+
+# columns of the compact Word and Markdown tables (the Excel and CSV files keep every column)
+REVIEW_TRACKER_COMPACT_COLUMNS <- c("item_id", "file", "author", "comment", "status", "location", "rationale")
+
+#' @noRd
+resolve_tracker_format <- function(format, file = NULL) {
+  format <- match.arg(format, c("auto", "xlsx", "excel", "csv", "docx", "markdown", "md"))
+  if (format == "excel") format <- "xlsx"
+  if (format == "md") format <- "markdown"
+  if (format == "auto") {
+    ext <- if (is.null(file)) "" else tolower(tools::file_ext(file))
+    format <- switch(ext, xlsx = "xlsx", docx = "docx", md = "markdown", markdown = "markdown", "csv")
+  }
+  format
+}
+
+# one cell of a Markdown table: single line, pipes escaped
+#' @noRd
+tracker_md_cell <- function(x) {
+  x <- as.character(x)
+  x[is.na(x)] <- ""
+  x <- gsub("\r\n|\r|\n", " ", x)
+  x <- gsub("\\", "\\\\", x, fixed = TRUE)
+  x <- gsub("|", "\\|", x, fixed = TRUE)
+  trimws(x)
+}
+
+#' @noRd
+tracker_markdown <- function(df) {
+  header <- paste0("| ", paste(tracker_md_cell(names(df)), collapse = " | "), " |")
+  rule <- paste0("|", paste(rep("---", ncol(df)), collapse = "|"), "|")
+  body <- vapply(seq_len(nrow(df)), function(i) {
+    paste0("| ", paste(vapply(df, function(col) tracker_md_cell(col[i]), character(1)), collapse = " | "), " |")
+  }, character(1))
+  c(header, rule, body)
+}
+
+#' @noRd
+xml_escape_tracker <- function(x) {
+  x <- as.character(x)
+  x[is.na(x)] <- ""
+  x <- gsub("[\001-\010\013\014\016-\037]", "", x)
+  x <- gsub("&", "&amp;", x, fixed = TRUE)
+  x <- gsub("<", "&lt;", x, fixed = TRUE)
+  gsub(">", "&gt;", x, fixed = TRUE)
+}
+
+# A minimal landscape .docx with a title and the tracker as one table (header row repeats across pages)
+#' @noRd
+write_tracker_docx <- function(df, file, title) {
+  require_packages("zip", "format_review_tracker")
+  cell <- function(txt, bold = FALSE, width = NULL) {
+    props <- if (!is.null(width)) sprintf("<w:tcPr><w:tcW w:w=\"%d\" w:type=\"dxa\"/></w:tcPr>", width) else ""
+    run_props <- if (bold) "<w:rPr><w:b/><w:sz w:val=\"18\"/></w:rPr>" else "<w:rPr><w:sz w:val=\"18\"/></w:rPr>"
+    sprintf("<w:tc>%s<w:p><w:r>%s<w:t xml:space=\"preserve\">%s</w:t></w:r></w:p></w:tc>", props, run_props, xml_escape_tracker(txt))
+  }
+  total <- 13000L
+  widths <- rep(as.integer(total / max(ncol(df), 1L)), ncol(df))
+  header <- sprintf(
+    "<w:tr><w:trPr><w:tblHeader/></w:trPr>%s</w:tr>",
+    paste(unlist(Map(function(nm, w) cell(nm, bold = TRUE, width = w), names(df), widths)), collapse = "")
+  )
+  rows <- vapply(seq_len(nrow(df)), function(i) {
+    sprintf("<w:tr>%s</w:tr>", paste(unlist(Map(function(col, w) cell(col[i], width = w), df, widths)), collapse = ""))
+  }, character(1))
+  borders <- paste0(
+    "<w:tblBorders>",
+    paste(sprintf("<w:%s w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"808080\"/>",
+                  c("top", "left", "bottom", "right", "insideH", "insideV")), collapse = ""),
+    "</w:tblBorders>"
+  )
+  body <- paste0(
+    "<w:p><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr><w:t>", xml_escape_tracker(title), "</w:t></w:r></w:p>",
+    "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/>", borders, "</w:tblPr>", header, paste(rows, collapse = ""), "</w:tbl>",
+    "<w:sectPr><w:pgSz w:w=\"15840\" w:h=\"12240\" w:orient=\"landscape\"/>",
+    "<w:pgMar w:top=\"720\" w:right=\"720\" w:bottom=\"720\" w:left=\"720\" w:header=\"360\" w:footer=\"360\" w:gutter=\"0\"/></w:sectPr>"
+  )
+  document <- paste0(
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+    "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>", body, "</w:body></w:document>"
+  )
+  content_types <- paste0(
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">",
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>",
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>",
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>",
+    "</Types>"
+  )
+  rels <- paste0(
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>",
+    "</Relationships>"
+  )
+  stage <- tempfile("tracker_docx_")
+  dir.create(file.path(stage, "_rels"), recursive = TRUE)
+  dir.create(file.path(stage, "word"), recursive = TRUE)
+  on.exit(unlink(stage, recursive = TRUE), add = TRUE)
+  write_utf8 <- function(txt, path) writeBin(charToRaw(enc2utf8(txt)), path)
+  write_utf8(content_types, file.path(stage, "[Content_Types].xml"))
+  write_utf8(rels, file.path(stage, "_rels", ".rels"))
+  write_utf8(document, file.path(stage, "word", "document.xml"))
+  target <- normalizePath(file, winslash = "/", mustWork = FALSE)
+  if (file.exists(target)) unlink(target)
+  zip::zipr(target, files = list.files(stage, all.files = TRUE, no.. = TRUE), root = stage, mode = "mirror")
+  invisible(file)
+}
+
+# Writes `df` as `format`; `compact = TRUE` reduces Word and Markdown to the compact columns.
+#' @noRd
+write_review_tracker_file <- function(tracker, file, format = "auto", compact = TRUE) {
+  format <- resolve_tracker_format(format, file)
+  dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
+  df <- tibble::as_tibble(as.data.frame(unclass(tracker), stringsAsFactors = FALSE, check.names = FALSE))
+  shown <- if (compact) df[, intersect(REVIEW_TRACKER_COMPACT_COLUMNS, names(df)), drop = FALSE] else df
+  switch(
+    format,
+    xlsx = {
+      require_packages("openxlsx", "review_tracker")
+      wb <- openxlsx::createWorkbook()
+      openxlsx::addWorksheet(wb, "Review Tracker")
+      openxlsx::writeDataTable(wb, "Review Tracker", df, withFilter = TRUE)
+      openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+    },
+    csv = write_review_csv(df, file),
+    markdown = writeLines(tracker_markdown(shown), file, useBytes = TRUE),
+    docx = write_tracker_docx(shown, file, "Review response tracker")
+  )
+  invisible(file)
+}
+
+#' Format a Review Response Tracker as Word, Markdown, Excel or CSV
+#'
+#' Formats the tracker made by [review_tracker()] (or any data frame with the same
+#' columns, such as a tracker you edited and read back) for a response letter or a
+#' review meeting. The Word and Markdown tables carry the compact set of columns a
+#' reviewer reads: `item_id`, `file`, `author`, `comment`, `status`, `location` (page,
+#' section, table or figure where the point was addressed) and `rationale` (what was
+#' changed, or why not). Excel and CSV keep every column. Markdown cells are one line with
+#' pipes escaped. [validate_review_tracker()] checks that location and rationale are
+#' filled in.
+#'
+#' Building a tracker from Git commit messages is not supported: a commit message carries
+#' neither the reviewer's comment nor its page and section. Extract the tracker from the
+#' marked-up document with [review_tracker()] and fill in `location` and `rationale`.
+#'
+#' @param changes_df A `cbe_review_tracker` from [review_tracker()], or a data frame with
+#'   the columns `status`, `location` and `rationale` and any of the others.
+#' @param output_format `"markdown"` (default), `"docx"`, `"excel"` (an `.xlsx` workbook) or
+#'   `"csv"`.
+#' @param file Output path. Required for `"docx"` and `"excel"`; with `"markdown"` and
+#'   `"csv"` and no `file`, the text is returned.
+#' @param columns Columns to keep, in this order, in every format. `NULL` (default) is the
+#'   compact set for `"docx"` and `"markdown"` and every column for `"excel"` and `"csv"`.
+#' @return With `file`, the path, invisibly. Without `file`, a character vector with one
+#'   line per row (Markdown or CSV).
+#' @seealso [review_tracker()], [validate_review_tracker()]
+#' @export
+#' @examples
+#' tracker <- data.frame(
+#'   item_id = 1:2, file = "manuscript.docx", author = c("Reviewer 1", "Reviewer 2"),
+#'   comment = c("Define the cohort", "Report the | pipe"),
+#'   status = c("adopted", "not_adopted"),
+#'   location = c("Methods, page 4", ""),
+#'   rationale = c("Added the inclusion criteria", "Outside the scope of the study")
+#' )
+#' cat(format_review_tracker(tracker, "markdown"), sep = "\n")
+format_review_tracker <- function(changes_df,
+                                  output_format = c("markdown", "docx", "excel", "csv"),
+                                  file = NULL,
+                                  columns = NULL) {
+  output_format <- match.arg(output_format)
+  if (!is.data.frame(changes_df)) {
+    stop("`changes_df` must be a data frame such as the result of review_tracker().", call. = FALSE)
+  }
+  need <- setdiff(c("status", "location", "rationale"), names(changes_df))
+  if (length(need)) {
+    stop("`changes_df` is missing required column(s): ", paste(need, collapse = ", "), call. = FALSE)
+  }
+  df <- tibble::as_tibble(as.data.frame(unclass(changes_df), stringsAsFactors = FALSE, check.names = FALSE))
+  if (!is.null(columns)) {
+    gone <- setdiff(columns, names(df))
+    if (length(gone)) stop("`columns` not in `changes_df`: ", paste(gone, collapse = ", "), call. = FALSE)
+    df <- df[, columns, drop = FALSE]
+  }
+  fmt <- resolve_tracker_format(output_format)
+  has_file <- !is.null(file) && nzchar(file)
+  if (fmt %in% c("docx", "xlsx") && !has_file) {
+    stop("`file` is required for output_format = \"", output_format, "\".", call. = FALSE)
+  }
+  if (has_file) {
+    write_review_tracker_file(df, file, fmt, compact = is.null(columns))
+    return(invisible(file))
+  }
+  if (fmt == "markdown") {
+    shown <- if (is.null(columns)) df[, intersect(REVIEW_TRACKER_COMPACT_COLUMNS, names(df)), drop = FALSE] else df
+    return(tracker_markdown(shown))
+  }
+  utils::capture.output(utils::write.csv(df, row.names = FALSE, na = ""))
 }
 
 #' Validate a Review Response Tracker for Required Location and Rationale

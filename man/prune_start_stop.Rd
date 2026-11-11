@@ -10,7 +10,8 @@ prune_start_stop(
   start = "tstart",
   stop = "tstop",
   status = "status",
-  tol = 1e-06
+  tol = 1e-06,
+  recurrent = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ prune_start_stop(
 \item{id, start, stop, status}{Column names (strings). Status is 0/1, logical or a 0/1 factor.}
 
 \item{tol}{Largest gap or overlap treated as rounding error (default `1e-6`).}
+
+\item{recurrent}{Logical (default `FALSE`). Set `TRUE` for recurrent-event data: rows
+after an event are kept, because the subject is still followed.}
 }
 \value{
 `data` with the offending rows removed, sorted by `id`, `start`, `stop`. The counts are in
@@ -26,7 +30,7 @@ prune_start_stop(
 }
 \description{
 Companion to [validate_start_stop()]: drops intervals with `stop <= start`, drops rows recorded
-after a subject's first event, and closes tiny gaps or overlaps (smaller than `tol`) between a
+after a subject's first event (unless `recurrent = TRUE`), and closes tiny gaps or overlaps (smaller than `tol`) between a
 subject's consecutive intervals by moving the later `start` to the earlier `stop`. Rows with a
 missing id, time or status are dropped too. Gaps and overlaps larger than `tol` are real and
 left alone; check them with [validate_start_stop()].

@@ -89,7 +89,7 @@ scan_tracked_files <- function(terms, repo) {
 # Needs pdftools; unreadable PDFs are treated as containing nothing.
 scan_tracked_pdfs <- function(terms, repo) {
   terms <- tolower(terms[nzchar(terms)])
-  pdfs <- git_output(c("-c", "core.quotepath=off", "ls-files", "*.pdf"), dir = repo)
+  pdfs <- git_output(c("-c", "core.quotepath=off", "ls-files", shQuote("*.pdf")), dir = repo)
   if (length(terms) == 0 || length(pdfs) == 0) return(character(0))
 
   has_term <- vapply(pdfs, function(p) {

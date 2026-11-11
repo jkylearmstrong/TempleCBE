@@ -1,6 +1,6 @@
 # TempleCBE Development & CI/CD Notes
 
-## Version: 0.7.11
+## Version: 0.8.1
 **Date:** November 11, 2026
 
 AGENTS.md (workflow, CI, conventions) and REVIEW.md (review levels, branch protection, releases) are the
@@ -11,7 +11,7 @@ maintained references; this file keeps the reasons behind a few decisions.
 ### 1. CI/CD Architecture (Strategy A)
 * **Master Branch ("Prod Gate"):**
   - Runs `sanity-check` on `ubuntu-latest (release)` (about 13 minutes) in the pinned CI image.
-  - Since 0.7.11 also runs the cross-platform matrix (it used to be skipped on `master`), so `docker-publish` builds from a commit that passed on every platform.
+  - Since 0.8.1 also runs the cross-platform matrix (it used to be skipped on `master`), so `docker-publish` builds from a commit that passed on every platform.
   - Deploys documentation site (`pkgdown`) concurrently to `gh-pages`.
   - Automatically triggers downstream container deployment upon green sanity-check (`workflow_run`):
     - `docker-publish`: Builds native `linux/amd64` Docker image with GitHub Actions layer caching (~4 minutes) and pushes directly to Docker Hub (`<user>/templecbe`). Gated strictly to `push` events from the primary repository.

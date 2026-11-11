@@ -11,6 +11,14 @@ NULL
 #' @noRd
 safe_mean <- function(x) if (is.numeric(x) || is.logical(x)) mean(x, na.rm = TRUE) else NA_real_
 
+# variance of numeric values; NA (no warning) for factors, text and fewer than two values
+#' @noRd
+safe_var <- function(x) {
+  if (!(is.numeric(x) || is.logical(x))) return(NA_real_)
+  x <- x[!is.na(x)]
+  if (length(x) < 2L) NA_real_ else stats::var(x)
+}
+
 # Stops with the names of the columns that either data set lacks
 #' @noRd
 check_imputation_cols <- function(orig, imp, cols) {
@@ -96,13 +104,27 @@ compare_imputed_ecdf <- function(orig,
 #'
 #' Runs Kolmogorov-Smirnov (KS) tests and two-sample comparisons on observed vs
 #' imputed values across specified variables, reporting test statistics and p-values.
+#' The variance of the imputed values over the variance of the observed ones
+#' (`variance_ratio`) shows whether the imputation shrinks the spread: a ratio well below
+#' 1 is the usual sign of an imputation that fills in values near the center.
 #'
 #' @param orig Data frame containing original (pre-imputation) values.
 #' @param imp Data frame containing post-imputation values.
 #' @param cols Character vector of variable names to test.
-#' @return A tibble with one row per variable summarizing distribution comparison tests.
-#' @seealso [compare_imputed_ecdf()]
+#' @return A tibble with one row per variable summarizing distribution comparison tests:
+#'   `n_observed`, `n_imputed`, `mean_observed`, `mean_imputed`, `ks_statistic`,
+#'   `ks_p_value`, `t_p_value`, `var_observed`, `var_imputed`, `variance_ratio`
+#'   (imputed over observed) and `var_p_value` (F test of equal variances). The variance
+#'   columns are `NA` for non-numeric variables, for variables without imputed values and
+#'   for fewer than two values.
+#' @seealso [compare_imputed_ecdf()], [plot_imputed_ridgeline()]
 #' @export
+#' @examples
+#' set.seed(1)
+#' df_orig <- data.frame(x = c(rnorm(40), rep(NA, 10)))
+#' df_imp <- df_orig
+#' df_imp$x[is.na(df_imp$x)] <- mean(df_orig$x, na.rm = TRUE)
+#' test_imputed_distributions(df_orig, df_imp, "x")  # mean imputation: variance_ratio is 0 (NA test)
 test_imputed_distributions <- function(orig, imp, cols) {
   check_imputation_cols(orig, imp, cols)
   rows <- lapply(cols, function(col) {
@@ -120,7 +142,9 @@ test_imputed_distributions <- function(orig, imp, cols) {
       return(tibble::tibble(
         variable = col, n_observed = n_obs, n_imputed = 0L,
         mean_observed = safe_mean(obs_vals), mean_imputed = NA_real_,
-        ks_statistic = NA_real_, ks_p_value = NA_real_, t_p_value = NA_real_
+        ks_statistic = NA_real_, ks_p_value = NA_real_, t_p_value = NA_real_,
+        var_observed = safe_var(obs_vals), var_imputed = NA_real_,
+        variance_ratio = NA_real_, var_p_value = NA_real_
       ))
     }
 
@@ -134,6 +158,14 @@ test_imputed_distributions <- function(orig, imp, cols) {
       error = function(e) list(p.value = NA_real_)
     ))
 
+    v_obs <- safe_var(obs_vals)
+    v_imp <- safe_var(imp_vals)
+    var_p <- if (is.na(v_obs) || is.na(v_imp) || v_obs == 0 || v_imp == 0) {
+      NA_real_
+    } else {
+      tryCatch(stats::var.test(as.numeric(imp_vals), as.numeric(obs_vals))$p.value, error = function(e) NA_real_)
+    }
+
     tibble::tibble(
       variable = col,
       n_observed = n_obs,
@@ -142,7 +174,11 @@ test_imputed_distributions <- function(orig, imp, cols) {
       mean_imputed = safe_mean(imp_vals),
       ks_statistic = unname(ks_res$statistic),
       ks_p_value = unname(ks_res$p.value),
-      t_p_value = unname(t_res$p.value)
+      t_p_value = unname(t_res$p.value),
+      var_observed = v_obs,
+      var_imputed = v_imp,
+      variance_ratio = if (is.na(v_obs) || v_obs == 0) NA_real_ else v_imp / v_obs,
+      var_p_value = var_p
     )
   })
 

@@ -45,25 +45,22 @@ surv_components <- function(truth, arg = "truth") {
 #' For counting-process data, a subject's time is the stop time of their last
 #' interval and their event status is the status of that interval. Rows are
 #' checked first: within a subject, intervals must not overlap, and an event
-#' may only occur in the last interval.
+#' may only occur in the last interval, unless `recurrent = "first"`.
 #'
-#' @section Recurrent events are out of scope:
-#' A subject with an event before their last interval (a recurrent-event
-#' outcome, such as repeated readmissions or infections) is an error. The
-#' metrics that the scoring functions use (Brier score, integrated Brier score,
-#' time-dependent AUC, concordance with Graf censoring weights) are defined for
-#' one event time per subject, so [cv_coxnet()], [nested_cv_coxnet()] and
-#' [nested_survival_run()] have no scoring path for recurrent events, although
-#' `glmnet` itself fits such data. Either reduce the data to the first event of
-#' each subject (time to first event), or fit the recurrent-event model yourself
-#' ([coxnet()], or [survival::coxph()] with `cluster()`) and score it with a
-#' recurrent-event measure outside these functions.
+#' With `recurrent = "first"` (recurrent events, such as repeated readmissions)
+#' a subject is scored on the time to their **first** event: the rows after the
+#' first event are ignored, and a subject without an event is censored at the
+#' stop of their last interval. That is the one-row-per-subject outcome that
+#' yardstick's survival metrics can score. The recurrent process itself is
+#' modelled with [recurrent_cox()].
 #'
 #' @param truth A [survival::Surv()] object: `Surv(time, event)` or
 #'   `Surv(start, stop, event)`.
 #' @param subject_id Subject identifiers, one per element of `truth`. Required
 #'   for counting-process data; for right-censored data each row is its own
 #'   subject when `subject_id` is `NULL`.
+#' @param recurrent `"error"` (default) stops when a subject has an event before
+#'   their last interval; `"first"` keeps each subject's time to first event.
 #' @return A tibble with one row per subject, sorted by `subject_id`:
 #'   `.subject_id`, `.entry` (start of the first interval; 0 for right-censored
 #'   data), and `.truth`, a right-censored `Surv` object.
@@ -82,8 +79,9 @@ surv_components <- function(truth, arg = "truth") {
 #'     subject_id = long$subject_id
 #'   )
 #' }
-surv_subject_truth <- function(truth, subject_id = NULL) {
+surv_subject_truth <- function(truth, subject_id = NULL, recurrent = c("error", "first")) {
   rlang::check_installed("survival", reason = "to build survival truth.")
+  recurrent <- match.arg(recurrent)
   parts <- surv_components(truth)
   n <- length(parts$stop)
   if (is.null(subject_id)) {
@@ -120,12 +118,21 @@ surv_subject_truth <- function(truth, subject_id = NULL) {
     stop("Intervals overlap within subject(s): ", format_ids(sid[which(overlap)]), ".", call. = FALSE)
   }
   early <- status == 1 & !last
-  if (any(early)) {
+  if (identical(recurrent, "first")) {
+    # keep each subject's rows up to and including the first event
+    seen <- as.logical(stats::ave(status == 1, sid, FUN = function(v) c(FALSE, cumsum(v)[-length(v)] > 0)))
+    keep <- !seen
+    sid <- sid[keep]
+    start <- start[keep]
+    stop <- stop[keep]
+    status <- status[keep]
+    first <- !duplicated(sid)
+    last <- !duplicated(sid, fromLast = TRUE)
+  } else if (any(early)) {
     stop(
       "Subject(s) with an event before their last interval: ", format_ids(sid[early]),
-      ". Recurrent events are not supported: the survival metrics need one event time per subject. ",
-      "Keep each subject's rows up to their first event (time to first event), or fit and score a ",
-      "recurrent-event model outside cv_coxnet() / nested_cv_coxnet(); see ?surv_subject_truth.",
+      ". Use `recurrent = \"first\"` to score the time to first event, or `recurrent_cox()` ",
+      "to model the recurrent process.",
       call. = FALSE
     )
   }
@@ -507,6 +514,11 @@ format_ids <- function(ids, max = 10) {
 #'   error if any structural issue (missing values, `stop <= start`, overlapping
 #'   intervals, events before the last interval, or rows after an event) is
 #'   detected.
+#' @param recurrent Logical (default `FALSE`). Set `TRUE` for recurrent-event data
+#'   (repeated readmissions, Andersen-Gill / PWP input): an event does not end a
+#'   subject's follow-up, so events before the last interval and rows after an
+#'   event are counted (`n_events_before_last`, `n_rows_after_event`) but are not
+#'   structural issues, and `n_censored` counts the subjects with no event.
 #' @return A 1-row tibble of class `cbe_start_stop_validation` with columns:
 #'   `n_subjects`, `n_intervals`, `n_events`, `n_subjects_with_event`,
 #'   `n_censored`, `censoring_rate`, `n_overlapping`, `n_gaps`,
@@ -530,9 +542,13 @@ validate_start_stop <- function(data,
                                 stop = "tstop",
                                 status = "status",
                                 warn_no_censoring = TRUE,
-                                error_on_invalid = FALSE) {
+                                error_on_invalid = FALSE,
+                                recurrent = FALSE) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
+  }
+  if (!is.logical(recurrent) || length(recurrent) != 1L || is.na(recurrent)) {
+    stop("`recurrent` must be TRUE or FALSE.", call. = FALSE)
   }
 
   resolve_col <- function(quo_arg, default_nm) {
@@ -669,10 +685,10 @@ validate_start_stop <- function(data,
   if (sum(overlap) > 0L) {
     issues <- c(issues, sprintf("%d overlapping interval(s) detected (subjects: %s)", sum(overlap), format_ids(overlap_ids)))
   }
-  if (sum(early_event) > 0L) {
+  if (!recurrent && sum(early_event) > 0L) {
     issues <- c(issues, sprintf("%d event(s) occurred before the last interval (subjects: %s)", sum(early_event), format_ids(early_ids)))
   }
-  if (sum(after_event) > 0L) {
+  if (!recurrent && sum(after_event) > 0L) {
     issues <- c(issues, sprintf("%d row(s) appear after an event (subjects: %s)", sum(after_event), format_ids(after_ids)))
   }
 
@@ -724,7 +740,7 @@ validate_start_stop <- function(data,
 #' Clean Counting-Process Intervals
 #'
 #' Companion to [validate_start_stop()]: drops intervals with `stop <= start`, drops rows recorded
-#' after a subject's first event, and closes tiny gaps or overlaps (smaller than `tol`) between a
+#' after a subject's first event (unless `recurrent = TRUE`), and closes tiny gaps or overlaps (smaller than `tol`) between a
 #' subject's consecutive intervals by moving the later `start` to the earlier `stop`. Rows with a
 #' missing id, time or status are dropped too. Gaps and overlaps larger than `tol` are real and
 #' left alone; check them with [validate_start_stop()].
@@ -732,6 +748,8 @@ validate_start_stop <- function(data,
 #' @param data A data frame of counting-process intervals.
 #' @param id,start,stop,status Column names (strings). Status is 0/1, logical or a 0/1 factor.
 #' @param tol Largest gap or overlap treated as rounding error (default `1e-6`).
+#' @param recurrent Logical (default `FALSE`). Set `TRUE` for recurrent-event data: rows
+#'   after an event are kept, because the subject is still followed.
 #' @return `data` with the offending rows removed, sorted by `id`, `start`, `stop`. The counts are in
 #'   `attr(x, "pruned")`: `missing`, `nonpositive`, `after_event` and `gaps_closed`.
 #' @seealso [validate_start_stop()]
@@ -741,7 +759,10 @@ validate_start_stop <- function(data,
 #'                  tstop = c(5, 10, 12, 0), status = c(0, 1, 0, 0))
 #' prune_start_stop(df)
 prune_start_stop <- function(data, id = "id", start = "tstart", stop = "tstop", status = "status",
-                             tol = 1e-6) {
+                             tol = 1e-6, recurrent = FALSE) {
+  if (!is.logical(recurrent) || length(recurrent) != 1L || is.na(recurrent)) {
+    stop("`recurrent` must be TRUE or FALSE.", call. = FALSE)
+  }
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
   if (!is.numeric(tol) || length(tol) != 1L || is.na(tol) || tol < 0) {
     stop("`tol` must be a single non-negative number.", call. = FALSE)
@@ -774,6 +795,7 @@ prune_start_stop <- function(data, id = "id", start = "tstart", stop = "tstop", 
   prior_event <- as.logical(stats::ave(st == 1, sid, FUN = function(v) {
     c(FALSE, cumsum(v)[-length(v)] > 0)
   }))
+  if (recurrent) prior_event[] <- FALSE
   n_after <- sum(prior_event)
   keep <- !prior_event
   data <- data[keep, , drop = FALSE]

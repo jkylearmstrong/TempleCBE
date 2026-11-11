@@ -1,4 +1,4 @@
-# Regression tests for the consolidated findings fixed in 0.7.11. Each test fails on 0.7.10.
+# Regression tests for the consolidated findings fixed in 0.8.1 (drafted as 0.7.11). Each test fails on 0.7.10.
 
 test_that("subject_keys() numbers bootstrap copies without building the interaction of its keys", {
   # 300 subjects x 40 intervals with distinct times: stats::ave() over (subject, start, stop)
@@ -18,6 +18,10 @@ test_that("subject_keys() numbers bootstrap copies without building the interact
 test_that("surv_subject_truth() says what to do with recurrent events", {
   y <- survival::Surv(c(0, 1), c(1, 2), c(1, 1))
   expect_error(surv_subject_truth(y, c(1, 1)), "time to first event")
+})
+
+test_that("is_dir_link() is FALSE for a path that does not exist", {
+  expect_false(is_dir_link(file.path(withr::local_tempdir(), "absent")))
 })
 
 test_that("update_deprecated_calls() keeps line endings and can write a backup", {

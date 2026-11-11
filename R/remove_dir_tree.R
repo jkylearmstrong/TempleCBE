@@ -5,8 +5,11 @@
 #' @keywords internal
 #' @noRd
 is_dir_link <- function(path) {
+  # Sys.readlink() gives NA for a path that does not exist (not on Windows),
+  # and nzchar(NA) is TRUE
+  target <- Sys.readlink(path)
   isTRUE(tryCatch(unname(fs::is_link(path)), error = function(e) FALSE)) ||
-    isTRUE(nzchar(Sys.readlink(path)))
+    isTRUE(!is.na(target) && nzchar(target))
 }
 
 #' Remove a Directory Link Without Touching Its Target
