@@ -251,22 +251,29 @@ jobs:
             any::pkgload
           needs: test
 
-      - name: LibreOffice conversion, with its output shown
+      - name: LibreOffice conversion through the package, with its output shown
         # the package hides the converter's output; this shows what LibreOffice says
+        # when it is started the way the package starts it
         run: |
-          mkdir -p /tmp/lo && cd /tmp/lo
-          Rscript -e 'pdf("s.pdf", 6, 3); plot.new(); text(.5, .5, "TempleCBE2026", cex = 2); dev.off()'
-          try() {
-            name="$1"; shift; mkdir -p "out_$name"
-            echo "::group::$name"
-            timeout 120 soffice "-env:UserInstallation=file:///tmp/lo/profile_$name" --headless --norestore --invisible --nolockcheck "$@" --outdir "out_$name" s.pdf || echo "exit status $?"
-            ls -la "out_$name"
-            echo "::endgroup::"
-          }
-          try writer_named --infilter=writer_pdf_import --convert-to "docx:MS Word 2007 XML"
-          try writer_plain --infilter=writer_pdf_import --convert-to docx
-          try no_infilter --convert-to "docx:MS Word 2007 XML"
-          dpkg -l | grep -i -E 'libreoffice|poppler' | awk '{print $2, $3}'
+          pkgload::load_all(".")
+          ns <- asNamespace("TempleCBE")
+          unlockBinding(".run_status", ns)
+          assign(".run_status", function(cmd, args, ...) {
+            cat("command:", cmd, "\n"); print(args)
+            out <- suppressWarnings(system2(cmd, args, stdout = TRUE, stderr = TRUE, ...))
+            print(out)
+            outdir <- gsub("^'|'$", "", args[which(args == "--outdir") + 1L])
+            cat("outdir:", outdir, "\n"); print(list.files(outdir, all.files = TRUE))
+            cat("LD_LIBRARY_PATH:", Sys.getenv("LD_LIBRARY_PATH"), "\n")
+            st <- attr(out, "status")
+            if (is.null(st)) 0L else as.integer(st)
+          }, envir = ns)
+          dir <- tempfile("lo_"); dir.create(dir)
+          pdf <- file.path(dir, "sample.pdf")
+          grDevices::pdf(pdf, width = 6, height = 3); plot.new(); text(0.5, 0.5, "TempleCBE2026", cex = 2); dev.off()
+          print(try(convert_pdf_to_docx(pdf, file.path(dir, "sample.docx"), backend = "libreoffice", timeout = 120)))
+          print(list.files(dir, all.files = TRUE, recursive = TRUE))
+        shell: Rscript {0}
 
       - name: Run the PDF to DOCX tests with the live backends
         run: |
