@@ -645,7 +645,7 @@ fake_converter <- function(kind = c("python", "soffice"),
     out <- if (kind == "python") '"%~3"' else '"%~6\\%~n7.docx"'
     lines <- c(
       "@echo off",
-      if (kind == "soffice") c("shift", "shift", "shift"),
+      if (kind == "soffice") c("shift", "shift", "shift", "shift"),
       if (sleep > 0) paste0("ping -n ", ceiling(sleep) + 1, " 127.0.0.1 >nul"),
       if (sleep == 0 && write == "content") paste0("echo FAKE-DOCX>", out),
       if (sleep == 0 && write == "empty") paste0("type nul>", out),

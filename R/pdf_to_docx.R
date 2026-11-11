@@ -435,6 +435,9 @@ check_docx_toolchain <- function(quiet = FALSE) {
     c(
       shQuote(profile_uri),
       "--headless", "--norestore", "--invisible", "--nolockcheck",
+      # Without this a PDF is opened in Draw, which has no DOCX export, and
+      # nothing is written.
+      shQuote("--infilter=writer_pdf_import"),
       "--convert-to", shQuote("docx:MS Word 2007 XML"),
       "--outdir", shQuote(work),
       shQuote(pdf)
