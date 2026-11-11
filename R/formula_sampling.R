@@ -254,14 +254,83 @@ sample_candidate_formulas <- function(predictors,
   trimws(c(parts, paste(cur, collapse = "")))
 }
 
+# Functions a model term may call when it is evaluated to see whether it is constant. A term is
+# a string, and strings arrive from files and from tables of earlier results: evaluating one as
+# R code with the session's privileges would run whatever it says (`system("...")`, `unlink()`).
+# Only transformations of columns are evaluated; a term that calls anything else is not
+# evaluated at all and counts as "not known to be constant".
+.term_safe_functions <- c(
+  "(", "+", "-", "*", "/", "^", "%%", "%/%", ":", "%in%",
+  "<", ">", "<=", ">=", "==", "!=", "!", "&", "|",
+  "I", "c", "abs", "sqrt", "exp", "expm1", "log", "log2", "log10", "log1p",
+  "sin", "cos", "tan", "round", "floor", "ceiling", "trunc", "sign",
+  "pmin", "pmax", "ifelse", "is.na", "scale", "cut", "rank",
+  "factor", "as.factor", "ordered", "as.numeric", "as.integer", "as.character", "as.logical",
+  "poly", "ns", "bs", "pspline", "rcs", "strata", "offset"
+)
+.term_safe_packages <- c("base", "stats", "splines", "survival", "rms")
+
+# TRUE when every call in the parsed term is to a function of .term_safe_functions, written
+# either bare or as `pkg::fn` with a package of .term_safe_packages.
+.term_is_safe <- function(e) {
+  if (is.call(e)) {
+    head <- e[[1L]]
+    ok <- if (is.symbol(head)) {
+      as.character(head) %in% .term_safe_functions
+    } else if (is.call(head) && identical(head[[1L]], quote(`::`)) && length(head) == 3L) {
+      as.character(head[[2L]]) %in% .term_safe_packages &&
+        as.character(head[[3L]]) %in% .term_safe_functions
+    } else {
+      FALSE
+    }
+    return(ok && all(vapply(as.list(e)[-1L], .term_is_safe, logical(1))))
+  }
+  # a symbol (a column), a constant, or an empty argument
+  is.symbol(e) || is.atomic(e) || is.null(e)
+}
+
+# The environment a term is evaluated in: the safe functions and nothing else (its parent is the
+# empty environment, so no other function and no object of the session can be reached).
+.term_eval_env <- function() {
+  env <- new.env(parent = emptyenv())
+  for (fn in .term_safe_functions) {
+    for (pkg in .term_safe_packages) {
+      if (!requireNamespace(pkg, quietly = TRUE)) next
+      f <- get0(fn, envir = asNamespace(pkg), mode = "function", inherits = FALSE)
+      if (!is.null(f)) {
+        assign(fn, f, envir = env)
+        break
+      }
+    }
+  }
+  assign("::", function(pkg, name) {
+    pkg <- as.character(substitute(pkg))
+    name <- as.character(substitute(name))
+    if (!pkg %in% .term_safe_packages || !name %in% .term_safe_functions) {
+      stop("not an allowed function: ", pkg, "::", name, call. = FALSE)
+    }
+    getExportedValue(pkg, name)
+  }, envir = env)
+  env
+}
+
 # TRUE when the expression evaluates, from the columns of `data`, to a constant; FALSE when it
-# varies or cannot be evaluated.
+# varies, cannot be evaluated, or calls a function that is not a known transformation.
 .constant_expr <- function(data, expr) {
   e <- tryCatch(parse(text = expr, keep.source = FALSE), error = function(err) NULL)
   if (is.null(e) || length(e) != 1L) return(FALSE)
+  if (!.term_is_safe(e[[1L]])) return(FALSE)
   vars <- all.vars(e[[1L]])
   if (length(vars) == 0L || !all(vars %in% names(data))) return(FALSE)
-  x <- tryCatch(eval(e[[1L]], data, globalenv()), error = function(err) NULL, warning = function(w) suppressWarnings(eval(e[[1L]], data, globalenv())))
+  # evaluated once: warnings are muffled where they arise (the handler used to evaluate the term
+  # a second time)
+  x <- tryCatch(
+    withCallingHandlers(
+      eval(e[[1L]], as.list(data), .term_eval_env()),
+      warning = function(w) invokeRestart("muffleWarning")
+    ),
+    error = function(err) NULL
+  )
   if (is.null(x)) return(FALSE)
   one <- function(v) {
     v <- v[!is.na(v)]

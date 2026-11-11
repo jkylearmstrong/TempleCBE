@@ -18,7 +18,7 @@ NULL
 #' @param time_col Character string naming the follow-up time column.
 #' @param status_col Character string naming the event status column (1 = event, 0 = censored).
 #' @param group_col Optional character string naming a stratification grouping column.
-#' @param color Primary line/ribbon color (default: Temple Cherry \code{"#9D2235"}).
+#' @param color Primary line/ribbon color (default: Temple Cherry \code{"#A41E35"}).
 #' @param title Optional plot title.
 #' @param caption Optional plot caption.
 #' @param base_size Base font size (default: 13).
@@ -49,7 +49,7 @@ plot_survival_km <- function(data,
                              time_col,
                              status_col,
                              group_col = NULL,
-                             color = "#9D2235",
+                             color = "#A41E35",
                              title = "Kaplan-Meier Survival Estimate",
                              caption = NULL,
                              base_size = 13,
@@ -131,7 +131,7 @@ plot_survival_km <- function(data,
 #' @param group_col Character name of cohort/grouping column.
 #' @param facet_col Optional character name of domain or biomarker column to facet wrap.
 #' @param colors Named or unnamed character vector of colors matching group levels,
-#'   or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
+#'   or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#A41E35")}.
 #'   When `colors` is left at its default and the data's groups are not Survived/Died, the CBE palette
 #'   is used instead of failing, so any grouping works without extra arguments.
 #' @param base_size Base font size (default: 12).
@@ -159,7 +159,7 @@ plot_dynamic_trajectory <- function(data,
                                     time_col,
                                     group_col,
                                     facet_col = NULL,
-                                    colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
+                                    colors = c(Survived = "#6F6F6F", Died = "#A41E35"),
                                     base_size = 12,
                                     palette = NULL,
                                     group_levels = NULL,
@@ -309,7 +309,7 @@ plot_dynamic_trajectory <- function(data,
 #' @param group_col Cohort/outcome grouping column (e.g. "outcome_label").
 #' @param facet_col Column to facet wrap across (e.g. "index_label").
 #' @param se_col Optional standard error column. If NULL, calculated automatically.
-#' @param colors Named color vector (default: \code{c(Survived = "#6F6F6F", Died = "#9D2235")}).
+#' @param colors Named color vector (default: \code{c(Survived = "#6F6F6F", Died = "#A41E35")}).
 #' @param base_size Base font size (default: 13).
 #' @return A ggplot2 object.
 #' @export
@@ -318,7 +318,7 @@ plot_group_comparison <- function(data,
                                   group_col,
                                   facet_col = NULL,
                                   se_col = NULL,
-                                  colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
+                                  colors = c(Survived = "#6F6F6F", Died = "#A41E35"),
                                   base_size = 13) {
   df <- data
   if (is.null(se_col) || !se_col %in% names(df)) {
@@ -377,7 +377,7 @@ plot_missingness <- function(data,
       vjust = -0.4,
       size = 4
     ) +
-    ggplot2::scale_fill_manual(values = c("OSM3/Spin" = "#6F6F6F", "ABL" = "#9D2235")) +
+    ggplot2::scale_fill_manual(values = c("OSM3/Spin" = "#6F6F6F", "ABL" = "#A41E35")) +
     ggplot2::scale_y_continuous(limits = c(0, 1.05), labels = scales::percent) +
     theme_cbe_deck(base_size = base_size) +
     ggplot2::theme(panel.grid.major.x = ggplot2::element_blank()) +

@@ -9,7 +9,7 @@ plot_corr_scatter(
   x,
   y,
   method = c("pearson", "spearman"),
-  point_color = "#9D2235",
+  point_color = "#A41E35",
   line_color = "#2B2B2B",
   se = TRUE,
   title = NULL,
@@ -26,7 +26,7 @@ plot_corr_scatter(
 
 \item{method}{Correlation method: `"pearson"` (default) or `"spearman"`.}
 
-\item{point_color}{Point fill/outline color (default Temple Cherry `"#9D2235"`).}
+\item{point_color}{Point fill/outline color (default Temple Cherry `"#A41E35"`).}
 
 \item{line_color}{Regression line color (default charcoal `"#2B2B2B"`).}
 

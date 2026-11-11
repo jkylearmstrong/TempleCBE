@@ -23,7 +23,7 @@ cbe_contingency_plot(
   test = c("auto", "exact", "chisq", "fisher"),
   correct = FALSE,
   size_range = c(6, 22),
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   caption = NULL,
@@ -43,7 +43,7 @@ contingency_plot(
   test = c("auto", "exact", "chisq", "fisher"),
   correct = FALSE,
   size_range = c(6, 22),
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   caption = NULL,
@@ -59,7 +59,7 @@ balloon_plot(
   label2 = NULL,
   engine = c("ggplot", "corrplot", "ggpubr"),
   size_range = c(6, 22),
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   ...
@@ -94,7 +94,7 @@ heatmap_plot(
   var2 = NULL,
   label1 = NULL,
   label2 = NULL,
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   ...
@@ -122,7 +122,7 @@ square_plot(
   correct = FALSE,
   engine = c("ggplot", "corrplot"),
   size_range = c(6, 22),
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   caption = NULL,
@@ -163,7 +163,7 @@ or \code{"fisher"} (force \code{\link[stats]{fisher.test}}).}
 (default \code{c(6, 22)}).}
 
 \item{fill_colors}{Character vector of colors for the palette or gradient. Defaults to
-Temple University brand palette (\code{c("#F4F4F4", "#9D2235")}).}
+Temple University brand palette (\code{c("#F4F4F4", "#A41E35")}).}
 
 \item{show_counts}{Logical (default \code{TRUE}); whether to print cell counts inside plots.}
 

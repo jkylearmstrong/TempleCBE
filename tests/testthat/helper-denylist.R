@@ -29,12 +29,11 @@ read_denylist <- function(path) {
   terms[nzchar(terms) & !startsWith(terms, "#")]
 }
 
-# stdout lines of a git command, or character(0) if git fails
+# stdout lines of a git command run in `dir`, or character(0) if git fails. `git -C` names the
+# directory, so the working directory of the R session is never changed.
 git_output <- function(args, dir = ".") {
-  old <- setwd(dir)
-  on.exit(setwd(old), add = TRUE)
   out <- suppressWarnings(tryCatch(
-    system2("git", args, stdout = TRUE, stderr = FALSE),
+    system2("git", c("-C", shQuote(dir), args), stdout = TRUE, stderr = FALSE),
     error = function(e) character(0)
   ))
   if (!is.null(attr(out, "status"))) character(0) else out
@@ -71,11 +70,9 @@ scan_tracked_files <- function(terms, repo) {
   writeLines(enc2utf8(terms), con, sep = "\n", useBytes = TRUE)
   close(con)
 
-  old <- setwd(repo)
-  on.exit(setwd(old), add = TRUE)
   by_content <- suppressWarnings(system2(
     "git",
-    c("grep", "-l", "-i", "-a", "-F", "-f", shQuote(pattern_file)),
+    c("-C", shQuote(repo), "grep", "-l", "-i", "-a", "-F", "-f", shQuote(pattern_file)),
     stdout = TRUE, stderr = FALSE
   ))
   status <- attr(by_content, "status")
@@ -92,7 +89,7 @@ scan_tracked_files <- function(terms, repo) {
 # Needs pdftools; unreadable PDFs are treated as containing nothing.
 scan_tracked_pdfs <- function(terms, repo) {
   terms <- tolower(terms[nzchar(terms)])
-  pdfs <- git_output(c("-c", "core.quotepath=off", "ls-files", "*.pdf"), dir = repo)
+  pdfs <- git_output(c("-c", "core.quotepath=off", "ls-files", shQuote("*.pdf")), dir = repo)
   if (length(terms) == 0 || length(pdfs) == 0) return(character(0))
 
   has_term <- vapply(pdfs, function(p) {

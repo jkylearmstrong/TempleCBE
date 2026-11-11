@@ -10,7 +10,7 @@ plot_cox_marginal(
   feature = NULL,
   status_col = "status",
   scale = c("prob", "hr", "log_hr"),
-  color = "#9D2235",
+  color = "#A41E35",
   base_size = 12
 )
 }
@@ -28,7 +28,7 @@ Only used when \code{scale = "prob"}.}
 \code{"hr"} (relative hazard, i.e. \code{exp()} of the centered linear predictor), or
 \code{"log_hr"} (the centered linear predictor itself).}
 
-\item{color}{Primary color for the fitted curve and CI band (default: Temple Cherry \code{"#9D2235"}).}
+\item{color}{Primary color for the fitted curve and CI band (default: Temple Cherry \code{"#A41E35"}).}
 
 \item{base_size}{Base font size (default: 12).}
 }

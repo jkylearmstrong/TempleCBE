@@ -227,11 +227,7 @@ score_outer <- function(object,
         file.path(checkpoint_dir, sprintf("score_fold_%s_model_%s.rds", safe_fold, safe_model))
       })
 
-      if (!is.null(shard)) {
-        active_indices <- which(((seq_len(n_tasks) - 1L) %% shard[2]) + 1L == shard[1])
-      } else {
-        active_indices <- seq_len(n_tasks)
-      }
+      active_indices <- which(shard_active_mask(n_tasks, shard))
 
       if (!is.null(checkpoint_dir) && length(active_indices) > 0L) {
         mismatch_msgs <- character()
@@ -247,12 +243,16 @@ score_outer <- function(object,
             }
           }
         }
-        if (is.null(shard)) {
+        # Files of this pattern that are not tasks of this run belong to another
+        # run that shares the directory. They are removed only on request
+        # (`checkpoint_mismatch = "overwrite"`, documented as cleaning up stale
+        # files); "recompute" and "error" leave them alone.
+        if (is.null(shard) && checkpoint_mismatch == "overwrite") {
           all_existing <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
           other_files <- setdiff(all_existing, unlist(ckpt_files))
           for (of in other_files) {
             if (file.exists(of)) {
-              cached_of <- tryCatch(readRDS(of), error = function(e) NULL)
+              cached_of <- read_checkpoint_rds(of)
               found_run_fp <- if (!is.null(cached_of)) attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) else NULL
               found_scheme <- if (!is.null(cached_of)) {
                 attr(cached_of, "seed_scheme", exact = TRUE) %||%
@@ -261,16 +261,6 @@ score_outer <- function(object,
                 NULL
               }
               if (!identical(found_run_fp, run_fp) || !identical(found_scheme, current_seed_scheme())) {
-                msg <- sprintf(
-                  "Checkpoint '%s' has a mismatched fingerprint (inputs, recipe, features, censoring_weights, seed_scheme, or settings changed).",
-                  basename(of)
-                )
-                if (checkpoint_mismatch == "error") {
-                  stop(msg, call. = FALSE)
-                }
-                if (checkpoint_mismatch == "recompute") {
-                  mismatch_msgs <- c(mismatch_msgs, msg)
-                }
                 unlink(of)
               }
             }
@@ -1293,6 +1283,7 @@ compare_runs <- function(run1,
   out_df
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.templecbe_run_comparison <- function(x, ...) {
   s <- attr(x, "comparison_summary")
@@ -1527,6 +1518,7 @@ compare_tuning_runs <- function(tune1,
   merged
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.templecbe_tuning_comparison <- function(x, ...) {
   s <- attr(x, "comparison_summary")

@@ -50,7 +50,16 @@ scan_data_io <- function(code_path,
                           strong_read_patterns = c("read_workbook", "read_excel_multiple_headers"),
                           include_comments_write = FALSE,
                           max_depth = Inf) {
-  stopifnot(dir.exists(code_path), dir.exists(project_root))
+  for (arg in c("code_path", "project_root")) {
+    dir_path <- if (arg == "code_path") code_path else project_root
+    if (!is.character(dir_path) || length(dir_path) != 1L || is.na(dir_path) || !dir.exists(dir_path)) {
+      stop(
+        "`", arg, "` must be an existing directory; got ",
+        paste(encodeString(as.character(dir_path), quote = "'"), collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+  }
 
   if (!is.character(ext) || length(ext) != 1 || is.na(ext)) {
     stop("ext must be a single non-NA character string", call. = FALSE)
@@ -67,8 +76,10 @@ scan_data_io <- function(code_path,
   actual_root <- normalize_path_safely(here::here())
   custom_root <- normalize_path_safely(project_root)
 
+  # "~/x" is absolute only once the tilde is expanded, which path.expand() does and a bare
+  # regular expression on "~" did not ("~x" and "~notauser/x" are relative names)
   is_absolute_path <- function(p) {
-    grepl("^[~/]|^[A-Za-z]:", p)
+    grepl("^[/\\\\]|^[A-Za-z]:", path.expand(p))
   }
 
   is_subpath <- function(p, root) {

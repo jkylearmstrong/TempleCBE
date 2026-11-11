@@ -15,13 +15,17 @@
 #' @param ... Additional arguments passed to `.f`.
 #' @param checkpoint_dir Optional directory path where per-task `.rds`
 #'   checkpoint files are stored. If `NULL`, executes normally without disk caching.
+#'   Checkpoints are read back with [readRDS()], which can run code stored in a
+#'   file: use a directory that only you (or a process you trust) can write to.
+#'   A checkpoint that cannot be read, and a checkpoint that cannot be written
+#'   (full disk, no permission), give a warning that names the file.
 #' @param key Optional vector or function producing safe, unique character keys
 #'   for each element of `.x`. Defaults to names of `.x`, or `item_0001`, `item_0002`, etc.
 #' @param fingerprint Optional character vector of pre-computed fingerprints
 #'   per item, or a function `function(x, ...)` returning a fingerprint string.
 #'   When `NULL`, fingerprints are derived from `.x[[i]]`, `...`, and package version.
-#' @param shard Optional integer vector `c(i, n)` specifying that this execution
-#'   evaluates shard `i` of `n` items.
+#' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+#'   evaluate shard `i` of `n`. Anything else is an error.
 #' @param checkpoint_mismatch Action when an existing checkpoint file has a
 #'   mismatched fingerprint: `"recompute"` (default), `"overwrite"`, or `"error"`.
 #' @param progress Logical (default `FALSE`). Display progress indication.
@@ -106,12 +110,7 @@ checkpoint_map <- function(.x,
   run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = fps, keys = safe_keys), NULL))), collapse = "")
 
   # Sharding mask
-  shard_parsed <- validate_shard_spec(shard)
-  active_mask <- if (!is.null(shard_parsed)) {
-    ((seq_len(n) - 1L) %% shard_parsed[2]) + 1L == shard_parsed[1]
-  } else {
-    rep(TRUE, n)
-  }
+  active_mask <- shard_active_mask(n, validate_shard_spec(shard))
 
   # Build checkpoint file paths
   ckpt_files <- if (!is.null(checkpoint_dir)) {
@@ -273,8 +272,10 @@ compute_tidymodels_split_fingerprint <- function(object,
 #' @param grid Number of grid points or a parameter grid data frame.
 #' @param metrics A `yardstick::metric_set()`.
 #' @param control A `tune::control_grid()` object.
-#' @param checkpoint_dir Directory to store per-resample fingerprinted checkpoints.
-#' @param shard Optional integer vector `c(i, n)` for distributed evaluation.
+#' @param checkpoint_dir Directory to store per-resample fingerprinted checkpoints. They are
+#'   read back with [readRDS()]: use a directory that only trusted processes write to.
+#' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+#'   evaluate shard `i` of `n`. Anything else is an error.
 #' @param checkpoint_mismatch Action when a checkpoint fingerprint mismatches:
 #'   `"recompute"` (default), `"overwrite"`, or `"error"`.
 #' @param progress Logical (default `FALSE`).
@@ -294,19 +295,137 @@ tune_grid_checkpointed <- function(object,
                                    ...) {
   rlang::check_installed("tune", reason = "for tune_grid_checkpointed().")
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
   object <- apply_workflow_cox_ties(object)
 
-  if (is.null(checkpoint_dir)) {
-    return(with_quiet_cox_ties(tune::tune_grid(
+  fit_split <- function(resamples) {
+    with_quiet_cox_ties(tune::tune_grid(
       object = object,
       resamples = resamples,
       grid = grid,
       metrics = metrics,
       control = control,
       ...
-    )))
+    ))
+  }
+  if (is.null(checkpoint_dir)) {
+    return(fit_split(resamples))
   }
 
+  checkpointed_resamples(
+    resamples = resamples,
+    fit_split = fit_split,
+    split_fingerprint = function(split) {
+      compute_tidymodels_split_fingerprint(
+        object = object, split = split, grid = grid, metrics = metrics, control = control
+      )
+    },
+    fn = "tune_grid_checkpointed",
+    file_prefix = "tune_grid",
+    verb = "tuned",
+    fingerprint_inputs = "workflow spec, data, resamples, grid, metrics, control, or seed scheme",
+    checkpoint_dir = checkpoint_dir,
+    shard = shard,
+    checkpoint_mismatch = checkpoint_mismatch,
+    progress = progress
+  )
+}
+
+#' Checkpointed Model Evaluation Across Resamples (`fit_resamples_checkpointed`)
+#'
+#' A fingerprinted, resumable wrapper around [tune::fit_resamples()] that evaluates
+#' each resample split independently and saves fingerprinted checkpoints into `checkpoint_dir`.
+#'
+#' @param object A `workflow` or model specification.
+#' @param resamples An `rset` resampling object.
+#' @param metrics A `yardstick::metric_set()`.
+#' @param control A `tune::control_resamples()` object.
+#' @param checkpoint_dir Directory to store per-resample fingerprinted checkpoints. They are
+#'   read back with [readRDS()]: use a directory that only trusted processes write to.
+#' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+#'   evaluate shard `i` of `n`. Anything else is an error.
+#' @param checkpoint_mismatch Action when a checkpoint fingerprint mismatches:
+#'   `"recompute"` (default), `"overwrite"`, or `"error"`.
+#' @param progress Logical (default `FALSE`).
+#' @param ... Additional arguments passed to [tune::fit_resamples()].
+#' @return A standard `resample_results` object.
+#' @seealso [tune_grid_checkpointed()], [checkpoint_map()]
+#' @export
+fit_resamples_checkpointed <- function(object,
+                                       resamples,
+                                       metrics = NULL,
+                                       control = tune::control_resamples(),
+                                       checkpoint_dir = NULL,
+                                       shard = NULL,
+                                       checkpoint_mismatch = c("recompute", "overwrite", "error"),
+                                       progress = FALSE,
+                                       ...) {
+  rlang::check_installed("tune", reason = "for fit_resamples_checkpointed().")
+  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
+
+  fit_split <- function(resamples) {
+    tune::fit_resamples(
+      object = object,
+      resamples = resamples,
+      metrics = metrics,
+      control = control,
+      ...
+    )
+  }
+  if (is.null(checkpoint_dir)) {
+    return(fit_split(resamples))
+  }
+
+  checkpointed_resamples(
+    resamples = resamples,
+    fit_split = fit_split,
+    split_fingerprint = function(split) {
+      compute_tidymodels_split_fingerprint(
+        object = object, split = split, metrics = metrics, control = control
+      )
+    },
+    fn = "fit_resamples_checkpointed",
+    file_prefix = "fit_resample",
+    verb = "fit",
+    fingerprint_inputs = "workflow spec, data, resamples, metrics, control, or seed scheme",
+    checkpoint_dir = checkpoint_dir,
+    shard = shard,
+    checkpoint_mismatch = checkpoint_mismatch,
+    progress = progress
+  )
+}
+
+#' One Checkpoint per Resample: the Engine of the `*_checkpointed()` Wrappers
+#'
+#' [tune_grid_checkpointed()] and [fit_resamples_checkpointed()] differ only in
+#' the function that is run on one resample and in what enters the
+#' fingerprint. This evaluates each resample on its own, saves it with its
+#' fingerprint, reuses a saved result whose fingerprint still matches and binds
+#' the results into one object of the class the underlying function returns.
+#'
+#' @param resamples An `rset`.
+#' @param fit_split Function of a one-row `rset`, returning its results.
+#' @param split_fingerprint Function of one split, returning its fingerprint.
+#' @param fn Name of the calling function, for messages and metadata.
+#' @param file_prefix Prefix of the checkpoint files.
+#' @param verb Past participle for the "no resample could be ..." error.
+#' @param fingerprint_inputs What the fingerprint covers, for the message.
+#' @param checkpoint_dir,checkpoint_mismatch,progress As in the wrappers.
+#' @param shard A validated shard (see `validate_shard_spec()`) or `NULL`.
+#' @keywords internal
+#' @noRd
+checkpointed_resamples <- function(resamples,
+                                   fit_split,
+                                   split_fingerprint,
+                                   fn,
+                                   file_prefix,
+                                   verb,
+                                   fingerprint_inputs,
+                                   checkpoint_dir,
+                                   shard,
+                                   checkpoint_mismatch,
+                                   progress) {
   if (!inherits(resamples, "rset")) {
     stop("`resamples` must be an rsample rset object.", call. = FALSE)
   }
@@ -320,25 +439,13 @@ tune_grid_checkpointed <- function(object,
   }
 
   # Fingerprint per resample split
-  split_fps <- vapply(seq_len(n_splits), function(i) {
-    compute_tidymodels_split_fingerprint(
-      object = object,
-      split = resamples$splits[[i]],
-      grid = grid,
-      metrics = metrics,
-      control = control
-    )
-  }, character(1))
+  split_fps <- vapply(seq_len(n_splits), function(i) split_fingerprint(resamples$splits[[i]]), character(1))
 
   run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = safe_ids), NULL))), collapse = "")
 
-  active_mask <- if (!is.null(shard)) {
-    ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-  } else {
-    rep(TRUE, n_splits)
-  }
+  active_mask <- shard_active_mask(n_splits, shard)
 
-  ckpt_files <- file.path(checkpoint_dir, sprintf("tune_grid_%s.rds", safe_ids))
+  ckpt_files <- file.path(checkpoint_dir, sprintf("%s_%s.rds", file_prefix, safe_ids))
 
   # Verify existing
   mismatch_count <- 0L
@@ -354,8 +461,8 @@ tune_grid_checkpointed <- function(object,
   }
   if (mismatch_count > 0L) {
     message(sprintf(
-      "tune_grid_checkpointed(): Discarded %d cached task(s) in '%s' due to mismatched fingerprint (workflow spec, data, resamples, grid, metrics, control, or seed scheme changed). Recomputing...",
-      mismatch_count, checkpoint_dir
+      "%s(): Discarded %d cached task(s) in '%s' due to mismatched fingerprint (%s changed). Recomputing...",
+      fn, mismatch_count, checkpoint_dir, fingerprint_inputs
     ))
   }
 
@@ -380,18 +487,11 @@ tune_grid_checkpointed <- function(object,
       }
     }
 
-    res_single <- with_quiet_cox_ties(tune::tune_grid(
-      object = object,
-      resamples = single_rset,
-      grid = grid,
-      metrics = metrics,
-      control = control,
-      ...
-    ))
+    res_single <- fit_split(single_rset)
 
     write_verified_checkpoint(
       res_single, cf, fingerprint = split_fps[i], run_fingerprint = run_fp,
-      meta = list(fn = "tune_grid_checkpointed", fold_id = fold_ids[i], index = i)
+      meta = list(fn = fn, fold_id = fold_ids[i], index = i)
     )
     res_single
   }
@@ -411,165 +511,10 @@ tune_grid_checkpointed <- function(object,
 
   good_rows <- Filter(Negate(is.null), rows)
   if (length(good_rows) == 0L) {
-    stop("No resample could be tuned in tune_grid_checkpointed().", call. = FALSE)
+    stop(sprintf("No resample could be %s in %s().", verb, fn), call. = FALSE)
   }
 
-  # Combine rows while retaining full tune_results structure
-  combined <- dplyr::bind_rows(good_rows)
-  ref_obj <- good_rows[[1]]
-  class(combined) <- class(ref_obj)
-  for (a in names(attributes(ref_obj))) {
-    if (!a %in% c("names", "row.names")) {
-      attr(combined, a) <- attr(ref_obj, a)
-    }
-  }
-  attr(combined, "checkpoint_run_fingerprint") <- run_fp
-  attr(combined, "checkpoint_dir") <- checkpoint_dir
-  combined
-}
-
-#' Checkpointed Model Evaluation Across Resamples (`fit_resamples_checkpointed`)
-#'
-#' A fingerprinted, resumable wrapper around [tune::fit_resamples()] that evaluates
-#' each resample split independently and saves fingerprinted checkpoints into `checkpoint_dir`.
-#'
-#' @param object A `workflow` or model specification.
-#' @param resamples An `rset` resampling object.
-#' @param metrics A `yardstick::metric_set()`.
-#' @param control A `tune::control_resamples()` object.
-#' @param checkpoint_dir Directory to store per-resample fingerprinted checkpoints.
-#' @param shard Optional integer vector `c(i, n)` for distributed evaluation.
-#' @param checkpoint_mismatch Action when a checkpoint fingerprint mismatches:
-#'   `"recompute"` (default), `"overwrite"`, or `"error"`.
-#' @param progress Logical (default `FALSE`).
-#' @param ... Additional arguments passed to [tune::fit_resamples()].
-#' @return A standard `resample_results` object.
-#' @seealso [tune_grid_checkpointed()], [checkpoint_map()]
-#' @export
-fit_resamples_checkpointed <- function(object,
-                                       resamples,
-                                       metrics = NULL,
-                                       control = tune::control_resamples(),
-                                       checkpoint_dir = NULL,
-                                       shard = NULL,
-                                       checkpoint_mismatch = c("recompute", "overwrite", "error"),
-                                       progress = FALSE,
-                                       ...) {
-  rlang::check_installed("tune", reason = "for fit_resamples_checkpointed().")
-  checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
-
-  if (is.null(checkpoint_dir)) {
-    return(tune::fit_resamples(
-      object = object,
-      resamples = resamples,
-      metrics = metrics,
-      control = control,
-      ...
-    ))
-  }
-
-  if (!inherits(resamples, "rset")) {
-    stop("`resamples` must be an rsample rset object.", call. = FALSE)
-  }
-
-  n_splits <- nrow(resamples)
-  fold_ids <- if ("id" %in% names(resamples)) resamples$id else sprintf("Resample%02d", seq_len(n_splits))
-  safe_ids <- gsub("[^A-Za-z0-9._-]", "_", fold_ids)
-
-  if (!dir.exists(checkpoint_dir)) {
-    dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
-  }
-
-  split_fps <- vapply(seq_len(n_splits), function(i) {
-    compute_tidymodels_split_fingerprint(
-      object = object,
-      split = resamples$splits[[i]],
-      metrics = metrics,
-      control = control
-    )
-  }, character(1))
-
-  run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = safe_ids), NULL))), collapse = "")
-
-  active_mask <- if (!is.null(shard)) {
-    ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-  } else {
-    rep(TRUE, n_splits)
-  }
-
-  ckpt_files <- file.path(checkpoint_dir, sprintf("fit_resample_%s.rds", safe_ids))
-
-  mismatch_count <- 0L
-  for (i in seq_len(n_splits)) {
-    cf <- ckpt_files[i]
-    if (file.exists(cf)) {
-      chk <- read_verified_checkpoint(cf, split_fps[i], checkpoint_mismatch = checkpoint_mismatch)
-      if (identical(chk$status, "mismatch")) {
-        mismatch_count <- mismatch_count + 1L
-        unlink(cf)
-      }
-    }
-  }
-  if (mismatch_count > 0L) {
-    message(sprintf(
-      "fit_resamples_checkpointed(): Discarded %d cached task(s) in '%s' due to mismatched fingerprint (workflow spec, data, resamples, metrics, control, or seed scheme changed). Recomputing...",
-      mismatch_count, checkpoint_dir
-    ))
-  }
-
-  eval_split <- function(i) {
-    cf <- ckpt_files[i]
-    if (file.exists(cf)) {
-      chk <- read_verified_checkpoint(cf, split_fps[i], checkpoint_mismatch = "recompute")
-      if (identical(chk$status, "hit")) {
-        return(chk$value)
-      }
-    }
-    if (!active_mask[i]) {
-      return(NULL)
-    }
-
-    single_rset <- resamples[i, , drop = FALSE]
-    class(single_rset) <- class(resamples)
-    for (a in names(attributes(resamples))) {
-      if (!a %in% names(attributes(single_rset))) {
-        attr(single_rset, a) <- attr(resamples, a)
-      }
-    }
-
-    res_single <- tune::fit_resamples(
-      object = object,
-      resamples = single_rset,
-      metrics = metrics,
-      control = control,
-      ...
-    )
-
-    write_verified_checkpoint(
-      res_single, cf, fingerprint = split_fps[i], run_fingerprint = run_fp,
-      meta = list(fn = "fit_resamples_checkpointed", fold_id = fold_ids[i], index = i)
-    )
-    res_single
-  }
-
-  is_parallel <- requireNamespace("future", quietly = TRUE) &&
-    !inherits(future::plan(), "sequential") &&
-    requireNamespace("furrr", quietly = TRUE)
-
-  indices <- seq_len(n_splits)
-  rows <- if (is_parallel) {
-    furrr_pkgs <- furrr_worker_packages()
-    f_opts <- furrr::furrr_options(seed = TRUE, packages = furrr_pkgs)
-    furrr::future_map(indices, eval_split, .options = f_opts, .progress = progress)
-  } else {
-    purrr::map(indices, eval_split)
-  }
-
-  good_rows <- Filter(Negate(is.null), rows)
-  if (length(good_rows) == 0L) {
-    stop("No resample could be fit in fit_resamples_checkpointed().", call. = FALSE)
-  }
-
+  # Combine rows while retaining the full structure of the results object
   combined <- dplyr::bind_rows(good_rows)
   ref_obj <- good_rows[[1]]
   class(combined) <- class(ref_obj)
@@ -594,8 +539,10 @@ fit_resamples_checkpointed <- function(object,
 #' @param ... Arguments passed to `fn`.
 #' @param seed Optional integer seed (default `1L`) used to set a reproducible RNG seed per workflow.
 #' @param verbose Logical (default `FALSE`). Display progress from [workflowsets::workflow_map()].
-#' @param checkpoint_dir Directory to store per-workflow checkpoints.
-#' @param shard Optional integer vector `c(i, n)`.
+#' @param checkpoint_dir Directory to store per-workflow checkpoints. They are read back
+#'   with [readRDS()]: use a directory that only trusted processes write to.
+#' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+#'   evaluate shard `i` of `n`. Anything else is an error.
 #' @param checkpoint_mismatch Action on fingerprint mismatch.
 #' @param progress Logical (default `FALSE`).
 #' @return A `workflow_set` object with populated result columns.
@@ -625,11 +572,7 @@ workflow_map_checkpointed <- function(object,
   wflow_ids <- object$wflow_id
   safe_ids <- gsub("[^A-Za-z0-9._-]", "_", wflow_ids)
 
-  active_mask <- if (!is.null(shard)) {
-    ((seq_len(n_wflow) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-  } else {
-    rep(TRUE, n_wflow)
-  }
+  active_mask <- shard_active_mask(n_wflow, validate_shard_spec(shard))
 
   results_list <- vector("list", n_wflow)
   dots <- list(...)
@@ -651,7 +594,7 @@ workflow_map_checkpointed <- function(object,
       # Try loading if exists
       ckpt_file <- file.path(w_dir, "workflow_result.rds")
       if (file.exists(ckpt_file)) {
-        chk <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+        chk <- read_checkpoint_rds(ckpt_file)
         results_list[[i]] <- chk
       }
       next
@@ -671,18 +614,18 @@ workflow_map_checkpointed <- function(object,
       } else {
         ckpt_file <- file.path(w_dir, "workflow_result.rds")
         if (file.exists(ckpt_file)) {
-          chk <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+          chk <- read_checkpoint_rds(ckpt_file)
           if (!is.null(chk)) chk else {
             out_w <- workflowsets::workflow_map(object[i, , drop = FALSE], fn = fn, seed = seed, verbose = verbose, ...)
             res_w <- out_w$result[[1]]
-            tryCatch(saveRDS(res_w, ckpt_file), error = function(e) NULL)
+            save_checkpoint_rds(res_w, ckpt_file)
             res_w
           }
         } else {
           if (!dir.exists(w_dir)) dir.create(w_dir, recursive = TRUE, showWarnings = FALSE)
           out_w <- workflowsets::workflow_map(object[i, , drop = FALSE], fn = fn, seed = seed, verbose = verbose, ...)
           res_w <- out_w$result[[1]]
-          tryCatch(saveRDS(res_w, ckpt_file), error = function(e) NULL)
+          save_checkpoint_rds(res_w, ckpt_file)
           res_w
         }
       }
@@ -696,7 +639,7 @@ workflow_map_checkpointed <- function(object,
 
     results_list[[i]] <- res_i
     ckpt_file <- file.path(w_dir, "workflow_result.rds")
-    tryCatch(saveRDS(res_i, ckpt_file), error = function(e) NULL)
+    save_checkpoint_rds(res_i, ckpt_file)
   }
 
   res_set <- object

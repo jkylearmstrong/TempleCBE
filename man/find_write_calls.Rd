@@ -12,10 +12,11 @@ find_write_calls(path, include_comments = FALSE, workers = NULL)
 \item{include_comments}{Logical. Passed through to \code{\link{find_code}}.
 Defaults to \code{FALSE}.}
 
-\item{workers}{Integer number of parallel workers to use when
-\pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
-caps at available cores minus one. Falls back to sequential search when
-\pkg{future}/\pkg{furrr} are not installed.}
+\item{workers}{Integer number of parallel workers. With a number greater than
+1 (and \pkg{future}/\pkg{furrr} installed) the search runs on that many
+\code{multisession} workers, and the previous \code{future::plan()} is put
+back afterwards. The default \code{NULL} does not touch the plan: the search
+uses the plan you have set, which is sequential unless you chose otherwise.}
 }
 \value{
 A tibble of matches (see \code{\link{find_code}}) with an

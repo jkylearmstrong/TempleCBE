@@ -54,13 +54,7 @@ cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL
 
   var_labels <- stats::setNames(
     vapply(features, function(f) {
-      col_vals <- data[[f]]
-      if (requireNamespace("labelled", quietly = TRUE)) {
-        lbl <- labelled::var_label(col_vals)
-        if (is.null(lbl) || is.na(lbl) || !nzchar(lbl)) f else as.character(lbl)
-      } else {
-        f
-      }
+      var_label_or(data[[f]], f)
     }, character(1)),
     features
   )

@@ -25,6 +25,8 @@ test_that("generate_last_names generates realistic surnames and respects exclusi
 })
 
 test_that("generate_pseudonym_token works for cryptographic hash tokens and HMAC tokens", {
+  # seeded tokens are not secret and say so; these are fixed test vectors
+  withr::local_options(templecbe_suppress_weak_key_warning = TRUE)
   # Cryptographic hash tokens (unseeded are random, seeded are reproducible)
   toks_rand <- generate_pseudonym_token(n = 3)
   expect_length(toks_rand, 3)
@@ -74,6 +76,8 @@ test_that("generate_pseudonym_token works for cryptographic hash tokens and HMAC
 })
 
 test_that("generate_pi_names works with synthetic surnames and cryptographic tokens", {
+  # seeded tokens are not secret and say so; these are fixed test vectors
+  withr::local_options(templecbe_suppress_weak_key_warning = TRUE)
   # Default returns synthetic name
   s <- generate_pi_names(3, seed = 99)
   expect_length(s, 3)

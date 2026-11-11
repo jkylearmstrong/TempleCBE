@@ -77,10 +77,7 @@ tbl_contingency_2x2 <- function(data, row_var, col_var,
     out <- rbind(out, stats::setNames(as.list(tot), names(out)))
   }
 
-  fmt_p <- function(p) {
-    if (is.na(p)) return(NA_character_)
-    if (p < 10^-p_digits) paste0("<", formatC(10^-p_digits, format = "f", digits = p_digits)) else formatC(p, format = "f", digits = p_digits)
-  }
+  fmt_p <- function(p) format_p_value(p, digits = p_digits)
   tests <- tibble::tibble(test = character(), p_value = numeric())
   if (test %in% c("fisher", "both")) {
     tests <- rbind(tests, tibble::tibble(test = "Fisher's exact test", p_value = stats::fisher.test(tab)$p.value))

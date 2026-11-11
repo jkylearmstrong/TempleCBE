@@ -56,13 +56,29 @@ cbe_cox_table <- function(x,
   ci_col <- grep("% CI$", names(tab), value = TRUE)[1]
   if (is.na(ci_col)) ci_col <- "95% CI"
 
+  need <- c("Variable", "Level", "Role", "HR", ci_col, "p.value")
+  absent <- setdiff(need, names(tab))
+  if (length(absent)) {
+    stop(
+      "The coefficient table is missing column(s): ", paste(absent, collapse = ", "),
+      ". `x` must be the result of cox_single(), cox_multi() or batch_cox_single() (or their `$table`), ",
+      "with the columns ", paste(need, collapse = ", "), "; found: ", paste(names(tab), collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  # p-values arrive formatted ("<0.001", "0.032", an em dash for a reference row)
+  p_as_number <- function(p) {
+    num <- suppressWarnings(as.numeric(gsub("^<", "", p)))
+    num[p == "\u2014"] <- NA_real_
+    num
+  }
+
   if (!"log(HR)" %in% names(tab)) {
     tab[["log(HR)"]] <- round(log(tab$HR), 3)
     tab <- tab[, c("Variable", "Level", "Role", "HR", "log(HR)", ci_col, "p.value")]
   }
 
-  p_numeric <- suppressWarnings(as.numeric(gsub("^<", "", tab$p.value)))
-  p_numeric[tab$p.value == "\u2014"] <- NA_real_
+  p_numeric <- p_as_number(tab$p.value)
   is_ref <- tab$Role == "Reference"
 
   if (sort == "magnitude") {
@@ -74,8 +90,7 @@ cbe_cox_table <- function(x,
   }
 
   if (significance) {
-    p_num2 <- suppressWarnings(as.numeric(gsub("^<", "", tab$p.value)))
-    p_num2[tab$p.value == "\u2014"] <- NA_real_
+    p_num2 <- p_as_number(tab$p.value)
     stars <- dplyr::case_when(
       is.na(p_num2)   ~ "",
       p_num2 < 0.001  ~ "***",

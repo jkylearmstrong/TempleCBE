@@ -138,7 +138,7 @@ plot_tune_grid <- function(data, terms = NULL, title = NULL, label_map = NULL, s
   coefs <- .tune_coefs(data, terms, label_map, style)
   coefs$log_ibs <- log10(coefs$IBS)
 
-  base <- function(mapping) ggplot2::ggplot(fits, mapping) + ggplot2::geom_point(alpha = 0.6, color = "#9D2235") + theme_cbe()
+  base <- function(mapping) ggplot2::ggplot(fits, mapping) + ggplot2::geom_point(alpha = 0.6, color = "#A41E35") + theme_cbe()
   a <- base(ggplot2::aes(x = .data$alpha, y = .data$IBS)) +
     ggplot2::labs(x = expression(alpha), y = "IBS")
   b <- ggplot2::ggplot(coefs, ggplot2::aes(x = .data$log_ibs, y = .data$estimate, color = .data$term)) +
@@ -188,7 +188,7 @@ plot_tune_ibs_density <- function(data, facet = FALSE, log_ibs = FALSE, label_ma
   x_lab <- if (isTRUE(log_ibs)) expression(log[10](IBS)) else "Integrated Brier Score (IBS)"
   if (is.null(split_col)) {
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x)) +
-      ggplot2::geom_density(fill = "#9D2235", alpha = 0.4, color = "#9D2235")
+      ggplot2::geom_density(fill = "#A41E35", alpha = 0.4, color = "#A41E35")
   } else {
     df$.split <- factor(resolve_cbe_labels(as.character(df[[split_col]]), label_map = label_map, style = style))
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, fill = .data$.split, color = .data$.split)) +

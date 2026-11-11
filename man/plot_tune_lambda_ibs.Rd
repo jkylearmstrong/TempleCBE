@@ -9,7 +9,10 @@ plot_tune_lambda_ibs(data, label_map = NULL, style = NULL)
 \arguments{
 \item{data}{A data frame from [tune_alpha_by_split()].}
 
-\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+\item{label_map}{Optional label mapping (see [cbe_labels()]). The titles of
+the axes and of the legend are looked up under the terms `"lambda"`,
+`"IBS"` and `"alpha"`; a term that is not in the map keeps its default
+title.}
 
 \item{style}{Optional label style (`"short"` or `"full"`).}
 }

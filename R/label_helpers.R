@@ -233,6 +233,13 @@ as_cbe_label_map <- function(map, style = c("short", "full")) {
 #'   (default) or `"full"`.
 #' @param reset Logical (default `FALSE`). When `TRUE`, clears the active
 #'   package-level label map and resets `style` to `"short"`.
+#'
+#' @details
+#' The active map is held in one place, inside the package, for the session. The
+#' option `templecbe.label_map` is only read: set it yourself (in `.Rprofile`,
+#' for example) to supply a default map, which is used while no map has been set
+#' with `cbe_labels()`. `cbe_labels()` no longer writes that option, so the two
+#' cannot disagree and `cbe_labels(reset = TRUE)` does not erase your option.
 #' @return A `cbe_label_map` tibble with columns `term`, `short`, and `full`
 #'   (or `NULL` when no map is set).
 #' @seealso [tbl_label_map()], [pretty_name()]
@@ -254,7 +261,6 @@ cbe_labels <- function(map = NULL,
   if (isTRUE(reset)) {
     .cbe_label_env$map <- NULL
     .cbe_label_env$style <- "short"
-    options(templecbe.label_map = NULL)
     return(invisible(NULL))
   }
 
@@ -269,7 +275,6 @@ cbe_labels <- function(map = NULL,
   if (!is.null(map)) {
     norm_map <- as_cbe_label_map(map, style = style)
     .cbe_label_env$map <- norm_map
-    options(templecbe.label_map = norm_map)
     return(norm_map)
   }
 
@@ -277,7 +282,6 @@ cbe_labels <- function(map = NULL,
   if (!is.null(cur) && has_style) {
     attr(cur, "style") <- style
     .cbe_label_env$map <- cur
-    options(templecbe.label_map = cur)
   }
   cur
 }
@@ -413,3 +417,43 @@ resolve_cbe_formula_labels <- function(formulas, label_map = NULL, style = NULL)
   }, character(1), USE.NAMES = FALSE)
 }
 
+#' The Variable Label of a Column, or a Default
+#'
+#' `labelled::var_label()` normally returns `NULL` or one string, but a column
+#' can carry a `label` attribute of any length (zero, or several strings after
+#' a careless `attr<-`). Used directly in `if ()`, such a label is an error.
+#' The first non-missing, non-empty element is used, otherwise `default`.
+#'
+#' @param x A vector (a data frame column).
+#' @param default The string to return when `x` has no usable label.
+#' @return A single string.
+#' @keywords internal
+#' @noRd
+var_label_or <- function(x, default) {
+  if (!requireNamespace("labelled", quietly = TRUE)) {
+    return(default)
+  }
+  lbl <- tryCatch(as.character(unlist(labelled::var_label(x))), error = function(e) character())
+  lbl <- lbl[!is.na(lbl) & nzchar(lbl)]
+  if (length(lbl)) lbl[[1]] else default
+}
+
+#' Check That an Argument Names One Column of a Data Frame
+#'
+#' The shared form of a check that several functions each wrote as a loop over
+#' argument names with `get()`.
+#'
+#' @param value The value of the argument.
+#' @param arg The name of the argument, for the message.
+#' @param data The data frame.
+#' @param data_arg The name of the data frame argument, for the message.
+#' @param article `"one"` or `"a"`: the wording of the message.
+#' @return `value`, invisibly; an error if it is not a single column name of `data`.
+#' @keywords internal
+#' @noRd
+check_named_column <- function(value, arg, data, data_arg = "data", article = "one") {
+  if (!is.character(value) || length(value) != 1L || is.na(value) || !value %in% names(data)) {
+    stop("`", arg, "` must name ", article, " column of `", data_arg, "`.", call. = FALSE)
+  }
+  invisible(value)
+}

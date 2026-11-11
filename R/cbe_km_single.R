@@ -59,7 +59,14 @@ km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
   km_tidy <- broom::tidy(km_fit)
 
   hr_val <- if (cox$is_numeric) cox$table$HR[1] else cox$table$HR[cox$table$Role == "Comparison"][1]
-  direction <- if (hr_val > 1) "increases" else "decreases"
+  # NA when the Cox model has no estimate for the feature (see cox_single())
+  direction <- if (length(hr_val) == 0L || is.na(hr_val)) {
+    NA_character_
+  } else if (hr_val > 1) {
+    "increases"
+  } else {
+    "decreases"
+  }
 
   km_raw_tab <- tryCatch(summary(km_fit)$table, error = function(e) NULL)
   km_strata_labels <- if (!is.null(km_fit$strata)) sub("^.*=", "", names(km_fit$strata)) else strata_col
@@ -112,7 +119,11 @@ print.cbe_km <- function(x, ...) {
   cat("=======================================================\n")
   cat(sprintf("Kaplan-Meier & Cox PH Summary for: %s (%s)\n", x$var_label, x$feature))
   cat("=======================================================\n\n")
-  cat(sprintf("The risk of the event %s with %s.\n\n", x$direction, x$var_label))
+  if (is.na(x$direction)) {
+    cat(sprintf("The direction of the association with %s could not be estimated.\n\n", x$var_label))
+  } else {
+    cat(sprintf("The risk of the event %s with %s.\n\n", x$direction, x$var_label))
+  }
   cat("Cox Coefficients:\n")
   print(x$cox$table)
   cat("\nKaplan-Meier Curve:\n")

@@ -175,7 +175,7 @@ with_file_lock <- function(lock_path,
               "s, pid: ", if (is.na(owner_pid)) "unknown" else owner_pid, ").",
               call. = FALSE
             )
-            unlink(stale_token, recursive = TRUE, force = TRUE)
+            remove_dir_tree(stale_token)
           }
         }
       }
@@ -207,7 +207,7 @@ with_file_lock <- function(lock_path,
   # Ensure lock is unconditionally released on exit or error
   on.exit({
     if (dir.exists(lock_path)) {
-      unlink(lock_path, recursive = TRUE, force = TRUE)
+      remove_dir_tree(lock_path)
     }
   }, add = TRUE)
 

@@ -9,7 +9,7 @@ plot_categorical_associations(
   cols = NULL,
   method = c("cramer_v", "p_value"),
   title = "Categorical Association Matrix",
-  fill_colors = c("#FFFFFF", "#9D2235"),
+  fill_colors = c("#FFFFFF", "#A41E35"),
   tl.cex = 0.8,
   number.cex = 0.75,
   show_coef = TRUE,

@@ -42,9 +42,9 @@ plot_normalization_comparison <- function(raw_vec,
     s <- stats::sd(v)
     p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$v))
     p <- if (type == "density") {
-      p + ggplot2::geom_density(fill = "#9D2235", alpha = 0.3, color = "#9D2235", na.rm = TRUE)
+      p + ggplot2::geom_density(fill = "#A41E35", alpha = 0.3, color = "#A41E35", na.rm = TRUE)
     } else {
-      p + ggplot2::geom_histogram(bins = bins, fill = "#9D2235", alpha = 0.6, color = "white")
+      p + ggplot2::geom_histogram(bins = bins, fill = "#A41E35", alpha = 0.6, color = "white")
     }
     p +
       ggplot2::geom_vline(xintercept = m, linetype = "dashed", color = "grey30") +

@@ -228,8 +228,10 @@ temple_brand_path <- function() {
 #'
 #' @param path Project directory (created if missing). Defaults to the
 #'   working directory.
-#' @param extension Extension source passed to \code{quarto add}: a GitHub
-#'   \code{org/repo}, a URL, or a local path.
+#' @param extension Extension source passed to \code{quarto add}, which
+#'   downloads and installs it: a GitHub \code{org/repo} (optionally pinned,
+#'   \code{org/repo@v1.0.0}, which is the reproducible form), an existing local
+#'   path, or an \code{https} URL (with a warning). Anything else is refused.
 #' @param quiet Logical; suppress Quarto's output.
 #' @param check_root Logical; warn when \code{path} isn't the current
 #'   project's root as found by \code{\link[here]{here}} (i.e. the nearest
@@ -262,6 +264,8 @@ use_temple_brand <- function(path = ".",
   if (!requireNamespace("withr", quietly = TRUE)) {
     stop("Package 'withr' is required by use_temple_brand().", call. = FALSE)
   }
+
+  .check_extension_source(extension)
 
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
@@ -325,4 +329,34 @@ temple_extension_dir_upward <- function(path) {
     if (is_project_root || identical(parent, path)) return(NA_character_)
     path <- parent
   }
+}
+
+# `extension` is handed to `quarto add`, which downloads and installs what it names. Accepted:
+# a GitHub source `owner/repo`, optionally with `/subdirectory` and `@tag-or-branch`; an
+# existing local directory or archive; an https URL (with a warning: an arbitrary download).
+# Anything else (http, other schemes, a string with shell or option characters) is refused.
+.check_extension_source <- function(extension) {
+  if (!is.character(extension) || length(extension) != 1L || is.na(extension) || !nzchar(extension)) {
+    stop("`extension` must be a single string: a GitHub source such as \"owner/repo@v1.0.0\" or a local path.", call. = FALSE)
+  }
+  github <- grepl("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9._-]+(/[A-Za-z0-9._/-]+)?(@[A-Za-z0-9._/-]+)?$", extension)
+  if (github && !file.exists(extension)) {
+    return(invisible(extension))
+  }
+  if (file.exists(extension)) {
+    return(invisible(extension))
+  }
+  if (grepl("^https://[^[:space:]]+$", extension)) {
+    warning(
+      "Installing a Quarto extension from the URL '", extension, "'. It is downloaded and installed as it is; ",
+      "prefer a GitHub source pinned to a tag (\"owner/repo@v1.0.0\").",
+      call. = FALSE
+    )
+    return(invisible(extension))
+  }
+  stop(
+    "`extension` is not a GitHub source (\"owner/repo\", optionally \"@tag\"), an existing local path ",
+    "or an https URL: '", extension, "'.",
+    call. = FALSE
+  )
 }

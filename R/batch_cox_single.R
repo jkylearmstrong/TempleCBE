@@ -121,9 +121,16 @@ batch_cox_single <- function(data,
       feature = feat,
       term = ifelse(nzchar(terms), paste0(feat, terms), feat),
       estimate = unname(est), conf.low = unname(lo), conf.high = unname(hi),
-      std.error = unname(cf[, "se(coef)"]), statistic = unname(cf[, ncol(cf) - 1L]),
-      p.value = unname(cf[, ncol(cf)]),
-      p_overall = unname(sm$waldtest[["pvalue"]]),
+      # by name where summary.coxph() names them (a robust fit has an extra column), by
+      # position otherwise; a model with no Wald test has no overall p-value
+      std.error = unname(cf[, "se(coef)"]),
+      statistic = unname(cf[, if ("z" %in% colnames(cf)) "z" else ncol(cf) - 1L]),
+      p.value = unname(cf[, if ("Pr(>|z|)" %in% colnames(cf)) "Pr(>|z|)" else ncol(cf)]),
+      p_overall = if (is.null(sm$waldtest) || !"pvalue" %in% names(sm$waldtest)) {
+        NA_real_
+      } else {
+        unname(sm$waldtest[["pvalue"]])
+      },
       n = res$n, n_events = res$nevent,
       status = ifelse(is.na(est), "not estimable", "ok"),
       warning = paste(unique(warns), collapse = "; ")

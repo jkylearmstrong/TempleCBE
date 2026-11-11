@@ -29,6 +29,14 @@ simulate_section_data <- function(mapping,
                                   missing_rate = 0,
                                   time_levels = NULL) {
   validate_column_mapping(mapping)
+  if (!is.numeric(n_subjects) || length(n_subjects) != 1L || is.na(n_subjects) ||
+      n_subjects < 1 || n_subjects != round(n_subjects)) {
+    stop("`n_subjects` must be a single whole number of at least 1.", call. = FALSE)
+  }
+  if (!is.numeric(missing_rate) || length(missing_rate) != 1L || is.na(missing_rate) ||
+      missing_rate < 0 || missing_rate > 1) {
+    stop("`missing_rate` must be a single probability between 0 and 1.", call. = FALSE)
+  }
 
   section_map <- dplyr::filter(mapping, .data$INDEX == index)
   if (nrow(section_map) == 0) {
@@ -41,16 +49,16 @@ simulate_section_data <- function(mapping,
   id_col <- section_map$new[section_map$ID_var]
   time_col <- section_map$new[section_map$Time_var]
 
+  if (length(time_col) > 0 && length(id_col) == 0) {
+    stop(
+      "Section '", index, "' of `mapping` has a time variable (`Time_var`) but no ID variable (`ID_var`); ",
+      "mark the subject identifier of the section with `ID_var = TRUE`.",
+      call. = FALSE
+    )
+  }
+
   if (!is.null(seed)) {
-    old_seed <- if (exists(".Random.seed", envir = .GlobalEnv)) get(".Random.seed", envir = .GlobalEnv) else NULL
-    on.exit({
-      if (is.null(old_seed)) {
-        if (exists(".Random.seed", envir = .GlobalEnv)) rm(".Random.seed", envir = .GlobalEnv)
-      } else {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      }
-    }, add = TRUE)
-    set.seed(seed)
+    local_seed(seed)
   }
 
   # Generate subjects scaffold

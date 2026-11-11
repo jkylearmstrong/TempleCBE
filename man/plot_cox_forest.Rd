@@ -11,7 +11,7 @@ plot_cox_forest(
   low_col = "conf.low",
   high_col = "conf.high",
   p_col = NULL,
-  color = "#9D2235",
+  color = "#A41E35",
   scale = c("hr", "log_hr"),
   color_by = c("none", "significance", "p_tier"),
   order_by = c("none", "magnitude", "pvalue"),
@@ -44,7 +44,7 @@ plot_cox_forest(
 \item{p_col}{Optional column name for p-values. Required for \code{color_by = "significance"}
 and \code{order_by = "pvalue"}.}
 
-\item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).}
+\item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#A41E35"}).}
 
 \item{scale}{One of \code{"hr"} (default; plots hazard ratios with a reference line at 1) or
 \code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with

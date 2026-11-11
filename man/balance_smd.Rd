@@ -70,6 +70,7 @@ d <- data.frame(
 balance_smd(d, "treated")
 }
 \seealso{
-[plot_balance_love()]; the `cobalt` package for a fuller set of balance tools
-  (it gives the same SMD for the same weights).
+[plot_balance_love()]. The `cobalt` package has a fuller set of balance tools
+  (balance after matching and weighting, many weighting estimands); this function
+  needs no extra package and covers the table and the Love plot.
 }

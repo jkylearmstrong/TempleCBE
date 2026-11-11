@@ -64,16 +64,3 @@ test_that("safe_system2 produces actionable logs on failure", {
     "\\[EXTERNAL_PROCESS_FAIL\\] Command '.*' exited with code 7"
   )
 })
-
-test_that("safe_shell executes commands or fails with structured error", {
-  # Simple echo command
-  out <- safe_shell("echo hello_shell", check = TRUE, log_failures = FALSE)
-  expect_true(any(grepl("hello_shell", out)))
-
-  # Failing shell command with check = TRUE
-  fail_cmd <- if (.Platform$OS.type == "windows") "exit 5" else "exit 5"
-  expect_error(
-    safe_shell(fail_cmd, check = TRUE, log_failures = FALSE),
-    class = "external_process_error"
-  )
-})

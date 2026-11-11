@@ -645,7 +645,7 @@ fake_converter <- function(kind = c("python", "soffice"),
     out <- if (kind == "python") '"%~3"' else '"%~6\\%~n7.docx"'
     lines <- c(
       "@echo off",
-      if (kind == "soffice") c("shift", "shift", "shift"),
+      if (kind == "soffice") c("shift", "shift", "shift", "shift"),
       if (sleep > 0) paste0("ping -n ", ceiling(sleep) + 1, " 127.0.0.1 >nul"),
       if (sleep == 0 && write == "content") paste0("echo FAKE-DOCX>", out),
       if (sleep == 0 && write == "empty") paste0("type nul>", out),
@@ -787,6 +787,30 @@ test_that("pdf2docx still has to exit 0, and a LibreOffice timeout is still a re
   expect_false(ok)
   expect_match(w, "LibreOffice conversion of report.pdf timed out after 7s", fixed = TRUE)
   expect_false(file.exists(dest))
+})
+
+test_that("LibreOffice is started without R's LD_LIBRARY_PATH, which is put back afterwards", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  pdf <- file.path(dir, "report.pdf")
+  writeLines("%PDF-1.4", pdf)
+  # a converter that writes the LD_LIBRARY_PATH it was started with into the DOCX
+  fake <- file.path(dir, "soffice.sh")
+  writeLines(c(
+    "#!/bin/sh",
+    "outdir=''; prev=''",
+    "for a in \"$@\"; do",
+    "  if [ \"$prev\" = \"--outdir\" ]; then outdir=\"$a\"; fi",
+    "  prev=\"$a\"",
+    "done",
+    "printf '%s\\n' \"${LD_LIBRARY_PATH-unset}\" > \"$outdir/report.docx\""
+  ), fake)
+  Sys.chmod(fake, "0755")
+  withr::local_envvar(LD_LIBRARY_PATH = "/somewhere/R/lib")
+  dest <- file.path(dir, "report.docx")
+  expect_true(.convert_soffice(fake, pdf, dest))
+  expect_equal(readLines(dest), "unset")
+  expect_equal(Sys.getenv("LD_LIBRARY_PATH"), "/somewhere/R/lib")
 })
 
 test_that("a successful LibreOffice conversion lands at dest, whatever dest is called", {

@@ -41,7 +41,7 @@ on:
       run_check:
         description: 'Step 7 - Run R CMD Check (can take several minutes)'
         required: true
-        default: false
+        default: true
         type: boolean
       commit_and_push:
         description: 'Steps 8 and 10 - Commit to a branch release/<tag> and push it, for a pull request (nothing is pushed to master, no tag is made; default off)'
@@ -52,9 +52,15 @@ on:
 permissions:
   contents: write
 
+# one release run at a time; a second one waits instead of racing the first to the same branch
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       LANG: C.UTF-8
@@ -65,8 +71,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # the token is not left in .git/config for the steps that run package code; the push
+          # step passes it explicitly
+          persist-credentials: false
 
       - name: Resolve Release Version Tag
         id: resolve-version
@@ -86,7 +93,7 @@ jobs:
           else
             RELEASE_TAG="$INPUT_VERSION_TAG"
           fi
-          # used in a sed expression, a commit message and a branch name: a version number only
+          # used as the DESCRIPTION version, in a commit message and a branch name: a version number only
           if ! printf '%s' "$RELEASE_TAG" | grep -Eq '^[0-9]+([.][0-9]+)*$'; then
             echo "::error::The release version '$RELEASE_TAG' is not a numeric version (digits and dots)"
             exit 1
@@ -108,7 +115,7 @@ jobs:
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
-          extra-packages: any::rcmdcheck, any::pkgdown, any::quarto, any::devtools, local::.
+          extra-packages: any::rcmdcheck, any::pkgdown, any::quarto, any::devtools, any::desc, local::.
 
       - name: Step 3 - Run tests
         if: ${{ inputs.run_tests }}
@@ -121,8 +128,8 @@ jobs:
       - name: Step 5 - Update Version in DESCRIPTION
         if: ${{ inputs.update_description }}
         run: |
-          sed -i "s/^Version: .*/Version: $RELEASE_TAG/" DESCRIPTION
-          echo "Updated DESCRIPTION Version to: $RELEASE_TAG"
+          Rscript -e 'desc::desc_set_version(Sys.getenv("RELEASE_TAG"), file = "DESCRIPTION", normalize = FALSE)'
+          echo "Updated DESCRIPTION Version to: $(Rscript -e 'cat(as.character(desc::desc_get_version("DESCRIPTION")))')"
 
       - name: Step 6a - Document package
         if: ${{ inputs.run_document }}
@@ -141,6 +148,8 @@ jobs:
       # the merge commit, and only the maintainer creates release tags.
       - name: Steps 8 and 10 - Commit and push a release branch
         if: ${{ inputs.commit_and_push }}
+        env:
+          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           BRANCH="release/v${RELEASE_TAG}"
@@ -155,7 +164,7 @@ jobs:
             exit 0
           fi
           git commit -m "Automated release and build for $RELEASE_TAG"
-          git push origin "$BRANCH"
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
           {
             echo "### Release branch pushed: \`$BRANCH\`"
             echo

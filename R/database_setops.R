@@ -128,6 +128,7 @@ NULL
   if (is.null(names(node_by))) node_by[1] else names(node_by)[1]
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method dplyr::intersect
 intersect.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to"), ...) {
   node_by <- .resolve_node_by(x, y, node_by)
@@ -146,6 +147,7 @@ intersect.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to
   new_cbe_database(nodes_out, edges_out)
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method dplyr::setdiff
 setdiff.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to"), ...) {
   node_by <- .resolve_node_by(x, y, node_by)
@@ -182,6 +184,7 @@ setdiff.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to")
   merged
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method dplyr::union
 union.cbe_database <- function(x, y, node_by = NULL, edge_by = c("from", "to"), ...) {
   node_by <- .resolve_node_by(x, y, node_by)

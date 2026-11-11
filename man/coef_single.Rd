@@ -50,7 +50,8 @@ tbl_coef_forest(
 
 \item{outcome, feature}{Names of the outcome and the single predictor.}
 
-\item{family}{A [stats::family] object (default [stats::gaussian()]).}
+\item{family}{A [stats::family] object (default [stats::gaussian()]), a family function, or
+the name of one of the families of \pkg{stats} (`"binomial"`, `"poisson"`, ...).}
 
 \item{normalize}{If `TRUE` (default) also fit on the 0..1 scaled predictor.}
 

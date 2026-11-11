@@ -10,7 +10,7 @@ plot_group_comparison(
   group_col,
   facet_col = NULL,
   se_col = NULL,
-  colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
+  colors = c(Survived = "#6F6F6F", Died = "#A41E35"),
   base_size = 13
 )
 }
@@ -25,7 +25,7 @@ plot_group_comparison(
 
 \item{se_col}{Optional standard error column. If NULL, calculated automatically.}
 
-\item{colors}{Named color vector (default: \code{c(Survived = "#6F6F6F", Died = "#9D2235")}).}
+\item{colors}{Named color vector (default: \code{c(Survived = "#6F6F6F", Died = "#A41E35")}).}
 
 \item{base_size}{Base font size (default: 13).}
 }

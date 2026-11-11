@@ -173,6 +173,7 @@ tidy.coxnet_model <- function(x, penalty = NULL, ...) {
   tibble::tibble(term = rownames(beta), estimate = unname(beta[, 1]), penalty = penalty)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.coxnet_model <- function(x, ...) {
   type <- attr(x$y, "type")

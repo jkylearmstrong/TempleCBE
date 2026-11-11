@@ -33,7 +33,10 @@ jobs:
     name: ubuntu-latest (release)
     # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml);
     # setup-r installing R through apt took 10-19 minutes on a slow mirror. The package must be public.
-    container: ghcr.io/jkylearmstrong/templecbe-ci:latest
+    # Pinned to a dated tag and its digest (`latest` moves with every image build): to move CI to a
+    # newer image, replace the tag and digest here, in the two jobs further down and in
+    # test-coverage.yaml with those printed by the "Inspect image" step of ci-image.yml.
+    container: ghcr.io/jkylearmstrong/templecbe-ci:20261110@sha256:54a6d034fdfaffc93da2fc784f43d407c16dd1c16a8627efcaac98745af40f0a
     env:
       # the repository's .Rprofile activates renv, which would hide the packages of the image (they
       # live in the site library); the container jobs run without it
@@ -60,15 +63,31 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      # The terms that must never appear in this public repository cannot be committed, so the scan
+      # that test-denylist.R runs locally (from .git/info/denylist) is skipped on a runner. Here the
+      # terms come from the secret TEMPLECBE_DENYLIST_TERMS (one per line). Without the secret (a
+      # fork's pull request) the step writes a warning annotation; set the repository variable
+      # TEMPLECBE_REQUIRE_DENYLIST to "true" to make a missing secret fail runs from this repository.
+      - name: Denylist scan of the tracked files
+        env:
+          TEMPLECBE_DENYLIST_TERMS: ${{ secrets.TEMPLECBE_DENYLIST_TERMS }}
+          TEMPLECBE_REQUIRE_DENYLIST: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.TEMPLECBE_REQUIRE_DENYLIST || 'false' }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          Rscript scripts/ci_denylist_scan.R
+
       - uses: r-lib/actions/check-r-package@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           upload-snapshots: true
           args: 'c("--no-manual")'
 
   cross-platform-check:
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master') || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 75
+    # R-devel is informative: its failure is shown but does not fail the workflow (docker-publish
+    # waits for this workflow to succeed on master)
+    continue-on-error: ${{ matrix.config.experimental || false }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
     env:
@@ -87,6 +106,9 @@ jobs:
           # Manager serves arm64 binaries for Ubuntu noble, so dependencies install in a few
           # minutes, as on x86-64.
           - {os: ubuntu-24.04-arm, r: 'release', locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()'}
+          # the previous and the next R (every other job runs the current release)
+          - {os: ubuntu-latest,   r: 'oldrel-1', locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()'}
+          - {os: ubuntu-latest,   r: 'devel',    locale: C.UTF-8,                   check_args: 'c("--no-manual")',                          build_args: 'character()', experimental: true, http-user-agent: 'release'}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -98,6 +120,7 @@ jobs:
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
@@ -112,7 +135,7 @@ jobs:
           build_args: ${{ matrix.config.build_args }}
 
   optional-deps-installed-tests:
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master') || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 40
     name: optional-tests-${{ matrix.config.os }}
@@ -131,7 +154,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,  locale: C.UTF-8, container: 'ghcr.io/jkylearmstrong/templecbe-ci:latest'}
+          - {os: ubuntu-latest,  locale: C.UTF-8, container: 'ghcr.io/jkylearmstrong/templecbe-ci:20261110@sha256:54a6d034fdfaffc93da2fc784f43d407c16dd1c16a8627efcaac98745af40f0a'}
           - {os: windows-latest, locale: English_United States.utf8}
           - {os: ubuntu-24.04-arm, locale: C.UTF-8}
 
@@ -181,4 +204,57 @@ jobs:
             reporter = "summary",
             stop_on_failure = TRUE
           )
+        shell: Rscript {0}
+
+  # Tier-2 PDF -> DOCX tests: real conversions with pdf2docx (Python) and LibreOffice, which the
+  # other jobs skip (they need TEMPLECBE_RUN_PDF_TESTS=true and the tools). Not blocking until it
+  # has a record of passing: remove continue-on-error then. The Word COM backend needs Microsoft
+  # Word and the live SAS tests (TEMPLECBE_RUN_SAS_TESTS) need a SAS licence; neither can run on a
+  # hosted runner, so those stay local (see AGENTS.md).
+  pdf-tier2-tests:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master') || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    continue-on-error: true
+    name: pdf-to-docx live backends
+    container: ghcr.io/jkylearmstrong/templecbe-ci:20261110@sha256:54a6d034fdfaffc93da2fc784f43d407c16dd1c16a8627efcaac98745af40f0a
+    env:
+      RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      LANGUAGE: en_US:en
+      TESTTHAT_PARALLEL: "FALSE"
+      TEMPLECBE_RUN_PDF_TESTS: "true"
+      # the interpreter of the venv itself: a symlink to it from another folder
+      # starts Python outside the venv (pyvenv.cfg is looked up beside the link)
+      TEMPLECBE_PYTHON: /opt/pdf2docx/bin/python
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install LibreOffice, Python and pdf2docx
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends jq unzip wget gnupg lsb-release xz-utils file \
+            libreoffice-writer python3 python3-pip python3-venv
+          python3 -m venv /opt/pdf2docx
+          /opt/pdf2docx/bin/pip install --quiet pdf2docx
+          /opt/pdf2docx/bin/python -c "import pdf2docx; print('pdf2docx imports')"
+          soffice --version
+
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          extra-packages: |
+            any::testthat
+            any::pkgload
+          needs: test
+
+      - name: Run the PDF to DOCX tests with the live backends
+        run: |
+          pkgload::load_all(".")
+          print(find_python())
+          print(find_soffice())
+          testthat::test_file("tests/testthat/test-pdf_to_docx.R", reporter = "summary", stop_on_failure = TRUE)
         shell: Rscript {0}

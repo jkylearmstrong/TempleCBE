@@ -45,12 +45,8 @@ transform_longitudinal_features <- function(data,
   }
   if (length(methods) == 0L) stop("`methods` must name at least one method.", call. = FALSE)
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
-  for (a in c("id_col", "time_col")) {
-    v <- get(a)
-    if (!is.character(v) || length(v) != 1L || !v %in% names(data)) {
-      stop("`", a, "` must name one column of `data`.", call. = FALSE)
-    }
-  }
+  check_named_column(id_col, "id_col", data)
+  check_named_column(time_col, "time_col", data)
   if (!is.numeric(data[[time_col]])) stop("`time_col` must be numeric.", call. = FALSE)
   features <- as.character(features)
   if (length(features) == 0L) stop("`features` must name at least one column.", call. = FALSE)

@@ -104,12 +104,16 @@ test_that("C1: score_outer() invalidates checkpoints when censoring_weights, fea
   ))
   expect_equal(res_none$IBS, res_none_fresh$IBS)
 
-  # Changing feature set and cox.ties must also trigger recompute (not return stale cache)
+  # Changing feature set and cox.ties must also trigger recompute (not return stale cache).
+  # The model has another name, so its checkpoint is another file: nothing of this run
+  # mismatches, and the files of the earlier run are left alone (they used to be deleted
+  # with a warning, which destroyed the checkpoints of a run sharing the directory).
+  earlier <- list.files(ckpt_dir, pattern = "^score_fold_.*[.]rds$")
   grid2 <- tibble::tibble(
     alpha = 0.5,
     formula = "x1 + x2"
   )
-  expect_warning(
+  expect_no_warning(
     res_reduced <- score_outer(
       object = splits,
       grid = grid2,
@@ -122,8 +126,9 @@ test_that("C1: score_outer() invalidates checkpoints when censoring_weights, fea
       checkpoint_dir = ckpt_dir,
       seed = 42
     ),
-    "mismatched fingerprints"
+    message = "mismatched fingerprints"
   )
+  expect_true(all(earlier %in% list.files(ckpt_dir)))
   coefs_reduced <- tidy_outer_coefficients(res_reduced)
   expect_false("x3" %in% coefs_reduced$term)
 })

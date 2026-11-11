@@ -7,7 +7,12 @@
 \usage{
 find_deprecated_calls(path, exclude_dirs = NULL)
 
-update_deprecated_calls(path, dry_run = TRUE, exclude_dirs = NULL)
+update_deprecated_calls(
+  path,
+  dry_run = TRUE,
+  exclude_dirs = NULL,
+  backup = FALSE
+)
 }
 \arguments{
 \item{path}{Path to a source file or directory of project scripts.}
@@ -17,7 +22,13 @@ update_deprecated_calls(path, dry_run = TRUE, exclude_dirs = NULL)
 skipped if any folder on its path below `path` has one of these names.}
 
 \item{dry_run}{Logical; if `TRUE` (default), only previews the proposed
-renames without modifying files. If `FALSE`, rewrites files in place.}
+renames without modifying files. If `FALSE`, rewrites files in place. Each
+file is written to a temporary file next to it and renamed over the
+original, so an interrupted run leaves every file either unchanged or fully
+rewritten; line endings are kept.}
+
+\item{backup}{Logical; if `TRUE`, each file that is rewritten is first copied
+to `<file>.bak`. Default `FALSE`.}
 }
 \value{
 A `tibble` with columns:

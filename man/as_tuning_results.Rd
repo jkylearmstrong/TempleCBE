@@ -7,7 +7,9 @@
 as_tuning_results(x, ...)
 }
 \arguments{
-\item{x}{A data frame, tibble, path to an `.rds` file, or a tuning result object.}
+\item{x}{A data frame, tibble, path to an `.rds` file, or a tuning result object. An
+`.rds` file is read with [readRDS()], which can run code stored in the file: pass only
+files that you or a process you trust wrote.}
 
 \item{...}{Unused.}
 }
@@ -23,8 +25,15 @@ schema required by [compare_tuning_runs()], [select_candidate_models()], and
 \details{
 Maps historical and tidymodels column synonyms to canonical names:
 \itemize{
-  \item Integrated Brier Score: `ibs`, `mean_ibs`, `mean` (when `.metric` is `"brier_survival_integrated"`), `brier_score` -> `IBS`.
-  \item Elastic net mixing: `alphas`, `mixture` -> `alpha`.
+  \item Integrated Brier Score: `ibs`, `mean_ibs`, `integrated_brier_score`, `brier_score` -> `IBS`.
+    The generic tidymodels columns `mean` and `.estimate` are taken as the IBS only when a
+    `.metric` column says that every remaining row is a Brier metric
+    (`"brier_survival_integrated"`, `"brier_survival"`, `"brier"` or `"ibs"`). Without
+    `.metric`, a `mean` could be the mean of any metric (a concordance, for example), so it
+    is not used and the call fails with the list of columns found.
+  \item Elastic net mixing: `alphas`, `mixture` -> `alpha`. A table with none of these gets
+    `alpha = 1` (lasso) with a warning, because the mixing parameter is then an assumption,
+    not something read from the data.
   \item Penalty parameter: `penalty`, `lambdas` -> `lambda`.
   \item Model formula: `formulas`, `formula_str` -> `formula`.
   \item Resampling split: `split`, `splits`, `resample`, `id` -> `inner_resamples_splits`.

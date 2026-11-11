@@ -9,9 +9,9 @@ tbl_tune_alpha(data, label_map = NULL, style = NULL)
 \arguments{
 \item{data}{A data frame from [tune_alpha_by_split()].}
 
-\item{label_map}{Optional label mapping (see [cbe_labels()]).}
-
-\item{style}{Optional label style (`"short"` or `"full"`).}
+\item{label_map, style}{Accepted so that every tuning table and plot can be
+called with the same arguments. This table has no variable names to
+relabel, so they have no effect on it.}
 }
 \value{
 A tibble of per-alpha IBS statistics.

@@ -36,11 +36,10 @@ plot_scatter_glm <- function(data,
                              facet_by = NULL,
                              digits = 3) {
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
-  for (a in c("x", "y")) {
-    v <- get(a)
-    if (!is.character(v) || length(v) != 1L || !v %in% names(data)) stop("`", a, "` must name one column of `data`.", call. = FALSE)
-    if (!is.numeric(data[[v]])) stop("`", a, "` must be a numeric column.", call. = FALSE)
-  }
+  check_named_column(x, "x", data)
+  check_named_column(y, "y", data)
+  if (!is.numeric(data[[x]])) stop("`x` must be a numeric column.", call. = FALSE)
+  if (!is.numeric(data[[y]])) stop("`y` must be a numeric column.", call. = FALSE)
   if (!is.null(facet_by) && (!is.character(facet_by) || length(facet_by) != 1L || !facet_by %in% names(data))) {
     stop("`facet_by` must name one column of `data`.", call. = FALSE)
   }
@@ -82,8 +81,8 @@ plot_scatter_glm <- function(data,
   df_line <- df[unlist(panels)[fit_ok], , drop = FALSE]
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[[x]], y = .data[[y]])) +
     ggplot2::geom_point(alpha = 0.6, color = "#6F6F6F") +
-    ggplot2::geom_smooth(data = df_line, method = "lm", formula = y ~ x, level = conf_level, color = "#9D2235",
-                         fill = "#9D2235", alpha = 0.15, na.rm = TRUE) +
+    ggplot2::geom_smooth(data = df_line, method = "lm", formula = y ~ x, level = conf_level, color = "#A41E35",
+                         fill = "#A41E35", alpha = 0.15, na.rm = TRUE) +
     theme_cbe() +
     ggplot2::labs(x = x_label %||% x, y = y_label %||% y)
   if (!is.null(facet_by)) p <- p + ggplot2::facet_wrap(stats::as.formula(paste0("~", facet_by)))

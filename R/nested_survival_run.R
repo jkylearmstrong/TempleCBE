@@ -411,7 +411,7 @@ nested_survival_run <- function(data,
               meta = list(fn = "nested_survival_run_outer_fold", fold = fold_id)
             )
             if (!is.null(fold_ckpt_dir) && dir.exists(fold_ckpt_dir)) {
-              unlink(fold_ckpt_dir, recursive = TRUE)
+              remove_dir_tree(fold_ckpt_dir)
             }
           }
         }
@@ -566,7 +566,7 @@ nested_survival_run <- function(data,
             meta = list(fn = "nested_survival_run_score_outer", weights = censoring_weights)
           )
           if (!is.null(score_ckpt_dir) && dir.exists(score_ckpt_dir)) {
-            unlink(score_ckpt_dir, recursive = TRUE)
+            remove_dir_tree(score_ckpt_dir)
           }
         }
       }
@@ -660,7 +660,7 @@ nested_survival_run <- function(data,
                 meta = list(fn = "nested_survival_run_score_outer", weights = alt_weights)
               )
               if (!is.null(alt_ckpt_dir) && dir.exists(alt_ckpt_dir)) {
-                unlink(alt_ckpt_dir, recursive = TRUE)
+                remove_dir_tree(alt_ckpt_dir)
               }
             }
           }
@@ -734,11 +734,13 @@ nested_survival_run <- function(data,
   )
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.nested_survival_run <- function(x, ...) {
   print.cbe_nested_survival_run(x, ...)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_nested_survival_run <- function(x, ...) {
   cat(sprintf("<cbe_nested_survival_run> Domain: %s [%s]\n", x$domain, x$status))
@@ -826,6 +828,7 @@ summary.cbe_nested_survival_run <- function(object, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.summary.cbe_nested_survival_run <- function(x, ...) {
   ov <- x$overview
@@ -1417,6 +1420,7 @@ repro_appendix_template <- function() {
   p
 }
 
+#' @rdname templecbe_methods
 #' @export
 `$.cbe_repro_appendix` <- function(x, name) {
   if (is.list(x)) {
@@ -1425,6 +1429,7 @@ repro_appendix_template <- function() {
   attr(x, name, exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_repro_appendix <- function(x, ...) {
   if (is.character(x)) {
@@ -1618,43 +1623,51 @@ domain_children <- function(domains,
   combined
 }
 
+#' @rdname templecbe_methods
 #' @export
 `$.domain_children` <- function(x, name) {
   attr(x, name, exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @export
 `$.cbe_domain_children` <- function(x, name) {
   attr(x, name, exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.domain_children <- function(x, ...) {
   cat(as.character(x), "\n", sep = "")
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_domain_children <- function(x, ...) {
   cat(as.character(x), "\n", sep = "")
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 summary.domain_children <- function(object, ...) {
   attr(object, "status", exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @export
 summary.cbe_domain_children <- function(object, ...) {
   attr(object, "status", exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method generics::tidy
 tidy.domain_children <- function(x, ...) {
   attr(x, "status", exact = TRUE)
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method generics::tidy
 tidy.cbe_domain_children <- function(x, ...) {
   attr(x, "status", exact = TRUE)

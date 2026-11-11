@@ -143,6 +143,7 @@ as_igraph.cbe_database_relationships <- function(x, ...) {
   igraph::as.igraph(tg)
 }
 
+#' @rdname templecbe_methods
 #' @export
 plot.cbe_database_relationships <- function(x, ...) {
   if (nrow(x) == 0) {
@@ -421,6 +422,7 @@ check_key_integrity <- function(db, id_col, master_dataset = NULL, compare = FAL
   summary_tbl
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_key_integrity <- function(x, ...) {
   cli_line <- paste0(rep("-", 70), collapse = "")

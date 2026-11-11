@@ -30,7 +30,7 @@
 #' @param size_range Numeric vector of length 2 giving min and max glyph sizes for balloon and square plots
 #'   (default \code{c(6, 22)}).
 #' @param fill_colors Character vector of colors for the palette or gradient. Defaults to
-#'   Temple University brand palette (\code{c("#F4F4F4", "#9D2235")}).
+#'   Temple University brand palette (\code{c("#F4F4F4", "#A41E35")}).
 #' @param show_counts Logical (default \code{TRUE}); whether to print cell counts inside plots.
 #' @param title Plot title. If \code{NULL}, defaults to \code{"{label1} \u00d7 {label2}"}.
 #' @param caption Optional plot caption. If \code{NULL}, automatically computed and formatted
@@ -79,7 +79,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
                                  test = c("auto", "exact", "chisq", "fisher"),
                                  correct = FALSE,
                                  size_range = c(6, 22),
-                                 fill_colors = c("#F4F4F4", "#9D2235"),
+                                 fill_colors = c("#F4F4F4", "#A41E35"),
                                  show_counts = TRUE,
                                  title = NULL,
                                  caption = NULL,
@@ -319,7 +319,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
       }
     }
     df_mosaic <- do.call(rbind, rect_rows)
-    pal <- grDevices::colorRampPalette(c("#9D2235", "#D97B89", "#2B2B2B", "#6E6E6E"))(nrow(tab))
+    pal <- grDevices::colorRampPalette(c("#A41E35", "#D97B89", "#2B2B2B", "#6E6E6E"))(nrow(tab))
 
     x_ticks <- unique(df_mosaic[, c("var2", "xmid")])
 
@@ -493,7 +493,7 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
         ggplot2::theme(
           plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
           plot.subtitle = ggplot2::element_text(size = 10, color = "#666666", hjust = 0.5, margin = ggplot2::margin(b = 10)),
-          plot.caption = ggplot2::element_text(face = "bold", size = 12, color = "#9D2235", hjust = 0.5, margin = ggplot2::margin(t = 12)),
+          plot.caption = ggplot2::element_text(face = "bold", size = 12, color = "#A41E35", hjust = 0.5, margin = ggplot2::margin(t = 12)),
           axis.title.x = ggplot2::element_text(face = "bold", size = 11, margin = ggplot2::margin(b = 6)),
           axis.title.y = ggplot2::element_text(face = "bold", size = 11, margin = ggplot2::margin(r = 6)),
           axis.text = ggplot2::element_text(face = "bold", size = 11, color = "#2b2b2b"),
@@ -627,7 +627,7 @@ cbe_balloon_plot <- function(data, var1 = NULL, var2 = NULL,
                              label1 = NULL, label2 = NULL,
                              engine = c("ggplot", "corrplot", "ggpubr"),
                              size_range = c(6, 22),
-                             fill_colors = c("#F4F4F4", "#9D2235"),
+                             fill_colors = c("#F4F4F4", "#A41E35"),
                              show_counts = TRUE,
                              title = NULL,
                              ...) {
@@ -700,7 +700,7 @@ cbe_mosaic_plot <- function(data, var1 = NULL, var2 = NULL,
 #' @export
 cbe_heatmap_plot <- function(data, var1 = NULL, var2 = NULL,
                              label1 = NULL, label2 = NULL,
-                             fill_colors = c("#F4F4F4", "#9D2235"),
+                             fill_colors = c("#F4F4F4", "#A41E35"),
                              show_counts = TRUE,
                              title = NULL,
                              ...) {
@@ -898,7 +898,7 @@ cbe_square_plot <- function(data, var1 = NULL, var2 = NULL,
                             correct = FALSE,
                             engine = c("ggplot", "corrplot"),
                             size_range = c(6, 22),
-                            fill_colors = c("#F4F4F4", "#9D2235"),
+                            fill_colors = c("#F4F4F4", "#A41E35"),
                             show_counts = TRUE,
                             title = NULL,
                             caption = NULL,
@@ -958,7 +958,7 @@ cbe_square_plot <- function(data, var1 = NULL, var2 = NULL,
 plot_categorical_associations <- function(data, cols = NULL,
                                           method = c("cramer_v", "p_value"),
                                           title = "Categorical Association Matrix",
-                                          fill_colors = c("#FFFFFF", "#9D2235"),
+                                          fill_colors = c("#FFFFFF", "#A41E35"),
                                           tl.cex = 0.8,
                                           number.cex = 0.75,
                                           show_coef = TRUE,
@@ -1086,6 +1086,14 @@ pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
   if (is.null(cols)) {
     cat_cols <- colnames(dplyr::select(data, dplyr::where(is.character) | dplyr::where(is.factor)))
   } else {
+    unknown <- setdiff(cols, colnames(data))
+    if (length(unknown)) {
+      warning(
+        "`cols` names column(s) that are not in `data` and are left out: ",
+        paste(unknown, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
     cat_cols <- intersect(cols, colnames(data))
   }
 
@@ -1105,7 +1113,7 @@ pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
   get_lbl <- function(v) {
     if (!is.null(labels_df) && all(c("variable", "label") %in% names(labels_df))) {
       match_row <- labels_df$label[labels_df$variable == v]
-      if (length(match_row) > 0 && nzchar(match_row[1])) return(match_row[1])
+      if (length(match_row) > 0 && !is.na(match_row[1]) && nzchar(match_row[1])) return(match_row[1])
     }
     v
   }

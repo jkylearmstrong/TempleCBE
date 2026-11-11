@@ -28,9 +28,11 @@ tune_grid_checkpointed(
 
 \item{control}{A `tune::control_grid()` object.}
 
-\item{checkpoint_dir}{Directory to store per-resample fingerprinted checkpoints.}
+\item{checkpoint_dir}{Directory to store per-resample fingerprinted checkpoints. They are
+read back with [readRDS()]: use a directory that only trusted processes write to.}
 
-\item{shard}{Optional integer vector `c(i, n)` for distributed evaluation.}
+\item{shard}{Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+evaluate shard `i` of `n`. Anything else is an error.}
 
 \item{checkpoint_mismatch}{Action when a checkpoint fingerprint mismatches:
 `"recompute"` (default), `"overwrite"`, or `"error"`.}

@@ -29,6 +29,17 @@ profvis_summary <- function(prof) {
   if (!is.data.frame(samples)) {
     stop("`prof` must be a profvis object, from profvis::profvis().", call. = FALSE)
   }
+  need <- c("label", "memalloc", "meminc", "time", "depth")
+  absent <- setdiff(need, names(samples))
+  if (length(absent)) {
+    stop(
+      "The profile of `prof` has no column(s) ", paste(absent, collapse = ", "),
+      "; it does not look like the result of profvis::profvis().",
+      call. = FALSE
+    )
+  }
+  # a share of a total of 0 (nothing allocated, or no sample) is 0, not 0 / 0
+  share <- function(x, total) if (isTRUE(total > 0)) round(x / total * 100, 3) else rep(0, length(x))
   samples <- tibble::as_tibble(samples)
   by_label <- dplyr::group_by(samples, .data$label)
 
@@ -37,7 +48,7 @@ profvis_summary <- function(prof) {
     total_mem = sum(.data$memalloc, na.rm = TRUE),
     times_called = dplyr::n()
   )
-  memory$pct <- round(memory$total_mem / sum(memory$total_mem) * 100, 3)
+  memory$pct <- share(memory$total_mem, sum(memory$total_mem))
   memory$mem_per_call <- memory$total_mem / memory$times_called
 
   increment <- dplyr::summarise(
@@ -45,11 +56,11 @@ profvis_summary <- function(prof) {
     total_meminc = sum(.data$meminc, na.rm = TRUE),
     times_called = dplyr::n()
   )
-  increment$pct <- round(increment$total_meminc / sum(abs(increment$total_meminc)) * 100, 3)
+  increment$pct <- share(increment$total_meminc, sum(abs(increment$total_meminc)))
   increment$meminc_per_call <- increment$total_meminc / increment$times_called
 
   calls <- dplyr::summarise(by_label, times_called = dplyr::n())
-  calls$pct <- round(calls$times_called / sum(calls$times_called) * 100, 3)
+  calls$pct <- share(calls$times_called, sum(calls$times_called))
 
   deepest <- dplyr::arrange(samples, dplyr::desc(.data$depth))
   deepest <- dplyr::distinct(deepest, .data$label, .keep_all = TRUE)

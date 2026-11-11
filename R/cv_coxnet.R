@@ -44,6 +44,9 @@
 #' the analysis set never saw, cannot be predicted: it is left out at every
 #' penalty, so all penalties are scored on the same subjects, with one warning
 #' per resample that gives the count. A resample with no subject left is skipped.
+#' Recurrent events (an event before a subject's last interval) stop with an
+#' error: the metrics need one event time per subject. See
+#' [surv_subject_truth()] (`recurrent = "first"`) and [recurrent_cox()].
 #'
 #' **Selection.** `lambda.min` is the penalty, across all `mixture` values,
 #' with the best mean `metric` over folds (for time-specific metrics, at the
@@ -308,6 +311,7 @@ autoplot.cv_coxnet <- function(object, ...) {
   p
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cv_coxnet <- function(x, ...) {
   folds <- nrow(x$resamples)

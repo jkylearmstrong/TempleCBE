@@ -65,9 +65,7 @@ NULL
   labels
 }
 
-.fmt_p_short <- function(p) {
-  if (is.na(p)) "p = NA" else if (p < 0.001) "p < 0.001" else paste0("p = ", formatC(p, format = "f", digits = 3))
-}
+.fmt_p_short <- function(p) format_p_value(p, digits = 3, prefix = TRUE, na = "p = NA")
 
 #' @rdname paired_comparison
 #' @param x,y Numeric vectors, the two samples (missing values are dropped). They need not have
@@ -87,7 +85,7 @@ compare_distributions_ks <- function(x, y, labels = c("Original", "Imputed"), ti
   if (length(x) < 2L || length(y) < 2L) stop("`x` and `y` each need at least two non-missing values.", call. = FALSE)
   ks <- suppressWarnings(stats::ks.test(x, y))
   df <- data.frame(value = c(x, y), version = factor(rep(labels, c(length(x), length(y))), levels = labels))
-  cols <- stats::setNames(c("#2B2B2B", "#9D2235"), labels)
+  cols <- stats::setNames(c("#2B2B2B", "#A41E35"), labels)
   note <- sprintf("Two-sample Kolmogorov-Smirnov: D = %.3f, %s (n = %d and %d)", unname(ks$statistic),
                   .fmt_p_short(ks$p.value), length(x), length(y))
   ecdf <- ggplot2::ggplot(df, ggplot2::aes(x = .data$value, color = .data$version)) +
@@ -146,7 +144,7 @@ compare_paired_correlation <- function(data, first, second, labels = c("Original
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$first, y = .data$second)) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey50") +
     ggplot2::geom_point(alpha = 0.6, color = "#2B2B2B") +
-    ggplot2::geom_abline(slope = cf[[2]], intercept = cf[[1]], color = "#9D2235", linewidth = 1) +
+    ggplot2::geom_abline(slope = cf[[2]], intercept = cf[[1]], color = "#A41E35", linewidth = 1) +
     theme_cbe() +
     ggplot2::labs(title = title, x = labels[1], y = labels[2], caption = paste0(caption, ". Dashed: identity."))
   attr(p, "model") <- fit
@@ -213,7 +211,7 @@ paired_diff_histogram <- function(data, first, second, labels = c("Original", "I
     theme_cbe() +
     ggplot2::labs(title = title, x = paste0("Difference (", labels[2], " \u2212 ", labels[1], ")"), y = "Count")
   if (is.null(group_col)) {
-    p <- p + ggplot2::geom_vline(xintercept = m, color = "#9D2235", linewidth = 1) +
+    p <- p + ggplot2::geom_vline(xintercept = m, color = "#A41E35", linewidth = 1) +
       ggplot2::labs(caption = sprintf("Mean difference %s (solid line), SD %s, n = %d",
                                       formatC(m, digits = 3, format = "g"),
                                       formatC(stats::sd(df$diff), digits = 3, format = "g"), nrow(df)))
@@ -261,9 +259,9 @@ paired_diff_ribbon_by_group <- function(data, first, second, group_col, labels =
   )
   p <- ggplot2::ggplot(s, ggplot2::aes(x = .data$x, y = .data$center)) +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), fill = "#9D2235", alpha = 0.2) +
-    ggplot2::geom_line(color = "#9D2235", linewidth = 1) +
-    ggplot2::geom_point(color = "#9D2235", size = 2) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lo, ymax = .data$hi), fill = "#A41E35", alpha = 0.2) +
+    ggplot2::geom_line(color = "#A41E35", linewidth = 1) +
+    ggplot2::geom_point(color = "#A41E35", size = 2) +
     theme_cbe() +
     ggplot2::labs(title = title, x = group_col,
                   y = paste0("Difference (", labels[2], " \u2212 ", labels[1], "): ", band))
@@ -279,7 +277,7 @@ paired_diff_ridgeline <- function(data, first, second, group_col, labels = c("Or
   df <- .paired_frame(data, first, second, group_col = group_col)
   df$group <- if (is.factor(df$group)) droplevels(df$group) else factor(df$group, levels = sort(unique(df$group)))
   ggplot2::ggplot(df, ggplot2::aes(x = .data$diff, y = .data$group)) +
-    ggridges::geom_density_ridges(fill = "#9D2235", alpha = 0.5, color = "white", scale = 1.2) +
+    ggridges::geom_density_ridges(fill = "#A41E35", alpha = 0.5, color = "white", scale = 1.2) +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
     theme_cbe() +
     ggplot2::labs(title = title, x = paste0("Difference (", labels[2], " \u2212 ", labels[1], ")"), y = group_col)

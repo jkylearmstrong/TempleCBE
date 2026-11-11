@@ -10,7 +10,7 @@ cbe_heatmap_plot(
   var2 = NULL,
   label1 = NULL,
   label2 = NULL,
-  fill_colors = c("#F4F4F4", "#9D2235"),
+  fill_colors = c("#F4F4F4", "#A41E35"),
   show_counts = TRUE,
   title = NULL,
   ...
@@ -28,7 +28,7 @@ cbe_heatmap_plot(
 \item{label2}{Optional display label for \code{var2} (defaults to \code{var2}).}
 
 \item{fill_colors}{Character vector of colors for the palette or gradient. Defaults to
-Temple University brand palette (\code{c("#F4F4F4", "#9D2235")}).}
+Temple University brand palette (\code{c("#F4F4F4", "#A41E35")}).}
 
 \item{show_counts}{Logical (default \code{TRUE}); whether to print cell counts inside plots.}
 

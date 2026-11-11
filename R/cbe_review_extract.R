@@ -554,6 +554,7 @@ docx_review_extract <- function(input_dir = NULL,
   invisible(out)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
@@ -594,6 +595,7 @@ print.docx_review_extract <- function(x, ...) {
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_review_extract <- print.docx_review_extract
 

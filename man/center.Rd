@@ -17,6 +17,12 @@ Numeric vector centered at zero.
 \description{
 Subtracts the mean from a numeric vector, returning a vector (not a 1D matrix).
 }
+\details{
+`center` is a common name: other attached packages, or an object of your own
+called `center`, can mask it (and [compute_composite_index()] has an argument
+of that name). In scripts, write `TempleCBE::center()` to be sure which one
+is called.
+}
 \examples{
 center(c(10, 20, 30))
 }

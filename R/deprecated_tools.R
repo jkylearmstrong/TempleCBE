@@ -19,7 +19,12 @@
 #'   `c("ARCHIVE", "renv", "doc")`) to skip when `path` is a directory; a file is
 #'   skipped if any folder on its path below `path` has one of these names.
 #' @param dry_run Logical; if `TRUE` (default), only previews the proposed
-#'   renames without modifying files. If `FALSE`, rewrites files in place.
+#'   renames without modifying files. If `FALSE`, rewrites files in place. Each
+#'   file is written to a temporary file next to it and renamed over the
+#'   original, so an interrupted run leaves every file either unchanged or fully
+#'   rewritten; line endings are kept.
+#' @param backup Logical; if `TRUE`, each file that is rewritten is first copied
+#'   to `<file>.bak`. Default `FALSE`.
 #' @return A `tibble` with columns:
 #'   \item{file}{Path to the file where the deprecated call was detected.}
 #'   \item{line}{1-based line number.}
@@ -242,7 +247,7 @@ find_deprecated_calls <- function(path, exclude_dirs = NULL) {
 
 #' @rdname find_deprecated_calls
 #' @export
-update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL) {
+update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL, backup = FALSE) {
   matches <- .deprecated_matches(path, exclude_dirs)
   findings <- matches[, c("file", "line", "old_name", "replacement", "call_type", "context")]
 
@@ -285,7 +290,7 @@ update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL) {
       lines[l_i] <- paste0(substr(lines[l_i], 1L, s - 1L), file_matches$replacement[i],
                            substr(lines[l_i], s + file_matches$name_len[i], nchar(lines[l_i])))
     }
-    writeLines(lines, fpath, useBytes = FALSE)
+    .rewrite_source_file(lines, fpath, backup = isTRUE(backup))
     total_updated <- total_updated + nrow(file_matches)
     modified_files_count <- modified_files_count + 1L
     message(sprintf("  - %s: %d call(s) updated", basename(fpath), nrow(file_matches)))
@@ -293,6 +298,32 @@ update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL) {
 
   message(sprintf("Updated %d deprecated call(s) across %d file(s).", total_updated, modified_files_count))
   invisible(findings)
+}
+
+# Replace a source file with `lines` without ever leaving it half written: the
+# new content goes to a temporary file in the same directory, which is then
+# renamed over the original (atomic_write_file()). The line endings (LF or
+# CRLF), the absence of a final newline and the POSIX file mode of the original
+# are kept. With `backup`, the original is first copied to `<file>.bak`.
+.rewrite_source_file <- function(lines, fpath, backup = FALSE) {
+  old <- readBin(fpath, "raw", n = file.info(fpath)$size)
+  n_old <- length(old)
+  crlf <- any(old[-1L] == as.raw(0x0a) & old[-n_old] == as.raw(0x0d))
+  eol <- if (crlf) "\r\n" else "\n"
+  final_eol <- n_old == 0L || old[n_old] == as.raw(0x0a)
+  if (backup) {
+    bak <- paste0(fpath, ".bak")
+    if (!file.copy(fpath, bak, overwrite = TRUE, copy.mode = TRUE)) {
+      stop("Could not write the backup '", bak, "'; '", fpath, "' was not changed.", call. = FALSE)
+    }
+  }
+  mode <- file.info(fpath)$mode
+  text <- paste0(paste(enc2utf8(lines), collapse = eol), if (final_eol) eol else "")
+  atomic_write_file(charToRaw(text), fpath)
+  if (.Platform$OS.type != "windows" && !is.na(mode)) {
+    tryCatch(Sys.chmod(fpath, mode = mode, use_umask = FALSE), error = function(e) NULL)
+  }
+  invisible(fpath)
 }
 
 .ambiguous_deprecated_names <- c("clean_names", "render", "like", "write_xlsx")

@@ -430,11 +430,26 @@ check_docx_toolchain <- function(quiet = FALSE) {
     if (startsWith(profile_path, "/")) profile_path else paste0("/", profile_path)
   )
 
+  # R exports its own LD_LIBRARY_PATH (R's lib folder, /usr/local/lib, the JVM)
+  # to every child process. With it soffice.bin does not find its own libraries
+  # ("error while loading shared libraries: libreglo.so", status 127), so
+  # LibreOffice is started without it.
+  if (.Platform$OS.type != "windows") {
+    ld_path <- Sys.getenv("LD_LIBRARY_PATH", unset = NA)
+    if (!is.na(ld_path)) {
+      Sys.unsetenv("LD_LIBRARY_PATH")
+      on.exit(Sys.setenv(LD_LIBRARY_PATH = ld_path), add = TRUE)
+    }
+  }
+
   st <- .run_status(
     soffice,
     c(
       shQuote(profile_uri),
       "--headless", "--norestore", "--invisible", "--nolockcheck",
+      # Without this a PDF is opened in Draw, which has no DOCX export, and
+      # nothing is written.
+      shQuote("--infilter=writer_pdf_import"),
       "--convert-to", shQuote("docx:MS Word 2007 XML"),
       "--outdir", shQuote(work),
       shQuote(pdf)
@@ -737,6 +752,28 @@ convert_pdfs_to_docx <- function(conversions,
     state <- check_docx_toolchain(quiet = TRUE)
     if (identical(backend, "auto")) {
       backend <- state$backend
+    } else {
+      # A backend named by the caller must be there. It used to be handed to its converter
+      # regardless, which failed on every file with "Conversion failed" and a result of
+      # `converted = FALSE`, even with `strict = TRUE`.
+      available <- switch(backend,
+        python      = !is.null(state$python_with_pdf2docx),
+        libreoffice = !is.null(state$soffice),
+        word_com    = isTRUE(state$word_com),
+        FALSE
+      )
+      if (!available) {
+        msg <- paste0(
+          "The requested PDF -> DOCX backend \"", backend, "\" is not available on this machine",
+          if (is.na(state$backend)) " (and no other backend is)" else paste0(" (available: \"", state$backend, "\"; `backend = \"auto\"` would use it)"),
+          ". See TempleCBE::check_docx_toolchain()."
+        )
+        if (isTRUE(strict)) {
+          stop(msg, call. = FALSE)
+        }
+        warning(msg, " Skipping ", length(todo), " DOCX output(s).", call. = FALSE)
+        return(cbind(conversions, converted = FALSE))
+      }
     }
 
     if (is.na(backend)) {

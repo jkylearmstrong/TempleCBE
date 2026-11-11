@@ -190,6 +190,7 @@ predict.censoring_km <- function(object, time, left = FALSE, trunc = 0, ...) {
   pmax(c(1, object$surv)[idx + 1], trunc)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.censoring_km <- function(x, ...) {
   cat("<censoring_km> reverse Kaplan-Meier censoring distribution\n")
@@ -433,7 +434,18 @@ predict_subject_survival <- function(lp, start, stop, id, eval_time, bh, covaria
 #' @noRd
 subject_keys <- function(y, subject) {
   parts <- surv_components(y)
-  copy <- stats::ave(seq_along(subject), subject, parts$start, parts$stop, FUN = seq_along)
+  # One grouping key per (subject, start, stop). stats::ave() with three
+  # grouping vectors builds their full interaction, subjects x distinct starts
+  # x distinct stops, which is hundreds of millions of levels on start-stop
+  # data and exhausts memory. Integer codes joined into one key keep it at one
+  # level per combination that occurs.
+  key <- paste(
+    match(subject, unique(subject)),
+    match(parts$start, unique(parts$start)),
+    match(parts$stop, unique(parts$stop)),
+    sep = "."
+  )
+  copy <- stats::ave(seq_along(key), key, FUN = seq_along)
   if (all(copy == 1)) {
     return(subject)
   }
@@ -799,6 +811,7 @@ prune_start_stop <- function(data, id = "id", start = "tstart", stop = "tstop", 
   data
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_start_stop_validation <- function(x, ...) {
   cat("TempleCBE Start/Stop Survival Data Check\n")

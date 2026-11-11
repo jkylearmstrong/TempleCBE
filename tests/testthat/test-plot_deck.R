@@ -130,7 +130,7 @@ test_that("plot_dynamic_trajectory() still works unchanged for Survived/Died", {
   d <- traj_data(c("Survived", "Died"))
   p <- plot_dynamic_trajectory(d, "val", "time", "grp")
   expect_s3_class(p, "ggplot")
-  expect_equal(unname(line_cols(p)), c("#9D2235", "#6F6F6F")) # Died, Survived (alphabetical, as before)
+  expect_equal(unname(line_cols(p)), c("#A41E35", "#6F6F6F")) # Died, Survived (alphabetical, as before)
 })
 
 test_that("plot_dynamic_trajectory() takes more than two groups without extra arguments", {

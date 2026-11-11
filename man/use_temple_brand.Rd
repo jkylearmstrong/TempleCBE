@@ -15,8 +15,10 @@ use_temple_brand(
 \item{path}{Project directory (created if missing). Defaults to the
 working directory.}
 
-\item{extension}{Extension source passed to \code{quarto add}: a GitHub
-\code{org/repo}, a URL, or a local path.}
+\item{extension}{Extension source passed to \code{quarto add}, which
+downloads and installs it: a GitHub \code{org/repo} (optionally pinned,
+\code{org/repo@v1.0.0}, which is the reproducible form), an existing local
+path, or an \code{https} URL (with a warning). Anything else is refused.}
 
 \item{quiet}{Logical; suppress Quarto's output.}
 

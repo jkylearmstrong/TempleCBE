@@ -1,3 +1,58 @@
+# TempleCBE 0.8.1
+
+Fixes from the consolidated review and benchmark findings of 2026-11-11 (static review of the package,
+tests and CI, and benchmarks on start-stop and recurrent-event data). No export is removed.
+
+## Changes in behaviour
+
+* **`as_tuning_results()`**: a `mean` or `.estimate` column is taken as the IBS only when a `.metric` column says the rows are a Brier metric. Without `.metric` the call now fails and names the columns it found (it used to take any `mean`, a concordance for example, as the IBS). A table with no `alpha`, `mixture` or `alphas` column still gets `alpha = 1`, now with a warning.
+* **`anonymize_pi(method = "hmac_surname")`**: two names that receive the same surname are an error, as for `"hmac_token"`; `allow_collisions = TRUE` turns it into a warning (it used to be a warning, or nothing). Surnames come from a fixed list, so use `"hmac_token"` or `"token"` when every name needs its own pseudonym. The mapping of names to surnames is unchanged.
+* **Weak-key and seed warnings**: a real key shorter than 16 characters is warned about even with `allow_default_key = TRUE` (that argument is about a missing key), and `generate_pseudonym_token(seed = )` warns that seeded tokens are reproducible from the seed and are not secret. `options(templecbe_suppress_weak_key_warning = TRUE)` silences both.
+* **`convert_pdfs_to_docx(backend = "python" | "libreoffice" | "word_com")`**: a backend that is named and not available is an error under `strict = TRUE` (the default), and a warning with `converted = FALSE` under `strict = FALSE`. It used to run the missing converter on every file and report "Conversion failed".
+* **`compare_censoring_weights()`**: `score_fold_*.rds` files in `checkpoint_dir` that are not tasks of the current run are removed only with `checkpoint_mismatch = "overwrite"`. With `"recompute"` and `"error"` the files of another run that shares the directory are left alone.
+* **`find_read_calls()`, `find_write_calls()`**: with `workers = NULL` the `future::plan()` in force is used and not changed; a multisession cluster is started only for `workers > 1`.
+* **`cbe_labels()`** keeps the active map inside the package only. The option `templecbe.label_map` is read as a default but no longer written.
+* **`cbe_palette["cherry"]` and every plot default** use the Temple cherry of the brand file, `#A41E35` (`temple_colors()`, `_pkgdown.yml`); `theme_cbe()` plots used `#9D2235`.
+* **`glm_single(family = "<name>")`** resolves the name among the families of `stats` (not in the caller's frame) and names the choices when it is not one of them.
+* **`tune_grid_checkpointed()`, `fit_resamples_checkpointed()`, `workflow_map_checkpointed()`**: `shard` is validated (`c(i, n)` or `"i/n"`); `c(0, 2)` or a single number is an error instead of an `NA` mask.
+
+## Fixed
+
+* **`cv_coxnet()`, `nested_cv_coxnet()`, `nested_survival_run()` on start-stop data**: the internal `subject_keys()` built the interaction of subject, start and stop times with `stats::ave()` (312 x 1,024 x 1,256 levels on `survival::pbcseq`) and the process was killed for lack of memory before any model was fitted. It now groups on one key per row; `cv_coxnet()` on `pbcseq` runs in seconds.
+* **`update_deprecated_calls(dry_run = FALSE)`** writes each file to a temporary file and renames it over the original, so an interrupted run cannot leave a half-written source file; line endings (LF or CRLF) and a missing final newline are kept. New argument `backup = TRUE` copies each file to `<file>.bak` first.
+* **Checkpoints**: a checkpoint that cannot be written (full disk, no permission) or read (truncated file) gives a warning that names the file and the cause; both used to pass in silence, and the work was repeated on the next run.
+* **`bundle_deliverables()`** stages in a `tempfile()` directory: two calls in the same second shared a staging folder named from the clock, and the second deleted the first's. `diff_deliverables()` refuses an archive with an absolute or `..` entry.
+* **`cox_single()`, `km_single()`, `cox_check()`**: a coefficient or a proportional-hazards p-value that is `NA` (a constant or collinear predictor) gives a result that says so, with a warning, instead of the error "missing value where TRUE/FALSE needed". A variable label of length 0 or more than 1 no longer breaks `cox_single()` and `cox_multi()`.
+* **`fit_ibs_mixed_model()`**: fits with an IBS of 0 or below are left out of the model of `log10(IBS)` with a warning; a table with one value of `alpha` returns the intercept and a warning instead of an error. **`tbl_tune_coef()`**: without a split column `prop_selected` is the share of the fits with a non-zero estimate (it was the count), and a message says so.
+* **`plot_tune_alpha_ibs()`, `plot_tune_lambda_ibs()`**: `label_map` and `style` were accepted and ignored; they now set the axis and legend titles.
+* **`sample_candidate_formulas()` and the other samplers with `data`**: a term string is evaluated only if it is a transformation of columns (arithmetic, `log()`, `poly()`, `ns()`, `I()` and the like), in an environment that holds those functions only, and once. A term that calls anything else is not evaluated.
+* **Directory removal** in `render_pipeline()`, `zip_reports()`, `nested_survival_run()` and the file locks goes through a junction-safe helper: a link or Windows junction inside the directory is removed as a link and its target is not emptied.
+* **`pipeline_config()`** returns the previous option values in the attribute `"previous"`, to restore them.
+* **`write_workbook()`**: two sheet names that differ only after character 31 stay within Excel's 31 characters when made unique. **`pool_imputations()`**: a term with a total variance of 0 gets `NA` for the statistic, p-value and interval, with a warning, instead of `NaN`. **`profvis_summary()`** checks the columns of the profile and returns a share of 0 when nothing was allocated. **`pairwise_combos()`** uses the variable name for an `NA` label and warns about unknown `cols`. **`scan_data_io()`** names the directory that does not exist. **`render_pipeline()`** validates `workers`. **`render_parameterized_study()`** treats target folders that differ only by case as the same folder on Windows. **`simulate_section_data()`** validates `n_subjects` and `missing_rate`. **`batch_cox_single()`** reads the statistic and p-value by column name and tolerates a missing Wald test. **`clean_publish()`** no longer sets `PATH` to `"NA"` when it was unset.
+* **`convert_pdfs_to_docx(backend = "libreoffice")`** opens the PDF with LibreOffice's Writer import filter (`--infilter=writer_pdf_import`). Without it LibreOffice cannot load the PDF for a DOCX export ("source file could not be loaded"). On Linux and macOS LibreOffice is also started without the `LD_LIBRARY_PATH` that R exports to child processes: with it `soffice.bin` did not find its own libraries and exited with status 127. Every LibreOffice conversion started from R failed for these two reasons; the new live CI job found both.
+* **`install_package_no_lock()`** accepts package names only (new argument `repos`); **`use_temple_brand()`** accepts a GitHub source, a local path or an `https` URL (with a warning) as `extension`; **`cbe_cox_table()`** names the columns a table lacks.
+
+## Documentation and packaging
+
+* The 56 registered S3 methods that had no help page are documented on `?templecbe_methods`; there is a package help page, `?TempleCBE`.
+* Licence: the MIT text is installed in `licenses/MIT.md` with a note on both licences (`system.file("licenses", package = "TempleCBE")`); the README links are corrected. The declaration `GPL-3 | MIT + file LICENSE` and the `LICENSE` file (the year and holder that R requires for MIT) are unchanged.
+* `cv_coxnet()` states that it scores one event time per subject and points to `surv_subject_truth(recurrent = "first")` and `recurrent_cox()` (both new in 0.8.0) for recurrent events.
+* `readRDS()` entry points (`as_tuning_results()`, `load_pipeline()`, `checkpoint_dir`) state that only trusted files may be loaded.
+* `cbe_` class names are recorded as an accepted exception to the naming rule (AGENTS.md); `summary_table()` and `center()` document what the review found surprising; the README names the real entry points of the compute graph; `R/my_summary_table.r` and `R/sd_error.r` are renamed to `.R`.
+* Internal: one p-value formatter (`fmt_p()` and three local copies), one column-name check, one implementation behind `tune_grid_checkpointed()` and `fit_resamples_checkpointed()`, `local_seed()` for the seed handling that was written out by hand, and the dead `safe_shell()` is removed.
+
+## CI
+
+* The tracked files are scanned for the denylist terms on every run of the `ubuntu-latest (release)` job, from the Actions secret `TEMPLECBE_DENYLIST_TERMS` (the scan in `test-denylist.R` needs a local file and never ran on a runner). Until the secret exists the step writes a warning; the repository variable `TEMPLECBE_REQUIRE_DENYLIST = true` makes its absence a failure.
+* The cross-platform matrix also runs on pushes to `master`, with `oldrel-1` and `devel` (informative) added; the CI image is pinned by dated tag and digest; `test-coverage` has 75 minutes; a failed `renv` restore in `pkgdown.yaml` is a warning annotation; `release.yaml` runs `R CMD check` by default, has a time limit and a concurrency group, does not leave the token in the checkout and sets the version with `desc`; a non-blocking job runs the PDF to DOCX tests with pdf2docx and LibreOffice.
+
+## Not changed, and why
+
+* **Recurrent-event scoring in `cv_coxnet()`**: not added here. The metrics are defined for one event time per subject; 0.8.0 added `recurrent = "first"` and `recurrent_cox()` for such data.
+* **`system2()` with `shQuote()`** (`clean_publish()`, `pdf_to_docx`, `run_sas_script()`): correct as it is. Base R's `system2()` quotes nothing on any platform.
+* **`janitor::make_clean_names()` without `requireNamespace()`**: `janitor` is in `Imports`.
+* **`_pkgdown.yml`**: `pkgdown::check_pkgdown()` finds no topic missing from the reference index.
+* **Renaming the `cbe_` classes, splitting `test-clean_publish.R`, the Dockerfile user and base-image digests, the committed manual PDFs**: left for the maintainer to decide.
 # TempleCBE 0.8.0
 
 Five requests (recurrent readmissions, imputation variance ratio, review tracker formats, covariate

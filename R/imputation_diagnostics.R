@@ -51,7 +51,7 @@ check_imputation_cols <- function(orig, imp, cols) {
 compare_imputed_ecdf <- function(orig,
                                  imp,
                                  cols,
-                                 colors = c(Original = "#2B2B2B", Imputed = "#9D2235")) {
+                                 colors = c(Original = "#2B2B2B", Imputed = "#A41E35")) {
   check_imputation_cols(orig, imp, cols)
 
   long_data <- lapply(cols, function(col) {
@@ -219,7 +219,7 @@ plot_imputed_ridgeline <- function(orig, imp, cols) {
 
   ggplot2::ggplot(long_df, ggplot2::aes(x = .data$value, y = .data$variable, fill = .data$dataset)) +
     ggridges::geom_density_ridges(alpha = 0.6, scale = 1.2, color = "white") +
-    ggplot2::scale_fill_manual(values = c(Original = "#6F6F6F", Imputed = "#9D2235")) +
+    ggplot2::scale_fill_manual(values = c(Original = "#6F6F6F", Imputed = "#A41E35")) +
     theme_cbe() +
     ggplot2::labs(
       title = "Distribution Density Comparison: Original vs Imputed",

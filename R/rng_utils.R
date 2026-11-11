@@ -18,3 +18,16 @@ local_seed <- function(seed, envir = parent.frame()) {
   set.seed(seed)
   invisible(NULL)
 }
+
+# Changes the working directory for the rest of the calling function and goes back when that
+# function exits: the base R form of withr::local_dir() (withr is a suggested package, so
+# package code cannot count on it). `after = FALSE` goes back before the exit handlers that
+# are already registered run, for a caller that then deletes the directory it was in.
+#' @keywords internal
+#' @noRd
+local_wd <- function(dir, after = TRUE, envir = parent.frame()) {
+  old <- setwd(dir)
+  restore <- function() setwd(old)
+  do.call(base::on.exit, list(as.call(list(restore)), add = TRUE, after = after), envir = envir)
+  invisible(old)
+}

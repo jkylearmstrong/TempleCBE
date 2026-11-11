@@ -20,3 +20,9 @@ A tibble of feature coefficient stability statistics.
 Calculates selection frequency and distribution of coefficient estimates for
 each feature across resamples.
 }
+\details{
+`prop_selected` is `n_selected` divided by the number of resampling splits
+when `data` identifies them (a column `inner_resamples_splits`,
+`inner_resamples` or `split`). Without such a column it is the share of the
+fits of the term with a non-zero estimate, and a message says so.
+}

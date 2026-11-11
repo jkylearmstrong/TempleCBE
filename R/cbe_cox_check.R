@@ -53,23 +53,31 @@ cox_check <- function(fit) {
 
   if (sum(!is_global) == 1) {
     p_zph <- zph_tab$p[!is_global][1]
-    violated <- p_zph < 0.05
-    zph_text <- sprintf(
-      "Test of the proportional hazards assumption yields p = %.3f. Therefore, the proportional hazards assumption is %sviolated.",
-      p_zph, if (violated) "" else "not "
-    )
+    zph_text <- if (is.na(p_zph)) {
+      "The test of the proportional hazards assumption could not be computed for this model (p = NA)."
+    } else {
+      sprintf(
+        "Test of the proportional hazards assumption yields p = %.3f. Therefore, the proportional hazards assumption is %sviolated.",
+        p_zph, if (p_zph < 0.05) "" else "not "
+      )
+    }
   } else {
     term_text <- sprintf(
       "%s (p = %.3f, %sviolated)",
-      term_names[!is_global], zph_tab$p[!is_global], ifelse(zph_tab$p[!is_global] < 0.05, "", "not ")
+      term_names[!is_global], zph_tab$p[!is_global],
+      ifelse(is.na(zph_tab$p[!is_global]), "not assessed: ", ifelse(zph_tab$p[!is_global] < 0.05, "", "not "))
     )
     per_term_text <- sprintf("Per-term proportional hazards tests: %s.", paste(term_text, collapse = "; "))
     global_text <- if (any(is_global)) {
       p_global <- zph_tab$p[is_global][1]
-      sprintf(
-        "Global test of the proportional hazards assumption yields p = %.3f (%sviolated).",
-        p_global, if (p_global < 0.05) "" else "not "
-      )
+      if (is.na(p_global)) {
+        "The global test of the proportional hazards assumption could not be computed (p = NA)."
+      } else {
+        sprintf(
+          "Global test of the proportional hazards assumption yields p = %.3f (%sviolated).",
+          p_global, if (p_global < 0.05) "" else "not "
+        )
+      }
     } else {
       NULL
     }

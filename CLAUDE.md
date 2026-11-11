@@ -12,4 +12,5 @@ Please refer to [AGENTS.md](AGENTS.md) for full architecture and testing details
 - `cbe_*` is reserved for Temple CBE presentation and formatting only (themes, palettes, scales, plots, report tables, number formatters).
 - Every other function is a plain verb-noun that does what the name says (e.g. `nested_survival_run()`, `cox_single()`, `checkpoint_map()`, `describe_columns()`).
 - The former non-formatting `cbe_*` names were deprecated in 0.5.8 and removed in 0.7.0 (see NEWS.md and `find_deprecated_calls()`).
+- The rule is about **function** names. S3 **class** names that already carry the prefix (`cbe_cox`, `cbe_km`, `cbe_tuning_results`, `cbe_database`, ...) are an accepted exception: see "Naming" in AGENTS.md. Do not add a new `cbe_` class.
 

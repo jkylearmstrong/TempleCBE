@@ -133,11 +133,11 @@ zip_reports <- function(reports,
   }
 
   build_dir <- file.path(tempdir(), paste0("report_build_", format(Sys.time(), "%Y%m%d_%H%M%S")))
-  if (dir.exists(build_dir)) unlink(build_dir, recursive = TRUE)
+  if (dir.exists(build_dir)) remove_dir_tree(build_dir)
   dir.create(build_dir, recursive = TRUE)
   # The staged copies exist only to be zipped: a copy of every report would
   # otherwise stay in tempdir() until the R session ends.
-  on.exit(unlink(build_dir, recursive = TRUE), add = TRUE)
+  on.exit(remove_dir_tree(build_dir), add = TRUE)
 
   index_data <- tibble::tibble(
     Order = integer(), `Report Name` = character(), Stage = character(),
@@ -280,9 +280,8 @@ zip_reports <- function(reports,
   # normalizePath() leaves such a path as written on Linux and macOS.
   output_zip_path <- file.path(normalizePath(output_dir, winslash = "/", mustWork = FALSE), zip_name)
 
-  old_wd <- setwd(build_dir)
   # Back out of the build folder first: it cannot be removed while it is the working directory.
-  on.exit(setwd(old_wd), add = TRUE, after = FALSE)
+  local_wd(build_dir, after = FALSE)
   files_to_zip <- list.files(".", recursive = TRUE)
 
   if (requireNamespace("zip", quietly = TRUE)) {

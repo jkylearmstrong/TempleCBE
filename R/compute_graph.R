@@ -27,13 +27,24 @@ NULL
 #'
 #' Decouples project-specific parameters (study name, stage display labels,
 #' stage color palettes) from core pipeline mechanics and classes.
+#'
+#' The configuration is kept in the session options `pipeline.study_name`,
+#' `pipeline.stage_labels`, `pipeline.stage_colors` and
+#' `pipeline.default_formats`, so a call with arguments changes them for the
+#' rest of the session. The values they had before the call are returned in the
+#' attribute `"previous"`, in the form [options()] takes; to change the
+#' configuration only inside a function or a test, restore them on exit:
+#' `old <- attr(pipeline_config(study_name = "X"), "previous");
+#' on.exit(options(old), add = TRUE)`, or use `withr::local_options()` on the
+#' options directly.
 #' @param study_name Character string for the main study title.
 #' @param stage_labels Named character vector mapping raw stage identifiers to human-readable labels.
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
 #' @param default_formats Optional character vector of default output formats
 #'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 #'   the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
-#' @return A list containing the current configuration options.
+#' @return A list containing the current configuration options, with the
+#'   attribute `"previous"`: the options as they were before the call.
 #' @export
 pipeline_config <- function(
   study_name = NULL,
@@ -41,6 +52,12 @@ pipeline_config <- function(
   stage_colors = NULL,
   default_formats = NULL
 ) {
+  previous <- options()[c(
+    "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
+  )]
+  names(previous) <- c(
+    "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
+  )
   if (!is.null(study_name)) {
     options(pipeline.study_name = study_name)
   }
@@ -54,11 +71,14 @@ pipeline_config <- function(
     options(pipeline.default_formats = default_formats)
   }
 
-  list(
-    study_name = getOption("pipeline.study_name", "Computational Pipeline"),
-    stage_labels = getOption("pipeline.stage_labels", list()),
-    stage_colors = getOption("pipeline.stage_colors", list()),
-    default_formats = getOption("pipeline.default_formats", NULL)
+  structure(
+    list(
+      study_name = getOption("pipeline.study_name", "Computational Pipeline"),
+      stage_labels = getOption("pipeline.stage_labels", list()),
+      stage_colors = getOption("pipeline.stage_colors", list()),
+      default_formats = getOption("pipeline.default_formats", NULL)
+    ),
+    previous = previous
   )
 }
 
@@ -753,7 +773,7 @@ record_pipeline_hashes <- function(all_objects, hash_file = NULL) {
 
 #' Is something a file reads, directly or further up the pipeline, out of date?
 #'
-#' A file with a producer is out of date when [.is_stale()] says so; a helper script
+#' A file with a producer is out of date when [is_stale()] says so; a helper script
 #' is out of date when anything it reads is. Plain input files never are.
 #' @noRd
 .upstream_stale <- function(node,
@@ -773,7 +793,7 @@ record_pipeline_hashes <- function(all_objects, hash_file = NULL) {
   seen <- c(seen, node@name)
   producer <- .find_producer(node, all_objects)
   result <- if (!is.null(producer)) {
-    .is_stale(
+    is_stale(
       node, producer, all_objects, seen, cache,
       stale_by = stale_by, hash_file = hash_file, hash_store = hash_store
     )
@@ -924,7 +944,6 @@ is_stale <- function(output_file,
   FALSE
 }
 
-.is_stale <- is_stale
 
 #' Check if a rendering node (or its deliverables) is out of date
 #'
@@ -958,7 +977,7 @@ is_stale <- function(output_file,
     # If one or more deliverables exist, check whether any of them is stale relative to qmd or dependencies
     for (f in existing) {
       fp <- FilePath(name = basename(f), path = f)
-      if (.is_stale(fp, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
+      if (is_stale(fp, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
         return(TRUE)
       }
     }
@@ -966,7 +985,7 @@ is_stale <- function(output_file,
   }
 
   for (out_file in qmd@output) {
-    if (.is_stale(out_file, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
+    if (is_stale(out_file, qmd, all_objects, cache = cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store)) {
       return(TRUE)
     }
   }
@@ -1320,7 +1339,7 @@ visualize_pipeline <- function(
     is_stale <- FALSE
     producer <- .find_producer(node, all_objects)
     if (!is.null(producer)) {
-      is_stale <- .is_stale(node, producer, all_objects, cache = stale_cache)
+      is_stale <- is_stale(node, producer, all_objects, cache = stale_cache)
     }
 
     if (is_stale) {
@@ -1830,7 +1849,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
 
     # Staleness check
     producer <- .find_producer(node, all_objects)
-    is_stale_node <- !is.null(producer) && .is_stale(node, producer, all_objects, cache = stale_cache)
+    is_stale_node <- !is.null(producer) && is_stale(node, producer, all_objects, cache = stale_cache)
     stale[i] <- is_stale_node
 
     # Color
@@ -2207,7 +2226,7 @@ export_interactive_pipeline <- function(
   # Clean up temporary supporting directory left by saveWidget
   files_dir <- sub("\\.html$", "_files", file)
   if (!files_dir_existed && dir.exists(files_dir)) {
-    unlink(files_dir, recursive = TRUE)
+    remove_dir_tree(files_dir)
   }
 
   message("Interactive HTML graph exported successfully!")
@@ -2428,7 +2447,7 @@ get_render_plan <- function(all_objects,
     stale_helpers <- Filter(
       function(x) {
         is(x, "FileOutputs") && !x@renders &&
-          any(vapply(x@output, function(o) .is_stale(o, x, all_objects, cache = stale_cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store), logical(1)))
+          any(vapply(x@output, function(o) is_stale(o, x, all_objects, cache = stale_cache, stale_by = stale_by, hash_file = hash_file, hash_store = hash_store), logical(1)))
       },
       all_objects
     )
@@ -2926,7 +2945,9 @@ list_stage_data_artifacts <- function(
 #' pipeline dumps that become stale over time.
 #'
 #' @param pipeline A list of pipeline objects ([FilePath], [FileOutputs], [FileUses]).
-#' @param file Path to the `.rds` file to save to or read from.
+#' @param file Path to the `.rds` file to save to or read from. `load_pipeline()`
+#'   reads it with [readRDS()], which can run code stored in the file: load only
+#'   files written by `save_pipeline()` in a location that you trust.
 #' @param update_mtime Logical. When loading, should the `@mtime` slots of all
 #'   contained files be re-read from disk? Defaults to `TRUE`.
 #' @return

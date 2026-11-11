@@ -89,9 +89,16 @@ test_that("allow_default_key = TRUE keeps the old fallback but warns that it is 
   expect_length(testthat::capture_warnings(anonymize_pi(c("A", "B", "C"), allow_default_key = TRUE)), 1)
 
   # no warning when a real key is present, even with the opt-out set
-  expect_no_warning(anonymize_pi(nm, key = "key-one", allow_default_key = TRUE))
-  withr::with_envvar(c(TEMPLECBE_SECRET_KEY = "key-one"), {
+  expect_no_warning(anonymize_pi(nm, key = "key-one-of-at-least-16-chars", allow_default_key = TRUE))
+  withr::with_envvar(c(TEMPLECBE_SECRET_KEY = "key-one-of-at-least-16-chars"), {
     expect_no_warning(anonymize_pi(nm, allow_default_key = TRUE))
+  })
+  # the opt-out is about a missing key: a real key that is short still gets the weak-key warning
+  withr::with_options(list(templecbe_suppress_weak_key_warning = FALSE), {
+    expect_warning(
+      anonymize_pi(nm, key = "key-one", allow_default_key = TRUE),
+      "shorter than 16 characters"
+    )
   })
 
   expect_error(anonymize_pi(nm, allow_default_key = NA), "allow_default_key")
