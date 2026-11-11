@@ -85,9 +85,13 @@ write_database_to_excel <- function(x, path,
     }
     meta_df <- as.data.frame(metadata)
     meta_sheet_name <- clean_sheet_name(metadata_sheet)
-    if (meta_sheet_name %in% names(sheets_to_write)) {
-      meta_sheet_name <- make.unique(c(names(sheets_to_write), meta_sheet_name), sep = "_")[length(sheets_to_write) + 1]
-    }
+    # Same treatment as the data sheets: the name must stay within 31
+    # characters with room for the "_N" suffix, and Excel compares sheet names
+    # without case, so a bare make.unique() could hand writexl a name over the
+    # limit (a 31-character name colliding gets "_1" appended) or a
+    # case-only duplicate. unique_sheet_names() leaves the name untouched
+    # when it already fits and does not collide.
+    meta_sheet_name <- unique_sheet_names(c(names(sheets_to_write), meta_sheet_name))[length(sheets_to_write) + 1]
     sheets_to_write[[meta_sheet_name]] <- meta_df
   }
 

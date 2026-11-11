@@ -1027,6 +1027,111 @@ shard_active_mask <- function(n, shard = NULL) {
   ((seq_len(n) - 1L) %% shard[2]) + 1L == shard[1]
 }
 
+#' Run an Indexed Sweep With Per-Task Checkpoints
+#'
+#' Shared engine for the checkpointed sweeps in [missforest_sweep_mtry()],
+#' [missranger_sweep_mtry()] and [nested_cv_coxnet()]: for each task index,
+#' load the per-task checkpoint when its fingerprint matches, otherwise --
+#' when the task belongs to this shard -- compute it with `compute()` and
+#' write the checkpoint. Without `checkpoint_dir` it just maps `compute()`
+#' over the indices, in parallel when `parallel` is `TRUE`.
+#'
+#' The checkpoint file names, fingerprints, run fingerprint, metadata and
+#' the per-task compute function all come from the caller, so each sweep
+#' keeps its existing checkpoint files and cache semantics; this helper only
+#' removes the repeated read-if-cached / compute-if-missing / write loop and
+#' the parallel/sequential dispatch around it. Sweeps that do more than that
+#' -- [tune_over_alpha()] and [tune_alpha_by_split()], which verify all
+#' checkpoints up front, delete mismatches and wrap results in
+#' [purrr::safely()], and [tune_race_survival()], which checkpoints a single
+#' result rather than a sweep -- keep their own code.
+#'
+#' @param compute Function of one task index returning that task's result.
+#' @param n Number of tasks.
+#' @param checkpoint_dir Optional directory path where per-task checkpoints are stored.
+#' @param ckpt_file Function of one task index returning that task's checkpoint file path.
+#' @param fingerprint Character vector of per-task fingerprints, one per task.
+#' @param run_fingerprint Fingerprint of the whole sweep, stored in each checkpoint.
+#' @param meta Function of one task index returning the `meta` list stored with its
+#'   checkpoint, or a single list used for every task.
+#' @param active_mask Logical vector of length `n`; tasks outside this shard
+#'   return `NULL` without computing. Defaults to all `TRUE`.
+#' @param parallel Logical; use [furrr::future_map()] when `TRUE`, [purrr::map()] otherwise.
+#'   Passed through as-is, so a caller that coerces it first (e.g. with
+#'   `isTRUE()`) keeps its own coercion.
+#' @param furrr_seed Value passed as `seed` to [furrr::furrr_options()] for the parallel map.
+#' @param names Optional character vector of result names.
+#' @param skip_write_if_null Logical; when `TRUE`, a `NULL` result is returned
+#'   without writing a checkpoint (as in [nested_cv_coxnet()]).
+#' @param parallel_reason Reason passed to [rlang::check_installed()] when the
+#'   parallel backend is needed with checkpoints enabled.
+#' @param parallel_reason_no_checkpoint As `parallel_reason`, for the run
+#'   without checkpoints; defaults to `parallel_reason`.
+#' @return A list of `n` results, in task order.
+#' @keywords internal
+#' @noRd
+run_checkpointed_sweep <- function(compute, n,
+                                   checkpoint_dir = NULL,
+                                   ckpt_file = NULL,
+                                   fingerprint = NULL,
+                                   run_fingerprint = NULL,
+                                   meta = NULL,
+                                   active_mask = NULL,
+                                   parallel = FALSE,
+                                   furrr_seed = TRUE,
+                                   names = NULL,
+                                   skip_write_if_null = FALSE,
+                                   parallel_reason = NULL,
+                                   parallel_reason_no_checkpoint = NULL) {
+  if (is.null(active_mask)) {
+    active_mask <- rep(TRUE, n)
+  }
+  indices <- seq_len(n)
+  map_indices <- function(fn, reason) {
+    if (parallel) {
+      if (!is.null(reason)) {
+        rlang::check_installed(c("furrr", "future"), reason = reason)
+      }
+      furrr::future_map(indices, fn, .options = furrr::furrr_options(seed = furrr_seed))
+    } else {
+      purrr::map(indices, fn)
+    }
+  }
+  if (!is.null(checkpoint_dir)) {
+    if (!dir.exists(checkpoint_dir)) {
+      dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+    eval_one <- function(idx) {
+      cf <- ckpt_file(idx)
+      exp_fp <- fingerprint[[idx]]
+      if (file.exists(cf)) {
+        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) {
+          return(chk$value)
+        }
+      }
+      if (!active_mask[idx]) {
+        return(NULL)
+      }
+      val <- compute(idx)
+      if (!skip_write_if_null || !is.null(val)) {
+        write_verified_checkpoint(
+          val, cf, fingerprint = exp_fp, run_fingerprint = run_fingerprint,
+          meta = if (is.function(meta)) meta(idx) else meta
+        )
+      }
+      val
+    }
+    results <- map_indices(eval_one, parallel_reason)
+  } else {
+    results <- map_indices(compute, parallel_reason_no_checkpoint %||% parallel_reason)
+  }
+  if (!is.null(names)) {
+    names(results) <- names
+  }
+  results
+}
+
 #' Validate a `shard = c(i, n)` Specification
 #'
 #' @keywords internal

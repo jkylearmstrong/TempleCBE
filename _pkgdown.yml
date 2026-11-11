@@ -60,12 +60,17 @@ reference:
     contents:
       - dataset_labels
       - dataset_label
+      - dataset_label<-
       - database_name
+      - database_name<-
       - database_label
+      - database_label<-
       - set_dataset_labels
       - get_dataset_labels
       - write_database_to_excel
+      - write_database
       - read_database_from_excel
+      - read_database
       - write_workbook
       - write_xlsx_file
       - write_database_metadata
@@ -82,6 +87,7 @@ reference:
       - database_relationships
       - autoplot.cbe_database_relationships
       - cbe_database_venn
+      - database_venn
       - find_shared_keys
       - check_key_integrity
       - autoplot.cbe_key_integrity
@@ -118,6 +124,10 @@ reference:
       - pca_loading_diff
       - pca_loading_diff_heatmap
       - pca_accessors
+      - pca_loading
+      - pca_variance_pct
+      - pca_loading_range
+      - pca_top_features
       - pca_equation_latex
       - pca_component_cutoff
 
@@ -129,6 +139,9 @@ reference:
     contents:
       - coxnet
       - coxnet_train
+      - predict_coxnet_linear_pred
+      - predict_coxnet_time
+      - predict_coxnet_survival
       - predict.coxnet_model
       - tidy.coxnet_model
       - cv_coxnet
@@ -173,6 +186,7 @@ reference:
       - sample_candidate_formulas_adaptive
       - calculate_feature_weights
       - tidy_outer_coefficients
+      - unnest_outer_coefficients
       - summarize_outer_importance
       - plot_outer_importance
       - fit_ibs_mixed_model
@@ -228,8 +242,13 @@ reference:
       - explain_survival
       - adapter_tidymodels_survex
       - explain_joint
+      - explain_model
+      - explain_status
+      - explain_time
+      - explain_stack
       - predict_parts_shap
       - survex_loss_ibs
+      - survex_loss_brier
 
   - title: Tidymodels Recipe Steps & Modeling Utilities
     desc: Recipe steps and workflow set helpers.
@@ -340,6 +359,7 @@ reference:
       - find_soffice
       - run_sas_script
       - find_sas
+      - sas_available
       - sas_macro_dir
       - sas_macro_path
       - rossi_data
@@ -367,6 +387,7 @@ reference:
       - compute_graph
       - pipeline_config
       - pipeline_summary
+      - summarize_pipeline
       - as_pipeline_graph
       - as_igraph
       - as_tbl_graph.list
@@ -391,6 +412,9 @@ reference:
       - refresh_pipeline
       - export_pipeline_diagram
       - graph_setops
+      - graph_intersect
+      - graph_subtract
+      - graph_union
       - FilePath
       - FilePath-class
       - FileUses
@@ -418,6 +442,8 @@ reference:
       - temple_colors
       - temple_pal
       - scale_colour_temple
+      - scale_color_temple
+      - scale_fill_temple
       - theme_temple
       - temple_brand_path
       - use_temple_brand
@@ -437,6 +463,7 @@ reference:
       - fmt_sig
       - fmt_p
       - pformat
+      - cbe_pformat
       - fmt_hr
       - words
       - words_list
@@ -470,6 +497,8 @@ reference:
       - cox_check
       - print.cbe_cox_check
       - cbe_cox_table
+      - cox_table
+      - tbl_cox
       - km_single
       - print.cbe_km
       - km_cutpoints
@@ -528,6 +557,7 @@ reference:
       - tbl_fine_gray_screen
       - tbl_domain_correlations
       - batch_glm_single
+      - batch_lmm_single
       - compute_longitudinal_composite_index
       - cut_with_missing_category
       - tbl_cox_binned_missing
@@ -542,14 +572,22 @@ reference:
     contents:
       - exact2x2
       - cbe_exact2x2_ci
+      - exact2x2_ci
       - test_categorical
       - cbe_four_quadrant_report
+      - four_quadrant_report
       - cbe_contingency_plot
+      - contingency_plot
       - cbe_balloon_plot
+      - balloon_plot
       - cbe_bar_plot
+      - bar_plot
       - cbe_mosaic_plot
+      - mosaic_plot
       - cbe_heatmap_plot
+      - heatmap_plot
       - cbe_square_plot
+      - square_plot
       - pairwise_combos
       - plot_categorical_associations
 
@@ -619,6 +657,7 @@ reference:
       - copy_var_labels
       - cbe_labels
       - tbl_label_map
+      - cbe_label_table
       - label_helpers
       - rm_all_except
       - delete_nul_files
@@ -636,9 +675,13 @@ reference:
       - infix_helpers
       - match_like
       - "%ilike%"
+      - ilike
       - "%flike%"
+      - flike
       - "%plike%"
+      - plike
       - "%!in%"
+      - notin
 
   - title: Package Development & Release Tooling
     desc: Maintainer-facing helpers for package release and documentation artifacts.

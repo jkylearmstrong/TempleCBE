@@ -9,12 +9,19 @@ tbl_tune_alpha(data, label_map = NULL, style = NULL)
 \arguments{
 \item{data}{A data frame from [tune_alpha_by_split()].}
 
-\item{label_map, style}{Accepted so that every tuning table and plot can be
-called with the same arguments. This table has no variable names to
-relabel, so they have no effect on it.}
+\item{label_map}{Optional label mapping (see \code{\link{cbe_labels}}). The column
+names are looked up as terms in the map (\code{"alpha"}, \code{"n_fits"},
+\code{"mean_ibs"}, \code{"sd_ibs"}, \code{"median_ibs"}, \code{"iqr_ibs"}, \code{"min_ibs"},
+\code{"max_ibs"}); a column whose name is in the map takes its label, and any
+other column keeps its default name. With no map (explicit or active
+package-level), the default column names are returned unchanged.}
+
+\item{style}{Optional label style (\code{"short"} or \code{"full"}): which label from
+the map a renamed column takes.}
 }
 \value{
-A tibble of per-alpha IBS statistics.
+A tibble of per-alpha IBS statistics. Columns renamed through
+\code{label_map} carry their mapped labels as names.
 }
 \description{
 Calculates summary statistics (mean, SD, median, IQR, min, max) of the

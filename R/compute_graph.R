@@ -28,57 +28,107 @@ NULL
 #' Decouples project-specific parameters (study name, stage display labels,
 #' stage color palettes) from core pipeline mechanics and classes.
 #'
-#' The configuration is kept in the session options `pipeline.study_name`,
-#' `pipeline.stage_labels`, `pipeline.stage_colors` and
-#' `pipeline.default_formats`, so a call with arguments changes them for the
-#' rest of the session. The values they had before the call are returned in the
-#' attribute `"previous"`, in the form [options()] takes; to change the
-#' configuration only inside a function or a test, restore them on exit:
-#' `old <- attr(pipeline_config(study_name = "X"), "previous");
-#' on.exit(options(old), add = TRUE)`, or use `withr::local_options()` on the
-#' options directly.
+#' The configuration is kept in one place, inside the package, for the
+#' session: calling `pipeline_config()` with arguments changes what the
+#' pipeline functions (`create_qmd_renderer()`, `visualize_pipeline()`,
+#' `collapse_by_stage()`, `visualize_pipeline_interactive()`,
+#' `export_interactive_pipeline()`, `render_pipeline()`) read, but it does
+#' not write the session options, so a call cannot leak a changed option
+#' into later, unrelated work. The session options
+#' `pipeline.study_name`, `pipeline.stage_labels`, `pipeline.stage_colors`
+#' and `pipeline.default_formats` are only read, as a legacy default for
+#' each value that has not been set with `pipeline_config()` (set one
+#' yourself, in `.Rprofile` for example, to supply a default). This mirrors
+#' `cbe_labels()`, which likewise keeps its map in the package and only
+#' reads the `templecbe.label_map` option.
 #' @param study_name Character string for the main study title.
 #' @param stage_labels Named character vector mapping raw stage identifiers to human-readable labels.
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
 #' @param default_formats Optional character vector of default output formats
 #'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 #'   the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
+#' @param reset Logical (default `FALSE`). When `TRUE`, clears everything set
+#'   with `pipeline_config()` and falls back to the session options (or the
+#'   package defaults when those are unset). It does not erase the options
+#'   themselves.
 #' @return A list containing the current configuration options, with the
-#'   attribute `"previous"`: the options as they were before the call.
+#'   attribute `"previous"`: the configuration as it was before the call,
+#'   named the way [options()] names the session options
+#'   (`pipeline.study_name` and so on). `pipeline_config()` no longer writes
+#'   those options, so `options(attr(cfg, "previous"))` only restores the
+#'   option layer; to drop what a call set and fall back to the session
+#'   options, use `pipeline_config(reset = TRUE)`. A call with no arguments
+#'   returns the current configuration.
 #' @export
 pipeline_config <- function(
   study_name = NULL,
   stage_labels = NULL,
   stage_colors = NULL,
-  default_formats = NULL
+  default_formats = NULL,
+  reset = FALSE
 ) {
-  previous <- options()[c(
-    "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
-  )]
+  if (isTRUE(reset)) {
+    .pipeline_config_env$study_name <- NULL
+    .pipeline_config_env$stage_labels <- NULL
+    .pipeline_config_env$stage_colors <- NULL
+    .pipeline_config_env$default_formats <- NULL
+    return(invisible(.pipeline_config_current()))
+  }
+
+  previous <- .pipeline_config_current()
   names(previous) <- c(
     "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
   )
   if (!is.null(study_name)) {
-    options(pipeline.study_name = study_name)
+    .pipeline_config_env$study_name <- study_name
   }
   if (!is.null(stage_labels)) {
-    options(pipeline.stage_labels = stage_labels)
+    .pipeline_config_env$stage_labels <- stage_labels
   }
   if (!is.null(stage_colors)) {
-    options(pipeline.stage_colors = stage_colors)
+    .pipeline_config_env$stage_colors <- stage_colors
   }
   if (!is.null(default_formats)) {
-    options(pipeline.default_formats = default_formats)
+    .pipeline_config_env$default_formats <- default_formats
   }
 
   structure(
-    list(
-      study_name = getOption("pipeline.study_name", "Computational Pipeline"),
-      stage_labels = getOption("pipeline.stage_labels", list()),
-      stage_colors = getOption("pipeline.stage_colors", list()),
-      default_formats = getOption("pipeline.default_formats", NULL)
-    ),
+    .pipeline_config_current(),
     previous = previous
+  )
+}
+
+# The package-level store for the pipeline configuration (see
+# `pipeline_config()`). Values set here win over the session options of the
+# same names; `NULL` means "not set here".
+.pipeline_config_env <- new.env(parent = emptyenv())
+.pipeline_config_env$study_name <- NULL
+.pipeline_config_env$stage_labels <- NULL
+.pipeline_config_env$stage_colors <- NULL
+.pipeline_config_env$default_formats <- NULL
+
+#' One pipeline configuration value: what pipeline_config() set, else the session option
+#' @param name One of `"study_name"`, `"stage_labels"`, `"stage_colors"`, `"default_formats"`.
+#' @param default Value when neither the package setting nor the option is set.
+#' @return The effective value.
+#' @noRd
+.pipeline_config_value <- function(name, default) {
+  val <- .pipeline_config_env[[name]]
+  if (!is.null(val)) {
+    return(val)
+  }
+  getOption(paste0("pipeline.", name), default)
+}
+
+#' The effective pipeline configuration (package settings over session options)
+#' @return A list with `study_name`, `stage_labels`, `stage_colors` and `default_formats`.
+#' @noRd
+.pipeline_config_current <- function() {
+  list(
+    study_name = .pipeline_config_value("study_name", "Computational Pipeline"),
+    stage_labels = .pipeline_config_value("stage_labels", list()),
+    stage_colors = .pipeline_config_value("stage_colors", list()),
+    default_formats = .pipeline_config_value("default_formats", NULL)
   )
 }
 
@@ -448,7 +498,9 @@ FileOutputs <- function(name,
 #' @param file_stage The 'stage' for this file.
 #' @param output_format Output format(s): e.g. "pdf", "html", \code{c("pdf", "docx")},
 #'   or \code{"yaml"} to automatically extract the output formats declared in the
-#'   document's YAML frontmatter. Defaults to \code{getOption("pipeline.default_formats", "pdf")}.
+#'   document's YAML frontmatter. Defaults to the `default_formats` setting from
+#'   \code{\link{pipeline_config}} (or the `pipeline.default_formats` session
+#'   option when nothing was set there), `"pdf"` if neither is set.
 #'   Each output file gets the extension its format writes, which is not always the format's
 #'   name: \code{revealjs}, \code{ioslides}, \code{slidy} and \code{html_document} write
 #'   \code{.html}, \code{beamer} and \code{typst} write \code{.pdf}, \code{gfm} and
@@ -463,7 +515,7 @@ create_qmd_renderer <- function(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = getOption("pipeline.default_formats", "pdf"),
+  output_format = .pipeline_config_value("default_formats", "pdf"),
   description = NA_character_
 ) {
   # 0. The same checks as FileOutputs(), before the path is read or any name is built from it
@@ -1287,7 +1339,7 @@ visualize_pipeline <- function(
   .check_pipeline(all_objects)
   orientation <- match.arg(orientation)
   if (is.null(stage_colors)) {
-    stage_colors <- getOption("pipeline.stage_colors", list())
+    stage_colors <- .pipeline_config_value("stage_colors", list())
   }
   default_color <- "gray"
   stale_color <- "red"
@@ -1781,7 +1833,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
   n_nodes <- length(all_nodes)
 
   if (is.null(stage_colors)) {
-    stage_colors <- getOption("pipeline.stage_colors", list())
+    stage_colors <- .pipeline_config_value("stage_colors", list())
   }
   default_color <- "#EAECEE"
   stale_color <- .stale_node_color
@@ -2010,7 +2062,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
 #' @export
 collapse_by_stage <- function(g, stage_labels = NULL) {
   if (is.null(stage_labels)) {
-    stage_labels <- getOption("pipeline.stage_labels", list())
+    stage_labels <- .pipeline_config_value("stage_labels", list())
   }
   stage_order <- unique(igraph::V(g)$stage)
   mapping <- match(igraph::V(g)$stage, stage_order)
@@ -2048,7 +2100,7 @@ collapse_by_stage <- function(g, stage_labels = NULL) {
 #' @param all_objects A list of FilePath objects or an igraph object.
 #' @param direction Layout direction: "LR" (Left-to-Right, default) or "UD" (Top-to-Bottom).
 #' @param hierarchical Logical, whether to use a hierarchical DAG layout. Default is TRUE.
-#' @param title Character, main title -- defaults to getOption("pipeline.study_name", "Computational Pipeline").
+#' @param title Character, main title -- defaults to the study name from \code{\link{pipeline_config}}.
 #' @param subtitle Character, the document-specific name (e.g. "Computational
 #'   Pipeline", or a subgraph's own name from export_subgraph()).
 #' @param font_size Numeric font size for node labels (default 12).
@@ -2059,7 +2111,7 @@ visualize_pipeline_interactive <- function(
   all_objects,
   direction = "LR",
   hierarchical = TRUE,
-  title = getOption("pipeline.study_name", "Computational Pipeline"),
+  title = .pipeline_config_value("study_name", "Computational Pipeline"),
   subtitle = "Computational Pipeline",
   font_size = 12,
   node_size = 25
@@ -2188,8 +2240,8 @@ visualize_pipeline_interactive <- function(
 #' @param file Path to the output HTML file. Default is here::here("R", "workflow_viz", "full_compute_graph.html").
 #' @param direction "LR" (default) or "UD".
 #' @param hierarchical Logical. Default TRUE.
-#' @param title Chart title. Defaults to the `pipeline.study_name` option, or
-#'   "Computational Pipeline" if unset.
+#' @param title Chart title. Defaults to the study name from
+#'   \code{\link{pipeline_config}}, or "Computational Pipeline" if unset.
 #' @param subtitle Chart subtitle.
 #' @return The saved file path (invisibly).
 #' @export
@@ -2198,7 +2250,7 @@ export_interactive_pipeline <- function(
   file = here::here("R", "workflow_viz", "full_compute_graph.html"),
   direction = "LR",
   hierarchical = TRUE,
-  title = getOption("pipeline.study_name", "Computational Pipeline"),
+  title = .pipeline_config_value("study_name", "Computational Pipeline"),
   subtitle = "Computational Pipeline"
 ) {
   if (!requireNamespace("htmlwidgets", quietly = TRUE)) {

@@ -100,6 +100,95 @@ test_that("score_outer and compare_censoring_weights run on rsplit", {
   expect_true(!is.null(agree$kendall))
 })
 
+test_that("score_outer overwrite keeps other runs' checkpoints and removes only this run's stale files", {
+  for (pkg in c("glmnet", "survival", "rsample", "yardstick", "recipes")) {
+    skip_if_not_installed(pkg)
+  }
+
+  set.seed(1)
+  long <- do.call(rbind, lapply(seq_len(30), function(i) {
+    data.frame(
+      id = i,
+      tstart = 0,
+      tstop = stats::runif(1, 5, 40),
+      status = stats::rbinom(1, 1, 0.5),
+      x1 = stats::rnorm(1),
+      x2 = stats::rnorm(1),
+      x3 = stats::rnorm(1)
+    )
+  }))
+  rec <- recipes::recipe(~ ., data = long)
+  rec <- recipes::update_role(rec, "id", "tstart", "tstop", "status", new_role = "id variable")
+  split <- rsample::initial_split(long, prop = 0.7)
+
+  ckpt_dir <- withr::local_tempdir(pattern = "score_outer_overwrite_shared")
+  grid_b <- data.frame(alpha = 0.2, formula = "x1 + x2", stringsAsFactors = FALSE)
+  grid_a <- data.frame(alpha = 0.8, formula = "x1 + x3", stringsAsFactors = FALSE)
+
+  # Run B writes its checkpoints into the shared directory first. Its grid
+  # (and therefore its file names and run fingerprint) differs from run A's.
+  scored_b <- suppressWarnings(
+    score_outer(
+      split,
+      grid_b,
+      recipe = rec,
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      checkpoint_dir = ckpt_dir,
+      seed = 42
+    )
+  )
+  expect_true(all(!is.na(scored_b$IBS)))
+  b_files <- list.files(ckpt_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
+  expect_length(b_files, 1L)
+
+  # Run A with checkpoint_mismatch = "overwrite" must not delete run B's files.
+  scored_a <- suppressWarnings(
+    score_outer(
+      split,
+      grid_a,
+      recipe = rec,
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      checkpoint_dir = ckpt_dir,
+      checkpoint_mismatch = "overwrite",
+      seed = 42
+    )
+  )
+  expect_true(all(!is.na(scored_a$IBS)))
+  expect_true(all(file.exists(b_files)))
+  a_files <- setdiff(
+    list.files(ckpt_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE),
+    b_files
+  )
+  expect_length(a_files, 1L)
+
+  # A stale leftover of run A itself -- same run fingerprint, but no longer
+  # among this run's tasks -- is still removed by an overwrite run, while
+  # run B's files survive the same run.
+  stale_a <- file.path(ckpt_dir, "score_fold_split_model_stale_model.rds")
+  expect_true(file.copy(a_files[1], stale_a))
+  scored_a2 <- suppressWarnings(
+    score_outer(
+      split,
+      grid_a,
+      recipe = rec,
+      time_data = long[, c("tstart", "tstop")],
+      internal_folds = 3,
+      cox.ties = "breslow",
+      checkpoint_dir = ckpt_dir,
+      checkpoint_mismatch = "overwrite",
+      seed = 42
+    )
+  )
+  expect_true(all(!is.na(scored_a2$IBS)))
+  expect_false(file.exists(stale_a))
+  expect_true(all(file.exists(b_files)))
+  expect_true(all(file.exists(a_files)))
+})
+
 test_that("select_candidate_models supports by = 'row' with ntile and top_n", {
   tune_res <- tibble::tibble(
     alpha = c(0.1, 0.2, 0.5, 0.8, 1.0, 0.2, 0.5, 0.8, 1.0, 0.1),

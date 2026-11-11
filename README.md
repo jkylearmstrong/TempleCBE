@@ -229,16 +229,43 @@ pca_biplot(iris_pca, group = iris$Species, ellipse = TRUE, percent = TRUE)
 Model analysis scripts and data deliverables as an interactive DAG:
 
 ``` r
-# Define pipeline stages and track downstream artifacts
-graph <- compute_graph(
-  stages = list(
-    data_clean = list(inputs = "raw.csv", outputs = "clean.rds"),
-    model_fit  = list(inputs = "clean.rds", outputs = "model.rds")
-  )
+# Configure the pipeline stages, then declare each file as a typed DAG node
+# (see `?compute_graph`): FilePath() for data, FileUses() for files that
+# depend on upstream files, and FileOutputs() for scripts that produce outputs
+pipeline_config(
+  study_name = "Example Pipeline",
+  stage_labels = c(data_clean = "Data Cleaning", model_fit = "Model Fitting")
 )
 
+raw_data <- FilePath(
+  name = "raw_data",
+  path = "raw.csv",
+  stage = "data_clean",
+  artifact_role = "raw_data"
+)
+
+clean_data <- FileUses(
+  name = "clean_data",
+  path = "clean.rds",
+  dependencies = list(raw_data),
+  stage = "data_clean",
+  artifact_role = "derived_data"
+)
+
+model_fit <- FileOutputs(
+  name = "model_fit",
+  path = "model_fit.R",
+  dependencies = list(clean_data),
+  output = list(
+    FilePath(name = "model", path = "model.rds", stage = "model_fit", artifact_role = "derived_data")
+  ),
+  stage = "model_fit"
+)
+
+pipeline <- list(raw_data, clean_data, model_fit)
+
 # Generate staleness-aware execution plan
-get_render_plan(graph)
+get_render_plan(pipeline)
 ```
 
 ------------------------------------------------------------------------

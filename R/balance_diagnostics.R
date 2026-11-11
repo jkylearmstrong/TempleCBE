@@ -174,6 +174,7 @@ balance_smd <- function(data,
   out
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.balance_smd <- function(x, ...) {
   thr <- attr(x, "threshold") %||% 0.1

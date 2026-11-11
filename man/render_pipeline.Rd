@@ -6,7 +6,7 @@
 \usage{
 render_pipeline(
   path,
-  formats = getOption("pipeline.default_formats", c("pdf", "docx")),
+  formats = .pipeline_config_value("default_formats", c("pdf", "docx")),
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
   workers = 1,

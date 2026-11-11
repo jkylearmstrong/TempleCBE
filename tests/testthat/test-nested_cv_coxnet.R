@@ -253,3 +253,44 @@ test_that("nested_cv_coxnet works with group_bootstraps inner resamples on start
   expect_true(is.data.frame(res$.inner[[1]]))
 })
 
+test_that("nested_cv_coxnet writes per-split checkpoints and reuses them on rerun", {
+  skip_if_no_coxnet_deps()
+  d <- sim_counting(n = 60)
+  set.seed(11)
+  folds <- rsample::nested_cv(
+    d,
+    outside = rsample::group_vfold_cv(group = subject_id, v = 2),
+    inside = rsample::group_vfold_cv(group = subject_id, v = 2)
+  )
+  metrics <- yardstick::metric_set(yardstick::brier_survival_integrated)
+  run <- function(checkpoint_dir) {
+    nested_cv_coxnet(
+      folds, survival::Surv(tstart, tstop, status) ~ x1 + x2 + x3,
+      subject_id = "subject_id", mixture = 1, metrics = metrics,
+      eval_time = c(3, 6, 9), nlambda = 5, cox.ties = "breslow",
+      checkpoint_dir = checkpoint_dir
+    )
+  }
+
+  tmp <- file.path(tempdir(), "nested_coxnet_ckpt")
+  unlink(tmp, recursive = TRUE)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  res1 <- run(tmp)
+  expect_equal(nrow(res1), 2L)
+  expect_equal(
+    sort(list.files(tmp)),
+    paste0("nested_coxnet_", sort(folds$id), ".rds")
+  )
+
+  # Second run loads both splits from disk: identical results (apart from
+  # the wall-clock `elapsed_sec` stamped by run_with_on_complete()), and no
+  # recomputation -- deleting the fits' source data would still return them.
+  strip_timing <- function(x) {
+    attr(x, "elapsed_sec") <- NULL
+    x
+  }
+  res2 <- run(tmp)
+  expect_equal(strip_timing(res2), strip_timing(res1))
+})
+

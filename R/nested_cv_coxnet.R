@@ -284,9 +284,6 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   n_outer <- length(outer_ids)
 
   if (!is.null(checkpoint_dir)) {
-    if (!dir.exists(checkpoint_dir)) {
-      dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
-    }
     ckpt_schema <- checkpoint_schema_version()
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
@@ -311,47 +308,35 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     } else {
       rep(TRUE, n_outer)
     }
-
-    eval_outer_ckpt <- function(i) {
-      sp_id <- object$id[i]
-      safe_id <- gsub("[^A-Za-z0-9._-]", "_", sp_id)
-      cf <- file.path(checkpoint_dir, sprintf("nested_coxnet_%s.rds", safe_id))
-      exp_fp <- split_fps[i]
-
-      if (file.exists(cf)) {
-        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
-        if (identical(chk$status, "hit")) {
-          return(chk$value)
-        }
-      }
-      if (!active_mask[i]) {
-        return(NULL)
-      }
-
-      val <- run_outer(i)
-      if (!is.null(val)) {
-        write_verified_checkpoint(
-          val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
-          meta = list(fn = "nested_cv_coxnet", fold_id = sp_id, index = i)
-        )
-      }
-      val
+    ckpt_file <- function(i) {
+      safe_id <- gsub("[^A-Za-z0-9._-]", "_", object$id[i])
+      file.path(checkpoint_dir, sprintf("nested_coxnet_%s.rds", safe_id))
     }
-
-    rows <- if (isTRUE(parallel)) {
-      rlang::check_installed(c("furrr", "future"), reason = "to run outer splits in parallel.")
-      furrr::future_map(outer_ids, eval_outer_ckpt, .options = furrr::furrr_options(seed = TRUE))
-    } else {
-      purrr::map(outer_ids, eval_outer_ckpt)
+    ckpt_meta <- function(i) {
+      list(fn = "nested_cv_coxnet", fold_id = object$id[i], index = i)
     }
   } else {
-    rows <- if (isTRUE(parallel)) {
-      rlang::check_installed(c("furrr", "future"), reason = "to run outer splits in parallel.")
-      furrr::future_map(outer_ids, run_outer, .options = furrr::furrr_options(seed = TRUE))
-    } else {
-      purrr::map(outer_ids, run_outer)
-    }
+    split_fps <- NULL
+    run_fp <- NULL
+    active_mask <- NULL
+    ckpt_file <- NULL
+    ckpt_meta <- NULL
   }
+
+  rows <- run_checkpointed_sweep(
+    compute = run_outer,
+    n = n_outer,
+    checkpoint_dir = checkpoint_dir,
+    ckpt_file = ckpt_file,
+    fingerprint = split_fps,
+    run_fingerprint = run_fp,
+    meta = ckpt_meta,
+    active_mask = active_mask,
+    parallel = isTRUE(parallel),
+    furrr_seed = TRUE,
+    skip_write_if_null = TRUE,
+    parallel_reason = "to run outer splits in parallel."
+  )
 
   out <- purrr::list_rbind(Filter(Negate(is.null), rows))
   class(out) <- c("nested_cv_coxnet", class(out))

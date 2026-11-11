@@ -99,3 +99,50 @@ test_that("tbl_tune_alpha and tbl_tune_coef return tidy summary tables", {
   expect_true(all(c("term", "prop_selected", "mean_estimate", "median_estimate") %in% names(tbl_c)))
   expect_equal(tbl_c$n_selected[tbl_c$term == "age"], 4L)
 })
+
+test_that("tbl_tune_alpha honours label_map and style", {
+  df <- data.frame(
+    inner_resamples_splits = rep(c("Split1", "Split2"), each = 4),
+    alpha = rep(c(0.2, 0.8), each = 2, times = 2),
+    IBS = rep(c(0.12, 0.18), each = 2, times = 2)
+  )
+  map <- tibble::tibble(
+    term = c("alpha", "mean_ibs"),
+    short = c("Alpha", "Mean IBS"),
+    full = c("Elastic Net Mixing Parameter (alpha)", "Mean Integrated Brier Score")
+  )
+
+  # No map: the default column names are returned unchanged.
+  expect_equal(
+    names(tbl_tune_alpha(df)),
+    c("alpha", "n_fits", "mean_ibs", "sd_ibs", "median_ibs", "iqr_ibs", "min_ibs", "max_ibs")
+  )
+
+  # Short style: mapped columns take their short label, unmapped columns keep
+  # their default name, and the values are unchanged by the relabelling.
+  tbl_short <- tbl_tune_alpha(df, label_map = map, style = "short")
+  expect_equal(
+    names(tbl_short),
+    c("Alpha", "n_fits", "Mean IBS", "sd_ibs", "median_ibs", "iqr_ibs", "min_ibs", "max_ibs")
+  )
+  expect_equal(tbl_short[["Mean IBS"]], tbl_tune_alpha(df)[["mean_ibs"]])
+  expect_equal(tbl_short[["Alpha"]], tbl_tune_alpha(df)[["alpha"]])
+
+  # Full style: mapped columns take their full label instead.
+  tbl_full <- tbl_tune_alpha(df, label_map = map, style = "full")
+  expect_equal(
+    names(tbl_full),
+    c("Elastic Net Mixing Parameter (alpha)", "n_fits", "Mean Integrated Brier Score",
+      "sd_ibs", "median_ibs", "iqr_ibs", "min_ibs", "max_ibs")
+  )
+
+  # A map with no style given still renames (default style is "short").
+  tbl_default <- tbl_tune_alpha(df, label_map = map)
+  expect_true(any(c("Alpha", "Elastic Net Mixing Parameter (alpha)") %in% names(tbl_default)))
+
+  # A named character vector map works too, and a map with no matching terms
+  # leaves the table untouched.
+  tbl_chr <- tbl_tune_alpha(df, label_map = c(alpha = "Mixing"))
+  expect_true("Mixing" %in% names(tbl_chr))
+  expect_equal(names(tbl_tune_alpha(df, label_map = c(nope = "Nothing"))), names(tbl_tune_alpha(df)))
+})

@@ -75,12 +75,8 @@ extract_docx_qa <- function(docx_path,
   }
   if (!is.null(index_data)) {
     if (!is.data.frame(index_data)) stop("`index_data` must be NULL or a data frame.", call. = FALSE)
-    for (arg in c("index_file_col", "index_path_col")) {
-      val <- get(arg)
-      if (!is.character(val) || length(val) != 1L || is.na(val) || !val %in% names(index_data)) {
-        stop("`", arg, "` must name a column of `index_data`.", call. = FALSE)
-      }
-    }
+    check_named_column(index_file_col, "index_file_col", index_data, "index_data", article = "a")
+    check_named_column(index_path_col, "index_path_col", index_data, "index_data", article = "a")
   }
 
   paragraphs <- .docx_body_paragraphs(docx_path)

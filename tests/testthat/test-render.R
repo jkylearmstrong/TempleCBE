@@ -175,12 +175,11 @@ test_that("computeGraph pipeline_config(default_formats) overrides defaults", {
     "Testing option overrides"
   ), qmd_file)
 
-  old_opt <- getOption("pipeline.default_formats")
-  on.exit(options(pipeline.default_formats = old_opt), add = TRUE)
-
-  # Set default formats via pipeline_config
+  # Set default formats via pipeline_config; it no longer writes session
+  # options, so the setting lives in the package environment — reset it on
+  # exit so it cannot leak into later test files.
+  on.exit(pipeline_config(reset = TRUE), add = TRUE)
   pipeline_config(default_formats = "gfm")
-  expect_equal(getOption("pipeline.default_formats"), "gfm")
 
   # Calling render() without formats argument should use pipeline default "gfm"
   res <- render_pipeline(qmd_file)

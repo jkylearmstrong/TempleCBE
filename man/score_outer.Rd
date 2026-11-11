@@ -54,7 +54,10 @@ has a mismatched fingerprint: `"recompute"` (default; warns and recomputes),
 place without warning; can also be enabled via
 `options(templecbe.checkpoint_mismatch = "overwrite")` or
 `options(templecbe.checkpoint_overwrite = TRUE)`), or `"error"` (stops
-immediately).}
+immediately). Under `"overwrite"`, stale checkpoint files left over from
+this run (same run fingerprint, no longer among this run's tasks) are
+also removed; checkpoint files belonging to other runs that share the
+directory are left alone.}
 
 \item{shard}{Optional integer vector `c(i, n)` specifying that this machine
 should evaluate shard `i` of `n` into `checkpoint_dir`. Use
