@@ -29,7 +29,10 @@
 #'   place without warning; can also be enabled via
 #'   `options(templecbe.checkpoint_mismatch = "overwrite")` or
 #'   `options(templecbe.checkpoint_overwrite = TRUE)`), or `"error"` (stops
-#'   immediately).
+#'   immediately). Under `"overwrite"`, stale checkpoint files left over from
+#'   this run (same run fingerprint, no longer among this run's tasks) are
+#'   also removed; checkpoint files belonging to other runs that share the
+#'   directory are left alone.
 #' @param shard Optional integer vector `c(i, n)` specifying that this machine
 #'   should evaluate shard `i` of `n` into `checkpoint_dir`. Use
 #'   [collect_checkpoints()] to merge all shards once finished.
@@ -243,24 +246,31 @@ score_outer <- function(object,
             }
           }
         }
-        # Files of this pattern that are not tasks of this run belong to another
-        # run that shares the directory. They are removed only on request
-        # (`checkpoint_mismatch = "overwrite"`, documented as cleaning up stale
-        # files); "recompute" and "error" leave them alone.
+        # Files of this pattern that are not tasks of this run may belong to
+        # another run that shares the directory, so they are left alone:
+        # deleting them would destroy that run's cache. Only stale leftovers
+        # of this run -- files carrying this run's fingerprint but no longer
+        # among its tasks (e.g. a fold renamed since the file was written) --
+        # are removed on request (`checkpoint_mismatch = "overwrite"`);
+        # "recompute" and "error" leave them alone. A file whose run
+        # fingerprint cannot be read (unreadable, legacy, or foreign) is not
+        # provably this run's, so it is kept. The run fingerprint is the
+        # identifier: it hashes the splits, grid, settings and seed scheme,
+        # so a file from any other run carries a different one.
         if (is.null(shard) && checkpoint_mismatch == "overwrite") {
           all_existing <- list.files(checkpoint_dir, pattern = "^score_fold_.*\\.rds$", full.names = TRUE)
           other_files <- setdiff(all_existing, unlist(ckpt_files))
           for (of in other_files) {
             if (file.exists(of)) {
               cached_of <- read_checkpoint_rds(of)
-              found_run_fp <- if (!is.null(cached_of)) attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) else NULL
-              found_scheme <- if (!is.null(cached_of)) {
-                attr(cached_of, "seed_scheme", exact = TRUE) %||%
-                  attr(cached_of, "checkpoint_meta", exact = TRUE)$seed_scheme
-              } else {
+              found_run_fp <- if (is.null(cached_of)) {
                 NULL
+              } else {
+                # the two places write_verified_checkpoint() records it
+                attr(cached_of, "checkpoint_run_fingerprint", exact = TRUE) %||%
+                  attr(cached_of, "checkpoint_meta", exact = TRUE)$run_fingerprint
               }
-              if (!identical(found_run_fp, run_fp) || !identical(found_scheme, current_seed_scheme())) {
+              if (!is.null(found_run_fp) && identical(found_run_fp, run_fp)) {
                 unlink(of)
               }
             }

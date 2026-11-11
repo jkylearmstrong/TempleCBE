@@ -442,7 +442,6 @@ missranger_sweep_mtry <- function(data,
   }
 
   if (!is.null(checkpoint_dir)) {
-    if (!dir.exists(checkpoint_dir)) dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
     ckpt_schema <- checkpoint_schema_version()
     data_fp <- paste0(as.character(openssl::sha256(serialize(dt, NULL))), collapse = "")
     fps <- vapply(mtry_values, function(m) {
@@ -456,47 +455,35 @@ missranger_sweep_mtry <- function(data,
     } else {
       rep(TRUE, length(mtry_values))
     }
-
-    eval_one_ckpt <- function(idx) {
-      m <- mtry_values[[idx]]
-      cf <- file.path(checkpoint_dir, sprintf("missranger_mtry_%03d.rds", as.integer(m)))
-      exp_fp <- fps[[idx]]
-
-      if (file.exists(cf)) {
-        chk <- read_verified_checkpoint(cf, exp_fp, checkpoint_mismatch = "recompute")
-        if (identical(chk$status, "hit")) return(chk$value)
-      }
-      if (!active_mask[idx]) return(NULL)
-
-      val <- fit_one(m)
-      write_verified_checkpoint(
-        val, cf, fingerprint = exp_fp, run_fingerprint = run_fp,
-        meta = list(fn = "missranger_sweep_mtry", mtry = m)
-      )
-      val
+    ckpt_file <- function(idx) {
+      file.path(checkpoint_dir, sprintf("missranger_mtry_%03d.rds", as.integer(mtry_values[[idx]])))
     }
-
-    indices <- seq_along(mtry_values)
-    sweep <- if (parallel) {
-      rlang::check_installed(c("furrr", "future"), reason = "to run the `mtry` sweep in parallel.")
-      furrr::future_map(indices, eval_one_ckpt, .options = furrr::furrr_options(seed = TRUE))
-    } else {
-      purrr::map(indices, eval_one_ckpt)
+    ckpt_meta <- function(idx) {
+      list(fn = "missranger_sweep_mtry", mtry = mtry_values[[idx]])
     }
-    names(sweep) <- names(mtry_values)
-  } else if (parallel) {
-    rlang::check_installed(
-      c("furrr", "future"),
-      reason = "to run the `mtry` sweep in parallel (or set `parallel = FALSE`)."
-    )
-    sweep <- furrr::future_map(
-      mtry_values,
-      fit_one,
-      .options = furrr::furrr_options(seed = TRUE)
-    )
   } else {
-    sweep <- purrr::map(mtry_values, fit_one)
+    fps <- NULL
+    run_fp <- NULL
+    active_mask <- NULL
+    ckpt_file <- NULL
+    ckpt_meta <- NULL
   }
+
+  sweep <- run_checkpointed_sweep(
+    compute = function(idx) fit_one(mtry_values[[idx]]),
+    n = length(mtry_values),
+    checkpoint_dir = checkpoint_dir,
+    ckpt_file = ckpt_file,
+    fingerprint = fps,
+    run_fingerprint = run_fp,
+    meta = ckpt_meta,
+    active_mask = active_mask,
+    parallel = parallel,
+    furrr_seed = TRUE,
+    names = names(mtry_values),
+    parallel_reason = "to run the `mtry` sweep in parallel.",
+    parallel_reason_no_checkpoint = "to run the `mtry` sweep in parallel (or set `parallel = FALSE`)."
+  )
 
   oob_error <- purrr::list_rbind(purrr::map(sweep, "oob_error"))
   best <- best_mtry_per_column(oob_error)

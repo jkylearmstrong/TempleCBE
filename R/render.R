@@ -245,7 +245,7 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
 render_pipeline <- function(path,
-                   formats = getOption("pipeline.default_formats", c("pdf", "docx")),
+                   formats = .pipeline_config_value("default_formats", c("pdf", "docx")),
                    pattern = "\\.(qmd|Rmd|rmd)$",
                    engine = c("auto", "quarto", "rmarkdown"),
                    workers = 1,

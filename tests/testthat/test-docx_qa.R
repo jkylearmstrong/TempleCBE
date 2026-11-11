@@ -113,6 +113,16 @@ test_that("inputs are checked", {
   expect_error(extract_docx_qa(path, citation_pattern = c("a", "b")), "single regular expression")
   expect_error(extract_docx_qa(path, index_data = "x"), "NULL or a data frame")
   expect_error(extract_docx_qa(path, index_data = data.frame(file = "a")), "must name a column")
+  expect_error(
+    extract_docx_qa(path, index_data = data.frame(name = "a", path = "b"), index_file_col = "absent"),
+    "`index_file_col` must name a column of `index_data`",
+    fixed = TRUE
+  )
+  expect_error(
+    extract_docx_qa(path, index_data = data.frame(file = "a", where = "b"), index_path_col = NA_character_),
+    "`index_path_col` must name a column of `index_data`",
+    fixed = TRUE
+  )
 
   # a .docx that is not a Word document
   skip_if_not_installed("zip")

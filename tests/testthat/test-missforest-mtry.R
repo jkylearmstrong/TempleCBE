@@ -549,3 +549,42 @@ test_that("missforest_sweep_mtry restores character and logical column types (A3
   expect_type(res$imp_data$b, "logical")
 })
 
+test_that("the sweep writes one checkpoint per mtry and a rerun reads them back", {
+  skip_if_not_installed("missForest")
+
+  df <- toy_df()
+  ckpt_dir <- withr::local_tempdir()
+  run <- function(...) {
+    missforest_sweep_mtry(
+      df,
+      exclude = c("id", "time"), mtry_values = 1:2,
+      ntree = 20, maxiter = 2, seed = 42, parallel = FALSE,
+      checkpoint_dir = ckpt_dir, ...
+    )
+  }
+
+  # shard 1 of 2 computes the first mtry only
+  run(shard = c(1, 2))
+  expect_equal(list.files(ckpt_dir), "missforest_mtry_001.rds")
+
+  first <- run()
+  expect_equal(sort(list.files(ckpt_dir)), c("missforest_mtry_001.rds", "missforest_mtry_002.rds"))
+  expect_equal(sort(unique(first$oob_error$mtry)), 1:2)
+
+  # the rerun computes nothing: the checkpoint files are not rewritten
+  stamp <- file.mtime(list.files(ckpt_dir, full.names = TRUE))
+  second <- run()
+  expect_equal(file.mtime(list.files(ckpt_dir, full.names = TRUE)), stamp)
+  expect_equal(second$oob_error, first$oob_error)
+  expect_equal(second$imp_data, first$imp_data)
+  expect_equal(second$best, first$best)
+
+  # and gives what a run without checkpoints gives
+  plain <- missforest_sweep_mtry(
+    df,
+    exclude = c("id", "time"), mtry_values = 1:2,
+    ntree = 20, maxiter = 2, seed = 42, parallel = FALSE
+  )
+  expect_equal(first$oob_error, plain$oob_error)
+  expect_equal(first$imp_data, plain$imp_data)
+})

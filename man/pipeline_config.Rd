@@ -8,7 +8,8 @@ pipeline_config(
   study_name = NULL,
   stage_labels = NULL,
   stage_colors = NULL,
-  default_formats = NULL
+  default_formats = NULL,
+  reset = FALSE
 )
 }
 \arguments{
@@ -21,23 +22,40 @@ pipeline_config(
 \item{default_formats}{Optional character vector of default output formats
 for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.}
+
+\item{reset}{Logical (default `FALSE`). When `TRUE`, clears everything set
+with `pipeline_config()` and falls back to the session options (or the
+package defaults when those are unset). It does not erase the options
+themselves. The reset is done first, so other arguments given in the same
+call are then set: `pipeline_config(study_name = "X", reset = TRUE)` leaves
+only the study name set.}
 }
 \value{
 A list containing the current configuration options, with the
-  attribute `"previous"`: the options as they were before the call.
+  attribute `"previous"`: the configuration as it was before the call,
+  named the way [options()] names the session options
+  (`pipeline.study_name` and so on). `pipeline_config()` no longer writes
+  those options, so `options(attr(cfg, "previous"))` only restores the
+  option layer; to drop what a call set and fall back to the session
+  options, use `pipeline_config(reset = TRUE)`. A call with no arguments
+  returns the current configuration.
 }
 \description{
 Decouples project-specific parameters (study name, stage display labels,
 stage color palettes) from core pipeline mechanics and classes.
 }
 \details{
-The configuration is kept in the session options `pipeline.study_name`,
-`pipeline.stage_labels`, `pipeline.stage_colors` and
-`pipeline.default_formats`, so a call with arguments changes them for the
-rest of the session. The values they had before the call are returned in the
-attribute `"previous"`, in the form [options()] takes; to change the
-configuration only inside a function or a test, restore them on exit:
-`old <- attr(pipeline_config(study_name = "X"), "previous");
-on.exit(options(old), add = TRUE)`, or use `withr::local_options()` on the
-options directly.
+The configuration is kept in one place, inside the package, for the
+session: calling `pipeline_config()` with arguments changes what the
+pipeline functions (`create_qmd_renderer()`, `visualize_pipeline()`,
+`collapse_by_stage()`, `visualize_pipeline_interactive()`,
+`export_interactive_pipeline()`, `render_pipeline()`) read, but it does
+not write the session options, so a call cannot leak a changed option
+into later, unrelated work. The session options
+`pipeline.study_name`, `pipeline.stage_labels`, `pipeline.stage_colors`
+and `pipeline.default_formats` are only read, as a legacy default for
+each value that has not been set with `pipeline_config()` (set one
+yourself, in `.Rprofile` for example, to supply a default). This mirrors
+`cbe_labels()`, which likewise keeps its map in the package and only
+reads the `templecbe.label_map` option.
 }

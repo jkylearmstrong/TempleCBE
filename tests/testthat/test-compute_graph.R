@@ -64,9 +64,12 @@ test_that("FileOutputs S4 class validates output list and detects self-outputs",
 })
 
 test_that("pipeline_config sets and gets global configuration options", {
-  # pipeline_config() cannot unset an option (NULL means "leave it alone"), so a
-  # restore through it would leave default_formats set for every later test file.
-  # Start from unset and let withr put back exactly what was there.
+  # The settings now live in the package, not in the options, so clear them
+  # as well as the options: a value left there by an earlier test would
+  # otherwise win over the unset options below. Start from unset and let
+  # withr put back exactly what was there.
+  pipeline_config(reset = TRUE)
+  withr::defer(pipeline_config(reset = TRUE))
   withr::local_options(
     pipeline.study_name = NULL,
     pipeline.stage_labels = NULL,
@@ -86,6 +89,87 @@ test_that("pipeline_config sets and gets global configuration options", {
   expect_equal(cfg$study_name, "Temple Oncology")
   expect_equal(cfg$stage_labels[["01_raw"]], "Raw Data")
   expect_equal(cfg$default_formats, c("pdf", "html"))
+})
+
+test_that("pipeline_config() leaves the session options alone and reads them only as defaults", {
+  # Start clean on both layers: the package store and the session options.
+  pipeline_config(reset = TRUE)
+  withr::defer(pipeline_config(reset = TRUE))
+  withr::local_options(
+    pipeline.study_name = NULL,
+    pipeline.stage_labels = NULL,
+    pipeline.stage_colors = NULL,
+    pipeline.default_formats = NULL
+  )
+
+  # A call with arguments changes what pipeline_config() reports, but not the options.
+  cfg <- pipeline_config(
+    study_name = "Temple Oncology",
+    stage_labels = c("01_raw" = "Raw Data"),
+    stage_colors = c("01_raw" = "#FF0000"),
+    default_formats = c("pdf", "html")
+  )
+  expect_equal(cfg$study_name, "Temple Oncology")
+  expect_equal(cfg$default_formats, c("pdf", "html"))
+  expect_null(getOption("pipeline.study_name"))
+  expect_null(getOption("pipeline.stage_labels"))
+  expect_null(getOption("pipeline.stage_colors"))
+  expect_null(getOption("pipeline.default_formats"))
+  expect_equal(attr(cfg, "previous")$pipeline.study_name, "Computational Pipeline")
+
+  # Readers use the package setting: the renderer's default formats come from it.
+  renderer <- create_qmd_renderer(name = "rpt", path = "report.qmd")
+  expect_equal(
+    vapply(renderer@output, function(o) o@name, character(1)),
+    c("rpt PDF", "rpt HTML")
+  )
+
+  # A previous value that was set can be put back through pipeline_config().
+  pipeline_config(study_name = attr(cfg, "previous")$pipeline.study_name)
+  expect_equal(pipeline_config()$study_name, "Computational Pipeline")
+
+  # reset = TRUE drops what pipeline_config() set and falls back to the defaults.
+  pipeline_config(reset = TRUE)
+  expect_equal(pipeline_config()$study_name, "Computational Pipeline")
+  expect_null(pipeline_config()$default_formats)
+
+  # With nothing set in the package, a session option is still honoured as the default ...
+  withr::local_options(pipeline.study_name = "From Option", pipeline.default_formats = "gfm")
+  expect_equal(pipeline_config()$study_name, "From Option")
+  expect_equal(
+    create_qmd_renderer(name = "rpt", path = "report.qmd")@output[[1]]@name,
+    "rpt GFM"
+  )
+
+  # ... and a value set with pipeline_config() wins over the option.
+  pipeline_config(study_name = "From Package")
+  expect_equal(pipeline_config()$study_name, "From Package")
+
+  # reset = TRUE drops the package setting and falls back to the option.
+  pipeline_config(reset = TRUE)
+  expect_equal(pipeline_config()$study_name, "From Option")
+  expect_equal(pipeline_config()$default_formats, "gfm")
+})
+
+test_that("pipeline_config(reset = TRUE) clears first and then sets the other arguments", {
+  pipeline_config(reset = TRUE)
+  withr::defer(pipeline_config(reset = TRUE))
+  withr::local_options(
+    pipeline.study_name = NULL,
+    pipeline.stage_labels = NULL,
+    pipeline.stage_colors = NULL,
+    pipeline.default_formats = NULL
+  )
+
+  pipeline_config(study_name = "First", default_formats = "html")
+  cfg <- pipeline_config(study_name = "Second", reset = TRUE)
+  expect_equal(cfg$study_name, "Second")
+  expect_null(cfg$default_formats)
+  expect_equal(attr(cfg, "previous")$pipeline.study_name, "First")
+  expect_equal(attr(cfg, "previous")$pipeline.default_formats, "html")
+
+  expect_error(pipeline_config(reset = NA), "`reset` must be")
+  expect_error(pipeline_config(reset = "yes"), "`reset` must be")
 })
 
 test_that("get_render_plan validates inputs, duplicate names, and circular dependencies", {

@@ -1,3 +1,27 @@
+# TempleCBE 0.8.2
+
+Follow-up to 0.8.1: the findings of the 2026-11-11 review that 0.8.1 left open. No export is removed.
+
+## Changes in behaviour
+
+* **`pipeline_config()`** keeps its settings inside the package and no longer writes the session options `pipeline.study_name`, `pipeline.stage_labels`, `pipeline.stage_colors` and `pipeline.default_formats`. The options are still read, as the default for a value that was not set with `pipeline_config()`. Code that called `pipeline_config()` and then read `getOption("pipeline.*")` gets the option's own value now: read `pipeline_config()` instead. The restore that 0.8.1 documented, `options(attr(cfg, "previous"))`, no longer undoes a call; use `pipeline_config(reset = TRUE)`, which clears what was set (and then sets any other argument given in the same call).
+* **`tbl_tune_alpha(label_map = , style = )`** uses the two arguments, which it accepted and ignored: a column whose name is a term of the `label_map` given in the call is renamed to its label. The map set for the session with `cbe_labels()` is not used, so without `label_map` the column names are as before.
+* **`score_outer(checkpoint_mismatch = "overwrite")`** no longer deletes the `score_fold_*.rds` files of another run that shares `checkpoint_dir`. It removes only leftover files of the current run: files with the run's own fingerprint that are no longer among its tasks. A file whose run fingerprint cannot be read is kept.
+
+## Fixes
+
+* **`write_database_to_excel()`**: a metadata sheet whose name collides with a data sheet gets its suffix the way the data sheets do, within 31 characters and compared without case. A 31-character name used to get `_1` appended, which Excel refuses, and `metadata` next to `METADATA` was not seen as a collision.
+* **`workflow_set_params()` and `workflow_set_rank_fit()`** read the tuning parameter names from the `parameters` attribute of the tuning result and no longer call `tune:::.get_tune_parameter_names()`.
+* **`?templecbe_methods`** lists `print.balance_smd()` and `print.recurrent_cox()`, which had no help alias.
+* **README**: the pipeline example calls `FilePath()`, `FileUses()`, `FileOutputs()` and `get_render_plan()`. It showed a `compute_graph(stages = )` call that does not exist.
+* **pkgdown reference index**: 43 exported names that were missing are listed.
+
+## Internal
+
+* `run_checkpointed_sweep()` is the one read-or-compute-and-write loop behind the per-task checkpoints of `missforest_sweep_mtry()`, `missranger_sweep_mtry()` and `nested_cv_coxnet()`. File names, fingerprints and results are unchanged. `tune_over_alpha()`, `tune_alpha_by_split()` and `tune_race_survival()` keep their own code, because they do more than this loop.
+* `extract_docx_qa()` checks its two index columns with `check_named_column()`.
+* New tests: `nested_survival_run()` on start-stop data with several intervals per subject, the checkpoint reuse of `nested_cv_coxnet()`, and the items above.
+
 # TempleCBE 0.8.1
 
 Fixes from the consolidated review and benchmark findings of 2026-11-11 (static review of the package,

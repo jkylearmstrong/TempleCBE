@@ -380,6 +380,7 @@ tidy.recurrent_cox <- function(x, ...) {
   x$terms
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.recurrent_cox <- function(x, ...) {
   labels <- c(

@@ -9,7 +9,7 @@ create_qmd_renderer(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = getOption("pipeline.default_formats", "pdf"),
+  output_format = .pipeline_config_value("default_formats", "pdf"),
   description = NA_character_
 )
 }
@@ -24,7 +24,9 @@ create_qmd_renderer(
 
 \item{output_format}{Output format(s): e.g. "pdf", "html", \code{c("pdf", "docx")},
 or \code{"yaml"} to automatically extract the output formats declared in the
-document's YAML frontmatter. Defaults to \code{getOption("pipeline.default_formats", "pdf")}.
+document's YAML frontmatter. Defaults to the `default_formats` setting from
+\code{\link{pipeline_config}} (or the `pipeline.default_formats` session
+option when nothing was set there), `"pdf"` if neither is set.
 Each output file gets the extension its format writes, which is not always the format's
 name: \code{revealjs}, \code{ioslides}, \code{slidy} and \code{html_document} write
 \code{.html}, \code{beamer} and \code{typst} write \code{.pdf}, \code{gfm} and

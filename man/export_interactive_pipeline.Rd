@@ -9,7 +9,7 @@ export_interactive_pipeline(
   file = here::here("R", "workflow_viz", "full_compute_graph.html"),
   direction = "LR",
   hierarchical = TRUE,
-  title = getOption("pipeline.study_name", "Computational Pipeline"),
+  title = .pipeline_config_value("study_name", "Computational Pipeline"),
   subtitle = "Computational Pipeline"
 )
 }
@@ -22,8 +22,8 @@ export_interactive_pipeline(
 
 \item{hierarchical}{Logical. Default TRUE.}
 
-\item{title}{Chart title. Defaults to the `pipeline.study_name` option, or
-"Computational Pipeline" if unset.}
+\item{title}{Chart title. Defaults to the study name from
+\code{\link{pipeline_config}}, or "Computational Pipeline" if unset.}
 
 \item{subtitle}{Chart subtitle.}
 }

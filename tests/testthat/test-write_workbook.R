@@ -75,3 +75,28 @@ test_that("apply_database_metadata updates dataset labels and variable attribute
   expect_equal(as.character(labelled::var_label(updated_db$patients$sbp)), "Systolic Blood Pressure (mmHg)")
   expect_equal(as.character(labelled::var_label(updated_db$patients$id)), "Patient Identifier")
 })
+
+test_that("the metadata sheet gets a name Excel accepts when it collides with a data sheet", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+
+  # a case-only collision: Excel compares sheet names without case
+  tmp_case <- withr::local_tempfile(fileext = ".xlsx")
+  db <- list(metadata = data.frame(id = 1:2), labs = data.frame(id = 1:2))
+  write_database_to_excel(db, path = tmp_case)
+  expect_equal(readxl::excel_sheets(tmp_case), c("metadata", "labs", "METADATA_1"))
+
+  # a 31-character collision: the suffix takes its room from the name
+  long <- strrep("a", 31)
+  tmp_long <- withr::local_tempfile(fileext = ".xlsx")
+  db_long <- stats::setNames(list(data.frame(id = 1:2)), long)
+  write_database_to_excel(db_long, path = tmp_long, metadata_sheet = long)
+  sheets <- readxl::excel_sheets(tmp_long)
+  expect_equal(sheets, c(long, paste0(strrep("a", 29), "_1")))
+  expect_true(all(nchar(sheets) <= 31))
+
+  # no collision: the name is used as given
+  tmp_plain <- withr::local_tempfile(fileext = ".xlsx")
+  write_database_to_excel(list(labs = data.frame(id = 1:2)), path = tmp_plain)
+  expect_equal(readxl::excel_sheets(tmp_plain), c("labs", "METADATA"))
+})

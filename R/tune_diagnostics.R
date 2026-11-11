@@ -319,10 +319,17 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style =
 #' Integrated Brier Score for each evaluated `alpha` value.
 #'
 #' @param data A data frame from [tune_alpha_by_split()].
-#' @param label_map,style Accepted so that every tuning table and plot can be
-#'   called with the same arguments. This table has no variable names to
-#'   relabel, so they have no effect on it.
-#' @return A tibble of per-alpha IBS statistics.
+#' @param label_map Optional label mapping, in a form [cbe_labels()] takes. The
+#'   column names are looked up as terms in the map (`"alpha"`, `"n_fits"`,
+#'   `"mean_ibs"`, `"sd_ibs"`, `"median_ibs"`, `"iqr_ibs"`, `"min_ibs"`,
+#'   `"max_ibs"`); a column whose name is in the map takes its label, and any
+#'   other column keeps its default name. Only a map given here renames
+#'   columns: the map set for the session with [cbe_labels()] is not used, so
+#'   that the column names of the result do not depend on session state.
+#' @param style Optional label style (`"short"` or `"full"`): which label from
+#'   `label_map` a renamed column takes. It has no effect without `label_map`.
+#' @return A tibble of per-alpha IBS statistics. Columns renamed through
+#'   `label_map` carry their mapped labels as names.
 #' @export
 tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
   if (!all(c("alpha", "IBS") %in% names(data))) {
@@ -333,7 +340,7 @@ tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
   df <- df[!is.na(df$alpha) & !is.na(df$IBS), , drop = FALSE]
 
   res <- dplyr::group_by(df, .data$alpha)
-  dplyr::summarize(
+  out <- dplyr::summarize(
     res,
     n_fits = dplyr::n(),
     mean_ibs = mean(.data$IBS),
@@ -344,6 +351,19 @@ tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
     max_ibs = max(.data$IBS),
     .groups = "drop"
   )
+
+  # Relabel the columns through an explicit label map only: a column name
+  # present in the map takes its label (`style` selects "short" or "full"),
+  # and any other column keeps its default name. The session map set with
+  # cbe_labels() is left out on purpose, so that code selecting `mean_ibs`
+  # gets the same column names whatever the session has set.
+  if (!is.null(label_map)) {
+    names(out) <- make.unique(
+      resolve_cbe_labels(names(out), label_map = label_map, style = style),
+      sep = " "
+    )
+  }
+  out
 }
 
 #' Summary Table of Coefficient Stability Across Tuning Resamples
