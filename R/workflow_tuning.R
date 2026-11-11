@@ -196,7 +196,7 @@ summarize_dalex_importance <- function(explainer, data = NULL, y = NULL, B = 10,
 #'   needs the per-permutation values: a `model_parts` result, or a [summarize_dalex_importance()]
 #'   summary of one.
 #' @param top_n Optional integer limit on the number of features to plot (default 20).
-#' @param fill_color Bar fill color (default Temple Cherry `"#9D2235"`).
+#' @param fill_color Bar fill color (default Temple Cherry `"#A41E35"`).
 #' @param title Optional plot title.
 #' @param base_size Base font size (default 12).
 #' @param label_map Optional label mapping (see [cbe_labels()]).
@@ -206,7 +206,7 @@ summarize_dalex_importance <- function(explainer, data = NULL, y = NULL, B = 10,
 #' @export
 plot_permutation_importance <- function(data,
                                         top_n = 20,
-                                        fill_color = "#9D2235",
+                                        fill_color = "#A41E35",
                                         title = "Feature Permutation Importance",
                                         base_size = 12,
                                         label_map = NULL,

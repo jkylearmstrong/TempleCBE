@@ -287,6 +287,7 @@ boot_p_value <- function(estimates, null_value = 0, epsilon = 1e-5) {
   min(1, 2 * min(lower, upper))
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.boot_lmer <- function(x, ...) {
   cat(sprintf(

@@ -136,6 +136,7 @@ audit_render_parity <- function(pdf_path,
   )
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.render_parity <- function(x, ...) {
   n_warn <- sum(x$severity == "warning")

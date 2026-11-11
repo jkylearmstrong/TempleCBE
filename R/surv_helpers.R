@@ -45,7 +45,19 @@ surv_components <- function(truth, arg = "truth") {
 #' For counting-process data, a subject's time is the stop time of their last
 #' interval and their event status is the status of that interval. Rows are
 #' checked first: within a subject, intervals must not overlap, and an event
-#' may only occur in the last interval (recurrent events are not supported).
+#' may only occur in the last interval.
+#'
+#' @section Recurrent events are out of scope:
+#' A subject with an event before their last interval (a recurrent-event
+#' outcome, such as repeated readmissions or infections) is an error. The
+#' metrics that the scoring functions use (Brier score, integrated Brier score,
+#' time-dependent AUC, concordance with Graf censoring weights) are defined for
+#' one event time per subject, so [cv_coxnet()], [nested_cv_coxnet()] and
+#' [nested_survival_run()] have no scoring path for recurrent events, although
+#' `glmnet` itself fits such data. Either reduce the data to the first event of
+#' each subject (time to first event), or fit the recurrent-event model yourself
+#' ([coxnet()], or [survival::coxph()] with `cluster()`) and score it with a
+#' recurrent-event measure outside these functions.
 #'
 #' @param truth A [survival::Surv()] object: `Surv(time, event)` or
 #'   `Surv(start, stop, event)`.
@@ -111,7 +123,9 @@ surv_subject_truth <- function(truth, subject_id = NULL) {
   if (any(early)) {
     stop(
       "Subject(s) with an event before their last interval: ", format_ids(sid[early]),
-      ". Recurrent events are not supported.",
+      ". Recurrent events are not supported: the survival metrics need one event time per subject. ",
+      "Keep each subject's rows up to their first event (time to first event), or fit and score a ",
+      "recurrent-event model outside cv_coxnet() / nested_cv_coxnet(); see ?surv_subject_truth.",
       call. = FALSE
     )
   }
@@ -169,6 +183,7 @@ predict.censoring_km <- function(object, time, left = FALSE, trunc = 0, ...) {
   pmax(c(1, object$surv)[idx + 1], trunc)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.censoring_km <- function(x, ...) {
   cat("<censoring_km> reverse Kaplan-Meier censoring distribution\n")
@@ -412,7 +427,18 @@ predict_subject_survival <- function(lp, start, stop, id, eval_time, bh, covaria
 #' @noRd
 subject_keys <- function(y, subject) {
   parts <- surv_components(y)
-  copy <- stats::ave(seq_along(subject), subject, parts$start, parts$stop, FUN = seq_along)
+  # One grouping key per (subject, start, stop). stats::ave() with three
+  # grouping vectors builds their full interaction, subjects x distinct starts
+  # x distinct stops, which is hundreds of millions of levels on start-stop
+  # data and exhausts memory. Integer codes joined into one key keep it at one
+  # level per combination that occurs.
+  key <- paste(
+    match(subject, unique(subject)),
+    match(parts$start, unique(parts$start)),
+    match(parts$stop, unique(parts$stop)),
+    sep = "."
+  )
+  copy <- stats::ave(seq_along(key), key, FUN = seq_along)
   if (all(copy == 1)) {
     return(subject)
   }
@@ -763,6 +789,7 @@ prune_start_stop <- function(data, id = "id", start = "tstart", stop = "tstop", 
   data
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_start_stop_validation <- function(x, ...) {
   cat("TempleCBE Start/Stop Survival Data Check\n")

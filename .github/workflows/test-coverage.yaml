@@ -18,10 +18,12 @@ name: test-coverage
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # the pull-request sanity check alone takes 29 minutes, and coverage instruments every line
+    timeout-minutes: 75
     name: test-coverage
     # R, pandoc and the CRAN dependencies are in this image (Dockerfile.ci, built by ci-image.yml)
-    container: ghcr.io/jkylearmstrong/templecbe-ci:latest
+    # pinned by dated tag and digest: see R-CMD-check.yaml
+    container: ghcr.io/jkylearmstrong/templecbe-ci:20261110@sha256:54a6d034fdfaffc93da2fc784f43d407c16dd1c16a8627efcaac98745af40f0a
     env:
       # the repository's .Rprofile activates renv, which would hide the packages of the image (they
       # live in the site library); the container jobs run without it

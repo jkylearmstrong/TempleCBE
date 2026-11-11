@@ -9,7 +9,7 @@ plot_survival_km(
   time_col,
   status_col,
   group_col = NULL,
-  color = "#9D2235",
+  color = "#A41E35",
   title = "Kaplan-Meier Survival Estimate",
   caption = NULL,
   base_size = 13,
@@ -29,7 +29,7 @@ plot_survival_km(
 
 \item{group_col}{Optional character string naming a stratification grouping column.}
 
-\item{color}{Primary line/ribbon color (default: Temple Cherry \code{"#9D2235"}).}
+\item{color}{Primary line/ribbon color (default: Temple Cherry \code{"#A41E35"}).}
 
 \item{title}{Optional plot title.}
 

@@ -2,7 +2,7 @@ test_that("cbe_palette contains expected institutional colors", {
   expect_type(cbe_palette, "character")
   expect_true("cherry" %in% names(cbe_palette))
   expect_true("neutral_grey" %in% names(cbe_palette))
-  expect_equal(unname(cbe_palette["cherry"]), "#9D2235")
+  expect_equal(unname(cbe_palette["cherry"]), "#A41E35")
   expect_equal(unname(cbe_palette["neutral_grey"]), "#6F6F6F")
 })
 

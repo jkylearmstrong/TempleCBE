@@ -402,6 +402,7 @@ loco_subject_deltas <- function(with, without, surv_flat, oob, weights, alive, d
   (minus$loss - plus$loss)[usable]
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.loco_mp_coxnet <- function(x, ...) {
   cat("<loco_mp_coxnet> Leave-One-Covariate-Out MiniPatch Feature Inference\n")
@@ -418,6 +419,7 @@ print.loco_mp_coxnet <- function(x, ...) {
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_loco_mp_coxnet <- print.loco_mp_coxnet
 
@@ -437,6 +439,7 @@ tidy.loco_mp_coxnet <- function(x, ...) {
   x$results
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method generics::tidy
 tidy.cbe_loco_mp_coxnet <- tidy.loco_mp_coxnet
 
@@ -496,6 +499,7 @@ autoplot.loco_mp_coxnet <- function(object, ...) {
   p
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method ggplot2::autoplot
 autoplot.cbe_loco_mp_coxnet <- autoplot.loco_mp_coxnet
 

@@ -54,8 +54,11 @@ built-in key instead of stopping, and warn that the output is NOT secret. This o
 reproduces output made without a key by earlier versions; do not use it for data you
 intend to protect.}
 
-\item{allow_collisions}{Logical, default \code{FALSE}. If \code{TRUE}, suppresses collision
-errors/warnings when distinct names produce identical tokens or surnames.}
+\item{allow_collisions}{Logical, default \code{FALSE}. Distinct names that produce the
+same token (\code{"hmac_token"}) or the same surname (\code{"hmac_surname"}) are an
+error. If \code{TRUE}, they give a warning instead and the shared pseudonym is returned.
+Surnames come from a fixed list, so with more than a few dozen names a shared surname is
+likely; use \code{"hmac_token"} or \code{"token"} when every name needs its own pseudonym.}
 
 \item{normalize}{Logical, default \code{FALSE}. If \code{TRUE}, trims leading/trailing
 whitespace and converts names to lowercase before hashing.}

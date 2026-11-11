@@ -113,7 +113,21 @@ test_that("as_tuning_results() picks the Brier rows of a tidymodels metric table
   expect_equal(nrow(res), 2L)
   expect_equal(res$IBS, c(0.2, 0.3))
   # alpha defaults to 1 when absent
-  expect_equal(as_tuning_results(data.frame(brier_score = 0.1))$alpha, 1)
+  # no mixing parameter in the table: alpha = 1 is an assumption and is said so
+  expect_warning(
+    res_no_alpha <- as_tuning_results(data.frame(brier_score = 0.1)),
+    "`alpha` is set to 1"
+  )
+  expect_equal(res_no_alpha$alpha, 1)
+  # `mean` without `.metric` could be any metric: it is not taken as the IBS
+  expect_error(
+    as_tuning_results(data.frame(alpha = 0.5, mean = 0.71)),
+    "only when a `.metric` column"
+  )
+  expect_error(
+    as_tuning_results(data.frame(alpha = 0.5, mean = 0.71, .metric = "concordance_survival")),
+    "only when a `.metric` column"
+  )
   expect_error(as_tuning_results(data.frame(x = 1)), "Missing required column")
   expect_error(as_tuning_results(1:3), "must be a data frame")
   expect_error(as_tuning_results("no/such/file.rds"), "must be a data frame")

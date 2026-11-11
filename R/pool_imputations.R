@@ -75,6 +75,20 @@ pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95
       df <- 1 / (1 / df + 1 / df_obs)
     }
     se_pool <- sqrt(tot)
+    if (tot == 0) {
+      # every imputation gave the same estimate with a standard error of 0: there is no
+      # variance to test against (0 / 0), so no statistic, p-value or interval is reported
+      warning(
+        "Term `", tm, "` has a total variance of 0 (identical estimates, all standard errors 0): ",
+        "its statistic, p-value and confidence interval are NA.",
+        call. = FALSE
+      )
+      return(tibble::tibble(
+        term = tm, m = m, estimate = qbar, std.error = 0, within_var = ubar,
+        between_var = b, total_var = tot, df = NA_real_, statistic = NA_real_,
+        p.value = NA_real_, conf.low = NA_real_, conf.high = NA_real_, fmi = NA_real_
+      ))
+    }
     stat <- qbar / se_pool
     crit <- stats::qt(1 - (1 - conf_level) / 2, df)
     tibble::tibble(
@@ -82,7 +96,9 @@ pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95
       between_var = b, total_var = tot, df = df, statistic = stat,
       p.value = 2 * stats::pt(-abs(stat), df),
       conf.low = qbar - crit * se_pool, conf.high = qbar + crit * se_pool,
-      fmi = (r + 2 / (df + 3)) / (r + 1)
+      # r is infinite when the within-imputation variance is 0: all of the variance is then
+      # between imputations
+      fmi = if (is.infinite(r)) 1 else (r + 2 / (df + 3)) / (r + 1)
     )
   })
   out <- dplyr::bind_rows(rows)

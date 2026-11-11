@@ -6,6 +6,15 @@
 #' @param data.output should the data be output, TRUE or FALSE, default is TRUE
 #' @param table.output should the table be output, TRUE or FALSE, default is FALSE
 #'
+#' @details
+#' The two switches choose between two results, they are not independent. The
+#' numeric data frame (`N`, `Mean`, `SD`, `min`, `Max`, `SD_Error`) is returned
+#' when `data.output = TRUE` and `table.output = FALSE` (the default). In every
+#' other case the formatted table (`Mean (SD)`, `Range`) is returned:
+#' `table.output = TRUE` asks for it and takes precedence over `data.output`,
+#' and `data.output = FALSE` on its own also gives the table, since there is
+#' nothing else to return.
+#'
 #' @return either a dataframe or readable table 
 #'
 #' @examples

@@ -1,19 +1,22 @@
 # TempleCBE Development & CI/CD Notes
 
-## Version: 0.6.1
-**Date:** October 20, 2026
+## Version: 0.7.11
+**Date:** November 11, 2026
+
+AGENTS.md (workflow, CI, conventions) and REVIEW.md (review levels, branch protection, releases) are the
+maintained references; this file keeps the reasons behind a few decisions.
 
 ---
 
 ### 1. CI/CD Architecture (Strategy A)
 * **Master Branch ("Prod Gate"):**
-  - Runs `sanity-check` on `ubuntu-latest (release)` (~5 minutes).
-  - Skips redundant 35-minute Windows and macOS checks.
+  - Runs `sanity-check` on `ubuntu-latest (release)` (about 13 minutes) in the pinned CI image.
+  - Since 0.7.11 also runs the cross-platform matrix (it used to be skipped on `master`), so `docker-publish` builds from a commit that passed on every platform.
   - Deploys documentation site (`pkgdown`) concurrently to `gh-pages`.
   - Automatically triggers downstream container deployment upon green sanity-check (`workflow_run`):
     - `docker-publish`: Builds native `linux/amd64` Docker image with GitHub Actions layer caching (~4 minutes) and pushes directly to Docker Hub (`<user>/templecbe`). Gated strictly to `push` events from the primary repository.
 * **Pull Requests & Release Tags ("Dev Full Matrix Gate"):**
-  - Runs full cross-platform matrix: `ubuntu-latest`, `windows-latest`, `macOS-latest`.
+  - Runs full cross-platform matrix: `windows-latest`, `macOS-latest`, `ubuntu-24.04-arm` on the R release, and `ubuntu-latest` on `oldrel-1` and `devel` (informative).
   - Runs `optional-deps-installed-tests` for multisession packages on Ubuntu and Windows.
   - Runs `test-coverage` via Codecov (tokenless OIDC integration).
   - On `windows-latest`, `rcmdcheck` passes `--no-build-vignettes` to cut Windows check time by >50% (from 35+ min to ~12 min).
@@ -29,7 +32,7 @@
   - Running nested socket clusters inside `callr` parallel test workers on Windows runners deadlocks TCP loopback sockets.
   - `TESTTHAT_PARALLEL: "FALSE"` is strictly enforced in all CI workflows.
 * **Concurrency Cancellation:**
-  - All workflows use `group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}` with `cancel-in-progress: true`.
+  - The check workflows use one group per pull request number (`${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}`) with `cancel-in-progress: true`; `release.yaml` uses one group for all runs and does not cancel.
   - Older superseded runs are cancelled immediately when a new commit is pushed.
   - Job-level `timeout-minutes` prevent zombie runners.
 

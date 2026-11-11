@@ -126,6 +126,7 @@ lencode_factor <- function(vals) {
   vals
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::prep
 prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   # 1. Resolve predictor terms
@@ -218,6 +219,7 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::bake
 bake.step_lencode_coxnet <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
@@ -235,6 +237,7 @@ bake.step_lencode_coxnet <- function(object, new_data, ...) {
   new_data
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.step_lencode_coxnet <- function(x, width = max(20, options()$width - 30), ...) {
   title <- "Penalized Cox linear encoding for "
@@ -242,6 +245,7 @@ print.step_lencode_coxnet <- function(x, width = max(20, options()$width - 30), 
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 tidy.step_lencode_coxnet <- function(x, ...) {
   if (recipes::is_trained(x)) {
@@ -397,6 +401,7 @@ step_lencode_joint_model_new <- function(terms, outcome, role, trained, engine,
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::prep
 prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
   col_names <- recipes::recipes_eval_select(x$terms, training, info)
@@ -498,6 +503,7 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::bake
 bake.step_lencode_joint_model <- function(object, new_data, ...) {
   col_names <- names(object$mapping)
@@ -512,6 +518,7 @@ bake.step_lencode_joint_model <- function(object, new_data, ...) {
   new_data
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.step_lencode_joint_model <- function(x, width = max(20, options()$width - 30), ...) {
   title <- paste0("Joint model (", x$engine, ") linear encoding for ")
@@ -519,6 +526,7 @@ print.step_lencode_joint_model <- function(x, width = max(20, options()$width - 
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 tidy.step_lencode_joint_model <- function(x, ...) {
   if (recipes::is_trained(x)) {

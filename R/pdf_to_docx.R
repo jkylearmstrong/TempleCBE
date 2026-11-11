@@ -737,6 +737,28 @@ convert_pdfs_to_docx <- function(conversions,
     state <- check_docx_toolchain(quiet = TRUE)
     if (identical(backend, "auto")) {
       backend <- state$backend
+    } else {
+      # A backend named by the caller must be there. It used to be handed to its converter
+      # regardless, which failed on every file with "Conversion failed" and a result of
+      # `converted = FALSE`, even with `strict = TRUE`.
+      available <- switch(backend,
+        python      = !is.null(state$python_with_pdf2docx),
+        libreoffice = !is.null(state$soffice),
+        word_com    = isTRUE(state$word_com),
+        FALSE
+      )
+      if (!available) {
+        msg <- paste0(
+          "The requested PDF -> DOCX backend \"", backend, "\" is not available on this machine",
+          if (is.na(state$backend)) " (and no other backend is)" else paste0(" (available: \"", state$backend, "\"; `backend = \"auto\"` would use it)"),
+          ". See TempleCBE::check_docx_toolchain()."
+        )
+        if (isTRUE(strict)) {
+          stop(msg, call. = FALSE)
+        }
+        warning(msg, " Skipping ", length(todo), " DOCX output(s).", call. = FALSE)
+        return(cbind(conversions, converted = FALSE))
+      }
     }
 
     if (is.na(backend)) {

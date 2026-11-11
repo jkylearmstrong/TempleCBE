@@ -38,7 +38,7 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
     stop("`data` is missing required column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
-  group_col <- if ("inner_resamples_splits" %in% names(data)) "inner_resamples_splits" else if ("split" %in% names(data)) "split" else NULL
+  group_col <- .tune_split_col(data)
 
   # Deduplicate to unique model fits (since data contains one row per coefficient term)
   keep_cols <- intersect(c(group_col, "alpha", "IBS", "lambda", "formula"), names(data))
@@ -46,6 +46,19 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
   df <- df[!is.na(df$IBS) & !is.na(df$alpha), , drop = FALSE]
 
   if (isTRUE(log_ibs)) {
+    # log10() of zero or of a negative score is -Inf or NaN, and the model would
+    # be fitted to those values
+    bad <- !is.finite(df$IBS) | df$IBS <= 0
+    if (any(bad)) {
+      warning(
+        sum(bad), " fit(s) with an IBS that is not a positive number were left out of the model of log10(IBS).",
+        call. = FALSE
+      )
+      df <- df[!bad, , drop = FALSE]
+    }
+    if (nrow(df) == 0L) {
+      stop("No fit has a positive IBS: log10(IBS) cannot be modelled. Use `log_ibs = FALSE`.", call. = FALSE)
+    }
     df$y <- log10(df$IBS)
     y_name <- "log10(IBS)"
   } else {
@@ -75,9 +88,17 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
   }
 
   intercept <- unname(coefs[1])
-  slope <- unname(coefs[2])
-  sign_str <- if (slope >= 0) "+" else "-"
-  equation <- sprintf("%s = %.4f %s %.4f * alpha", y_name, intercept, sign_str, abs(slope))
+  slope <- if (length(coefs) >= 2L) unname(coefs[2]) else NA_real_
+  equation <- if (is.na(slope)) {
+    # one value of alpha only (or a rank-deficient fit): there is no slope
+    warning(
+      "The slope of ", y_name, " on alpha could not be estimated (is there more than one value of alpha?).",
+      call. = FALSE
+    )
+    sprintf("%s = %.4f (no slope: alpha does not vary)", y_name, intercept)
+  } else {
+    sprintf("%s = %.4f %s %.4f * alpha", y_name, intercept, if (slope >= 0) "+" else "-", abs(slope))
+  }
 
   coef_tbl <- if (inherits(fit, "merMod")) {
     se <- sqrt(diag(as.matrix(stats::vcov(fit))))
@@ -127,7 +148,9 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
 #' @param log_ibs Logical. When `TRUE` (default), plots `log10(IBS)`.
 #' @param show_points Logical. Plot individual resample points. Default `TRUE`.
 #' @param show_line Logical. Overlay the fitted regression line. Default `TRUE`.
-#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param label_map Optional label mapping (see [cbe_labels()]). The axis
+#'   titles are looked up under the terms `"alpha"` and `"IBS"` (or
+#'   `"log10(IBS)"`); a term that is not in the map keeps its default title.
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @seealso [fit_ibs_mixed_model()], [plot_tune_lambda_ibs()], [plot_tune_coef_boxplot()]
@@ -140,6 +163,10 @@ plot_tune_alpha_ibs <- function(data,
                                 style = NULL) {
   mm <- fit_ibs_mixed_model(data, log_ibs = log_ibs)
   y_col <- if (isTRUE(log_ibs)) "log10(IBS)" else "IBS"
+  x_lab <- .tune_axis_title(
+    "alpha", expression(paste("Elastic Net Mixing Parameter (", alpha, ")")), label_map, style
+  )
+  y_lab <- .tune_axis_title(y_col, y_col, label_map, style)
 
   p <- ggplot2::ggplot()
 
@@ -155,7 +182,7 @@ plot_tune_alpha_ibs <- function(data,
     p <- p + ggplot2::geom_line(
       data = mm$fitted,
       ggplot2::aes(x = .data$alpha, y = .data$predicted),
-      color = "#9D2235", linewidth = 1.1
+      color = "#A41E35", linewidth = 1.1
     )
   }
 
@@ -164,8 +191,8 @@ plot_tune_alpha_ibs <- function(data,
     ggplot2::labs(
       title = "Tuning Performance Across Elastic Net Mixing (Alpha)",
       subtitle = mm$equation,
-      x = expression(paste("Elastic Net Mixing Parameter (", alpha, ")")),
-      y = y_col
+      x = x_lab,
+      y = y_lab
     )
 
   p
@@ -177,7 +204,10 @@ plot_tune_alpha_ibs <- function(data,
 #' colored by `alpha`.
 #'
 #' @param data A data frame from [tune_alpha_by_split()].
-#' @param label_map Optional label mapping (see [cbe_labels()]).
+#' @param label_map Optional label mapping (see [cbe_labels()]). The titles of
+#'   the axes and of the legend are looked up under the terms `"lambda"`,
+#'   `"IBS"` and `"alpha"`; a term that is not in the map keeps its default
+#'   title.
 #' @param style Optional label style (`"short"` or `"full"`).
 #' @return A `ggplot2` object.
 #' @export
@@ -196,10 +226,17 @@ plot_tune_lambda_ibs <- function(data, label_map = NULL, style = NULL) {
     theme_cbe() +
     ggplot2::labs(
       title = "Penalty Parameter (Lambda) vs Integrated Brier Score",
-      x = expression(log[10](lambda)),
-      y = "Integrated Brier Score (IBS)",
-      color = expression(alpha)
+      x = .tune_axis_title("lambda", expression(log[10](lambda)), label_map, style),
+      y = .tune_axis_title("IBS", "Integrated Brier Score (IBS)", label_map, style),
+      color = .tune_axis_title("alpha", expression(alpha), label_map, style)
     )
+}
+
+# The title of an axis or a legend: the label of `term` in the label map when it
+# has one, otherwise `default` (which may be a plotmath expression).
+.tune_axis_title <- function(term, default, label_map = NULL, style = NULL) {
+  mapped <- resolve_cbe_labels(term, label_map = label_map, style = style)
+  if (length(mapped) == 1L && !is.na(mapped) && !identical(mapped, term)) mapped else default
 }
 
 #' Plot Integrated Brier Score Distribution Across Resampling Splits
@@ -212,7 +249,7 @@ plot_tune_lambda_ibs <- function(data, label_map = NULL, style = NULL) {
 #' @return A `ggplot2` object.
 #' @export
 plot_tune_ibs_by_resample <- function(data, label_map = NULL, style = NULL) {
-  split_col <- if ("inner_resamples_splits" %in% names(data)) "inner_resamples_splits" else if ("split" %in% names(data)) "split" else stop("`data` must contain a split identifier column.", call. = FALSE)
+  split_col <- .tune_split_col(data) %||% stop("`data` must contain a split identifier column.", call. = FALSE)
   keep_cols <- c(split_col, "alpha", "IBS")
   df <- unique(data[, keep_cols, drop = FALSE])
   df <- df[!is.na(df$IBS), , drop = FALSE]
@@ -220,7 +257,7 @@ plot_tune_ibs_by_resample <- function(data, label_map = NULL, style = NULL) {
 
   ggplot2::ggplot(df, ggplot2::aes(x = factor(.data[[split_col]]), y = .data$IBS)) +
     ggplot2::geom_boxplot(fill = "#D9D9D9", color = "#2B2B2B", outlier.shape = NA) +
-    ggplot2::geom_jitter(width = 0.2, alpha = 0.5, color = "#9D2235") +
+    ggplot2::geom_jitter(width = 0.2, alpha = 0.5, color = "#A41E35") +
     theme_cbe() +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) +
     ggplot2::labs(
@@ -267,7 +304,7 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style =
 
   ggplot2::ggplot(df, ggplot2::aes(x = .data$estimate, y = .data$term)) +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-    ggplot2::geom_boxplot(fill = "#D9D9D9", color = "#9D2235", outlier.alpha = 0.4) +
+    ggplot2::geom_boxplot(fill = "#D9D9D9", color = "#A41E35", outlier.alpha = 0.4) +
     theme_cbe() +
     ggplot2::labs(
       title = "Feature Coefficient Estimates Across Resampling Folds",
@@ -282,8 +319,9 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style =
 #' Integrated Brier Score for each evaluated `alpha` value.
 #'
 #' @param data A data frame from [tune_alpha_by_split()].
-#' @param label_map Optional label mapping (see [cbe_labels()]).
-#' @param style Optional label style (`"short"` or `"full"`).
+#' @param label_map,style Accepted so that every tuning table and plot can be
+#'   called with the same arguments. This table has no variable names to
+#'   relabel, so they have no effect on it.
 #' @return A tibble of per-alpha IBS statistics.
 #' @export
 tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
@@ -313,6 +351,11 @@ tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
 #' Calculates selection frequency and distribution of coefficient estimates for
 #' each feature across resamples.
 #'
+#' `prop_selected` is `n_selected` divided by the number of resampling splits
+#' when `data` identifies them (a column `inner_resamples_splits`,
+#' `inner_resamples` or `split`). Without such a column it is the share of the
+#' fits of the term with a non-zero estimate, and a message says so.
+#'
 #' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
 #' @param style Optional label style (`"short"` or `"full"`).
@@ -323,13 +366,22 @@ tbl_tune_coef <- function(data, label_map = NULL, style = NULL) {
     stop("`data` must contain 'term' and 'estimate' columns.", call. = FALSE)
   }
   df <- data[data$term != "(Intercept)" & !is.na(data$estimate), , drop = FALSE]
-  total_splits <- if ("inner_resamples_splits" %in% names(data)) length(unique(data$inner_resamples_splits)) else length(unique(df$inner_resamples_splits))
+  split_col <- .tune_split_col(data)
+  # Without a split column the number of splits is unknown: dividing by 1 (as
+  # this did) returned the count itself under the name of a proportion.
+  total_splits <- if (is.null(split_col)) NA_integer_ else length(unique(data[[split_col]]))
+  if (is.null(split_col)) {
+    message(
+      "`data` has no resampling split column: `prop_selected` is the share of the fits of each term ",
+      "with a non-zero estimate."
+    )
+  }
 
   res <- dplyr::group_by(df, .data$term)
   out <- dplyr::summarize(
     res,
     n_selected = sum(.data$estimate != 0),
-    prop_selected = sum(.data$estimate != 0) / max(1, total_splits),
+    prop_selected = sum(.data$estimate != 0) / if (is.na(total_splits)) dplyr::n() else max(1L, total_splits),
     mean_estimate = mean(.data$estimate),
     sd_estimate = stats::sd(.data$estimate),
     median_estimate = stats::median(.data$estimate),

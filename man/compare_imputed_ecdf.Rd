@@ -8,7 +8,7 @@ compare_imputed_ecdf(
   orig,
   imp,
   cols,
-  colors = c(Original = "#2B2B2B", Imputed = "#9D2235")
+  colors = c(Original = "#2B2B2B", Imputed = "#A41E35")
 )
 }
 \arguments{

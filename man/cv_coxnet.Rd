@@ -245,6 +245,9 @@ subject with a missing predictor after preprocessing, such as a factor level
 the analysis set never saw, cannot be predicted: it is left out at every
 penalty, so all penalties are scored on the same subjects, with one warning
 per resample that gives the count. A resample with no subject left is skipped.
+Recurrent events (an event before a subject's last interval) are out of
+scope and stop with an error: the metrics need one event time per subject.
+See the section on recurrent events in [surv_subject_truth()].
 
 **Selection.** `lambda.min` is the penalty, across all `mixture` values,
 with the best mean `metric` over folds (for time-specific metrics, at the

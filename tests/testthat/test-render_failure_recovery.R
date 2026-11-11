@@ -1,3 +1,5 @@
+# at the top level of a test file: in force until the end of this file (testthat >= 3.2
+# runs a file in its own frame and undoes withr::local_*() calls when the file ends)
 withr::local_options(templecbe_suppress_renv_warning = TRUE)
 
 make_docs <- function(dir) {

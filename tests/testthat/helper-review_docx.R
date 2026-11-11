@@ -71,8 +71,7 @@ build_review_docx <- function(path,
   if (!is.null(comments_xml)) writeLines(comments_xml, file.path(td, "word", "comments.xml"), useBytes = TRUE)
 
   target <- normalizePath(path, winslash = "/", mustWork = FALSE)
-  old_wd <- setwd(td)
-  on.exit(setwd(old_wd), add = TRUE)
+  withr::local_dir(td)
   if (file.exists(target)) unlink(target)
   utils::zip(target, files = list.files(".", recursive = TRUE, all.files = TRUE, no.. = TRUE), flags = "-r9Xq")
   invisible(path)
@@ -96,7 +95,10 @@ xlsx_raw_parts <- function(xlsx_path) {
   )
 }
 
-#' Options that the review tests change, saved so a test can restore them
+#' Clear the options that the review tests change and return their previous values
+#'
+#' options() returns the old values, so a test restores them with
+#' `old <- review_options_reset(); withr::defer(options(old))` (every caller does).
 #' @noRd
 review_options_reset <- function() {
   options(

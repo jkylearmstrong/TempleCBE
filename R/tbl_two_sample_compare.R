@@ -58,11 +58,7 @@ tbl_two_sample_compare <- function(data,
   g <- as.character(g)
 
   fmt <- function(x) formatC(x, format = "f", digits = digits)
-  fmt_p_val <- function(p) {
-    if (is.na(p)) return("")
-    lim <- 10^-p_digits
-    if (p < lim) paste0("<", formatC(lim, format = "f", digits = p_digits)) else formatC(p, format = "f", digits = p_digits)
-  }
+  fmt_p_val <- function(p) format_p_value(p, digits = p_digits, na = "")
 
   rows <- lapply(vars, function(v) {
     x1 <- data[[v]][!is.na(g) & g == lv[1] & !is.na(data[[v]])]

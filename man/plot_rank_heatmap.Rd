@@ -9,7 +9,7 @@ plot_rank_heatmap(
   item_col,
   group_col,
   rank_col,
-  low_color = "#9D2235",
+  low_color = "#A41E35",
   high_color = "#F4F4F4",
   title = "Rank Stability Across Resamples",
   base_size = 12,
@@ -26,7 +26,7 @@ plot_rank_heatmap(
 
 \item{rank_col}{Character name of rank column (fill).}
 
-\item{low_color}{Color for best rank (rank 1, default Temple Cherry `"#9D2235"`).}
+\item{low_color}{Color for best rank (rank 1, default Temple Cherry `"#A41E35"`).}
 
 \item{high_color}{Color for worst rank (default light grey `"#F4F4F4"`).}
 

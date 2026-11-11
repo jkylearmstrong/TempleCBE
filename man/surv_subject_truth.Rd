@@ -28,8 +28,22 @@ metrics require.
 For counting-process data, a subject's time is the stop time of their last
 interval and their event status is the status of that interval. Rows are
 checked first: within a subject, intervals must not overlap, and an event
-may only occur in the last interval (recurrent events are not supported).
+may only occur in the last interval.
 }
+\section{Recurrent events are out of scope}{
+
+A subject with an event before their last interval (a recurrent-event
+outcome, such as repeated readmissions or infections) is an error. The
+metrics that the scoring functions use (Brier score, integrated Brier score,
+time-dependent AUC, concordance with Graf censoring weights) are defined for
+one event time per subject, so [cv_coxnet()], [nested_cv_coxnet()] and
+[nested_survival_run()] have no scoring path for recurrent events, although
+`glmnet` itself fits such data. Either reduce the data to the first event of
+each subject (time to first event), or fit the recurrent-event model yourself
+([coxnet()], or [survival::coxph()] with `cluster()`) and score it with a
+recurrent-event measure outside these functions.
+}
+
 \examples{
 if (requireNamespace("survival", quietly = TRUE)) {
   long <- data.frame(

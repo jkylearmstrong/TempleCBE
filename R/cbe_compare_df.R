@@ -387,6 +387,7 @@ compare_df.visNetwork <- function(base, compare, ...) {
   compare_df(as_database(base), as_database(compare), ...)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_compare_database <- function(x, ...) {
   cat("== Nodes ", strrep("=", 63), "\n", sep = "")
@@ -396,6 +397,7 @@ print.cbe_compare_database <- function(x, ...) {
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_compare_df <- function(x, max_print = 10, ...) {
   cli_line <- paste0(rep("-", 70), collapse = "")
@@ -453,11 +455,13 @@ print.cbe_compare_df <- function(x, max_print = 10, ...) {
   invisible(x)
 }
 
+#' @rdname templecbe_methods
 #' @export
 summary.cbe_compare_df <- function(object, ...) {
   object$summary
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method generics::tidy
 tidy.cbe_compare_df <- function(x, ...) {
   x$diffs

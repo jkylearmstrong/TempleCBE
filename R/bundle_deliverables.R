@@ -70,8 +70,10 @@ package_deliverables <- function(pipeline_objects = list(),
   # Resolve against the caller's working directory up front.
   zip_path <- file.path(normalizePath(dirname(zip_path), winslash = "/", mustWork = FALSE), basename(zip_path))
 
-  temp_staging <- file.path(tempdir(), paste0("stage_", format(Sys.time(), "%Y%m%d_%H%M%S")))
-  if (dir.exists(temp_staging)) unlink(temp_staging, recursive = TRUE)
+  # A name of its own from tempfile(): a name built from the clock (to the
+  # second) was shared by two calls in the same second, and the second call
+  # deleted the staging folder the first was still filling.
+  temp_staging <- tempfile("stage_")
   dir.create(temp_staging, recursive = TRUE)
   # Removed on every way out, including a zip::zip() that fails.
   on.exit(unlink(temp_staging, recursive = TRUE), add = TRUE)
@@ -329,6 +331,22 @@ diff_deliverables <- function(old_zip, new_zip) {
     }
     td <- tempfile(prefix)
     dir.create(td, recursive = TRUE, showWarnings = FALSE)
+    # An entry such as "../x" or "/x" would be written outside `td` (zip slip).
+    entries <- if (requireNamespace("zip", quietly = TRUE)) {
+      zip::zip_list(src)$filename
+    } else {
+      utils::unzip(src, list = TRUE)$Name
+    }
+    entries <- gsub("\\\\", "/", entries)
+    unsafe <- grepl("^(/|[A-Za-z]:)", entries) |
+      vapply(strsplit(entries, "/", fixed = TRUE), function(parts) any(parts == ".."), logical(1))
+    if (any(unsafe)) {
+      stop(
+        "'", src, "' has ", sum(unsafe), " entry(ies) with an absolute path or a '..' component (",
+        paste(utils::head(entries[unsafe], 3), collapse = ", "), "); it was not extracted.",
+        call. = FALSE
+      )
+    }
     if (requireNamespace("zip", quietly = TRUE)) {
       zip::unzip(src, exdir = td)
     } else {
@@ -478,6 +496,7 @@ diff_deliverables <- function(old_zip, new_zip) {
   out
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_deliverable_diff <- function(x, ...) {
   cat("TempleCBE Deliverable Bundle Comparison\n")

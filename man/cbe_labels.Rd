@@ -35,6 +35,13 @@ across \pkg{TempleCBE} (`plot_tune_*`, `tbl_tune_*`, `plot_cox_forest*`,
 `tbl_censoring_comparison`) honour both the active package map set via
 `cbe_labels()` and an explicit `label_map =` argument.
 }
+\details{
+The active map is held in one place, inside the package, for the session. The
+option `templecbe.label_map` is only read: set it yourself (in `.Rprofile`,
+for example) to supply a default map, which is used while no map has been set
+with `cbe_labels()`. `cbe_labels()` no longer writes that option, so the two
+cannot disagree and `cbe_labels(reset = TRUE)` does not erase your option.
+}
 \examples{
 cbe_labels(
   tibble::tibble(

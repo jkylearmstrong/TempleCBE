@@ -49,7 +49,9 @@ render_parameterized_study <- function(source_dir,
   if (!is.list(param_list) || length(param_list) != length(target_dirs)) {
     stop("`param_list` must be a list with one parameter set per entry of `target_dirs`.", call. = FALSE)
   }
-  norm <- normalizePath(target_dirs, winslash = "/", mustWork = FALSE)
+  # Windows file names are not case-sensitive: "Out/A" and "out/a" are one folder there
+  same_folder_key <- function(p) if (.Platform$OS.type == "windows") tolower(p) else p
+  norm <- same_folder_key(normalizePath(target_dirs, winslash = "/", mustWork = FALSE))
   if (anyDuplicated(norm)) stop("`target_dirs` must be different folders.", call. = FALSE)
   for (i in seq_along(param_list)) {
     p <- param_list[[i]]
@@ -61,7 +63,7 @@ render_parameterized_study <- function(source_dir,
   files <- list.files(source_dir, pattern = pattern, recursive = recursive, full.names = TRUE, ignore.case = TRUE)
   files <- files[!grepl("^[_.]", basename(files))]
   if (length(files) == 0L) stop("No document matching `pattern` in `source_dir`.", call. = FALSE)
-  src_norm <- normalizePath(source_dir, winslash = "/", mustWork = TRUE)
+  src_norm <- same_folder_key(normalizePath(source_dir, winslash = "/", mustWork = TRUE))
   if (any(norm == src_norm) && !dry_run) {
     stop("A target folder is the source folder; outputs would mix with the templates.", call. = FALSE)
   }

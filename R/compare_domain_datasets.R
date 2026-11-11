@@ -233,7 +233,7 @@ compare_domain_datasets <- function(orig_df,
   long_df <- dplyr::bind_rows(long)
   long_df$lo <- long_df$mean - long_df$se
   long_df$hi <- long_df$mean + long_df$se
-  colors <- c(Original = "#2B2B2B", Imputed = "#9D2235")
+  colors <- c(Original = "#2B2B2B", Imputed = "#A41E35")
   plot <- ggplot2::ggplot(long_df, ggplot2::aes(
     x = .data$time, y = .data$mean, color = .data$dataset, fill = .data$dataset, group = .data$dataset
   )) +

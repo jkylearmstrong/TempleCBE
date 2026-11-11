@@ -12,7 +12,9 @@ load_pipeline(file = "pipeline.rds", update_mtime = TRUE)
 \arguments{
 \item{pipeline}{A list of pipeline objects ([FilePath], [FileOutputs], [FileUses]).}
 
-\item{file}{Path to the `.rds` file to save to or read from.}
+\item{file}{Path to the `.rds` file to save to or read from. `load_pipeline()`
+reads it with [readRDS()], which can run code stored in the file: load only
+files written by `save_pipeline()` in a location that you trust.}
 
 \item{update_mtime}{Logical. When loading, should the `@mtime` slots of all
 contained files be re-read from disk? Defaults to `TRUE`.}

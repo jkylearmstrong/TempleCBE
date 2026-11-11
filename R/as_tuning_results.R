@@ -11,15 +11,24 @@
 #'
 #' Maps historical and tidymodels column synonyms to canonical names:
 #' \itemize{
-#'   \item Integrated Brier Score: `ibs`, `mean_ibs`, `mean` (when `.metric` is `"brier_survival_integrated"`), `brier_score` -> `IBS`.
-#'   \item Elastic net mixing: `alphas`, `mixture` -> `alpha`.
+#'   \item Integrated Brier Score: `ibs`, `mean_ibs`, `integrated_brier_score`, `brier_score` -> `IBS`.
+#'     The generic tidymodels columns `mean` and `.estimate` are taken as the IBS only when a
+#'     `.metric` column says that every remaining row is a Brier metric
+#'     (`"brier_survival_integrated"`, `"brier_survival"`, `"brier"` or `"ibs"`). Without
+#'     `.metric`, a `mean` could be the mean of any metric (a concordance, for example), so it
+#'     is not used and the call fails with the list of columns found.
+#'   \item Elastic net mixing: `alphas`, `mixture` -> `alpha`. A table with none of these gets
+#'     `alpha = 1` (lasso) with a warning, because the mixing parameter is then an assumption,
+#'     not something read from the data.
 #'   \item Penalty parameter: `penalty`, `lambdas` -> `lambda`.
 #'   \item Model formula: `formulas`, `formula_str` -> `formula`.
 #'   \item Resampling split: `split`, `splits`, `resample`, `id` -> `inner_resamples_splits`.
 #'   \item Outer cross-validation fold: `fold`, `outer_id` -> `outer_fold`.
 #' }
 #'
-#' @param x A data frame, tibble, path to an `.rds` file, or a tuning result object.
+#' @param x A data frame, tibble, path to an `.rds` file, or a tuning result object. An
+#'   `.rds` file is read with [readRDS()], which can run code stored in the file: pass only
+#'   files that you or a process you trust wrote.
 #' @param ... Unused.
 #' @return A standardized [tibble::tibble()] guaranteed to contain `alpha` and `IBS` columns.
 #' @seealso [compare_tuning_runs()], [select_candidate_models()]
@@ -49,10 +58,12 @@ as_tuning_results <- function(x, ...) {
   col_names <- names(df)
 
   # 1. Filter tidymodels metric sets to IBS/Brier metric if multiple metrics present
+  metric_is_brier <- FALSE
   if (".metric" %in% col_names) {
     brier_rows <- df$.metric %in% c("brier_survival_integrated", "brier_survival", "brier", "ibs")
     if (any(brier_rows)) {
       df <- df[brier_rows, , drop = FALSE]
+      metric_is_brier <- TRUE
     }
   }
 
@@ -62,14 +73,26 @@ as_tuning_results <- function(x, ...) {
       df$IBS <- df$ibs
     } else if ("mean_ibs" %in% names(df)) {
       df$IBS <- df$mean_ibs
-    } else if ("mean" %in% names(df)) {
-      df$IBS <- df$mean
     } else if ("integrated_brier_score" %in% names(df)) {
       df$IBS <- df$integrated_brier_score
     } else if ("brier_score" %in% names(df)) {
       df$IBS <- df$brier_score
-    } else if (".estimate" %in% names(df)) {
+    } else if (metric_is_brier && "mean" %in% names(df)) {
+      # `mean` and `.estimate` are whatever `.metric` names: the IBS only when
+      # `.metric` says so
+      df$IBS <- df$mean
+    } else if (metric_is_brier && ".estimate" %in% names(df)) {
       df$IBS <- df$.estimate
+    } else if (any(c("mean", ".estimate") %in% names(df))) {
+      stop(
+        "Could not adapt tuning results to standardized format: the column `",
+        intersect(c("mean", ".estimate"), names(df))[1],
+        "` is taken as the IBS only when a `.metric` column identifies it as a Brier metric ",
+        "(brier_survival_integrated, brier_survival, brier or ibs). ",
+        "Rename the column to `IBS` if that is what it holds. Found columns: ",
+        paste(col_names, collapse = ", "), ".",
+        call. = FALSE
+      )
     }
   }
 
@@ -79,7 +102,15 @@ as_tuning_results <- function(x, ...) {
       df$alpha <- df$mixture
     } else if ("alphas" %in% names(df)) {
       df$alpha <- df$alphas
+    } else if (!"IBS" %in% names(df)) {
+      # nothing usable at all: the error below lists the columns
+      NULL
     } else {
+      warning(
+        "The tuning results have no `alpha`, `mixture` or `alphas` column: `alpha` is set to 1 (lasso). ",
+        "Add an `alpha` column if the models were fitted with another mixing parameter.",
+        call. = FALSE
+      )
       df$alpha <- 1.0
     }
   }
@@ -158,6 +189,7 @@ as_tuning_results <- function(x, ...) {
   df
 }
 
+#' @rdname templecbe_methods
 #' @export
 summary.cbe_tuning_results <- function(object, ...) {
   structure(
@@ -172,6 +204,7 @@ summary.cbe_tuning_results <- function(object, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @export
 tidy.cbe_tuning_results <- function(x, ...) {
   tibble::as_tibble(x)

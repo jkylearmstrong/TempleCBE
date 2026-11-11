@@ -241,10 +241,10 @@ test_that("sig_level sets the significance cut-off and its legend text", {
   p <- plot_cox_forest(forest_df, p_col = "p.value", color_by = "significance", sig_level = 0.1)
   d <- ggplot2::layer_data(p, 3)
   expect_equal(length(unique(d$colour)), 2L)
-  expect_equal(sum(d$colour == "#9D2235"), 2L) # p = 0.01 and 0.06
+  expect_equal(sum(d$colour == "#A41E35"), 2L) # p = 0.01 and 0.06
   expect_true("Significant (p < 0.1)" %in% p$data$.sig)
   d05 <- ggplot2::layer_data(plot_cox_forest(forest_df, p_col = "p.value", color_by = "significance"), 3)
-  expect_equal(sum(d05$colour == "#9D2235"), 1L)
+  expect_equal(sum(d05$colour == "#A41E35"), 1L)
 })
 
 test_that("plot_cox_forest_multi accepts the new display arguments", {

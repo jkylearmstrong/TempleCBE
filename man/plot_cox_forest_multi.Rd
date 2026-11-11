@@ -6,7 +6,7 @@
 \usage{
 plot_cox_forest_multi(
   x,
-  color = "#9D2235",
+  color = "#A41E35",
   scale = c("hr", "log_hr"),
   color_by = c("none", "significance"),
   order_by = c("none", "magnitude", "pvalue"),
@@ -25,7 +25,7 @@ plot_cox_forest_multi(
 \arguments{
 \item{x}{A \code{cbe_cox_multi} object from [cox_multi()].}
 
-\item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).}
+\item{color}{Primary color for points and error bars (default: Temple Cherry \code{"#A41E35"}).}
 
 \item{scale}{One of \code{"hr"} (default) or \code{"log_hr"}. See [plot_cox_forest()].}
 

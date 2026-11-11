@@ -4,16 +4,26 @@
 \alias{install_package_no_lock}
 \title{Install a Package, Bypassing an Existing Lock}
 \usage{
-install_package_no_lock(packages)
+install_package_no_lock(packages, repos = getOption("repos"))
 }
 \arguments{
-\item{packages}{Character vector of package name(s) to install.}
+\item{packages}{Character vector of package name(s) to install. Each must be a
+valid package name (letters, digits and dots, starting with a letter): a
+path, a URL or an option string is refused.}
+
+\item{repos}{Repositories to install from, passed to
+\code{\link[utils]{install.packages}}.}
 }
 \value{
 Invisibly, \code{NULL} (as per \code{\link[utils]{install.packages}}).
 }
 \description{
-Install a Package, Bypassing an Existing Lock
+Calls \code{\link[utils]{install.packages}} with \code{INSTALL_opts = "--no-lock"},
+for the case where an interrupted installation left a \code{00LOCK} directory
+behind. The packages come from the repositories given in \code{repos} (by
+default the session's \code{getOption("repos")}); nothing else about the
+source is checked, so install only packages you would install with
+\code{install.packages()}.
 }
 \examples{
 \dontrun{

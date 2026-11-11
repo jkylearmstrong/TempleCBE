@@ -7,7 +7,7 @@
 plot_permutation_importance(
   data,
   top_n = 20,
-  fill_color = "#9D2235",
+  fill_color = "#A41E35",
   title = "Feature Permutation Importance",
   base_size = 12,
   label_map = NULL,
@@ -21,7 +21,7 @@ or a permutation importance result itself ([DALEX::model_parts()], `survex::mode
 
 \item{top_n}{Optional integer limit on the number of features to plot (default 20).}
 
-\item{fill_color}{Bar fill color (default Temple Cherry `"#9D2235"`).}
+\item{fill_color}{Bar fill color (default Temple Cherry `"#A41E35"`).}
 
 \item{title}{Optional plot title.}
 

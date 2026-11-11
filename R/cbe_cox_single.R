@@ -38,12 +38,7 @@ cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ..
   }
 
   col_vals <- data[[feature]]
-  var_lbl <- if (requireNamespace("labelled", quietly = TRUE)) {
-    lbl <- labelled::var_label(col_vals)
-    if (is.null(lbl) || is.na(lbl) || !nzchar(lbl)) feature else as.character(lbl)
-  } else {
-    feature
-  }
+  var_lbl <- var_label_or(col_vals, feature)
 
   is_num <- is.numeric(col_vals)
 
@@ -95,18 +90,33 @@ cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ..
     ci_low <- td$conf.low[1]
     ci_high <- td$conf.high[1]
     pval <- td$p.value[1]
-    pct_change <- round(abs(hr_val - 1) * 100, 1)
-    direction <- if (hr_val > 1) "increases" else "decreases"
-    sig_text <- if (pval < 0.05) {
-      "The p-value indicates that this association is statistically significant."
+    if (length(hr_val) == 0L || is.na(hr_val)) {
+      # A coefficient that coxph() could not estimate (a constant or collinear
+      # predictor, or no events): report it instead of failing in `if (NA > 1)`.
+      warning(
+        "The hazard ratio for '", feature, "' could not be estimated (the coefficient is NA).",
+        call. = FALSE
+      )
+      interp <- glue::glue(
+        "The hazard ratio for {var_lbl} could not be estimated: the model has no coefficient for it ",
+        "(the predictor may be constant, or there may be too few events)."
+      )
     } else {
-      "The p-value indicates that this association is not statistically significant."
-    }
+      pct_change <- round(abs(hr_val - 1) * 100, 1)
+      direction <- if (hr_val > 1) "increases" else "decreases"
+      sig_text <- if (is.na(pval)) {
+        "The p-value could not be computed."
+      } else if (pval < 0.05) {
+        "The p-value indicates that this association is statistically significant."
+      } else {
+        "The p-value indicates that this association is not statistically significant."
+      }
 
-    interp <- glue::glue(
-      "The hazard ratio for {var_lbl} is {round(hr_val, 2)} ({ci_col} {round(ci_low, 2)} \u2013 {round(ci_high, 2)}). ",
-      "For each one-unit increase in {var_lbl}, the risk of the event {direction} by {pct_change}%. {sig_text}"
-    )
+      interp <- glue::glue(
+        "The hazard ratio for {var_lbl} is {round(hr_val, 2)} ({ci_col} {round(ci_low, 2)} \u2013 {round(ci_high, 2)}). ",
+        "For each one-unit increase in {var_lbl}, the risk of the event {direction} by {pct_change}%. {sig_text}"
+      )
+    }
   } else {
     f_levels <- levels(as.factor(col_vals))
     ref_level <- f_levels[1]
@@ -140,9 +150,15 @@ cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ..
         pct = round(abs(estimate - 1) * 100, 1),
         dir = dplyr::if_else(estimate > 1, "increases", "decreases"),
         sig = dplyr::if_else(p.value < 0.05, "statistically significant", "not statistically significant"),
-        txt = glue::glue(
-          "The hazard ratio for '{var_lbl} = {lvl}' vs. reference '{ref_level}' is {round(estimate, 2)} ({ci_col} {round(conf.low, 2)} \u2013 {round(conf.high, 2)}), ",
-          "indicating that the risk of the event {dir} by {pct}% ({sig}; p = {scales::pvalue(p.value)})."
+        txt = dplyr::if_else(
+          is.na(estimate),
+          as.character(glue::glue(
+            "The hazard ratio for '{var_lbl} = {lvl}' vs. reference '{ref_level}' could not be estimated."
+          )),
+          as.character(glue::glue(
+            "The hazard ratio for '{var_lbl} = {lvl}' vs. reference '{ref_level}' is {round(estimate, 2)} ({ci_col} {round(conf.low, 2)} \u2013 {round(conf.high, 2)}), ",
+            "indicating that the risk of the event {dir} by {pct}% ({sig}; p = {scales::pvalue(p.value)})."
+          ))
         )
       ) |>
       dplyr::pull(txt)

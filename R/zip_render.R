@@ -188,8 +188,7 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
       zip::zip_append(zip_path_tmp, files = zip_project_rel, root = build_dir, mode = "mirror")
     }
   } else {
-    old <- setwd(build_dir)
-    on.exit(setwd(old), add = TRUE)
+    local_wd(build_dir)
     utils::zip(zipfile = zip_name, files = c(basename(include_in_zip), zip_project_rel), flags = "-r9Xq")
   }
 

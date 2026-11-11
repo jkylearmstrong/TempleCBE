@@ -38,8 +38,10 @@ jobs:
         with:
           extra-packages: any::pkgdown, local::.
 
+      # The site is built with the packages installed above; the lockfile restore is an extra. A
+      # failed restore does not stop the build, but it is reported as a warning annotation on the run
+      # (it used to be swallowed by continue-on-error).
       - name: Restore renv
-        continue-on-error: true
         run: |
           tryCatch({
             if (file.exists("renv.lock")) {
@@ -47,7 +49,7 @@ jobs:
               renv::restore(prompt = FALSE)
             }
           }, error = function(e) {
-            message("renv::restore notice: ", conditionMessage(e))
+            cat("::warning title=renv restore failed::", gsub("[\r\n]+", " ", conditionMessage(e)), "\n", sep = "")
           })
         shell: Rscript {0}
 

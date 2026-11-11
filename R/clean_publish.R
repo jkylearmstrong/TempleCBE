@@ -994,21 +994,27 @@ guard_public_remote <- function(public_url, repo_root = NULL, allow_unmatched = 
 # Run the hook the way git does for a push of nothing: `sh <hook> <remote> <url>` in the top
 # of the work tree, empty standard input, TEMPLECBE_PUBLISHING unset. Returns list(status, output).
 .cp_run_hook <- function(sh, hook_path, top, remote, url) {
-  old_wd <- setwd(top)
+  local_wd(top)
   old_env <- Sys.getenv(c("TEMPLECBE_PUBLISHING", "PATH"), unset = NA)
   on.exit({
-    setwd(old_wd)
-    Sys.setenv(PATH = old_env[["PATH"]])
+    # a variable that was not set is unset again (Sys.setenv() would have set it to "NA")
+    if (is.na(old_env[["PATH"]])) Sys.unsetenv("PATH") else Sys.setenv(PATH = old_env[["PATH"]])
     if (!is.na(old_env[["TEMPLECBE_PUBLISHING"]])) Sys.setenv(TEMPLECBE_PUBLISHING = old_env[["TEMPLECBE_PUBLISHING"]])
   }, add = TRUE)
   Sys.unsetenv("TEMPLECBE_PUBLISHING")
   # the hook uses cut, grep and tr, which sit next to a Windows sh
-  Sys.setenv(PATH = paste(dirname(sh), old_env[["PATH"]], sep = .Platform$path.sep))
+  Sys.setenv(PATH = paste(
+    c(dirname(sh), if (!is.na(old_env[["PATH"]])) old_env[["PATH"]]),
+    collapse = .Platform$path.sep
+  ))
   # standard input is an empty file, as git gives a push of nothing (a line of "input" would be
   # a carriage return under a Windows dash)
   no_input <- tempfile("clean_publish_stdin_")
   file.create(no_input)
   on.exit(unlink(no_input), add = TRUE)
+  # shQuote() is needed here: base R's system2() pastes `args` into one command line and
+  # quotes nothing itself, on Windows and on Unix (unlike processx / callr, which take the
+  # arguments unquoted). The same holds for .cp_git() and the converters of pdf_to_docx.R.
   out <- suppressWarnings(system2(
     sh, shQuote(c(hook_path, remote, url)), stdin = no_input, stdout = TRUE, stderr = TRUE
   ))

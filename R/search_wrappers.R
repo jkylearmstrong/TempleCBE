@@ -8,10 +8,11 @@
 #' @param path Character. Root directory to search.
 #' @param include_comments Logical. Passed through to \code{\link{find_code}}.
 #'   Defaults to \code{TRUE}.
-#' @param workers Integer number of parallel workers to use when
-#'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
-#'   caps at available cores minus one. Falls back to sequential search when
-#'   \pkg{future}/\pkg{furrr} are not installed.
+#' @param workers Integer number of parallel workers. With a number greater than
+#'   1 (and \pkg{future}/\pkg{furrr} installed) the search runs on that many
+#'   \code{multisession} workers, and the previous \code{future::plan()} is put
+#'   back afterwards. The default \code{NULL} does not touch the plan: the search
+#'   uses the plan you have set, which is sequential unless you chose otherwise.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which read function matched.
@@ -47,10 +48,11 @@ find_read_calls <- function(path, include_comments = TRUE, workers = NULL) {
 #' @param path Character. Root directory to search.
 #' @param include_comments Logical. Passed through to \code{\link{find_code}}.
 #'   Defaults to \code{FALSE}.
-#' @param workers Integer number of parallel workers to use when
-#'   \pkg{future}/\pkg{furrr} are installed. Defaults to \code{NULL}, which
-#'   caps at available cores minus one. Falls back to sequential search when
-#'   \pkg{future}/\pkg{furrr} are not installed.
+#' @param workers Integer number of parallel workers. With a number greater than
+#'   1 (and \pkg{future}/\pkg{furrr} installed) the search runs on that many
+#'   \code{multisession} workers, and the previous \code{future::plan()} is put
+#'   back afterwards. The default \code{NULL} does not touch the plan: the search
+#'   uses the plan you have set, which is sequential unless you chose otherwise.
 #'
 #' @return A tibble of matches (see \code{\link{find_code}}) with an
 #'   additional \code{pattern} column recording which write function matched.
@@ -82,8 +84,15 @@ find_write_calls <- function(path, include_comments = FALSE, workers = NULL) {
 .search_codes <- function(string_codes, path, include_comments, lines_after, workers) {
   names(string_codes) <- string_codes
 
-  can_parallelize <- requireNamespace("future", quietly = TRUE) &&
+  has_future <- requireNamespace("future", quietly = TRUE) &&
     requireNamespace("furrr", quietly = TRUE)
+  # Parallel only on request. With `workers = NULL` the plan the caller has set is used as it is
+  # (sequential unless they chose otherwise): starting a multisession cluster just because future
+  # is installed changed the session's plan behind the caller's back and, inside tests or another
+  # parallel job, nested worker clusters (which deadlock on Windows).
+  set_plan <- has_future && !is.null(workers) && workers > 1L
+  can_parallelize <- has_future &&
+    (set_plan || (is.null(workers) && !inherits(future::plan(), "sequential")))
 
   search_one <- function(s) {
     find_code(
@@ -98,9 +107,10 @@ find_write_calls <- function(path, include_comments = FALSE, workers = NULL) {
   }
 
   if (can_parallelize) {
-    if (is.null(workers)) workers <- max(1L, future::availableCores() - 1L)
-    oplan <- future::plan(future::multisession, workers = workers)
-    on.exit(future::plan(oplan), add = TRUE)
+    if (set_plan) {
+      oplan <- future::plan(future::multisession, workers = workers)
+      on.exit(future::plan(oplan), add = TRUE)
+    }
 
     string_codes |> furrr::future_map_dfr(search_one)
   } else {

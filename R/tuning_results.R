@@ -130,8 +130,36 @@ workflow_info <- function(workflowset_results, wflow_id) {
 #' @keywords internal
 #' @noRd
 config_parameters <- function(tune_res, config) {
-  param_names <- tune::.get_tune_parameter_names(tune_res)
+  param_names <- tune_parameter_names(tune_res)
   metrics <- tune::collect_metrics(tune_res)
   metrics <- metrics[metrics$.config == config, param_names, drop = FALSE]
   tibble::as_tibble(utils::head(dplyr::distinct(metrics), 1))
+}
+
+#' Names of the Tuning Parameters of a Tuning Result
+#'
+#' `tune::.get_tune_parameter_names()` is a dot-prefixed helper of \pkg{tune}
+#' that could be renamed or removed. It is used when it exists; otherwise the
+#' names are read from the `parameters` attribute that every tuning result
+#' carries. If neither is there, the error says so instead of failing inside
+#' \pkg{tune}.
+#'
+#' @param tune_res A tuning result.
+#' @return A character vector (empty when nothing was tuned).
+#' @keywords internal
+#' @noRd
+tune_parameter_names <- function(tune_res) {
+  helper <- get0(".get_tune_parameter_names", envir = asNamespace("tune"), mode = "function", inherits = FALSE)
+  if (!is.null(helper)) {
+    return(helper(tune_res))
+  }
+  params <- attr(tune_res, "parameters", exact = TRUE)
+  if (is.data.frame(params) && "id" %in% names(params)) {
+    return(as.character(params$id))
+  }
+  stop(
+    "Could not read the tuning parameter names: this version of tune has no ",
+    "`.get_tune_parameter_names()` and the result has no `parameters` attribute.",
+    call. = FALSE
+  )
 }

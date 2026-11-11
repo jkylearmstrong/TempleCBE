@@ -123,7 +123,9 @@ resolve_hmac_key <- function(key, allow_default_key = FALSE, hint = "") {
     stop("`allow_default_key` must be TRUE or FALSE.", call. = FALSE)
   }
   if (nzchar(key)) {
-    if (nchar(trimws(key)) < 16L && !isTRUE(allow_default_key) && !isTRUE(getOption("templecbe_suppress_weak_key_warning", FALSE))) {
+    # `allow_default_key` is about a MISSING key (it lets the public key stand in for one). It
+    # says nothing about a key the caller did supply, so it does not silence this warning.
+    if (nchar(trimws(key)) < 16L && !isTRUE(getOption("templecbe_suppress_weak_key_warning", FALSE))) {
       warning(
         "The secret key is shorter than 16 characters or whitespace-only, which provides weak pseudonym privacy. ",
         "Use a long random string (at least 16 characters, e.g. 32 bytes) for TEMPLECBE_SECRET_KEY.",
@@ -275,6 +277,8 @@ generate_last_names <- function(n = 10,
       .rng_sample_kind = "Rejection"
     )
   } else {
+    # Not local_seed(): the RNG kinds are switched too, and the caller's seed has to be read
+    # before the switch and put back after the kinds are restored.
     old_rng <- RNGkind()
     old_seed <- if (exists(".Random.seed", envir = .GlobalEnv)) get(".Random.seed", envir = .GlobalEnv) else NULL
     on.exit({
@@ -419,6 +423,15 @@ generate_pseudonym_token <- function(name = NULL,
     }
     n <- as.integer(n)
     if (!is.null(seed)) {
+      # No key enters these tokens: the seed is the only input, and seeds are small numbers.
+      if (!isTRUE(getOption("templecbe_suppress_weak_key_warning", FALSE))) {
+        warning(
+          "Tokens generated from `seed` are reproducible by anyone who knows or guesses the seed; ",
+          "they are NOT secret. Use them for examples and tests only; for data you intend to protect, ",
+          "omit `seed` (random tokens) or pass `name` with a secret `key`.",
+          call. = FALSE
+        )
+      }
       tokens <- vapply(seq_len(n), function(i) {
         raw_hash <- as.character(openssl::sha256(paste0("templecbe_seed_", seed, "_", i)))
         paste0(prefix, slice_hash(raw_hash))
@@ -552,15 +565,7 @@ generate_pi_names <- function(n = 1,
   } else if (requireNamespace("withr", quietly = TRUE)) {
     withr::with_seed(seed, sample_names())
   } else {
-    old_seed <- if (exists(".Random.seed", envir = .GlobalEnv)) get(".Random.seed", envir = .GlobalEnv) else NULL
-    on.exit({
-      if (is.null(old_seed)) {
-        if (exists(".Random.seed", envir = .GlobalEnv)) rm(".Random.seed", envir = .GlobalEnv)
-      } else {
-        assign(".Random.seed", old_seed, envir = .GlobalEnv)
-      }
-    }, add = TRUE)
-    set.seed(seed)
+    local_seed(seed)
     sample_names()
   }
 }
@@ -629,8 +634,11 @@ generate_pi_names <- function(n = 1,
 #'   built-in key instead of stopping, and warn that the output is NOT secret. This only
 #'   reproduces output made without a key by earlier versions; do not use it for data you
 #'   intend to protect.
-#' @param allow_collisions Logical, default \code{FALSE}. If \code{TRUE}, suppresses collision
-#'   errors/warnings when distinct names produce identical tokens or surnames.
+#' @param allow_collisions Logical, default \code{FALSE}. Distinct names that produce the
+#'   same token (\code{"hmac_token"}) or the same surname (\code{"hmac_surname"}) are an
+#'   error. If \code{TRUE}, they give a warning instead and the shared pseudonym is returned.
+#'   Surnames come from a fixed list, so with more than a few dozen names a shared surname is
+#'   likely; use \code{"hmac_token"} or \code{"token"} when every name needs its own pseudonym.
 #' @param normalize Logical, default \code{FALSE}. If \code{TRUE}, trims leading/trailing
 #'   whitespace and converts names to lowercase before hashing.
 #'
@@ -733,6 +741,11 @@ anonymize_pi <- function(name,
 
   if (method == "hmac_surname") {
     u_names <- unique(valid_names)
+    # The surname is drawn from a fixed list, so two names can land on the same surname however
+    # the HMAC is cut: the list, not the 28 bits of the HMAC used as the seed, bounds the number
+    # of distinct pseudonyms. (The seed derivation is left as it is: changing it would give every
+    # name a different surname than earlier versions did.) A shared surname is therefore an
+    # error unless the caller accepts it, as for `method = "hmac_token"`.
     u_res <- vapply(u_names, function(nm) {
       h <- openssl::sha256(nm, key = key)
       s <- strtoi(substr(as.character(h), 1, 7), 16L)
@@ -752,6 +765,8 @@ anonymize_pi <- function(name,
           "Use `method = 'token'` for guaranteed uniqueness or pass `allow_collisions = TRUE`."
         )
         if (!isTRUE(allow_collisions)) {
+          stop(msg, call. = FALSE)
+        } else {
           warning(msg, call. = FALSE)
         }
       }

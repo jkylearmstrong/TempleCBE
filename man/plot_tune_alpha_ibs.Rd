@@ -22,7 +22,9 @@ plot_tune_alpha_ibs(
 
 \item{show_line}{Logical. Overlay the fitted regression line. Default `TRUE`.}
 
-\item{label_map}{Optional label mapping (see [cbe_labels()]).}
+\item{label_map}{Optional label mapping (see [cbe_labels()]). The axis
+titles are looked up under the terms `"alpha"` and `"IBS"` (or
+`"log10(IBS)"`); a term that is not in the map keeps its default title.}
 
 \item{style}{Optional label style (`"short"` or `"full"`).}
 }

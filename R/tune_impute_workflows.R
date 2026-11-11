@@ -203,7 +203,7 @@ plot_tune_grid_rmse <- function(x) {
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$mean - .data$std_err, xmax = .data$mean + .data$std_err),
                            width = 0.2, orientation = "y", position = ggplot2::position_jitter(height = 0.2, width = 0, seed = 1)) +
     ggplot2::geom_point(size = 2, position = ggplot2::position_jitter(height = 0.2, width = 0, seed = 1)) +
-    ggplot2::scale_color_manual(values = c(`All folds` = "#9D2235", `Dropped by racing` = "grey65"), name = NULL) +
+    ggplot2::scale_color_manual(values = c(`All folds` = "#A41E35", `Dropped by racing` = "grey65"), name = NULL) +
     theme_cbe() +
     ggplot2::labs(title = paste0("Cross-validated RMSE of imputation workflows: ", x$target),
                   x = "RMSE (mean \u00b1 SE over folds; dashed: null model)", y = "Workflow")

@@ -23,9 +23,21 @@ for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.}
 }
 \value{
-A list containing the current configuration options.
+A list containing the current configuration options, with the
+  attribute `"previous"`: the options as they were before the call.
 }
 \description{
 Decouples project-specific parameters (study name, stage display labels,
 stage color palettes) from core pipeline mechanics and classes.
+}
+\details{
+The configuration is kept in the session options `pipeline.study_name`,
+`pipeline.stage_labels`, `pipeline.stage_colors` and
+`pipeline.default_formats`, so a call with arguments changes them for the
+rest of the session. The values they had before the call are returned in the
+attribute `"previous"`, in the form [options()] takes; to change the
+configuration only inside a function or a test, restore them on exit:
+`old <- attr(pipeline_config(study_name = "X"), "previous");
+on.exit(options(old), add = TRUE)`, or use `withr::local_options()` on the
+options directly.
 }

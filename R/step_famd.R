@@ -133,6 +133,7 @@ step_famd_new <- function(terms, role, trained, num_comp, threshold, options, re
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::prep
 prep.step_famd <- function(x, training, info = NULL, ...) {
   col_names <- recipes::recipes_eval_select(x$terms, training, info)
@@ -222,6 +223,7 @@ prep.step_famd <- function(x, training, info = NULL, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::bake
 bake.step_famd <- function(object, new_data, ...) {
   col_names <- object$columns
@@ -256,6 +258,7 @@ bake.step_famd <- function(object, new_data, ...) {
   recipes::remove_original_cols(new_data, object, col_names)
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method base::print
 print.step_famd <- function(x, width = max(20, options()$width - 29), ...) {
   title <- "FAMD extraction with "
@@ -296,6 +299,7 @@ tidy.step_famd <- function(x, type = "coef", ...) {
   res
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method recipes::tunable
 tunable.step_famd <- function(x, ...) {
   tibble::tibble(
@@ -310,6 +314,7 @@ tunable.step_famd <- function(x, ...) {
   )
 }
 
+#' @rdname templecbe_methods
 #' @exportS3Method generics::required_pkgs
 required_pkgs.step_famd <- function(x, ...) {
   c("FactoMineR", "TempleCBE")

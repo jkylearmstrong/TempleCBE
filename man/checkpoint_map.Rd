@@ -24,7 +24,11 @@ checkpoint_map(
 \item{...}{Additional arguments passed to `.f`.}
 
 \item{checkpoint_dir}{Optional directory path where per-task `.rds`
-checkpoint files are stored. If `NULL`, executes normally without disk caching.}
+checkpoint files are stored. If `NULL`, executes normally without disk caching.
+Checkpoints are read back with [readRDS()], which can run code stored in a
+file: use a directory that only you (or a process you trust) can write to.
+A checkpoint that cannot be read, and a checkpoint that cannot be written
+(full disk, no permission), give a warning that names the file.}
 
 \item{key}{Optional vector or function producing safe, unique character keys
 for each element of `.x`. Defaults to names of `.x`, or `item_0001`, `item_0002`, etc.}
@@ -33,8 +37,8 @@ for each element of `.x`. Defaults to names of `.x`, or `item_0001`, `item_0002`
 per item, or a function `function(x, ...)` returning a fingerprint string.
 When `NULL`, fingerprints are derived from `.x[[i]]`, `...`, and package version.}
 
-\item{shard}{Optional integer vector `c(i, n)` specifying that this execution
-evaluates shard `i` of `n` items.}
+\item{shard}{Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
+evaluate shard `i` of `n`. Anything else is an error.}
 
 \item{checkpoint_mismatch}{Action when an existing checkpoint file has a
 mismatched fingerprint: `"recompute"` (default), `"overwrite"`, or `"error"`.}

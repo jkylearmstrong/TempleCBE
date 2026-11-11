@@ -10,7 +10,7 @@ plot_dynamic_trajectory(
   time_col,
   group_col,
   facet_col = NULL,
-  colors = c(Survived = "#6F6F6F", Died = "#9D2235"),
+  colors = c(Survived = "#6F6F6F", Died = "#A41E35"),
   base_size = 12,
   palette = NULL,
   group_levels = NULL,
@@ -31,7 +31,7 @@ plot_dynamic_trajectory(
 \item{facet_col}{Optional character name of domain or biomarker column to facet wrap.}
 
 \item{colors}{Named or unnamed character vector of colors matching group levels,
-or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#9D2235")}.
+or `NULL` to use default CBE palette. Defaults to \code{c(Survived = "#6F6F6F", Died = "#A41E35")}.
 When `colors` is left at its default and the data's groups are not Survived/Died, the CBE palette
 is used instead of failing, so any grouping works without extra arguments.}
 

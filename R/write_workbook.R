@@ -53,7 +53,24 @@ write_database_to_excel <- function(x, path,
   }
 
   sheet_names <- vapply(sheet_names, clean_sheet_name, character(1))
-  sheet_names <- make.unique(sheet_names, sep = "_")
+  # make.unique() after the cut to 31 characters appended "_1" to a name that was already 31
+  # long, which Excel (and writexl) refuse. The suffix now takes its room from the name, and
+  # names are compared without case, as Excel compares them.
+  unique_sheet_names <- function(nms) {
+    out <- character(length(nms))
+    for (i in seq_along(nms)) {
+      candidate <- nms[i]
+      k <- 0L
+      while (tolower(candidate) %in% tolower(out[seq_len(i - 1L)])) {
+        k <- k + 1L
+        suffix <- paste0("_", k)
+        candidate <- paste0(substr(nms[i], 1L, 31L - nchar(suffix)), suffix)
+      }
+      out[i] <- candidate
+    }
+    out
+  }
+  sheet_names <- unique_sheet_names(unname(sheet_names))
   names(x) <- sheet_names
 
   # Convert list elements to data frames

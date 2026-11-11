@@ -235,8 +235,6 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #' @param renv_guard Logical. When \code{TRUE} (default), verifies that \pkg{renv} is active
 #'   if an \code{renv.lock} exists, and warns of any package version discrepancies.
 #' @param seed Optional integer seed for reproducible document execution.
-#' @param skip_downstream Logical (default `TRUE`). Skip downstream targets when an upstream target fails.
-#' @param rerun One of `"none"` (default) or `"full"` (forces `only_stale = FALSE` and `cache = "refresh"`).
 #' @param stale_by Staleness strategy: `"mtime"` (default; compares file modification
 #'   times) or `"hash"` (compares SHA-256 content hashes of declared inputs and
 #'   outputs stored in `pipeline_hashes.json`).
@@ -562,8 +560,8 @@ render_pipeline <- function(path,
       "keep"    = FALSE
     )
     if (wipe_cache) {
-      if (dir.exists(cache_dir)) unlink(cache_dir, recursive = TRUE)
-      if (dir.exists(files_dir)) unlink(files_dir, recursive = TRUE)
+      if (dir.exists(cache_dir)) remove_dir_tree(cache_dir)
+      if (dir.exists(files_dir)) remove_dir_tree(files_dir)
     }
 
     rows <- purrr::map_dfr(file_formats, function(fmt) {
@@ -711,6 +709,9 @@ render_pipeline <- function(path,
   # Independent branches within each wave can render in parallel when explicitly requested.
   has_future <- requireNamespace("future", quietly = TRUE) && requireNamespace("furrr", quietly = TRUE)
 
+  if (!is.null(workers) && (!is.numeric(workers) || length(workers) != 1L || is.na(workers) || workers < 1)) {
+    stop("`workers` must be NULL or a single number of at least 1.", call. = FALSE)
+  }
   # Fleet rule: never touch future::plan() inside functions unless explicitly asked (workers > 1)
   touch_plan <- !is.null(workers) && is.numeric(workers) && as.integer(workers) > 1L
 

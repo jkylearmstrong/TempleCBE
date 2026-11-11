@@ -199,7 +199,7 @@ km_cutpoint_search <- function(data,
   opt_cut <- results$cutpoint[best_idx]
 
   sv <- survival::Surv(df[[time_col]], df[[status_col]])
-  cox_coef <- tryCatch(unname(stats::coef(suppressWarnings(survival::coxph(sv ~ vals)))[1]), error = function(e) NA_real_)
+  cox_coef <- .cutpoint_cox_coef(sv, vals)
   maxstat_cut <- NULL
   if (requireNamespace("maxstat", quietly = TRUE)) {
     md <- data.frame(.t = df[[time_col]], .s = df[[status_col]], .x = vals)
@@ -275,10 +275,10 @@ plot_km_cutpoints <- function(x, ..., alpha = c(0.1, 0.05, 0.001)) {
   p +
     ggplot2::geom_line(color = "#6F6F6F", linewidth = 1) +
     ggplot2::geom_point(color = "#2B2B2B", size = 2) +
-    ggplot2::geom_vline(xintercept = opt_x, linetype = "dashed", color = "#9D2235", linewidth = 1) +
+    ggplot2::geom_vline(xintercept = opt_x, linetype = "dashed", color = "#A41E35", linewidth = 1) +
     ggplot2::geom_point(data = data.frame(cutpoint = opt_x, neg_log10_p = opt_y),
                         ggplot2::aes(x = .data$cutpoint, y = .data$neg_log10_p),
-                        color = "#9D2235", size = 4) +
+                        color = "#A41E35", size = 4) +
     theme_cbe() +
     ggplot2::labs(
       title = paste0("Optimal Cutpoint Profile: ", x$var_col),
@@ -354,7 +354,7 @@ plot_cutpoint_bar <- function(x, metric = c("neg_log10_p", "hr", "cutpoint"), al
     cutpoint = "Cutpoint"
   )
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$criterion, y = .data$.y)) +
-    ggplot2::geom_col(fill = "#9D2235", width = 0.7) +
+    ggplot2::geom_col(fill = "#A41E35", width = 0.7) +
     ggplot2::geom_text(ggplot2::aes(label = .data$.lab), vjust = -0.4, size = 3) +
     theme_cbe() +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)) +
@@ -541,7 +541,7 @@ km_cutpoint_time_varying <- function(data,
   opt_cut <- results$cutpoint[best_idx]
 
   sv <- survival::Surv(df[[tstart_col]], df[[tstop_col]], df[[status_col]])
-  cox_coef <- tryCatch(unname(stats::coef(suppressWarnings(survival::coxph(sv ~ vals)))[1]), error = function(e) NA_real_)
+  cox_coef <- .cutpoint_cox_coef(sv, vals)
 
   strata_name <- paste0(var_col, "_strata")
   data[[strata_name]] <- factor(
@@ -564,4 +564,13 @@ km_cutpoint_time_varying <- function(data,
   )
   class(out) <- c("cbe_km_cutpoint", "list")
   out
+}
+
+# The Cox coefficient of the continuous variable, whose sign gives the direction in which the
+# cutpoints are scanned; NA when the model cannot be fitted.
+.cutpoint_cox_coef <- function(sv, vals) {
+  tryCatch(
+    unname(stats::coef(suppressWarnings(survival::coxph(sv ~ vals)))[1]),
+    error = function(e) NA_real_
+  )
 }

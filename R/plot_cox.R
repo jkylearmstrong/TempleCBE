@@ -19,7 +19,7 @@ NULL
 #' @param high_col Column name for upper CI bounds, on the HR scale (default: "conf.high").
 #' @param p_col Optional column name for p-values. Required for \code{color_by = "significance"}
 #'   and \code{order_by = "pvalue"}.
-#' @param color Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).
+#' @param color Primary color for points and error bars (default: Temple Cherry \code{"#A41E35"}).
 #' @param scale One of \code{"hr"} (default; plots hazard ratios with a reference line at 1) or
 #'   \code{"log_hr"} (log-transforms \code{hr_col}/\code{low_col}/\code{high_col} for plotting, with
 #'   a reference line at 0). Equivalent to \code{exponentiate = TRUE} and \code{FALSE}; kept for
@@ -62,7 +62,7 @@ plot_cox_forest <- function(data,
                             low_col = "conf.low",
                             high_col = "conf.high",
                             p_col = NULL,
-                            color = "#9D2235",
+                            color = "#A41E35",
                             scale = c("hr", "log_hr"),
                             color_by = c("none", "significance", "p_tier"),
                             order_by = c("none", "magnitude", "pvalue"),
@@ -162,7 +162,7 @@ resolve_forest_display <- function(scale, scale_missing, exponentiate, log_scale
 #' parent variable.
 #'
 #' @param x A \code{cbe_cox_multi} object from [cox_multi()].
-#' @param color Primary color for points and error bars (default: Temple Cherry \code{"#9D2235"}).
+#' @param color Primary color for points and error bars (default: Temple Cherry \code{"#A41E35"}).
 #' @param scale One of \code{"hr"} (default) or \code{"log_hr"}. See [plot_cox_forest()].
 #' @param color_by One of \code{"none"} (default) or \code{"significance"}. See [plot_cox_forest()].
 #' @param order_by One of \code{"none"} (default), \code{"magnitude"}, or \code{"pvalue"}, applied
@@ -179,7 +179,7 @@ resolve_forest_display <- function(scale, scale_missing, exponentiate, log_scale
 #' @seealso [cox_multi()], [plot_cox_forest()]
 #' @export
 plot_cox_forest_multi <- function(x,
-                                  color = "#9D2235",
+                                  color = "#A41E35",
                                   scale = c("hr", "log_hr"),
                                   color_by = c("none", "significance"),
                                   order_by = c("none", "magnitude", "pvalue"),
@@ -512,7 +512,7 @@ plot_cox_survival <- function(fit,
 #' @param scale One of \code{"prob"} (default; predicted probability of the event),
 #'   \code{"hr"} (relative hazard, i.e. \code{exp()} of the centered linear predictor), or
 #'   \code{"log_hr"} (the centered linear predictor itself).
-#' @param color Primary color for the fitted curve and CI band (default: Temple Cherry \code{"#9D2235"}).
+#' @param color Primary color for the fitted curve and CI band (default: Temple Cherry \code{"#A41E35"}).
 #' @param base_size Base font size (default: 12).
 #' @return A ggplot2 object.
 #' @export
@@ -521,7 +521,7 @@ plot_cox_marginal <- function(fit,
                               feature = NULL,
                               status_col = "status",
                               scale = c("prob", "hr", "log_hr"),
-                              color = "#9D2235",
+                              color = "#A41E35",
                               base_size = 12) {
   scale <- match.arg(scale)
 

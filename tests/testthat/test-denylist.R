@@ -1,7 +1,9 @@
 # TempleCBE is public: no tracked file may name the private downstream study or
 # PI, or use its identifiers. The forbidden terms come from an untracked file
 # (see helper-denylist.R), so these tests skip wherever that file is absent
-# (CRAN, CI, other contributors) and the terms themselves never enter the repo.
+# (CRAN, other contributors) and the terms themselves never enter the repo. On
+# CI the scan runs as its own step, from the secret TEMPLECBE_DENYLIST_TERMS
+# (scripts/ci_denylist_scan.R, R-CMD-check.yaml).
 
 make_denylist_fixture_repo <- function() {
   repo <- tempfile("denylist_repo_")
@@ -22,16 +24,26 @@ write_fixture_pdf <- function(path, label) {
   graphics::text(0.5, 0.5, label)
 }
 
-# The terms and repo root for the real scans, or skip the calling test
+# The terms and repo root for the real scans, or skip the calling test. With
+# TEMPLECBE_REQUIRE_DENYLIST=true a scan that cannot run is a failure, not a
+# skip (for a release checklist or a runner that is expected to have the terms;
+# CI runs the same scan from scripts/ci_denylist_scan.R).
 denylist_or_skip <- function() {
   skip_on_cran()
-  skip_if(!nzchar(Sys.which("git")), "git not available")
+  required <- identical(tolower(Sys.getenv("TEMPLECBE_REQUIRE_DENYLIST", "")), "true")
+  skip_or_fail <- function(condition, why) {
+    if (condition && required) {
+      stop("TEMPLECBE_REQUIRE_DENYLIST is true but the denylist scan cannot run: ", why, call. = FALSE)
+    }
+    skip_if(condition, why)
+  }
+  skip_or_fail(!nzchar(Sys.which("git")), "git not available")
   path <- denylist_path()
-  skip_if(is.na(path), "no denylist: set TEMPLECBE_DENYLIST or create .git/info/denylist")
+  skip_or_fail(is.na(path), "no denylist: set TEMPLECBE_DENYLIST or create .git/info/denylist")
   terms <- read_denylist(path)
-  skip_if(length(terms) == 0, "the denylist has no terms")
+  skip_or_fail(length(terms) == 0, "the denylist has no terms")
   root <- package_repo_root()
-  skip_if(is.na(root), "not running inside a TempleCBE git checkout")
+  skip_or_fail(is.na(root), "not running inside a TempleCBE git checkout")
   list(terms = terms, root = root)
 }
 

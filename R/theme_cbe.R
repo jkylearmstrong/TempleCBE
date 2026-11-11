@@ -11,7 +11,7 @@ NULL
 #' Official and complementary colors for CBE publications and slide decks.
 #' @export
 cbe_palette <- c(
-  cherry       = "#9D2235", # Temple Cherry
+  cherry       = "#A41E35", # Temple Cherry
   neutral_grey = "#6F6F6F", # Neutral Grey
   dark_grey    = "#2B2B2B",
   light_grey   = "#D9D9D9",
@@ -135,7 +135,35 @@ fmt_sig <- function(x, digits = 3) {
 #' @return Formatted string (e.g., "p = 0.034" or "p < 0.001")
 #' @export
 fmt_p <- function(p) {
-  ifelse(is.na(p), "\u2014", ifelse(p < 0.001, "p < 0.001", sprintf("p = %.3f", p)))
+  format_p_value(p, digits = 3, prefix = TRUE, na = "\u2014")
+}
+
+#' Format P-Values: the One Implementation
+#'
+#' Every p-value formatter of the package goes through this function, so the
+#' threshold and the rounding are the same everywhere; the callers differ only
+#' in whether the text starts with `"p"` and in what a missing value becomes.
+#'
+#' @param p Numeric vector of p-values.
+#' @param digits Decimal places. A p-value below `10^-digits` is shown as
+#'   below that threshold (`"<0.001"`).
+#' @param prefix If `TRUE`, `"p = 0.034"` and `"p < 0.001"`; if `FALSE`,
+#'   `"0.034"` and `"<0.001"`.
+#' @param na Text for a missing p-value.
+#' @return A character vector as long as `p`.
+#' @keywords internal
+#' @noRd
+format_p_value <- function(p, digits = 3, prefix = FALSE, na = NA_character_) {
+  p <- as.numeric(p)
+  lim <- 10^-digits
+  below <- paste0(if (prefix) "p < " else "<", formatC(lim, format = "f", digits = digits))
+  out <- ifelse(
+    !is.na(p) & p < lim,
+    below,
+    paste0(if (prefix) "p = " else "", formatC(p, format = "f", digits = digits))
+  )
+  out[is.na(p)] <- na
+  as.character(out)
 }
 
 #' Format Hazard Ratio and Confidence Interval

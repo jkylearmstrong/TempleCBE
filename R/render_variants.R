@@ -193,7 +193,11 @@ render_variants <- function(input,
       # a Quarto project may send the output to its output-dir
       produced <- .rv_find_output(work_name, in_dir)
       if (is.na(produced)) stop("the renderer did not write ", work_name, call. = FALSE)
-      leftovers <- c(leftovers, produced)
+      # `leftovers` is everything this rendering may leave behind; it is removed once after the
+      # tryCatch(), whatever happened. A file that was renamed away is no longer there and
+      # unlink() passes over it: `produced` after a successful rename, and `backup` after it
+      # was put back.
+      leftovers <- unique(c(leftovers, produced))
       # the old file is set aside, not deleted, until the new one is in place
       backup <- NULL
       if (file.exists(out$output[i])) {
@@ -296,7 +300,10 @@ render_variants <- function(input,
       od <- sub("^\\s+output-dir:\\s*[\"']?([^\"'#]+?)[\"']?\\s*(#.*)?$", "\\1", grep("^\\s+output-dir:", lines, value = TRUE)[1])
       if (!is.na(od) && nzchar(od)) {
         root <- file.path(dir, od)
-        hits <- list.files(root, pattern = paste0("^", gsub("([.])", "\\\\\\1", work_name), "$"), recursive = TRUE, full.names = TRUE)
+        # compared as a name, not as a pattern: a file name may hold ( ) + [ and other
+        # characters that mean something in a regular expression
+        hits <- list.files(root, recursive = TRUE, full.names = TRUE)
+        hits <- hits[basename(hits) == work_name]
         if (length(hits)) return(hits[1])
       }
       return(NA_character_)

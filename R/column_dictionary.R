@@ -67,12 +67,8 @@ reconcile_column_dictionary <- function(data,
   if (!is.data.frame(dictionary)) {
     stop("`dictionary` must be a data frame.", call. = FALSE)
   }
-  for (arg in c("source_col", "target_col")) {
-    val <- get(arg)
-    if (!is.character(val) || length(val) != 1L || is.na(val) || !val %in% names(dictionary)) {
-      stop("`", arg, "` must name a column of `dictionary`.", call. = FALSE)
-    }
-  }
+  check_named_column(source_col, "source_col", dictionary, "dictionary", article = "a")
+  check_named_column(target_col, "target_col", dictionary, "dictionary", article = "a")
   src <- as.character(dictionary[[source_col]])
   tgt <- as.character(dictionary[[target_col]])
   if (anyNA(src) || anyNA(tgt) || any(!nzchar(src)) || any(!nzchar(tgt))) {
@@ -226,6 +222,7 @@ reconcile_column_dictionary <- function(data,
   )
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_column_reconciliation <- function(x, ...) {
   cat("<cbe_column_reconciliation> ", if (x$is_valid) "valid" else "NOT valid", "\n", sep = "")

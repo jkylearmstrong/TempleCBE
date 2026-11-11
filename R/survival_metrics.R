@@ -479,6 +479,7 @@ run_with_on_complete <- function(fn_name = "TempleCBE",
   res
 }
 
+#' @rdname templecbe_methods
 #' @export
 `$.cbe_completion_event` <- function(x, name) {
   raw <- unclass(x)
@@ -621,7 +622,7 @@ create_shared_worker_bundle <- function(splits, dots, run_fp) {
   )
 
   bundle_file <- tempfile(pattern = "tcbe_shared_bundle_", fileext = ".rds")
-  tryCatch(saveRDS(payload, bundle_file, compress = FALSE), error = function(e) NULL)
+  save_checkpoint_rds(payload, bundle_file, compress = FALSE)
 
   # Seed the current process's `.worker_cache` as well so sequential execution has zero file I/O
   hydrated <- hydrate_worker_bundle(payload)
@@ -668,7 +669,7 @@ get_worker_bundle <- function(run_fp, bundle_file = NULL, fallback_payload = NUL
   }
   payload <- NULL
   if (!is.null(bundle_file) && file.exists(bundle_file)) {
-    payload <- tryCatch(readRDS(bundle_file), error = function(e) NULL)
+    payload <- read_checkpoint_rds(bundle_file)
   }
   if (is.null(payload)) {
     payload <- fallback_payload
@@ -881,7 +882,7 @@ read_verified_checkpoint <- function(ckpt_file,
   if (is.null(ckpt_file) || !file.exists(ckpt_file)) {
     return(list(status = "missing", value = NULL))
   }
-  cached <- tryCatch(readRDS(ckpt_file), error = function(e) NULL)
+  cached <- read_checkpoint_rds(ckpt_file)
   if (is.null(cached)) {
     return(list(status = "invalid", value = NULL))
   }
@@ -952,9 +953,78 @@ write_verified_checkpoint <- function(obj,
   meta$version <- templecbe_version()
   attr(obj, "checkpoint_meta") <- meta
   if (!is.null(ckpt_file)) {
-    tryCatch(saveRDS(obj, ckpt_file), error = function(e) NULL)
+    save_checkpoint_rds(obj, ckpt_file)
   }
   obj
+}
+
+#' Read or Write a Checkpoint RDS File, With a Diagnostic on Failure
+#'
+#' A checkpoint that cannot be read is treated as not computed, and a
+#' checkpoint that cannot be written leaves the result in memory only. Both used
+#' to pass in silence, so a full disk, a permission problem or a truncated file
+#' looked like success and the work was repeated on the next run without any
+#' explanation. They now give a warning that names the file and the cause.
+#'
+#' Checkpoints are R serializations: [readRDS()] can run code stored in the
+#' file. Point `checkpoint_dir` only at directories that you (or a process you
+#' trust) wrote.
+#'
+#' @param path File path of the checkpoint.
+#' @param obj Object to save.
+#' @param ... Passed to [saveRDS()].
+#' @return `read_checkpoint_rds()`: the object, or `NULL` if the file could
+#'   not be read. `save_checkpoint_rds()`: `TRUE` on success, `FALSE` otherwise,
+#'   invisibly.
+#' @keywords internal
+#' @noRd
+read_checkpoint_rds <- function(path) {
+  tryCatch(
+    suppressWarnings(readRDS(path)),
+    error = function(e) {
+      warning(
+        "Checkpoint '", path, "' could not be read (", conditionMessage(e),
+        "); it is treated as not computed.",
+        call. = FALSE
+      )
+      NULL
+    }
+  )
+}
+
+#' @rdname read_checkpoint_rds
+#' @keywords internal
+#' @noRd
+save_checkpoint_rds <- function(obj, path, ...) {
+  ok <- tryCatch(
+    {
+      suppressWarnings(saveRDS(obj, path, ...))
+      TRUE
+    },
+    error = function(e) {
+      warning(
+        "Checkpoint '", path, "' could not be written (", conditionMessage(e),
+        "); the result is kept in memory only and will be recomputed on the next run.",
+        call. = FALSE
+      )
+      FALSE
+    }
+  )
+  invisible(ok)
+}
+
+#' Which of `n` Tasks Belong to a Shard
+#'
+#' @param n Number of tasks.
+#' @param shard `NULL` or a validated `c(i, n_shards)` (see `validate_shard_spec()`).
+#' @return A logical vector of length `n`; all `TRUE` without a shard.
+#' @keywords internal
+#' @noRd
+shard_active_mask <- function(n, shard = NULL) {
+  if (is.null(shard)) {
+    return(rep(TRUE, n))
+  }
+  ((seq_len(n) - 1L) %% shard[2]) + 1L == shard[1]
 }
 
 #' Validate a `shard = c(i, n)` Specification
@@ -1820,18 +1890,7 @@ tune_alpha_by_split <- function(object,
 #' @keywords internal
 #' @noRd
 with_local_seed <- function(seed, expr) {
-  has_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
-  if (has_seed) {
-    old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
-    on.exit(assign(".Random.seed", old_seed, envir = globalenv()), add = TRUE)
-  } else {
-    on.exit( {
-      if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
-        rm(".Random.seed", envir = globalenv())
-      }
-    }, add = TRUE)
-  }
-  set.seed(seed)
+  local_seed(seed)
   force(expr)
 }
 
@@ -2193,6 +2252,7 @@ clean_checkpoints <- function(dir,
   df
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_clean_checkpoints <- function(x, ...) {
   cat("TempleCBE Checkpoint Cleanup\n")
@@ -2408,6 +2468,7 @@ estimate_runtime <- function(fn,
   out
 }
 
+#' @rdname templecbe_methods
 #' @export
 print.cbe_runtime_estimate <- function(x, ...) {
   cat("TempleCBE Runtime Estimate\n")

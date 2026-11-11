@@ -32,7 +32,8 @@
 #'
 #' @param data A data frame.
 #' @param outcome,feature Names of the outcome and the single predictor.
-#' @param family A [stats::family] object (default [stats::gaussian()]).
+#' @param family A [stats::family] object (default [stats::gaussian()]), a family function, or
+#'   the name of one of the families of \pkg{stats} (`"binomial"`, `"poisson"`, ...).
 #' @param id_col Name of the grouping (subject) column for the random intercept.
 #' @param normalize If `TRUE` (default) also fit on the 0..1 scaled predictor.
 #' @param conf_level Confidence level (default 0.95).
@@ -98,12 +99,8 @@ NULL
 
 .coef_screen <- function(data, outcome, feature, id_col, normalize, conf_level, fit_builder, coef_fun, need_id) {
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
-  for (a in c("outcome", "feature")) {
-    v <- get(a)
-    if (!is.character(v) || length(v) != 1L || is.na(v) || !v %in% names(data)) {
-      stop("`", a, "` must name one column of `data`.", call. = FALSE)
-    }
-  }
+  check_named_column(outcome, "outcome", data)
+  check_named_column(feature, "feature", data)
   if (need_id && (!is.character(id_col) || length(id_col) != 1L || is.na(id_col) || !id_col %in% names(data))) {
     stop("`id_col` must name one column of `data`.", call. = FALSE)
   }
@@ -143,7 +140,24 @@ NULL
 #' @rdname coef_single
 #' @export
 glm_single <- function(data, outcome, feature, family = stats::gaussian(), normalize = TRUE, conf_level = 0.95) {
-  if (is.character(family)) family <- get(family, mode = "function", envir = parent.frame())
+  if (is.character(family)) {
+    # by name: one of the families of `stats`, looked up there. (It was looked up in the
+    # caller's frame, where an object of the same name hid the family and a misspelling gave
+    # "object 'binomail' of mode 'function' was not found".)
+    known <- c(
+      "gaussian", "binomial", "poisson", "Gamma", "inverse.gaussian",
+      "quasi", "quasibinomial", "quasipoisson"
+    )
+    if (length(family) != 1L || is.na(family) || !family %in% known) {
+      stop(
+        "`family` = ", paste(encodeString(as.character(family), quote = "\""), collapse = ", "),
+        " is not a family name. Use one of ", paste(known, collapse = ", "),
+        ", or pass a family object such as binomial(link = \"probit\").",
+        call. = FALSE
+      )
+    }
+    family <- get(family, envir = asNamespace("stats"), mode = "function", inherits = FALSE)
+  }
   if (is.function(family)) family <- family()
   if (!inherits(family, "family")) stop("`family` must be a family object such as gaussian() or binomial().", call. = FALSE)
   .coef_screen(
@@ -248,8 +262,8 @@ plot_coef_forest <- function(results_df,
   })
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.est, y = .data$.label)) +
     ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-    ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.lo, xmax = .data$.hi), width = 0.25, color = "#9D2235", orientation = "y") +
-    ggplot2::geom_point(size = 3, color = "#9D2235") +
+    ggplot2::geom_errorbar(ggplot2::aes(xmin = .data$.lo, xmax = .data$.hi), width = 0.25, color = "#A41E35", orientation = "y") +
+    ggplot2::geom_point(size = 3, color = "#A41E35") +
     ggplot2::geom_text(ggplot2::aes(x = .data$.xstar, label = .data$.stars), hjust = 0, size = 3.5) +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.15))) +
     cbe_theme_survival() +

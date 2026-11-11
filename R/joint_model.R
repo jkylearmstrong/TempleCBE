@@ -1315,7 +1315,7 @@ autoplot.cv_joint_model <- function(object, ...) {
   p1 <- ggplot2::ggplot(object, ggplot2::aes(x = .data$model, y = .data$ibs, fill = .data$model)) +
     ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
     ggplot2::geom_jitter(width = 0.15, size = 2, shape = 21, color = "black") +
-    ggplot2::scale_fill_manual(values = c("coxnet" = "#9D2235", "status_calibrated" = "#3B5998", "time_regression" = "#4A777A")) +
+    ggplot2::scale_fill_manual(values = c("coxnet" = "#A41E35", "status_calibrated" = "#3B5998", "time_regression" = "#4A777A")) +
     ggplot2::labs(
       title = "Cross-Validated Integrated Brier Score (IBS)",
       subtitle = "Lower IBS indicates superior calibrated survival predictions (TempleCBE IPCW)",

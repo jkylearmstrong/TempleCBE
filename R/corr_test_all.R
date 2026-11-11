@@ -206,7 +206,7 @@ correlated_pairs_table <- function(data,
 #' @param x Character string naming the x-axis variable.
 #' @param y Character string naming the y-axis variable.
 #' @param method Correlation method: `"pearson"` (default) or `"spearman"`.
-#' @param point_color Point fill/outline color (default Temple Cherry `"#9D2235"`).
+#' @param point_color Point fill/outline color (default Temple Cherry `"#A41E35"`).
 #' @param line_color Regression line color (default charcoal `"#2B2B2B"`).
 #' @param se Logical. Overlay confidence interval band (default `TRUE`).
 #' @param title Optional plot title.
@@ -219,7 +219,7 @@ plot_corr_scatter <- function(data,
                               x,
                               y,
                               method = c("pearson", "spearman"),
-                              point_color = "#9D2235",
+                              point_color = "#A41E35",
                               line_color = "#2B2B2B",
                               se = TRUE,
                               title = NULL,
@@ -271,7 +271,7 @@ plot_corr_scatter <- function(data,
 #' @param item_col Character name of feature or model column (y-axis).
 #' @param group_col Character name of fold, split, or metric column (x-axis).
 #' @param rank_col Character name of rank column (fill).
-#' @param low_color Color for best rank (rank 1, default Temple Cherry `"#9D2235"`).
+#' @param low_color Color for best rank (rank 1, default Temple Cherry `"#A41E35"`).
 #' @param high_color Color for worst rank (default light grey `"#F4F4F4"`).
 #' @param title Optional plot title.
 #' @param base_size Base font size (default 12).
@@ -287,7 +287,7 @@ plot_rank_heatmap <- function(data,
                               item_col,
                               group_col,
                               rank_col,
-                              low_color = "#9D2235",
+                              low_color = "#A41E35",
                               high_color = "#F4F4F4",
                               title = "Rank Stability Across Resamples",
                               base_size = 12,

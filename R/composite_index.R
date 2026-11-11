@@ -11,6 +11,11 @@ NULL
 #'
 #' Subtracts the mean from a numeric vector, returning a vector (not a 1D matrix).
 #'
+#' `center` is a common name: other attached packages, or an object of your own
+#' called `center`, can mask it (and [compute_composite_index()] has an argument
+#' of that name). In scripts, write `TempleCBE::center()` to be sure which one
+#' is called.
+#'
 #' @param x Numeric vector.
 #' @param na.rm Logical. Remove missing values when computing the mean (default `TRUE`).
 #' @return Numeric vector centered at zero.
