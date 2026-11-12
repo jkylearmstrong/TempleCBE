@@ -204,6 +204,8 @@ test_that("read_sas_data() example uses an 8-character XPT stem and round-trips 
   expect_equal(names(back), names(rossi_data()))
   expect_equal(back$week, rossi_data()$week)
   # The documented example itself must name rossi.xpt, not rossi_xpt.xpt.
+  skip_if_not(file.exists(file.path(r2_root(), "man", "read_sas_data.Rd")),
+              "package sources not available (installed-package run)")
   rd <- readLines(file.path(r2_root(), "man", "read_sas_data.Rd"), warn = FALSE)
   expect_true(any(grepl("rossi.xpt", rd, fixed = TRUE)))
   expect_false(any(grepl("rossi_xpt", rd, fixed = TRUE)))
@@ -302,7 +304,9 @@ test_that("vignettes demonstrate fine_gray()/predict_fine_gray() and export_to_p
 # Item 42 ---------------------------------------------------------------------
 
 test_that("tune_impute_dataset() documents the forest whole-data sweep and no chaining (42)", {
-  rd <- paste(readLines(file.path(r2_root(), "man", "tune_impute_dataset.Rd"), warn = FALSE),
+  skip_if_not(file.exists(file.path(r2_root(), "man", "tune_impute_dataset.Rd")),
+              "package sources not available (installed-package run)")
+  rd <-paste(readLines(file.path(r2_root(), "man", "tune_impute_dataset.Rd"), warn = FALSE),
               collapse = "\n")
   expect_match(rd, "Forest engines impute the whole data set", fixed = TRUE)
   expect_match(rd, "incomplete column filled", fixed = TRUE)
