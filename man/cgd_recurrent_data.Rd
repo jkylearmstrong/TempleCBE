@@ -50,6 +50,11 @@ of the SAS program). Passed to [recurrent_cox()].}
 \item{lines}{Character vector of listing lines (from a `.lst` file, as
 read by [readLines()]), or a single path to one.}
 
+\item{x}{A `recurrent_phreg_comparison` returned by
+[compare_recurrent_phreg()].}
+
+\item{...}{Unused; present for consistency with [print()].}
+
 \item{r, sas}{Quantity tables as returned by
 [recurrent_phreg_quantities()] and [parse_recurrent_phreg_lst()].}
 

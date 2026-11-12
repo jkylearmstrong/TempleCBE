@@ -280,14 +280,15 @@ test_that("apply_review_tracker() guards its inputs (A5)", {
 
 # DESCRIPTION ships in the built/installed package, so these assertions run
 # under R CMD check too — unlike the README pins below, which used to be
-# skipped together with them.
+# skipped together with them. packageDescription() finds it whether the tests
+# run from source, from an installed package or inside R CMD check (where
+# "../.." is the check directory, not the package root).
 test_that("DESCRIPTION states the full scope (A7)", {
-  root <- file.path(testthat::test_path(), "..", "..")
-  desc <- read.dcf(file.path(root, "DESCRIPTION"))
-  expect_match(desc[, "Description"], "SAS", fixed = TRUE)
-  expect_match(desc[, "Description"], "Python", fixed = TRUE)
-  expect_match(desc[, "Description"], "multi-table", fixed = TRUE)
-  expect_match(desc[, "Description"], "pipeline", fixed = TRUE)
+  description <- utils::packageDescription("TempleCBE")$Description
+  expect_match(description, "SAS", fixed = TRUE)
+  expect_match(description, "Python", fixed = TRUE)
+  expect_match(description, "multi-table", fixed = TRUE)
+  expect_match(description, "pipeline", fixed = TRUE)
 })
 
 test_that("README lists all nine vignettes (A6)", {

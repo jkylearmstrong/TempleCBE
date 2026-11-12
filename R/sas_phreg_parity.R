@@ -97,8 +97,7 @@
 #' recurrent_phreg_quantities(cgd)
 cgd_recurrent_data <- function() {
   rlang::check_installed("survival", reason = "to load the cgd data.")
-  data(cgd, package = "survival")
-  d <- as.data.frame(cgd)
+  d <- as.data.frame(survival::cgd)
   d <- d[order(d$id, d$tstart), , drop = FALSE]
   recode01 <- function(x, positive) {
     if (is.factor(x) || is.character(x)) {
@@ -381,6 +380,9 @@ compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 5e-4) {
 }
 
 #' @rdname cgd_recurrent_data
+#' @param x A `recurrent_phreg_comparison` returned by
+#'   [compare_recurrent_phreg()].
+#' @param ... Unused; present for consistency with [print()].
 #' @export
 print.recurrent_phreg_comparison <- function(x, ...) {
   cat("<recurrent_phreg_comparison> matched: ", x$matched,
