@@ -93,6 +93,11 @@ zip_reports <- function(reports,
   if (nrow(reports) == 0L) {
     stop("`reports` has no rows: there is nothing to zip.", call. = FALSE)
   }
+  # `path` is probed with nzchar()/grepl() below and rendered verbatim in the
+  # error message: coerce once so a factor column renders its labels
+  # ("these do not: x.txt") instead of erroring in nzchar() or printing its
+  # integer codes, and so a numeric column renders its values.
+  reports$path <- as.character(reports$path)
   # The output paths below are derived by swapping the source extension, so
   # a path not ending in `.qmd`/`.Rmd` would derive to itself and the source
   # would be shipped mislabelled as the PDF/DOCX/HTML output.

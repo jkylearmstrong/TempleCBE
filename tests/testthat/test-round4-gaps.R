@@ -2,12 +2,28 @@
 # One block per finding id (DA = data/utilities, DC = SAS compare,
 # RP = reporting/rendering, X = cross-cutting).
 
+# File-local helpers (same convention as test-round3-gaps.R: shared within
+# this file only, not across test files).
+docs_root <- function() file.path(test_path(), "..", "..")
+
+# mtcars with the mpg values in rows 3 and 11 missing.
+mpg_na_data <- function() {
+  d <- mtcars
+  d$mpg[c(3, 11)] <- NA
+  d
+}
+
+# Skip unless a render engine (quarto or rmarkdown) is available.
+skip_if_no_render_engine <- function() {
+  skip_if_not(requireNamespace("quarto", quietly = TRUE) ||
+                requireNamespace("rmarkdown", quietly = TRUE))
+}
+
 # --- DA-03 / DA-04 / DA-06 / DA-07 (imputation_sensitivity) --------------------
 
 test_that("imputation_sensitivity() survives infinite observed cells (DA-03)", {
-  d <- mtcars
+  d <- mpg_na_data()
   d$hp[2] <- Inf
-  d$mpg[c(3, 11)] <- NA
   fit_fn <- function(x) {
     ok <- is.finite(x$hp)
     stats::lm(mpg ~ wt, data = x[ok, , drop = FALSE])
@@ -17,8 +33,7 @@ test_that("imputation_sensitivity() survives infinite observed cells (DA-03)", {
 })
 
 test_that("a strategy that adds rows never reports negative n_dropped (DA-06)", {
-  d <- mtcars
-  d$mpg[c(3, 11)] <- NA
+  d <- mpg_na_data()
   grow <- function(x) {
     x <- rbind(x, x[1:2, ])
     x$mpg[is.na(x$mpg)] <- 0
@@ -125,7 +140,7 @@ test_that("print() of a review extract labels an unnamed fork and omits a missin
 })
 
 test_that("render_pipeline() does not warn about execute_params on a dry run (RP-01)", {
-  skip_if_not(requireNamespace("quarto", quietly = TRUE) || requireNamespace("rmarkdown", quietly = TRUE))
+  skip_if_no_render_engine()
   d <- withr::local_tempdir()
   q <- file.path(d, "doc.Rmd")
   writeLines(c("---", "title: t", "---", "hi"), q)
@@ -154,7 +169,7 @@ test_that("a dictionary built with I(list()) is rejected, not flattened (DA-01)"
 })
 
 test_that("a dot named 'NA' is reported as unnamed, not as a phantom argument (RP-02)", {
-  skip_if_not(requireNamespace("quarto", quietly = TRUE) || requireNamespace("rmarkdown", quietly = TRUE))
+  skip_if_no_render_engine()
   d <- withr::local_tempdir()
   q <- file.path(d, "doc.Rmd")
   writeLines(c("---", "title: t", "---", "hi"), q)
@@ -164,8 +179,7 @@ test_that("a dot named 'NA' is reported as unnamed, not as a phantom argument (R
 })
 
 test_that("an observed numeric change just under or over 1e-8 is classified as documented (DA-04)", {
-  d <- mtcars
-  d$mpg[c(3, 11)] <- NA
+  d <- mpg_na_data()
   fit_fn <- function(x) stats::lm(mpg ~ wt, data = x)
   scale_by <- function(k) {
     function(x) {
@@ -181,7 +195,7 @@ test_that("an observed numeric change just under or over 1e-8 is classified as d
 })
 
 test_that("the reticulate vignette does not call reticulate the reverse direction (ST-05)", {
-  vig <- file.path(test_path(), "..", "..", "vignettes", "reticulate_export.Rmd")
+  vig <- file.path(docs_root(), "vignettes", "reticulate_export.Rmd")
   skip_if_not(file.exists(vig), "vignettes are not in the built package")
   text <- paste(readLines(vig, warn = FALSE), collapse = "\n")
   expect_false(grepl("reverse direction, use `reticulate`", text, fixed = TRUE))

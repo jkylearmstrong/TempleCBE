@@ -148,7 +148,7 @@ test_that("calibration_from_model() / decision_curve_from_model() validate a fit
   expect_true(all(dc$threshold > 0 & dc$threshold < 1))
 
   expect_error(calibration_from_model(fit, d, "missing", "status", horizon = 10), "not a column")
-  expect_error(calibration_from_model(fit, d, "time", "status", horizon = -1), "single positive")
+  expect_error(calibration_from_model(fit, d, "time", "status", horizon = -1), "single finite, positive time")
 })
 
 # A4: Fine-Gray CIF prediction --------------------------------------------------

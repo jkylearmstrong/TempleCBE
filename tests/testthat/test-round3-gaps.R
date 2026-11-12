@@ -5,6 +5,13 @@
 docs_root <- function() file.path(test_path(), "..", "..")
 tune_pkgs <- c("workflowsets", "tune", "rsample", "parsnip", "workflows", "yardstick", "recipes")
 
+# Skip the tests in this file when the tuning packages are not installed.
+skip_if_tune_pkgs_missing <- function() {
+  for (p in tune_pkgs) {
+    skip_if_not_installed(p)
+  }
+}
+
 # mtcars with three mpg values missing.
 mpg_na_data <- function() {
   d <- mtcars
@@ -91,9 +98,7 @@ test_that("the overwrite guard sees a previous coefficients file (D-08)", {
 # --- D-03 / D-04 (tune_impute_workflows) -----------------------------------------
 
 test_that("tune_impute_workflows() accepts a rolling_origin rset (D-03)", {
-  for (p in tune_pkgs) {
-    skip_if_not_installed(p)
-  }
+  skip_if_tune_pkgs_missing()
   d <- mpg_na_data()
   train <- d[!is.na(d$mpg), , drop = FALSE]
   rset <- rsample::rolling_origin(train, initial = 20, assess = 3, cumulative = TRUE)
@@ -105,9 +110,7 @@ test_that("tune_impute_workflows() accepts a rolling_origin rset (D-03)", {
 })
 
 test_that("tune_impute_workflows() rejects a split whose analysis and assessment rows overlap (D-03)", {
-  for (p in tune_pkgs) {
-    skip_if_not_installed(p)
-  }
+  skip_if_tune_pkgs_missing()
   d <- mpg_na_data()
   train <- d[!is.na(d$mpg), , drop = FALSE] # 29 rows
   split <- rsample::make_splits(list(analysis = 1:25, assessment = 21:24), data = train)

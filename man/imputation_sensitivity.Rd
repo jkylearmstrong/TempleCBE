@@ -34,8 +34,9 @@ A list of class `imputation_sensitivity` with
   \item{n_imputed}{a tibble with `strategy`, `n_imputed` (missing cells
     filled; `NA` when a strategy reordered the rows and changed values,
     so its rows cannot be aligned with `data` without a row id; an
-    observed numeric cell counts as unchanged when it is within a
-    relative tolerance of 1e-8, and infinite cells must match exactly) and
+    observed numeric cell counts as unchanged when it is within 1e-8
+    (absolute for values below 1, relative above — that is, within
+    `1e-8 * max(1, |value|)`), and infinite cells must match exactly) and
     `n_dropped` (rows dropped; non-zero only for `"complete_cases"`, and
     never negative: rows a strategy adds are not counted)}
   \item{estimates}{a tibble with `term`, `strategy`, `estimate` and

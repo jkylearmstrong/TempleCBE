@@ -317,7 +317,10 @@ compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 0) {
     r, sas,
     need_r = c("model", "term", "estimate", "std_error", "std_error_model",
                "hazard_ratio", "p_value", "p_value_model"),
-    need_sas = c("model", "se_type", "term", "estimate", "std_error", "p_value"),
+    need_sas = c("model", "se_type", "term", "estimate", "std_error", "p_value",
+                 "hazard_ratio"),
+    numeric_cols = c("estimate", "std_error", "std_error_model", "hazard_ratio",
+                     "p_value", "p_value_model"),
     atol = atol, rtol = rtol
   )
   sas_key <- paste(sas$model, sas$se_type, sas$term)

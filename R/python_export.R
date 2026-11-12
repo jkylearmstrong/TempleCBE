@@ -107,10 +107,7 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
     .check_csv_writable(dictionary, "`dictionary`")
     # I(list(...)) writes to CSV without error but flattens each cell to a
     # string, and the JSON copy would differ from the CSV: reject it too.
-    if (any(vapply(dictionary, is.list, logical(1)))) {
-      stop("`dictionary` must not have list-columns (they cannot be exported to CSV without loss).",
-           call. = FALSE)
-    }
+    .check_no_lossy_list_columns(dictionary, "`dictionary`")
   }
   if (xor(is.null(eval_time), is.null(new_data))) {
     stop("`eval_time` and `new_data` must be given together to export a survival matrix.", call. = FALSE)
@@ -167,6 +164,7 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
 
   if (is.data.frame(object) || is.matrix(object)) {
     .check_csv_writable(object, "`object`")
+    .check_no_lossy_list_columns(object, "`object`")
     write_csv(object, paste0(stem, "_data.csv"))
     payload$data <- as.data.frame(object)
   } else if (inherits(object, "coxnet_model")) {
@@ -248,6 +246,7 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
     for (nm in names(object)) {
       if (is.data.frame(object[[nm]])) {
         .check_csv_writable(object[[nm]], paste0("element `", nm, "`"))
+        .check_no_lossy_list_columns(object[[nm]], paste0("element `", nm, "`"))
       }
     }
     # Serialise before writing anything: an element jsonlite cannot handle
@@ -327,6 +326,30 @@ print.python_export <- function(x, ...) {
   cat("  files:\n")
   for (f in x$files) cat("   - ", basename(f), "\n", sep = "")
   invisible(x)
+}
+
+# `write.csv()` handles some list-like columns losslessly (a nested data
+# frame expands to dotted columns; a POSIXlt column writes as a timestamp),
+# but flattens a plain or `I(list(...))` list-column to a string instead of
+# erroring, so the CSV silently loses data and disagrees with the JSON copy.
+# Only the lossy kind is rejected; the lossless kinds are exempt. A nested
+# data frame is checked recursively, so a lossy column inside one is caught
+# too instead of flattening silently.
+.has_lossy_list_column <- function(df) {
+  any(vapply(df, function(z) {
+    if (is.data.frame(z)) return(.has_lossy_list_column(z))
+    is.list(z) && !inherits(z, "POSIXlt")
+  }, logical(1)))
+}
+
+# Reject a data frame with a lossy list-column before anything is written.
+# A non-data-frame (for example a matrix `object`) has no columns to check.
+.check_no_lossy_list_columns <- function(df, label) {
+  if (is.data.frame(df) && .has_lossy_list_column(df)) {
+    stop(label, " must not have list-columns (they cannot be exported to CSV without loss).",
+         call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 # Trial-write a data frame as CSV to a temporary file so an unwritable

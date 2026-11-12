@@ -27,7 +27,7 @@ cause), as in [fine_gray()].}
 and the 0/1 event indicator (or, for a `fine_gray_model` fit, the event
 codes).}
 
-\item{horizon}{A single positive time: the horizon the calibration applies
+\item{horizon}{A single finite, positive time: the horizon the calibration applies
 to.}
 
 \item{penalty}{Passed to [predict_event_risk()]; ignored for `joint_model`,
