@@ -105,6 +105,12 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
   # list-column would otherwise fail mid-export and leave partial files.
   if (!is.null(dictionary)) {
     .check_csv_writable(dictionary, "`dictionary`")
+    # I(list(...)) writes to CSV without error but flattens each cell to a
+    # string, and the JSON copy would differ from the CSV: reject it too.
+    if (any(vapply(dictionary, is.list, logical(1)))) {
+      stop("`dictionary` must not have list-columns (they cannot be exported to CSV without loss).",
+           call. = FALSE)
+    }
   }
   if (xor(is.null(eval_time), is.null(new_data))) {
     stop("`eval_time` and `new_data` must be given together to export a survival matrix.", call. = FALSE)

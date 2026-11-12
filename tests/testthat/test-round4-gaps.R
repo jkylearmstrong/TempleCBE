@@ -141,3 +141,49 @@ test_that("the SAS compare functions reject a non-data-frame or a table missing 
   expect_error(compare_km_lifetest(tbl, tbl[, c("quantity", "term")]), "must be a data frame with columns")
   expect_error(compare_recurrent_phreg(tbl, tbl), "must be a data frame with columns")
 })
+
+test_that("a dictionary built with I(list()) is rejected, not flattened (DA-01)", {
+  dir <- withr::local_tempdir()
+  dict <- data.frame(term = c("a", "b"))
+  dict$levels <- I(list(1:2, 3:4))
+  expect_error(
+    export_to_python(head(mtcars, 3), path = dir, name = "n", dictionary = dict),
+    "list-columns"
+  )
+  expect_length(list.files(dir), 0L)
+})
+
+test_that("a dot named 'NA' is reported as unnamed, not as a phantom argument (RP-02)", {
+  skip_if_not(requireNamespace("quarto", quietly = TRUE) || requireNamespace("rmarkdown", quietly = TRUE))
+  d <- withr::local_tempdir()
+  q <- file.path(d, "doc.Rmd")
+  writeLines(c("---", "title: t", "---", "hi"), q)
+  args <- list(q, formats = "html", dry_run = TRUE, renv_guard = FALSE)
+  args[["NA"]] <- 123
+  expect_warning(do.call(render_pipeline, args), "unnamed")
+})
+
+test_that("an observed numeric change just under or over 1e-8 is classified as documented (DA-04)", {
+  d <- mtcars
+  d$mpg[c(3, 11)] <- NA
+  fit_fn <- function(x) stats::lm(mpg ~ wt, data = x)
+  scale_by <- function(k) {
+    function(x) {
+      x$hp <- x$hp * k
+      x$mpg[is.na(x$mpg)] <- 20
+      x
+    }
+  }
+  within_tol <- imputation_sensitivity(d, fit_fn, list(a = "median", s = scale_by(1 + 1e-10)))
+  outside_tol <- imputation_sensitivity(d, fit_fn, list(a = "median", s = scale_by(1 + 1e-6)))
+  expect_equal(within_tol$n_imputed$n_imputed[2], 2L)
+  expect_true(is.na(outside_tol$n_imputed$n_imputed[2]))
+})
+
+test_that("the reticulate vignette does not call reticulate the reverse direction (ST-05)", {
+  vig <- file.path(test_path(), "..", "..", "vignettes", "reticulate_export.Rmd")
+  skip_if_not(file.exists(vig), "vignettes are not in the built package")
+  text <- paste(readLines(vig, warn = FALSE), collapse = "\n")
+  expect_false(grepl("reverse direction, use `reticulate`", text, fixed = TRUE))
+  expect_true(grepl("use `rpy2` directly", text, fixed = TRUE))
+})

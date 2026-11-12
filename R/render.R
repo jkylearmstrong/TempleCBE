@@ -326,8 +326,9 @@ render_pipeline <- function(path,
   if (length(dots) > 0L) {
     dot_names <- names(dots)
     # (R stringifies an NA name to "NA" when `...` is captured, so is.na() on
-    # the names never fires; an empty name is the unnamed case.)
-    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(!nzchar(dot_names))
+    # the names never fires. An empty name or the literal name "NA" is the
+    # unnamed case: neither engine has an argument called `NA`.)
+    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(!nzchar(dot_names) | dot_names == "NA")
     # A named argument that neither engine accepts is dropped at every call
     # site too, but its per-document warning lives in the render loop, which
     # a dry run or an empty plan never reaches: warn here as well. Skipped
