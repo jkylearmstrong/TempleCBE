@@ -60,6 +60,15 @@ Draft fixes and features from the fresh review of 2026-11-11 (Part 1: 141 new fi
 * **Docs and tests:** the reticulate vignette no longer calls the export bidirectional; the README test checks whichever README exists; the Tier-1 SAS test fails, rather than skips, if the stored listing goes missing; naming, duplication and test-style items (Y-01 to Y-14) are tidied. Regression tests are in `tests/testthat/test-round3-gaps.R`.
 
 
+## Fixes (round-4 review of 2026-11-12, 22 findings)
+
+* **Regression from the round-3 fixes:** `imputation_sensitivity()` no longer aborts on `Inf`/`-Inf` observed cells (infinite cells are compared exactly). It also rejects `conf_level = NA` (as does `km_lifetest_quantities()`), never reports a negative `n_dropped`, and documents its 1e-8 relative tolerance for unchanged observed cells.
+* **Survival core:** `predict_event_risk()` validates `horizon` up front, so an invalid horizon no longer returns all-`NA` risk when every row of a `cox_time_varying` fit has a missing predictor.
+* **Data and utilities:** `export_to_python()` probes `dictionary` before writing (a list-column no longer leaves partial files) and rejects a list element named `"dictionary"` when `dictionary` is given. `compare_km_lifetest()` and `compare_recurrent_phreg()` now share one input check (data frames, needed columns, numeric `time`/`value`, non-empty tables, valid tolerances), so `compare_recurrent_phreg()` no longer returns a vacuous match on empty tables.
+* **Reporting and rendering:** `render_pipeline()` accepts `execute_params` without a false warning when only rmarkdown is installed, and warns once (not again per document) about a bogus named argument; `.ask_item()` treats `NaN`/`NA` as non-item numbers; `zip_reports()` shows an empty path as `<empty>`; `print()` of a review extract labels an unnamed fork and omits a missing master line.
+* **Style and docs:** `.safe_spearman_cor()` validates `method`; the reticulate vignette no longer calls `reticulate` the reverse direction; round-3 test file tidied (bare `local_mocked_bindings`, one `docs_root()`, one shared fixture, no `rtol` default pin). Regression tests are in `tests/testthat/test-round4-gaps.R`.
+
+
 # TempleCBE 0.8.2
 
 Follow-up to 0.8.1: the findings of the 2026-11-11 review that 0.8.1 left open. No export is removed.

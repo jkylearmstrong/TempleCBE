@@ -155,6 +155,11 @@ extract_horizon_risk <- function(pred, horizon) {
 #' fit <- coxnet(survival::Surv(time, status) ~ age + sex, data = d, penalty = 0.1)
 #' predict_event_risk(fit, d[1:5, ], horizon = 10)
 predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
+  # Validated up front: the branches below that return early (rows with a
+  # missing predictor) would otherwise never reach a downstream check.
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon < 0) {
+    stop("`horizon` must be a single finite, non-negative time.", call. = FALSE)
+  }
   if (inherits(object, "coxnet_model")) {
     pred <- stats::predict(object, new_data, type = "survival", eval_time = horizon, penalty = penalty)
   } else if (inherits(object, "cv_coxnet")) {

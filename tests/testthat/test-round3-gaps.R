@@ -2,6 +2,16 @@
 # One block per finding id (S = survival core, D = data/utilities,
 # R = reporting/rendering, A = SAS baseline, X/M = docs, Y = style).
 
+docs_root <- function() file.path(test_path(), "..", "..")
+tune_pkgs <- c("workflowsets", "tune", "rsample", "parsnip", "workflows", "yardstick", "recipes")
+
+# mtcars with three mpg values missing.
+mpg_na_data <- function() {
+  d <- mtcars
+  d$mpg[c(3, 11, 20)] <- NA
+  d
+}
+
 # --- S-01 ----------------------------------------------------------------------
 
 test_that("recurrent_cox() rejects an NA conf_level with the intended message (S-01)", {
@@ -81,14 +91,13 @@ test_that("the overwrite guard sees a previous coefficients file (D-08)", {
 # --- D-03 / D-04 (tune_impute_workflows) -----------------------------------------
 
 test_that("tune_impute_workflows() accepts a rolling_origin rset (D-03)", {
-  for (p in c("workflowsets", "tune", "rsample", "parsnip", "workflows", "yardstick", "recipes")) {
+  for (p in tune_pkgs) {
     skip_if_not_installed(p)
   }
-  d <- mtcars
-  d$mpg[c(3, 11, 20)] <- NA
+  d <- mpg_na_data()
   train <- d[!is.na(d$mpg), , drop = FALSE]
   rset <- rsample::rolling_origin(train, initial = 20, assess = 3, cumulative = TRUE)
-  err <-tryCatch(
+  err <- tryCatch(
     tune_impute_workflows(d, "mpg", folds = rset, race = FALSE, grid = 1),
     error = function(e) conditionMessage(e)
   )
@@ -96,11 +105,10 @@ test_that("tune_impute_workflows() accepts a rolling_origin rset (D-03)", {
 })
 
 test_that("tune_impute_workflows() rejects a split whose analysis and assessment rows overlap (D-03)", {
-  for (p in c("workflowsets", "tune", "rsample", "parsnip", "workflows", "yardstick", "recipes")) {
+  for (p in tune_pkgs) {
     skip_if_not_installed(p)
   }
-  d <- mtcars
-  d$mpg[c(3, 11, 20)] <- NA
+  d <- mpg_na_data()
   train <- d[!is.na(d$mpg), , drop = FALSE] # 29 rows
   split <- rsample::make_splits(list(analysis = 1:25, assessment = 21:24), data = train)
   rset <- rsample::manual_rset(list(split), "Fold1")
@@ -111,8 +119,7 @@ test_that("tune_impute_workflows() rejects a split whose analysis and assessment
 })
 
 test_that("seed must be finite and within the integer range (D-04)", {
-  d <- mtcars
-  d$mpg[c(3, 11, 20)] <- NA
+  d <- mpg_na_data()
   for (s in list(Inf, -Inf, 1e10)) {
     expect_error(tune_impute_dataset(d, seed = s), "single whole number")
   }
@@ -208,17 +215,17 @@ test_that("render_pipeline() warns about named dots no engine accepts, even on a
 # --- R-03 / R-07 (.ask_item) --------------------------------------------------------
 
 test_that(".ask_item() reports numeric-looking non-integers as bad item numbers (R-03)", {
-  for (ans in c("2.5", "-1", "+2", "1e2")) {
+  for (ans in c("2.5", "-1", "+2", "1e2", "NaN", "nan", "NA")) {
     local({
       a <- ans
-      testthat::local_mocked_bindings(.read_answer = function(prompt) a, .package = "TempleCBE")
+      local_mocked_bindings(.read_answer = function(prompt) a, .package = "TempleCBE")
       expect_error(.ask_item(c("a", "b"), "?"), "No item number")
     })
   }
 })
 
 test_that(".ask_item() lets a number win over a plan name that looks like one (R-07)", {
-  testthat::local_mocked_bindings(.read_answer = function(prompt) "2", .package = "TempleCBE")
+  local_mocked_bindings(.read_answer = function(prompt) "2", .package = "TempleCBE")
   expect_equal(.ask_item(c("2", "b"), "?"), 2L)
 })
 
@@ -264,7 +271,6 @@ test_that("compare_recurrent_phreg() does not let a relative allowance hide a 1e
   skip_if(!nzchar(lst))
   sas <- parse_recurrent_phreg_lst(lst)
   r <- recurrent_phreg_quantities(cgd_recurrent_data())
-  expect_equal(formals(compare_recurrent_phreg)$rtol, 0)
   expect_true(compare_recurrent_phreg(r, sas)$matched)
   r_bad <- r
   r_bad$estimate[r_bad$model == "ag" & r_bad$term == "treat"] <-
@@ -276,7 +282,7 @@ test_that("compare_recurrent_phreg() does not let a relative allowance hide a 1e
 # --- X-01 / X-02 (docs consistency) ----------------------------------------------------
 
 test_that("NEWS no longer says the recurrent PHREG program is drafted only (X-01)", {
-  news <- file.path(test_path(), "..", "..", "NEWS.md")
+  news <- file.path(docs_root(), "NEWS.md")
   skip_if_not(file.exists(news), "NEWS.md is not in the built package")
   text <- paste(readLines(news, warn = FALSE), collapse = "\n")
   expect_false(grepl("is drafted only", text, fixed = TRUE))
@@ -284,7 +290,7 @@ test_that("NEWS no longer says the recurrent PHREG program is drafted only (X-01
 })
 
 test_that("the reticulate vignette does not call the export bidirectional (X-02)", {
-  vig <- file.path(test_path(), "..", "..", "vignettes", "reticulate_export.Rmd")
+  vig <- file.path(docs_root(), "vignettes", "reticulate_export.Rmd")
   skip_if_not(file.exists(vig), "vignettes are not in the built package")
   text <- paste(readLines(vig, warn = FALSE), collapse = "\n")
   expect_false(grepl("idirectional", text, fixed = TRUE))

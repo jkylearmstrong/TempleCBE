@@ -103,7 +103,9 @@ interactive_render_pipeline <- function(all_file_objects, ...) {
     }
     return(i)
   }
-  if (!is.na(suppressWarnings(as.numeric(answer))) && !answer %in% items) {
+  looks_numeric <- !is.na(suppressWarnings(as.numeric(answer))) ||
+    tolower(trimws(answer)) %in% c("nan", "na")
+  if (looks_numeric && !answer %in% items) {
     stop("No item number ", answer, " (1 to ", length(items), "); nothing was rendered.", call. = FALSE)
   }
   i <- match(answer, items)

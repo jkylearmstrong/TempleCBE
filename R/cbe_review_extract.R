@@ -565,10 +565,15 @@ print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
   cat("REVIEW EXTRACTION & WORKFLOW TRACKER UPDATE COMPLETE\n")
   cat(strrep("=", 70), "\n", sep = "")
-  cat(sprintf("Master Tracker:      %s\n", paste(x$paths$master, collapse = ", ")))
+  if (length(x$paths$master) > 0L) {
+    cat(sprintf("Master Tracker:      %s\n", paste(x$paths$master, collapse = ", ")))
+  }
   if (length(x$paths$forks) > 0) {
+    fork_names <- names(x$paths$forks)
+    if (is.null(fork_names)) fork_names <- rep("", length(x$paths$forks))
+    fork_names[is.na(fork_names) | !nzchar(fork_names)] <- "unnamed"
     for (i in seq_along(x$paths$forks)) {
-      cat(sprintf("Reviewer Fork (%s): %s\n", names(x$paths$forks)[i], paste(x$paths$forks[[i]], collapse = ", ")))
+      cat(sprintf("Reviewer Fork (%s): %s\n", fork_names[i], paste(x$paths$forks[[i]], collapse = ", ")))
     }
   }
   if (!is.null(x$paths$comments_csv)) {

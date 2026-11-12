@@ -48,9 +48,11 @@
 #'   \item{strategies}{the strategy names, in order}
 #'   \item{n_imputed}{a tibble with `strategy`, `n_imputed` (missing cells
 #'     filled; `NA` when a strategy reordered the rows and changed values,
-#'     so its rows cannot be aligned with `data` without a row id) and
-#'     `n_dropped` (rows dropped; non-zero only for
-#'     `"complete_cases"`)}
+#'     so its rows cannot be aligned with `data` without a row id; an
+#'     observed numeric cell counts as unchanged when it is within a
+#'     relative tolerance of 1e-8, and infinite cells must match exactly) and
+#'     `n_dropped` (rows dropped; non-zero only for `"complete_cases"`, and
+#'     never negative: rows a strategy adds are not counted)}
 #'   \item{estimates}{a tibble with `term`, `strategy`, `estimate` and
 #'     `std.error`}
 #'   \item{summary}{one row per term: `term`, `n_strategies`, `min`,
@@ -86,7 +88,8 @@ imputation_sensitivity <- function(data, fit_fn, strategies, conf_level = 0.95, 
       any(!nzchar(names(strategies))) || anyDuplicated(names(strategies))) {
     stop("`strategies` must be a named list of at least two uniquely-named strategies.", call. = FALSE)
   }
-  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) ||
+      conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be in (0, 1).", call. = FALSE)
   }
   if (sum(is.na(data)) == 0L) {
@@ -180,7 +183,7 @@ imputation_sensitivity <- function(data, fit_fn, strategies, conf_level = 0.95, 
     }
     n_imputed <- dplyr::bind_rows(n_imputed, tibble::tibble(
       strategy = nm, n_imputed = as.integer(n_filled),
-      n_dropped = as.integer(nrow(data) - nrow(completed))
+      n_dropped = max(0L, as.integer(nrow(data) - nrow(completed)))
     ))
     fit <- tryCatch(fit_fn(completed), error = function(e) e)
     if (inherits(fit, "error")) {
@@ -296,7 +299,11 @@ print.imputation_sensitivity <- function(x, ...) {
     if (!any(obs)) next
     if (anyNA(cc[obs])) return(FALSE)
     same <- if (is.numeric(d) && is.numeric(cc)) {
-      abs(d[obs] - cc[obs]) <= 1e-8 * pmax(1, abs(d[obs]))
+      dv <- d[obs]
+      cv <- cc[obs]
+      # Infinite cells are compared exactly: Inf - Inf is NaN, which would
+      # make the test NA and abort the analysis.
+      dv == cv | (is.finite(dv) & is.finite(cv) & abs(dv - cv) <= 1e-8 * pmax(1, abs(dv)))
     } else {
       as.character(d[obs]) == as.character(cc[obs])
     }
