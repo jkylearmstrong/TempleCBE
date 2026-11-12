@@ -37,7 +37,8 @@
 #'   one rendering, for example
 #'   \code{list(original = list(use_imputed = FALSE), imputed = list(use_imputed = TRUE))}.
 #'   Names must be unique and consist of letters, digits, \code{_}, \code{.} or
-#'   \code{-}.
+#'   \code{-}; on a case-insensitive file system (Windows, macOS) they must also
+#'   differ ignoring case, since the outputs would otherwise be one file.
 #' @param formats Output formats to render for each variant (default \code{"html"}),
 #'   for example \code{c("html", "docx")}. Letters, digits, \code{_} and \code{-} only.
 #' @param output_dir Folder for the outputs. Defaults to the folder of the template.
@@ -89,8 +90,13 @@ render_variants <- function(input,
   if (!is.list(variants) || length(variants) == 0L || is.null(names(variants)) || any(!nzchar(names(variants)))) {
     stop("`variants` must be a named list with at least one variant.", call. = FALSE)
   }
-  if (anyDuplicated(tolower(names(variants)))) {
-    stop("The names of `variants` must be unique (ignoring case): ", paste(names(variants), collapse = ", "), ".", call. = FALSE)
+  if (anyDuplicated(names(variants))) {
+    stop("The names of `variants` must be unique: ", paste(names(variants), collapse = ", "), ".", call. = FALSE)
+  }
+  if (.case_insensitive_fs() && anyDuplicated(tolower(names(variants)))) {
+    # "A" and "a" are two files on Linux but one file on Windows and macOS
+    stop("The names of `variants` must be unique (ignoring case) on a case-insensitive file system: ",
+         paste(names(variants), collapse = ", "), ".", call. = FALSE)
   }
   bad_names <- names(variants)[!grepl("^[A-Za-z0-9][A-Za-z0-9_.-]*$", names(variants))]
   if (length(bad_names)) {
@@ -160,16 +166,24 @@ render_variants <- function(input,
     status = "planned",
     error = NA_character_
   )
-  if (anyDuplicated(tolower(out$output))) {
-    stop("Two renderings would write the same file: ", paste(unique(out$output[duplicated(tolower(out$output))]), collapse = ", "),
+  if (anyDuplicated(out$output)) {
+    stop("Two renderings would write the same file: ", paste(unique(out$output[duplicated(out$output)]), collapse = ", "),
+         ". Use a distinct variant name or format for each.", call. = FALSE)
+  }
+  if (.case_insensitive_fs() && anyDuplicated(tolower(out$output))) {
+    stop("Two renderings would write files that differ only by case, which is the same file on a case-insensitive file system: ",
+         paste(unique(out$output[duplicated(tolower(out$output))]), collapse = ", "),
          ". Use a distinct variant name or format for each.", call. = FALSE)
   }
   if (isTRUE(dry_run)) return(out)
 
   if (is.null(renderer)) renderer <- .rv_default_renderer(ext)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-  # a private name for each rendering (no random numbers: the session's random stream is not touched)
-  run_id <- paste0("rv", Sys.getpid(), format(Sys.time(), "%H%M%OS3"))
+  # a private name for each rendering (no random numbers: the session's random stream is not touched).
+  # The counter is what makes the name unique within a call: two calls in the same millisecond
+  # of the same process would otherwise build the same name from pid and time.
+  .rv_run_counter$n <- .rv_run_counter$n + 1L
+  run_id <- paste0("rv", Sys.getpid(), format(Sys.time(), "%H%M%OS3"), .rv_run_counter$n)
   run_id <- gsub("[^A-Za-z0-9]", "", run_id)
   # whatever a rendering leaves behind is removed, an interrupt included
   leftovers <- character()
@@ -240,9 +254,17 @@ render_variants <- function(input,
 # Names of the parameters declared under `params:` in the YAML header, read as written (so a
 # key such as `n`, `y` or `on` stays a name). NULL when there is no readable header or the
 # `params:` block is written as an inline map; character(0) when the header declares none.
+# Counts the render_variants() calls of the session; part of run_id (see above).
+.rv_run_counter <- new.env(parent = emptyenv())
+.rv_run_counter$n <- 0L
+
 .rv_declared_params <- function(input) {
   lines <- tryCatch(readLines(input, warn = FALSE, encoding = "UTF-8"), error = function(e) NULL)
-  if (is.null(lines) || length(lines) < 2L || !grepl("^---\\s*$", lines[1])) return(NULL)
+  if (is.null(lines) || length(lines) < 2L) return(NULL)
+  # a byte-order mark at the start of the file: readLines() keeps it, and the
+  # fence on line 1 would otherwise not match
+  lines[1] <- sub("^\uFEFF", "", lines[1])
+  if (!grepl("^---\\s*$", lines[1])) return(NULL)
   end <- which(grepl("^(---|\\.\\.\\.)\\s*$", lines[-1]))[1] + 1L
   if (is.na(end)) return(NULL)
   header <- lines[2:(end - 1L)]

@@ -16,8 +16,16 @@ A tibble of class `cbe_deliverable_diff` with columns:
   `file` (relative path in the bundle), `status` (`"unchanged"`, `"modified"`,
   `"added"`, or `"removed"`), `hash_changed` (logical), `text_changed`
   (logical), `n_added` (integer count of added paragraphs/lines), `n_removed`
-  (integer count of removed paragraphs/lines), `diff_summary` (concise text
-  summary of changes), and `diff_lines` (list column of `-`/`+` diff lines).
+  (integer count of removed paragraphs/lines), `n_edited` (integer count of
+  edited paragraphs), `n_unpaired` (integer count of paragraphs that could
+  not be paired), `budget_exceeded` (logical; the paragraph pairing ran out
+  of time, so the unpaired paragraphs are counted as added/removed but were
+  not classified as edits), `diff_summary` (concise text summary of changes),
+  `diff_lines` (list column of `-`/`+` diff lines), `section_summary`
+  (list column of per-section counts) and `largest_changes` (list column of
+  the largest paragraph changes). Every row carries every column (zeros,
+  `FALSE` or an empty tibble where a count does not apply), so the table
+  can be summed and filtered without `NA`.
 }
 \description{
 Compares two deliverable `.zip` archives (or directories) produced by

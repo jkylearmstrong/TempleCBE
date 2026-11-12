@@ -131,4 +131,10 @@ the app's reviewer-aware behavior
 (rollups, resolved status, fork filtering) to line up with a file's
 existing columns, keep configuring the same reviewer identifiers used
 when that file was created.
+
+The settings are kept in the session options (\code{review.fork_reviewers}
+and so on): they persist for the rest of the R session and are read by
+\code{\link{docx_review_extract}} and the tracker functions, so a call
+here changes later review calls in the same session. \code{reset = TRUE}
+clears them back to the defaults; there is no per-call override.
 }

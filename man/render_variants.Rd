@@ -24,7 +24,8 @@ render_variants(
 one rendering, for example
 \code{list(original = list(use_imputed = FALSE), imputed = list(use_imputed = TRUE))}.
 Names must be unique and consist of letters, digits, \code{_}, \code{.} or
-\code{-}.}
+\code{-}; on a case-insensitive file system (Windows, macOS) they must also
+differ ignoring case, since the outputs would otherwise be one file.}
 
 \item{formats}{Output formats to render for each variant (default \code{"html"}),
 for example \code{c("html", "docx")}. Letters, digits, \code{_} and \code{-} only.}

@@ -44,7 +44,7 @@ read_excel_multiple_headers <- function(path,
     stop(sprintf("File '%s' does not exist.", path), call. = FALSE)
   }
   if (!is.numeric(n_header_rows) || length(n_header_rows) != 1L || is.na(n_header_rows) ||
-      n_header_rows < 1 || n_header_rows != as.integer(n_header_rows)) {
+      !is.finite(n_header_rows) || n_header_rows < 1 || n_header_rows != as.integer(n_header_rows)) {
     stop("`n_header_rows` must be a single positive integer (>= 1).", call. = FALSE)
   }
   n_header_rows <- as.integer(n_header_rows)
@@ -53,8 +53,14 @@ read_excel_multiple_headers <- function(path,
     stop("`fill_merged` must be a single logical (TRUE or FALSE).", call. = FALSE)
   }
 
-  if (!is.character(sep) || length(sep) != 1L) {
+  if (!is.character(sep) || length(sep) != 1L || is.na(sep)) {
     stop("`sep` must be a single character string.", call. = FALSE)
+  }
+  for (arg in c("trim", "clean_names")) {
+    val <- get(arg, envir = environment())
+    if (!is.logical(val) || length(val) != 1L || is.na(val)) {
+      stop("`", arg, "` must be a single logical (TRUE or FALSE).", call. = FALSE)
+    }
   }
 
   # 2. Extract header rows strictly as text (isolates header parsing from data col_types)

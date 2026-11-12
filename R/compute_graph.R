@@ -41,34 +41,77 @@ NULL
 #' yourself, in `.Rprofile` for example, to supply a default). This mirrors
 #' `cbe_labels()`, which likewise keeps its map in the package and only
 #' reads the `templecbe.label_map` option.
-#' @param study_name Character string for the main study title.
+#' @param study_name Character string for the main study title. A single
+#'   `NA` clears the setting (leaving it to the session option or the
+#'   default); any other value must be a single non-empty string.
 #' @param stage_labels Named character vector mapping raw stage identifiers to human-readable labels.
+#'   A single `NA` clears the setting; otherwise every entry must be named
+#'   and hold a single non-empty string.
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
+#'   A single `NA` clears the setting; otherwise every entry must be named
+#'   and hold a single non-empty string.
 #' @param default_formats Optional character vector of default output formats
 #'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 #'   the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
+#'   A single `NA` clears the setting; otherwise every entry must name a
+#'   known output format (or `"yaml"` / `"auto"`).
 #' @param reset Logical (default `FALSE`). When `TRUE`, clears everything set
 #'   with `pipeline_config()` and falls back to the session options (or the
 #'   package defaults when those are unset). It does not erase the options
 #'   themselves. The reset is done first, so other arguments given in the same
 #'   call are then set: `pipeline_config(study_name = "X", reset = TRUE)` leaves
 #'   only the study name set.
+#' @param restore A value returned by an earlier `pipeline_config()` call:
+#'   puts back exactly the package layer that call left behind (the session
+#'   options are left alone). It cannot be combined with `reset` or with a
+#'   value to set. This is the way to undo a call; `options(attr(cfg, "previous"))`
+#'   only restores the option layer and must not be used for that, because
+#'   `"previous"` holds the *effective* values (package setting over option),
+#'   so restoring through `options()` would bake a package setting into a
+#'   session option, where `pipeline_config(reset = TRUE)` can no longer clear it.
 #' @return A list containing the current configuration options, with the
-#'   attribute `"previous"`: the configuration as it was before the call,
-#'   named the way [options()] names the session options
-#'   (`pipeline.study_name` and so on). `pipeline_config()` no longer writes
-#'   those options, so `options(attr(cfg, "previous"))` only restores the
-#'   option layer; to drop what a call set and fall back to the session
-#'   options, use `pipeline_config(reset = TRUE)`. A call with no arguments
-#'   returns the current configuration.
+#'   attributes `"previous"` and `"previous_env"`: the configuration as it
+#'   was before the call (the first named the way [options()] names the
+#'   session options, `pipeline.study_name` and so on; the second the raw
+#'   package layer, `NULL` where nothing was set). `"previous"` holds the
+#'   *effective* values, so it is for inspection (and for putting one value
+#'   back with a plain `pipeline_config()` call), not for `options()`: to undo
+#'   a whole call, use `pipeline_config(restore = cfg)`, which reads the
+#'   `"current_env"` attribute (the package layer the returned value
+#'   represents). A call with no arguments returns the current configuration.
 #' @export
 pipeline_config <- function(
   study_name = NULL,
   stage_labels = NULL,
   stage_colors = NULL,
   default_formats = NULL,
-  reset = FALSE
+  reset = FALSE,
+  restore = NULL
 ) {
+  if (!is.null(restore)) {
+    if (!is.list(restore) || is.null(attr(restore, "current_env"))) {
+      stop("`restore` must be a value returned by `pipeline_config()` (it carries the configuration to restore).", call. = FALSE)
+    }
+    if (isTRUE(reset) || !is.null(study_name) || !is.null(stage_labels) || !is.null(stage_colors) || !is.null(default_formats)) {
+      stop("`restore` cannot be combined with `reset` or with a value to set.", call. = FALSE)
+    }
+    previous <- .pipeline_config_current()
+    names(previous) <- c(
+      "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
+    )
+    previous_env <- .pipeline_config_env_snapshot()
+    snap <- attr(restore, "current_env")
+    .pipeline_config_env$study_name <- snap$study_name
+    .pipeline_config_env$stage_labels <- snap$stage_labels
+    .pipeline_config_env$stage_colors <- snap$stage_colors
+    .pipeline_config_env$default_formats <- snap$default_formats
+    return(structure(
+      .pipeline_config_current(),
+      previous = previous,
+      previous_env = previous_env,
+      current_env = .pipeline_config_env_snapshot()
+    ))
+  }
   if (!is.logical(reset) || length(reset) != 1L || is.na(reset)) {
     stop("`reset` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
@@ -76,6 +119,7 @@ pipeline_config <- function(
   names(previous) <- c(
     "pipeline.study_name", "pipeline.stage_labels", "pipeline.stage_colors", "pipeline.default_formats"
   )
+  previous_env <- .pipeline_config_env_snapshot()
   # `reset` comes first, so `pipeline_config(study_name = "X", reset = TRUE)`
   # ends with only `study_name` set instead of dropping the argument.
   if (reset) {
@@ -85,22 +129,77 @@ pipeline_config <- function(
     .pipeline_config_env$default_formats <- NULL
   }
   if (!is.null(study_name)) {
-    .pipeline_config_env$study_name <- study_name
+    .pipeline_config_env$study_name <- .validate_pipeline_config_value("study_name", study_name)
   }
   if (!is.null(stage_labels)) {
-    .pipeline_config_env$stage_labels <- stage_labels
+    .pipeline_config_env$stage_labels <- .validate_pipeline_config_value("stage_labels", stage_labels)
   }
   if (!is.null(stage_colors)) {
-    .pipeline_config_env$stage_colors <- stage_colors
+    .pipeline_config_env$stage_colors <- .validate_pipeline_config_value("stage_colors", stage_colors)
   }
   if (!is.null(default_formats)) {
-    .pipeline_config_env$default_formats <- default_formats
+    .pipeline_config_env$default_formats <- .validate_pipeline_config_value("default_formats", default_formats)
   }
 
   structure(
     .pipeline_config_current(),
-    previous = previous
+    previous = previous,
+    previous_env = previous_env,
+    current_env = .pipeline_config_env_snapshot()
   )
+}
+
+# What pipeline_config() itself set (the package layer), as it was before the
+# call now being made: NULL where nothing was set. Restoring this snapshot
+# puts the package layer back exactly; the session options are untouched.
+.pipeline_config_env_snapshot <- function() {
+  list(
+    study_name = .pipeline_config_env$study_name,
+    stage_labels = .pipeline_config_env$stage_labels,
+    stage_colors = .pipeline_config_env$stage_colors,
+    default_formats = .pipeline_config_env$default_formats
+  )
+}
+
+# One pipeline_config() value, checked. A single NA clears that one setting
+# (NULL means "leave unchanged", so without this there was no way to clear a
+# single value short of resetting everything); anything else must be the
+# documented type and shape for its name.
+.validate_pipeline_config_value <- function(name, value) {
+  if (length(value) == 1L && is.na(value)) {
+    return(NULL)
+  }
+  if (name == "study_name") {
+    if (!is.character(value) || length(value) != 1L || is.na(value) || !nzchar(trimws(value))) {
+      stop("`study_name` must be a single non-empty character string (or a single `NA` to clear it).", call. = FALSE)
+    }
+    return(value)
+  }
+  if (name %in% c("stage_labels", "stage_colors")) {
+    if (!is.character(value) && !is.list(value)) {
+      stop("`", name, "` must be a named character vector or a named list of single strings (or a single `NA` to clear it).", call. = FALSE)
+    }
+    vals <- if (is.list(value)) value else as.list(value)
+    if (length(vals) == 0L || is.null(names(vals)) || anyNA(names(vals)) || any(!nzchar(trimws(names(vals))))) {
+      stop("`", name, "` must have a non-empty name for every entry.", call. = FALSE)
+    }
+    bad <- vapply(vals, function(v) !is.character(v) || length(v) != 1L || is.na(v) || !nzchar(trimws(v)), logical(1))
+    if (any(bad)) {
+      stop("Every entry of `", name, "` must be a single non-empty character string.", call. = FALSE)
+    }
+    return(if (is.list(value)) value else stats::setNames(as.character(value), names(value)))
+  }
+  # default_formats
+  if (!is.character(value) || length(value) == 0L || anyNA(value) || any(!nzchar(trimws(value)))) {
+    stop("`default_formats` must be a non-empty character vector of output formats (or a single `NA` to clear it).", call. = FALSE)
+  }
+  known <- c(names(.format_ext_map), "yaml", "auto")
+  unknown <- setdiff(tolower(value), known)
+  if (length(unknown) > 0L) {
+    stop("Unknown output format(s) in `default_formats`: ", paste(unknown, collapse = ", "),
+         ". Known formats: ", paste(known, collapse = ", "), ".", call. = FALSE)
+  }
+  tolower(value)
 }
 
 # The package-level store for the pipeline configuration (see
@@ -520,11 +619,19 @@ create_qmd_renderer <- function(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = .pipeline_config_value("default_formats", "pdf"),
+  output_format = NULL,
   description = NA_character_
 ) {
   # 0. The same checks as FileOutputs(), before the path is read or any name is built from it
   .check_name_path(name, path)
+
+  # The default is resolved here, not in the formals, so the help page does
+  # not show the internal .pipeline_config_value() call as the default.
+  # Only a missing argument takes the configured default: an explicit NULL
+  # still means "extract the formats from the document's YAML" (below).
+  if (missing(output_format)) {
+    output_format <- .pipeline_config_value("default_formats", "pdf")
+  }
 
   # 1. Resolve output format(s): if "yaml" or "auto", extract from YAML front matter
   if (is.null(output_format) || identical(output_format, "yaml") || identical(output_format, "auto")) {
@@ -904,7 +1011,10 @@ is_stale <- function(output_file,
 
   if (is(output_file, "FileOutputs") && missing(producer_script)) {
     if (length(output_file@output) == 0L) {
-      return(FALSE)
+      # Nothing is declared to be produced, so there is nothing that could be
+      # up to date: a renderer with no outputs is out of date. A non-rendering
+      # script with no outputs is not stale: there is nothing to rebuild.
+      return(isTRUE(output_file@renders))
     }
     return(any(vapply(
       output_file@output, is_stale, logical(1),
@@ -938,7 +1048,12 @@ is_stale <- function(output_file,
       }
       src_objs <- .collect_source_files(producer_script)
       for (s in src_objs) {
-        if (!file.exists(s@path) || dir.exists(s@path)) next
+        # A source that is no longer on disk cannot be shown to be unchanged:
+        # its hash was recorded when it existed, and the output built from it
+        # is out of date. (A path that was never a real file is ignored.)
+        if (!is.na(s@path) && nzchar(s@path) && (!file.exists(s@path) || dir.exists(s@path))) {
+          return(TRUE)
+        }
         curr_s_hash <- .file_content_hash(s@path)
         s_key <- .hash_node_key(s)
         rec_s_hash <- rec$source_hashes[[s_key]] %||%
@@ -957,7 +1072,9 @@ is_stale <- function(output_file,
       }
       src_objs <- .collect_source_files(producer_script)
       for (s in src_objs) {
-        if (!file.exists(s@path) || dir.exists(s@path)) next
+        if (!is.na(s@path) && nzchar(s@path) && (!file.exists(s@path) || dir.exists(s@path))) {
+          return(TRUE)
+        }
         curr_s_hash <- .file_content_hash(s@path)
         s_key <- .hash_node_key(s)
         rec_s_hash <- hash_store$files[[s_key]] %||% hash_store$files[[s@name]]
@@ -982,10 +1099,27 @@ is_stale <- function(output_file,
   if (is.na(out_mtime)) {
     return(TRUE)
   } # Stale if missing
+  # The slot can outlive the file when the object was not refreshed after a
+  # deletion, so the output itself is checked on disk too.
+  if (!is.na(output_file@path) && nzchar(output_file@path) &&
+      (!file.exists(output_file@path) || dir.exists(output_file@path))) {
+    return(TRUE)
+  }
 
   source_files <- c(list(producer_script), producer_script@dependencies)
   source_mtimes <- vapply(source_files, .effective_mtime, numeric(1))
-  source_mtimes <- source_mtimes[!is.na(source_mtimes)]
+  # A source with no known time is a source that is not on disk (see
+  # refresh_pipeline()): it cannot be shown to be older than the output.
+  # .effective_mtime() drops a missing file inside a helper script, so a
+  # deleted file anywhere upstream is checked on disk as well.
+  if (any(is.na(source_mtimes))) {
+    return(TRUE)
+  }
+  src_objs <- .collect_source_files(producer_script)
+  src_paths <- vapply(src_objs, function(s) s@path, character(1))
+  if (any(!is.na(src_paths) & nzchar(src_paths) & !file.exists(src_paths))) {
+    return(TRUE)
+  }
 
   if (length(source_mtimes) > 0L && as.numeric(out_mtime) < max(source_mtimes)) {
     return(TRUE)
@@ -1067,30 +1201,60 @@ is_stale <- function(output_file,
 #'
 #' Both would feed the one node, but only the first producer listed (see `.find_producer()`)
 #' decides whether it is out of date. One producer listing an output twice is not reported.
+#' The same file under two names is the same output too, so outputs are compared by canonical
+#' path as well as by name.
 #' @noRd
 .warn_shared_outputs <- function(all_objects) {
   producers <- Filter(function(x) is(x, "FileOutputs"), all_objects)
   if (length(producers) < 2L) {
     return(invisible(NULL))
   }
-  made <- do.call(rbind, lapply(producers, function(p) {
-    outs <- unique(vapply(p@output, function(o) o@name, character(1)))
-    if (length(outs) > 0L) data.frame(output = outs, producer = p@name, stringsAsFactors = FALSE)
+  rows <- do.call(rbind, lapply(producers, function(p) {
+    if (length(p@output) == 0L) return(NULL)
+    data.frame(
+      output = vapply(p@output, function(o) o@name, character(1)),
+      path = vapply(p@output, function(o) o@path, character(1)),
+      producer = p@name,
+      stringsAsFactors = FALSE
+    )
   }))
-  if (is.null(made)) {
+  if (is.null(rows) || nrow(rows) == 0L) {
     return(invisible(NULL))
   }
-  makers <- split(made$producer, factor(made$output, levels = unique(made$output)))
-  shared <- makers[lengths(makers) > 1L]
-  if (length(shared) == 0L) {
+  rows <- unique(rows)
+  canon <- normalizePath(rows$path, winslash = "/", mustWork = FALSE)
+  if (.case_insensitive_fs()) canon <- tolower(canon)
+  rows$canon <- canon
+
+  # groups of a key named by more than one producer
+  shared_by <- function(key) {
+    groups <- split(rows$producer, factor(key, levels = unique(key)))
+    groups[vapply(groups, function(pr) length(unique(pr)) > 1L, logical(1))]
+  }
+  shared_names <- shared_by(rows$output)
+  # the same file under two names is one shared output too: group by canonical
+  # path, and skip a group that is already one shared name (it is the same
+  # conflict, not a second one)
+  by_path <- split(rows, factor(rows$canon, levels = unique(rows$canon)))
+  shared_paths <- Filter(function(d) {
+    length(unique(d$producer)) > 1L &&
+      !(length(unique(d$output)) == 1L && d$output[1] %in% names(shared_names))
+  }, by_path)
+  if (length(shared_names) == 0L && length(shared_paths) == 0L) {
     return(invisible(NULL))
   }
-  lines <- vapply(names(shared), function(out) {
+  lines <- vapply(names(shared_names), function(out) {
     sprintf(
       "'%s' (made by %s; '%s' decides whether it is out of date)",
-      out, paste0("'", shared[[out]], "'", collapse = ", "), shared[[out]][1L]
+      out, paste0("'", unique(shared_names[[out]]), "'", collapse = ", "), unique(shared_names[[out]])[1L]
     )
   }, character(1))
+  lines <- c(lines, vapply(shared_paths, function(d) {
+    sprintf(
+      "'%s' (the same file, made by %s under different names; '%s' decides whether it is out of date)",
+      d$path[1], paste0("'", unique(d$producer), "'", collapse = ", "), unique(d$producer)[1L]
+    )
+  }, character(1)))
   warning(
     "Output file(s) declared by more than one producer: ", paste(lines, collapse = "; "), ".",
     call. = FALSE
@@ -1117,7 +1281,7 @@ is_stale <- function(output_file,
   name <- name[known]
   path <- path[known]
   path <- normalizePath(path, winslash = "/", mustWork = FALSE)
-  norm <- if (.Platform$OS.type == "windows") tolower(path) else path
+  norm <- if (.case_insensitive_fs()) tolower(path) else path
   # one row per distinct (name, file): a name at the top level and again as a copy is one
   first <- !duplicated(paste(name, norm, sep = "\n"))
   name <- name[first]
@@ -1306,6 +1470,11 @@ refresh_pipeline <- function(x) {
   if (is(x, "FilePath")) {
     if (file.exists(x@path)) {
       x@mtime <- file.info(x@path)$mtime
+    } else {
+      # A file deleted after the object was made keeps no timestamp: without
+      # this the old mtime would keep saying the file is unchanged (see
+      # is_stale(), which treats a missing source as out of date).
+      x@mtime <- as.POSIXct(NA)
     }
     if (is(x, "FileUses") && length(x@dependencies) > 0L) {
       x@dependencies <- lapply(x@dependencies, refresh_pipeline)
@@ -1402,21 +1571,21 @@ visualize_pipeline <- function(
     if (is_stale) {
       node_attrs <- sprintf(
         "[fillcolor = \"%s\", color = \"black\", peripheries = 2, label = \"%s (STALE)\"]",
-        stale_color,
-        node_name
+        .dot_escape(stale_color),
+        .dot_escape(node_name)
       )
     } else {
       node_attrs <- sprintf(
         "[fillcolor = \"%s\", label = \"%s\"]",
-        color,
-        node_name
+        .dot_escape(color),
+        .dot_escape(node_name)
       )
     }
 
     graph_code <- paste0(
       graph_code,
       "  \"",
-      node_name,
+      .dot_escape(node_name),
       "\" ",
       node_attrs,
       ";\n"
@@ -1430,9 +1599,9 @@ visualize_pipeline <- function(
         graph_code <- paste0(
           graph_code,
           "  \"",
-          dep@name,
+          .dot_escape(dep@name),
           "\" -> \"",
-          file_name,
+          .dot_escape(file_name),
           "\";\n"
         )
       }
@@ -1442,9 +1611,9 @@ visualize_pipeline <- function(
         graph_code <- paste0(
           graph_code,
           "  \"",
-          file_name,
+          .dot_escape(file_name),
           "\" -> \"",
-          out@name,
+          .dot_escape(out@name),
           "\";\n"
         )
       }
@@ -1938,7 +2107,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
     desc_html <- if (nzchar(desc_val)) {
       paste0(
         "<div style='background: #F8F9F9; border-left: 3px solid #2980B9; padding: 6px 8px; margin: 6px 0; color: #2C3E50; font-size: 12px;'>",
-        desc_val,
+        .html_escape(desc_val),
         "</div>"
       )
     } else {
@@ -1948,7 +2117,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
     mtime_html <- if (nzchar(mtime_val)) {
       paste0(
         "<div style='margin-top: 3px;'><b>Modified:</b> <span style='color: #566573;'>",
-        mtime_val,
+        .html_escape(mtime_val),
         "</span></div>"
       )
     } else {
@@ -1964,18 +2133,18 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
     titles[i] <- paste0(
       "<div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; max-width: 340px; padding: 4px;'>",
       "<div style='font-weight: 700; font-size: 14px; color: #1B2631; border-bottom: 2px solid #BDC3C7; padding-bottom: 4px; margin-bottom: 6px;'>",
-      node_name,
+      .html_escape(node_name),
       "</div>",
       desc_html,
       "<div style='display: grid; gap: 2px; font-size: 12px;'>",
       "<div><b>Stage:</b> <span style='background: #EAECEE; padding: 1px 5px; border-radius: 3px;'>",
-      stg,
+      .html_escape(stg),
       "</span></div>",
       "<div><b>Role:</b> <span style='background: #E8F8F5; padding: 1px 5px; border-radius: 3px; color: #117A65;'>",
-      role_val,
+      .html_escape(role_val),
       "</span></div>",
       "<div><b>File:</b> <code style='color: #884EA0;'>",
-      file_basename,
+      .html_escape(file_basename),
       "</code></div>",
       "<div><b>Status:</b> ",
       status_html,
@@ -2003,7 +2172,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
         edge_types <- c(edge_types, "dependency")
         edge_titles <- c(
           edge_titles,
-          paste0("Dependency: ", dep@name, " \u2192 ", file_name)
+          paste0("Dependency: ", .html_escape(dep@name), " \u2192 ", .html_escape(file_name))
         )
       }
     }
@@ -2015,7 +2184,7 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
         edge_types <- c(edge_types, "output")
         edge_titles <- c(
           edge_titles,
-          paste0("Output: ", file_name, " produces ", out@name)
+          paste0("Output: ", .html_escape(file_name), " produces ", .html_escape(out@name))
         )
       }
     }
@@ -2052,6 +2221,48 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
 }
 
 
+# TRUE on a file system where names that differ only in case are one file
+# (Windows, and macOS, whose default file system is case-insensitive too).
+# Linux file systems are case-sensitive, so "Report" and "report" are two files there.
+.case_insensitive_fs <- function() {
+  .Platform$OS.type == "windows" || identical(tolower(Sys.info()[["sysname"]]), "darwin")
+}
+
+# A node name, label or colour inside a quoted DOT string: a `"` or `\` in
+# it would end the string or escape the next character, breaking the graph
+# (or injecting DOT). Backslashes first, so an escaped quote is not escaped again.
+.dot_escape <- function(x) {
+  x <- gsub("\\", "\\\\", x, fixed = TRUE)
+  gsub('"', '\\"', x, fixed = TRUE)
+}
+
+# Text interpolated into the HTML tooltips of as_igraph(): a `<`, `&` or quote
+# in a node name, description or file name would break the tooltip markup.
+.html_escape <- function(x) {
+  x <- gsub("&", "&amp;", x, fixed = TRUE)
+  x <- gsub("<", "&lt;", x, fixed = TRUE)
+  x <- gsub(">", "&gt;", x, fixed = TRUE)
+  x <- gsub('"', "&quot;", x, fixed = TRUE)
+  gsub("'", "&#39;", x, fixed = TRUE)
+}
+
+# A user-supplied igraph for the interactive export: as_igraph() sets the
+# vertex attributes the export reads, but a graph built any other way may not
+# have them, and the failure then comes from deep inside visNetwork. Name the
+# missing attributes (and the function that sets them) up front.
+.check_interactive_graph <- function(g, attrs = c("stage", "title", "color", "stale", "path")) {
+  missing_attrs <- setdiff(attrs, igraph::vertex_attr_names(g))
+  if (length(missing_attrs) > 0L) {
+    stop(
+      "The igraph object is missing vertex attribute(s) the interactive export reads: ",
+      paste(missing_attrs, collapse = ", "), ". ",
+      "Build the graph with `as_igraph()` (or add the attributes), instead of passing a bare igraph object.",
+      call. = FALSE
+    )
+  }
+  invisible(g)
+}
+
 #' Collapse an igraph pipeline graph to one node per pipeline `stage`
 #'
 #' The full per-file compute graph (~90+ nodes) is the right level of detail
@@ -2066,11 +2277,29 @@ as_igraph.default <- function(x, stage_colors = NULL, ...) {
 #' @return An igraph object with one node per stage.
 #' @export
 collapse_by_stage <- function(g, stage_labels = NULL) {
+  if (!inherits(g, "igraph")) {
+    stop("`g` must be an igraph object, as built by `as_igraph()`.", call. = FALSE)
+  }
+  if (igraph::vcount(g) == 0L) {
+    return(g)
+  }
+  if (!"stage" %in% igraph::vertex_attr_names(g)) {
+    stop(
+      "The igraph object has no vertex attribute `stage`, so it cannot be collapsed by stage. ",
+      "Build the graph with `as_igraph()`.",
+      call. = FALSE
+    )
+  }
   if (is.null(stage_labels)) {
     stage_labels <- .pipeline_config_value("stage_labels", list())
   }
-  stage_order <- unique(igraph::V(g)$stage)
-  mapping <- match(igraph::V(g)$stage, stage_order)
+  # A stage of NA has no name to collapse under (igraph::contract() would
+  # make an `NA` vertex); as_igraph() reports such nodes as "Other".
+  stages <- igraph::V(g)$stage
+  stages[is.na(stages)] <- "Other"
+  igraph::V(g)$stage <- stages
+  stage_order <- unique(stages)
+  mapping <- match(stages, stage_order)
 
   # a stage is out of date when any file in it is; "first" would show the first file's status
   g_collapsed <- igraph::contract(
@@ -2114,9 +2343,9 @@ collapse_by_stage <- function(g, stage_labels = NULL) {
 #' @export
 visualize_pipeline_interactive <- function(
   all_objects,
-  direction = "LR",
+  direction = c("LR", "UD"),
   hierarchical = TRUE,
-  title = .pipeline_config_value("study_name", "Computational Pipeline"),
+  title = NULL,
   subtitle = "Computational Pipeline",
   font_size = 12,
   node_size = 25
@@ -2124,8 +2353,26 @@ visualize_pipeline_interactive <- function(
   if (!requireNamespace("visNetwork", quietly = TRUE)) {
     stop("Package \"visNetwork\" is required for the interactive visualization.", call. = FALSE)
   }
+  direction_supplied <- !missing(direction)
+  # match.arg() on its own reports "'arg' should be one of ...", which never
+  # names the argument; rephrase so an invalid direction says so.
+  direction <- tryCatch(
+    match.arg(direction),
+    error = function(e) stop("`direction` must be \"LR\" or \"UD\".", call. = FALSE)
+  )
+  if (!isTRUE(hierarchical) && direction_supplied) {
+    warning("`direction` is ignored when `hierarchical = FALSE`.", call. = FALSE)
+  }
+  # The default title is resolved here, not in the formals, so the help page
+  # does not show the internal .pipeline_config_value() call as the default.
+  # Only a missing argument takes the configured default: an explicit NULL
+  # keeps its meaning (no title) for visNetwork.
+  if (missing(title)) {
+    title <- .pipeline_config_value("study_name", "Computational Pipeline")
+  }
   if (is(all_objects, "igraph")) {
     g <- all_objects
+    .check_interactive_graph(g)
   } else {
     g <- as_igraph(all_objects)
   }
@@ -2153,11 +2400,14 @@ visualize_pipeline_interactive <- function(
     stringsAsFactors = FALSE
   )
 
-  # Clean edges dataframe
+  # Clean edges dataframe. arrows must be built to the number of edges:
+  # a scalar "to" cannot recycle to zero rows, so an edgeless graph
+  # (a single node, no dependencies) errored with
+  # "arguments imply differing number of rows: 0, 1".
   edges_clean <- data.frame(
     from = edges_df$from,
     to = edges_df$to,
-    arrows = "to",
+    arrows = rep("to", nrow(edges_df)),
     title = edges_df$title,
     stringsAsFactors = FALSE
   )
@@ -2253,21 +2503,37 @@ visualize_pipeline_interactive <- function(
 export_interactive_pipeline <- function(
   all_objects,
   file = here::here("R", "workflow_viz", "full_compute_graph.html"),
-  direction = "LR",
+  direction = c("LR", "UD"),
   hierarchical = TRUE,
-  title = .pipeline_config_value("study_name", "Computational Pipeline"),
+  title = NULL,
   subtitle = "Computational Pipeline"
 ) {
   if (!requireNamespace("htmlwidgets", quietly = TRUE)) {
     stop("Package \"htmlwidgets\" is required to save the interactive graph.", call. = FALSE)
   }
-  vn <- visualize_pipeline_interactive(
+  direction_supplied <- !missing(direction)
+  # See visualize_pipeline_interactive(): match.arg() alone never names the
+  # argument in its error.
+  direction <- tryCatch(
+    match.arg(direction),
+    error = function(e) stop("`direction` must be \"LR\" or \"UD\".", call. = FALSE)
+  )
+  # The default title is resolved here, not in the formals, so the help page
+  # does not show the internal .pipeline_config_value() call as the default.
+  if (missing(title)) {
+    title <- .pipeline_config_value("study_name", "Computational Pipeline")
+  }
+  # `direction` is passed through only when the caller supplied it, so the
+  # "ignored when hierarchical = FALSE" warning inside
+  # visualize_pipeline_interactive() fires only for an explicit direction.
+  vn_args <- list(
     all_objects,
-    direction = direction,
     hierarchical = hierarchical,
     title = title,
     subtitle = subtitle
   )
+  if (direction_supplied) vn_args$direction <- direction
+  vn <- do.call(visualize_pipeline_interactive, vn_args)
 
   out_dir <- dirname(file)
   if (!dir.exists(out_dir)) {
@@ -2311,6 +2577,17 @@ export_subgraph <- function(
     g <- all_objects
   } else {
     g <- as_igraph(all_objects)
+  }
+
+  if (!is.null(focal_node) && !is.null(stage)) {
+    warning("Both `focal_node` and `stage` were given; `stage` is ignored and the neighbourhood of `focal_node` is exported.", call. = FALSE)
+  }
+  if (!is.null(stage) && !"stage" %in% igraph::vertex_attr_names(g)) {
+    stop(
+      "The igraph object has no vertex attribute `stage`, so it cannot be filtered by stage. ",
+      "Build the graph with `as_igraph()`.",
+      call. = FALSE
+    )
   }
 
   if (!is.null(focal_node) && !(focal_node %in% igraph::V(g)$name)) {
@@ -2402,6 +2679,18 @@ get_render_plan <- function(all_objects,
                             stale_by = c("mtime", "hash"),
                             hash_file = NULL) {
   stale_by <- match.arg(stale_by)
+  if (!isTRUE(only_stale) && !isFALSE(only_stale)) {
+    stop("`only_stale` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  whole_index <- function(x, arg) {
+    if (is.null(x) || is.character(x)) return(x)
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) || x != as.integer(x)) {
+      stop("`", arg, "` must be a single whole number (a 1-based index) or a node name.", call. = FALSE)
+    }
+    as.integer(x)
+  }
+  from <- whole_index(from, "from")
+  to <- whole_index(to, "to")
   if (is(all_objects, "FilePath")) {
     all_objects <- list(all_objects) # a single object, not wrapped in a list
   }
@@ -2419,16 +2708,17 @@ get_render_plan <- function(all_objects,
   obj_lookup <- stats::setNames(all_objects, node_names)
 
   # A declared file that is not on disk (a mistyped path, or the wrong working directory) has no
-  # modification time and is left out of every comparison, so it must be reported, not ignored.
-  # Outputs that do not exist yet are expected to be missing: their producer will make them.
+  # modification time: it cannot be shown to be older than the output, so anything that reads it
+  # is out of date (see is_stale()). Outputs that do not exist yet are expected to be missing:
+  # their producer will make them. The check covers every file the pipeline declares, including
+  # a dependency named only inside another object's `dependencies` list.
   produced <- unlist(lapply(
     Filter(function(x) is(x, "FileOutputs"), all_objects),
     function(p) vapply(p@output, function(o) o@name, character(1))
   ))
-  # Files named only inside a `dependencies` list, and not passed in `all_objects`, are declared too.
   declared <- c(
     all_objects,
-    do.call(c, lapply(Filter(function(x) is(x, "FileUses"), all_objects), function(x) x@dependencies))
+    do.call(c, lapply(all_objects, .collect_source_files))
   )
   declared_names <- vapply(declared, function(x) x@name, character(1))
   absent <- vapply(declared, function(x) is.na(x@mtime), logical(1)) & !(declared_names %in% produced)
@@ -2436,7 +2726,7 @@ get_render_plan <- function(all_objects,
   if (length(absent_names) > 0) {
     warning(
       length(absent_names), " declared file(s) were not found on disk (the wrong working directory, or a mistyped path?) ",
-      "and are treated as unchanged: ", paste(absent_names, collapse = ", "),
+      "and are treated as out of date: ", paste(absent_names, collapse = ", "),
       call. = FALSE
     )
   }

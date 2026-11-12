@@ -50,7 +50,7 @@ extract, or an `.rds` cache.
 The R ecosystem has established workflow automation frameworks, most
 notably [targets](https://books.ropensci.org/targets/) (and its
 predecessor `drake`), along with GNU Make wrappers and `workflowr`.
-Understanding how `TempleCBE::compute_graph` compares and contrasts with
+Understanding how the `compute_graph` help topic (`?compute_graph`) compares and contrasts with
 these architectures clarifies when and why to use it.
 
 ### How `targets` works
@@ -126,7 +126,7 @@ communication layer:
 
 ### Feature comparison matrix
 
-| Dimension | `targets` | `TempleCBE::compute_graph` |
+| Dimension | `targets` | `compute_graph` topic (`?compute_graph`) |
 |:-----------------------|:-----------------------|:-----------------------|
 | **Primary purpose** | Computation caching & pipeline execution engine | File dependency auditing, staleness planning & stakeholder visualization |
 | **Node representation** | In-memory R objects / target expressions (cached in `_targets/`) | Explicit files on disk (`FilePath`, `FileUses`, `FileOutputs`) |
@@ -673,6 +673,48 @@ full_study_graph <- join_pipelines(clinical_subpipeline, genomics_subpipeline)
 # Generate executive summary of combined study
 pipeline_summary(full_study_graph)
 ```
+
+### Pattern 6: From render to publish — the pipeline → publish journey
+
+Rendering, bundling, and publishing are three separate steps with three
+separate safety properties, and they run in that order: render only what
+is stale, bundle exactly what was rendered, and publish a clean snapshot
+of the repository that holds them.
+
+```{r publish_journey, eval = FALSE}
+# 1. Render: only the reports that are out of date, in dependency order.
+#    Dry-run first to see the plan; nothing is executed.
+render_pipeline(study_pipeline, dry_run = TRUE)
+rendered <- render_pipeline(study_pipeline, formats = c("pdf", "docx"))
+
+# 2. Bundle: the rendered reports (and any data deliverables) into one
+#    zip, organised by pipeline stage. The zip is a delivery artefact:
+#    it is what you send to a collaborator, not what gets published.
+zip_path <- package_deliverables(
+  study_pipeline,
+  output_formats = c("pdf", "docx"),
+  zip_path = "deliverables/CBE_Deliverables.zip"
+)
+
+# 3. Publish: a clean git snapshot of the repository. Rehearse with
+#    push = FALSE first: it rewrites the local branches and sends nothing.
+#    The remote deliberately has no default (in a clone of the private
+#    repository, "origin" is the private repository), and standalone mode
+#    force-pushes a single clean commit, so name the public remote
+#    explicitly. Snapshot mode appends to the publish branch instead.
+clean_publish(remote = "public", push = FALSE)
+clean_publish(remote = "public", mode = "snapshot")
+```
+
+Two things to keep apart. `package_deliverables()` packages files that
+already exist on disk: if a report was not rendered (or its render
+failed), it is left out with a warning rather than packaged stale, so
+compare two bundles with `diff_deliverables()` before sending one out.
+`clean_publish()` publishes the git tree, not the zip: the bundle is for
+the collaborator, the snapshot is the auditable public record, and the
+render manifest (`render_manifest.json`, written beside the outputs)
+records the TempleCBE version, git commit, package versions, and seed of
+the run that produced them.
 
 ------------------------------------------------------------------------
 

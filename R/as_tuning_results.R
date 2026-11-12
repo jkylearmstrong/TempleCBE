@@ -59,30 +59,45 @@ as_tuning_results <- function(x, ...) {
 
   # 1. Filter tidymodels metric sets to IBS/Brier metric if multiple metrics present
   metric_is_brier <- FALSE
+  ibs_source <- NULL
   if (".metric" %in% col_names) {
     brier_rows <- df$.metric %in% c("brier_survival_integrated", "brier_survival", "brier", "ibs")
+    brier_rows[is.na(brier_rows)] <- FALSE
     if (any(brier_rows)) {
+      dropped <- sum(!brier_rows)
+      if (dropped > 0L) {
+        warning("Dropping ", dropped, " row(s) whose `.metric` is not a Brier metric: ",
+                paste(unique(stats::na.omit(df$.metric[!brier_rows])), collapse = ", "), ".", call. = FALSE)
+      }
       df <- df[brier_rows, , drop = FALSE]
       metric_is_brier <- TRUE
     }
   }
 
   # 2. Map IBS
-  if (!"IBS" %in% names(df)) {
+  if ("IBS" %in% names(df)) {
+    ibs_source <- "IBS"
+  } else {
     if ("ibs" %in% names(df)) {
       df$IBS <- df$ibs
+      ibs_source <- "ibs"
     } else if ("mean_ibs" %in% names(df)) {
       df$IBS <- df$mean_ibs
+      ibs_source <- "mean_ibs"
     } else if ("integrated_brier_score" %in% names(df)) {
       df$IBS <- df$integrated_brier_score
+      ibs_source <- "integrated_brier_score"
     } else if ("brier_score" %in% names(df)) {
       df$IBS <- df$brier_score
+      ibs_source <- "brier_score"
     } else if (metric_is_brier && "mean" %in% names(df)) {
       # `mean` and `.estimate` are whatever `.metric` names: the IBS only when
       # `.metric` says so
       df$IBS <- df$mean
+      ibs_source <- "mean"
     } else if (metric_is_brier && ".estimate" %in% names(df)) {
       df$IBS <- df$.estimate
+      ibs_source <- ".estimate"
     } else if (any(c("mean", ".estimate") %in% names(df))) {
       stop(
         "Could not adapt tuning results to standardized format: the column `",
@@ -165,8 +180,30 @@ as_tuning_results <- function(x, ...) {
     )
   }
 
+  # Values that cannot be parsed as numbers (e.g. IBS = "abc") used to coerce
+  # to NA with only a warning from as.numeric(): name them instead.
+  for (col in c("alpha", "IBS")) {
+    raw <- df[[col]]
+    if (is.character(raw)) {
+      coerced <- suppressWarnings(as.numeric(raw))
+      bad <- !is.na(raw) & is.na(coerced)
+      if (any(bad)) {
+        stop("`", col, "` has value(s) that are not numbers: ",
+             paste(unique(raw[bad]), collapse = ", "), ".", call. = FALSE)
+      }
+    }
+  }
   df$alpha <- as.numeric(df$alpha)
   df$IBS <- as.numeric(df$IBS)
+  if (any(!is.na(df$alpha) & (df$alpha < 0 | df$alpha > 1))) {
+    stop("`alpha` must be between 0 and 1.", call. = FALSE)
+  }
+  if (any(!is.finite(df$IBS[!is.na(df$IBS)]))) {
+    stop("`IBS` must be finite.", call. = FALSE)
+  }
+  if (any(!is.na(df$IBS) & (df$IBS < 0 | df$IBS > 1))) {
+    stop("`IBS` must be between 0 and 1 (it is a Brier score).", call. = FALSE)
+  }
   if ("lambda" %in% names(df)) {
     df$lambda <- as.numeric(df$lambda)
   }
@@ -176,10 +213,16 @@ as_tuning_results <- function(x, ...) {
 
   dots <- list(...)
   if (!is.null(dots$domain)) {
-    df$domain <- as.character(dots$domain)
+    if (!is.character(dots$domain) || length(dots$domain) != 1L || is.na(dots$domain)) {
+      stop("`domain` must be a single string.", call. = FALSE)
+    }
+    df$domain <- dots$domain
   }
   if (!".metric" %in% names(df)) {
-    df$.metric <- "brier_survival_integrated"
+    # Stamp the integrated-Brier name only when the IBS is known to be an
+    # integrated Brier score. A `brier_score` column may be a point Brier
+    # score, so it gets the generic "brier" name instead.
+    df$.metric <- if (identical(ibs_source, "brier_score")) "brier" else "brier_survival_integrated"
   }
   if (!".estimate" %in% names(df) && "IBS" %in% names(df)) {
     df$.estimate <- df$IBS

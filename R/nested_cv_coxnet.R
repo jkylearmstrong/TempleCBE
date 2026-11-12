@@ -58,6 +58,8 @@
 #'   they are passed to [loco_mp_coxnet()] as well, so the minipatch models
 #'   are fit like the tuned ones; arguments that [loco_mp_coxnet()] sets
 #'   itself, such as `B`, are not forwarded.
+#' @param loco_mp_B Number of minipatch ensembles drawn by [loco_mp_coxnet()]
+#'   when `importance = "loco_mp"` (default `30`).
 #' @param check_subject_overlap If `TRUE` (the default), stop when an outer
 #'   split, or an inner resample, puts the same subject (or, when `group` is
 #'   set, the same group) in both its analysis and its assessment set; see
@@ -66,6 +68,9 @@
 #'   `"grid"` (default, standard [cv_coxnet()] grid search), `"race_anova"`
 #'   ([finetune::tune_race_anova()] racing), or `"race_win_loss"`
 #'   ([finetune::tune_race_win_loss()] racing; needs BradleyTerry2).
+#' @param recurrent How recurrent (start/stop) data are scored, as in
+#'   [cv_coxnet()]: `"error"` (default), `"first"`, or `"gap"` (gap-time
+#'   concordance; needs `tune_method = "grid"`).
 #' @param checkpoint_dir Optional directory path where per-split checkpoints are stored.
 #' @param shard Optional shard specification (e.g. `c(1, 2)`) for distributed computation.
 #' @param checkpoint_mismatch Action on mismatch: `"recompute"`, `"overwrite"`, or `"error"`.
@@ -111,7 +116,9 @@
 nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NULL,
                              rule = c("min", "1se"), mixture = 1, penalty = NULL, metrics = NULL,
                              eval_time = NULL, metric = NULL, covariates = c("path", "baseline"),
-                             trunc = 0.05, parallel = FALSE, importance = c("none", "loco_mp"),
+                             trunc = 0.05, recurrent = c("error", "first", "gap"),
+                             parallel = FALSE, importance = c("none", "loco_mp"),
+                             loco_mp_B = 30L,
                              check_subject_overlap = TRUE,
                              tune_method = c("grid", "race_anova", "race_win_loss"),
                              checkpoint_dir = NULL,
@@ -129,9 +136,28 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   }
   rule <- match.arg(rule)
   covariates <- match.arg(covariates)
+  recurrent <- match.arg(recurrent)
+  gap_mode <- identical(recurrent, "gap")
   importance <- match.arg(importance)
   tune_method <- match.arg(tune_method)
+  if (gap_mode && is.null(metrics)) {
+    metrics <- yardstick::metric_set(yardstick::concordance_survival)
+  }
   metrics <- metrics %||% default_surv_metrics()
+  if (gap_mode) {
+    if (tune_method != "grid") {
+      stop("`recurrent = \"gap\"` needs `tune_method = \"grid\"`: the racing tuners score by IBS.", call. = FALSE)
+    }
+    gap_info <- surv_metric_info(metrics)
+    if (!all(gap_info$metric == "concordance_survival")) {
+      stop(
+        "`recurrent = \"gap\"` scores gap-time concordance only; pass ",
+        "`metrics = yardstick::metric_set(yardstick::concordance_survival)`. ",
+        "A recurrent-event Brier score is not implemented.",
+        call. = FALSE
+      )
+    }
+  }
   info <- surv_metric_info(metrics)
 
   full_data <- object$splits[[1]]$data
@@ -165,9 +191,15 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   }
   if (is.null(eval_time)) {
     full <- spec$fit_frame(full_data)
-    eval_time <- default_eval_time(
-      surv_subject_truth(full$y, subject_keys(full$y, subject_values(full_data, spec)))$.truth
-    )
+    eval_time <- if (gap_mode) {
+      default_gap_eval_time(
+        surv_gap_truth(full$y, subject_keys(full$y, subject_values(full_data, spec)))
+      )
+    } else {
+      default_eval_time(
+        surv_subject_truth(full$y, subject_keys(full$y, subject_values(full_data, spec)), recurrent = recurrent)$.truth
+      )
+    }
   }
 
   run_outer <- function(i) with_quiet_cox_ties({
@@ -176,7 +208,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     assessment <- rsample::assessment(outer)
 
     if (tune_method %in% c("race_anova", "race_win_loss")) {
-      rlang::check_installed(c("finetune", "parsnip", "workflows"), reason = "for racing in nested_cv_coxnet.")
+      rlang::check_installed(c("finetune", "parsnip", "workflows", "tune"), reason = "for racing in nested_cv_coxnet.")
       mix_param <- if (length(mixture) == 1) mixture else tune::tune()
       spec_cox <- parsnip::set_engine(
         parsnip::proportional_hazards(penalty = tune::tune(), mixture = mix_param),
@@ -213,7 +245,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
       inner <- cv_coxnet_impl(
         spec, data = analysis, mixture = mixture, penalty = penalty,
         resamples = object$inner_resamples[[i]], metrics = metrics, eval_time = eval_time,
-        metric = metric, covariates = covariates, trunc = trunc, parallel = FALSE,
+        metric = metric, covariates = covariates, trunc = trunc, recurrent = recurrent, parallel = FALSE,
         check_subject_overlap = FALSE, ...
       )
       chosen_mix <- inner$mixture
@@ -233,16 +265,23 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
     }
     test <- list(x = test$x[usable, , drop = FALSE], y = test$y[usable])
     subject_test <- subject_test[usable]
-    truth_train <- surv_subject_truth(refit$y, subject_keys(refit$y, subject_values(analysis, spec)))
-    truth_test <- surv_subject_truth(test$y, subject_test)
-    weights <- graf_weights(truth_test$.truth, eval_time, censoring_km(truth_train$.truth), trunc)
+    if (gap_mode) {
+      outer_metrics <- score_gap_path(
+        refit$fit, test$x, test$y, subject_test, penalty = chosen
+      )
+      outer_metrics$penalty <- NULL
+    } else {
+      truth_train <- surv_subject_truth(refit$y, subject_keys(refit$y, subject_values(analysis, spec)), recurrent = recurrent)
+      truth_test <- surv_subject_truth(test$y, subject_test, recurrent = recurrent)
+      weights <- graf_weights(truth_test$.truth, eval_time, censoring_km(truth_train$.truth), trunc)
 
-    outer_metrics <- score_coxnet_path(
-      refit$fit, refit$x, refit$y, test$x, test$y, subject_test,
-      penalty = chosen, eval_time = eval_time, truth = truth_test, weights = weights,
-      metrics = metrics, info = info, covariates = covariates
-    )
-    outer_metrics$penalty <- NULL
+      outer_metrics <- score_coxnet_path(
+        refit$fit, refit$x, refit$y, test$x, test$y, subject_test,
+        penalty = chosen, eval_time = eval_time, truth = truth_test, weights = weights,
+        metrics = metrics, info = info, covariates = covariates
+      )
+      outer_metrics$penalty <- NULL
+    }
 
     loco_col <- if (importance == "loco_mp") {
       loco_fit <- tryCatch({
@@ -250,7 +289,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
           list(
             formula = preprocessor, data = analysis, subject_id = subject_id,
             mixture = chosen_mix, penalty = chosen, eval_time = eval_time,
-            B = 30, trunc = trunc, covariates = covariates, parallel = FALSE
+            B = loco_mp_B, trunc = trunc, covariates = covariates, parallel = FALSE
           ),
           loco_glmnet_args
         ))
@@ -285,29 +324,33 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
 
   if (!is.null(checkpoint_dir)) {
     ckpt_schema <- checkpoint_schema_version()
+    data_fp <- paste0(as.character(openssl::sha256(serialize(full_data, NULL))), collapse = "")
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
         schema = ckpt_schema,
         seed_scheme = current_seed_scheme(),
-        outer_split = object$splits[[i]]$in_id,
+        outer_split = canonicalize_split_for_hash(object$splits[[i]]),
+        inner_resamples = lapply(object$inner_resamples[[i]]$splits, canonicalize_split_for_hash),
+        data = data_fp,
         rule = rule,
         mixture = mixture,
         penalty = penalty,
         tune_method = tune_method,
         importance = importance,
-        metrics = names(metrics),
-        eval_time = eval_time
+        loco_mp_B = loco_mp_B,
+        metrics = metric_set_names(metrics),
+        eval_time = eval_time,
+        covariates = covariates,
+        recurrent = recurrent,
+        trunc = trunc,
+        glmnet_args = canonicalize_dots_for_hash(list(...))
       )
       paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
     }, character(1))
 
     run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = object$id), NULL))), collapse = "")
 
-    active_mask <- if (!is.null(shard)) {
-      ((seq_len(n_outer) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-    } else {
-      rep(TRUE, n_outer)
-    }
+    active_mask <- shard_active_mask(n_outer, validate_shard_spec(shard))
     ckpt_file <- function(i) {
       safe_id <- gsub("[^A-Za-z0-9._-]", "_", object$id[i])
       file.path(checkpoint_dir, sprintf("nested_coxnet_%s.rds", safe_id))
@@ -339,6 +382,19 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   )
 
   out <- purrr::list_rbind(Filter(Negate(is.null), rows))
+  if (!is.null(active_mask) && any(!active_mask) && sum(!vapply(rows, is.null, logical(1))) < n_outer) {
+    warning(
+      sprintf("nested_cv_coxnet(): shard %d/%d evaluated only %d of %d outer split(s); the result is partial. ",
+              shard[1], shard[2], sum(!vapply(rows, is.null, logical(1))), n_outer),
+      "Collect the other shards' checkpoints to complete it; see `attr(x, 'shard_partial')`.",
+      call. = FALSE
+    )
+    attr(out, "shard_partial") <- list(
+      shard = shard, n_outer = n_outer,
+      n_evaluated = sum(!vapply(rows, is.null, logical(1))),
+      evaluated_folds = object$id[!vapply(rows, is.null, logical(1))]
+    )
+  }
   class(out) <- c("nested_cv_coxnet", class(out))
   out
   })

@@ -58,8 +58,8 @@ questions are numbered).
 looked up (by file name, ignoring case and folders) in the index; the column `links` then holds,
 per question, the Excel formulas `=HYPERLINK("<path>", "<file>")` of the citations the index
 knows, as character strings (write them to a workbook cell with `openxlsx::writeFormula()`; Excel
-limits a string in a formula to 255 characters, so longer paths are reported with a warning and
-are not linked). A citation the index does not know is listed in `unresolved_citations`; an index
+limits a string in a formula to 255 characters, so a formula longer than that is reported with a warning and
+is not linked). A citation the index does not know is listed in `unresolved_citations`; an index
 with the same file name twice uses the first and warns.
 
 The question and answer text is returned as it is in the document. If you write it to a CSV or

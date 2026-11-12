@@ -11,12 +11,13 @@
 #' censored interval when follow-up continues after the last event.
 #'
 #' Events at or before time zero, events after the end of follow-up, and events
-#' that fall within `min_gap` of the previous kept event (a transfer or a duplicated
-#' record rather than a new readmission) are dropped, each with a warning that
-#' counts them. Death is a terminal event that is not a readmission: end the
-#' subject's follow-up at death. That treats death as censoring, which is the usual
-#' assumption of the Andersen-Gill and PWP models and is informative when death
-#' is common.
+#' (other than a subject's first event) that fall within `min_gap` of the previous
+#' kept event (a transfer or a duplicated record rather than a new readmission)
+#' are dropped, each with a warning that counts them. A subject's first event is
+#' always kept: there is no previous event for `min_gap` to apply to. Death is a
+#' terminal event that is not a readmission: end the subject's follow-up at death.
+#' That treats death as censoring, which is the usual assumption of the
+#' Andersen-Gill and PWP models and is informative when death is common.
 #'
 #' @param events A data frame with one row per event, holding the subject
 #'   identifier (`id`) and the event time (`time`), measured from time zero.
@@ -25,8 +26,9 @@
 #'   row get one censored interval.
 #' @param id,time,end Column names. `id` is looked up in both data frames; `time`
 #'   in `events` and `end` in `followup`.
-#' @param min_gap Events that are no more than `min_gap` after the previous kept
-#'   event are dropped (default `0`, which drops only ties and events at time zero).
+#' @param min_gap Events after the first that are no more than `min_gap` after the
+#'   previous kept event are dropped (default `0`, which drops only ties and events
+#'   at time zero). A subject's first event is always kept, whatever `min_gap` is.
 #' @return A tibble with the subject identifier (named as `id`), `tstart`, `tstop`,
 #'   `status` (1 = event, 0 = censored at the end of follow-up) and
 #'   `event_number` (1 for the first interval, 2 for the second, and so on), sorted
@@ -54,7 +56,9 @@ recurrent_intervals <- function(events, followup, id = "id", time = "time", end 
   if (anyNA(followup[[id]]) || anyNA(followup[[end]])) {
     stop("`followup` must not contain missing identifiers or end times.", call. = FALSE)
   }
-  not_followed <- setdiff(unique(events[[id]]), followup[[id]])
+  # NA identifiers are dropped with a warning below, not treated as subjects
+  # with no follow-up row.
+  not_followed <- setdiff(unique(events[[id]][!is.na(events[[id]])]), followup[[id]])
   if (length(not_followed)) {
     stop("Subject(s) with events but no follow-up row: ", format_ids(not_followed), ".", call. = FALSE)
   }
@@ -67,6 +71,10 @@ recurrent_intervals <- function(events, followup, id = "id", time = "time", end 
   fu <- tibble::tibble(.id = followup[[id]][!bad_end], .end = end_t[!bad_end])
 
   ev <- tibble::tibble(.id = events[[id]], .time = as.numeric(events[[time]]))
+  n_na_ev <- sum(is.na(ev$.id) | is.na(ev$.time))
+  if (n_na_ev > 0L) {
+    warning(n_na_ev, " event row(s) with a missing identifier or event time were dropped.", call. = FALSE)
+  }
   ev <- ev[!is.na(ev$.id) & !is.na(ev$.time), , drop = FALSE]
   ev <- ev[ev$.id %in% fu$.id, , drop = FALSE]
   n0 <- nrow(ev)
@@ -80,8 +88,15 @@ recurrent_intervals <- function(events, followup, id = "id", time = "time", end 
 
   keep_after_gap <- function(t) {
     kept <- logical(length(t))
-    last <- 0
-    for (i in seq_along(t)) {
+    if (length(t) == 0L) {
+      return(kept)
+    }
+    # The first event is always kept: there is no previous event, so
+    # `min_gap` cannot apply to it. Only later events are dropped when they
+    # fall within `min_gap` of the previous kept event.
+    kept[1] <- TRUE
+    last <- t[1]
+    for (i in seq_along(t)[-1]) {
       if (t[i] - last > min_gap) {
         kept[i] <- TRUE
         last <- t[i]
@@ -114,6 +129,13 @@ recurrent_intervals <- function(events, followup, id = "id", time = "time", end 
   rows$event_number <- as.integer(stats::ave(seq_len(nrow(rows)), grp, FUN = seq_along))
   out <- rows[, c(".id", "tstart", "tstop", "status", "event_number")]
   names(out)[1L] <- id
+  # `ifelse()` on an empty input returns a logical vector, so an empty result
+  # (e.g. every follow-up end <= 0) would otherwise come back with a logical
+  # `tstart` instead of a numeric one.
+  out$tstart <- as.numeric(out$tstart)
+  out$tstop <- as.numeric(out$tstop)
+  out$status <- as.integer(out$status)
+  out$event_number <- as.integer(out$event_number)
   tibble::as_tibble(out[order(match(out[[id]], fu$.id), out$tstart), , drop = FALSE])
 }
 
@@ -127,7 +149,9 @@ recurrent_intervals <- function(events, followup, id = "id", time = "time", end 
 #'
 #' @param data A data frame of counting-process intervals.
 #' @param at The window length, in the units of the time columns.
-#' @param start,stop,status Column names (strings).
+#' @param start,stop,status Column names (strings). A factor `status` must have a level
+#'   that means censored (`"0"`, `"FALSE"` or a label starting with "censor"); otherwise
+#'   an interval that is cut would have to be given a guessed status, and the function stops.
 #' @return `data` restricted to the window, with the same columns.
 #' @seealso [recurrent_cox_windows()], [recurrent_intervals()]
 #' @export
@@ -144,7 +168,25 @@ truncate_start_stop <- function(data, at, start = "tstart", stop = "tstop", stat
   out <- data[as.numeric(data[[start]]) < at, , drop = FALSE]
   cut <- as.numeric(out[[stop]]) > at
   out[[stop]][cut] <- at
-  out[[status]][cut] <- if (is.factor(out[[status]])) levels(out[[status]])[1L] else if (is.logical(out[[status]])) FALSE else 0
+  # A cut interval is censored at `at`: its status must be the censored value
+  # (0), not the first factor level -- with levels c("1", "0") the first level
+  # is the event, and using it would fabricate events at `at`.
+  if (any(cut)) out[[status]][cut] <- if (is.factor(out[[status]])) {
+    lv <- levels(out[[status]])
+    lv_num <- suppressWarnings(as.numeric(lv))
+    # the censored level: 0, FALSE or a label that says "censored"; when none
+    # can be told apart, stop rather than guess (the first level may be the event)
+    censored <- lv[(!is.na(lv_num) & lv_num == 0) | toupper(lv) == "FALSE" | grepl("^censor", lv, ignore.case = TRUE)]
+    if (!length(censored)) {
+      stop(
+        "Cannot tell which level of the factor `", status, "` means censored (levels: ",
+        paste0("'", lv, "'", collapse = ", "), "). Recode it to 0/1 or name the censored level ",
+        "\"0\", \"FALSE\" or \"censored\".",
+        call. = FALSE
+      )
+    }
+    censored[1L]
+  } else if (is.logical(out[[status]])) FALSE else 0
   rownames(out) <- NULL
   out
 }
@@ -180,7 +222,11 @@ recurrent_terms <- function(predictors) {
 #'   time scale restarts after each event.
 #' * `"wlw"`, Wei-Lin-Weissfeld: marginal model in which a subject is at risk for every
 #'   event number from time zero; a common effect is estimated over event numbers
-#'   (stratified by event number).
+#'   (stratified by event number). Only the covariates of each subject's first
+#'   interval (baseline covariates) are used: a predictor that varies within a
+#'   subject is taken at its first-interval value, with a warning naming it.
+#'   Use `"pwp_total"` (which uses interval-specific covariates) when the
+#'   time-varying values matter.
 #' * `"frailty"`: Andersen-Gill with a gamma frailty for the subject
 #'   ([survival::frailty()]), so the variance of the frailty (`frailty_variance`)
 #'   measures how much subjects differ beyond the covariates.
@@ -242,8 +288,11 @@ recurrent_cox <- function(data,
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be a number between 0 and 1.", call. = FALSE)
   }
-  if (!is.null(max_events) && (!is.numeric(max_events) || length(max_events) != 1L || max_events < 1)) {
-    stop("`max_events` must be a single number of at least 1.", call. = FALSE)
+  if (!is.null(max_events) && (!is.numeric(max_events) || length(max_events) != 1L || is.na(max_events) || max_events < 1 || max_events != round(max_events))) {
+    stop("`max_events` must be a single whole number of at least 1.", call. = FALSE)
+  }
+  if (!is.numeric(min_stratum_events) || length(min_stratum_events) != 1L || is.na(min_stratum_events) || min_stratum_events < 1 || min_stratum_events != round(min_stratum_events)) {
+    stop("`min_stratum_events` must be a single whole number of at least 1.", call. = FALSE)
   }
   terms_rhs <- recurrent_terms(predictors)
   if (length(terms_rhs) == 0L) stop("`predictors` is empty.", call. = FALSE)
@@ -292,6 +341,25 @@ recurrent_cox <- function(data,
   }
 
   if (model == "wlw") {
+    # WLW builds one pseudo-row per event number from the subject's first
+    # interval, so only baseline (first-interval) covariates enter the fit.
+    # A predictor that varies within a subject is silently taken at its
+    # first-interval value unless this warns.
+    varying <- character()
+    for (nm in intersect(terms_rhs, names(d))) {
+      vals <- d[[nm]]
+      varying_nm <- any(tapply(vals, d$.rc_id, function(v) length(unique(v[!is.na(v)])) > 1L))
+      if (isTRUE(varying_nm)) varying <- c(varying, nm)
+    }
+    if (length(varying)) {
+      warning(
+        "`model = 'wlw'` uses each subject's first-interval (baseline) covariates only; ",
+        "the following predictor(s) vary within subjects and are taken at their first-interval value: ",
+        paste(varying, collapse = ", "),
+        ". Use `model = 'pwp_total'` for interval-specific covariates.",
+        call. = FALSE
+      )
+    }
     # each subject is at risk for event k from time zero: the time of the k-th event, or the end of follow-up
     ks <- seq_len(cap)
     per_subject <- split(d, d$.rc_id)
@@ -351,7 +419,7 @@ recurrent_cox <- function(data,
     fv <- tryCatch(as.numeric(fit$history[[1L]]$theta), error = function(e) NA_real_)
     if (length(fv) != 1L) fv <- NA_real_
   }
-  per_subj <- tapply(st, data[[id]], sum)
+  per_subj <- tapply(st == 1, data[[id]], sum)
   structure(
     list(
       fit = fit,
@@ -359,7 +427,7 @@ recurrent_cox <- function(data,
       terms = tab,
       n_subjects = length(unique(data[[id]])),
       n_intervals = nrow(data),
-      n_events = sum(st),
+      n_events = sum(st == 1),
       events_per_subject = table(events = as.integer(per_subj)),
       strata_events = if (stratified) tapply(d$.rc_ev, d$.rc_k, sum) else NULL,
       frailty_variance = fv,

@@ -151,6 +151,9 @@ km_cutpoint_search <- function(data,
   if (n < 10) {
     stop("At least 10 complete observations required for cutpoint evaluation.", call. = FALSE)
   }
+  if (sum(df[[status_col]] == 1, na.rm = TRUE) == 0L) {
+    stop("No events in `data`: a log-rank cutpoint search has nothing to separate. `optimal_cutpoint` would be meaningless.", call. = FALSE)
+  }
 
   vals <- df[[var_col]]
   cuts <- .candidate_cutpoints(vals, cutpoints, min_prop, n_cuts)
@@ -171,7 +174,10 @@ km_cutpoint_search <- function(data,
     if (is.null(sdiff)) return(NULL)
 
     chisq <- sdiff$chisq
-    p_val <- 1 - stats::pchisq(chisq, df = 1)
+    # With no (or degenerate) events the log-rank chi-square is NaN, and
+    # pchisq(NaN) leaks "NaNs produced" warnings; an NA chi-square has an
+    # NA p-value instead.
+    p_val <- if (length(chisq) != 1L || !is.finite(chisq)) NA_real_ else 1 - stats::pchisq(chisq, df = 1)
 
     # Cox model
     cfit <- tryCatch(survival::coxph(form_diff, data = df_sub), error = function(e) NULL)
@@ -490,7 +496,13 @@ km_cutpoint_time_varying <- function(data,
     stop("Column(s) not found in `data`: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
-  df <- data[!is.na(data[[tstart_col]]) & !is.na(data[[tstop_col]]) & !is.na(data[[status_col]]) & !is.na(data[[var_col]]), , drop = FALSE]
+  keep <- !is.na(data[[tstart_col]]) & !is.na(data[[tstop_col]]) & !is.na(data[[status_col]]) & !is.na(data[[var_col]]) & !is.na(data[[id_col]])
+  n_dropped <- sum(!keep)
+  if (n_dropped > 0L) {
+    warning(n_dropped, " row(s) with a missing value in ", tstart_col, ", ", tstop_col, ", ", status_col, ", ", var_col, " or ", id_col,
+            " were dropped (", length(unique(data[[id_col]][!keep])), " subject(s) affected).", call. = FALSE)
+  }
+  df <- data[keep, , drop = FALSE]
   n <- nrow(df)
 
   vals <- df[[var_col]]

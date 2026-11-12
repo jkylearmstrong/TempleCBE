@@ -38,7 +38,9 @@ a subject is scored on the time to their **first** event: the rows after the
 first event are ignored, and a subject without an event is censored at the
 stop of their last interval. That is the one-row-per-subject outcome that
 yardstick's survival metrics can score. The recurrent process itself is
-modelled with [recurrent_cox()].
+modelled with [recurrent_cox()]; to score the whole recurrent process
+instead of only the first event, see [surv_gap_truth()] and
+`cv_coxnet(recurrent = "gap")`, which score gap-time concordance.
 }
 \examples{
 if (requireNamespace("survival", quietly = TRUE)) {

@@ -33,6 +33,9 @@ NULL
 #'   [plot_cox_forest()], [plot_cox_survival()], [plot_cox_marginal()]
 #' @export
 cox_single <- function(data, outcome = "outcome", feature, conf_level = 0.95, ...) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) || conf_level <= 0 || conf_level >= 1) {
+    stop("`conf_level` must be a single number between 0 and 1.", call. = FALSE)
+  }
   if (!feature %in% names(data)) {
     stop(sprintf("Feature '%s' not found in provided data.", feature))
   }

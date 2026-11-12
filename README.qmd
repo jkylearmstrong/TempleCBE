@@ -139,9 +139,25 @@ fit_cox <- coxnet(Surv(time, status) ~ ., data = lung_clean, penalty = 0.05, mix
 cv_fit <- cv_coxnet(Surv(time, status) ~ ., data = lung_clean, v = 5)
 generics::tidy(cv_fit)
 
-# Start/stop data (`long`: one row per subject-interval): folds keep each subject's intervals together
+# Start/stop data (one row per subject-interval), built with tidy_tmerge_cox():
+# time-varying x1/x2 measured at 0, 6 and 12 months, one event per subject at most
+set.seed(1)
+measures <- data.frame(
+  subject_id = rep(1:40, each = 3),
+  time = rep(c(0, 6, 12), 40),
+  x1 = rnorm(120),
+  x2 = rnorm(120)
+)
+events <- data.frame(
+  subject_id = 1:40,
+  event_time = round(c(runif(20, 9, 18), runif(20, 13, 18))),
+  event_type = rep(c("Relapse", "Censored"), each = 20)
+)
+long <- tidy_tmerge_cox(measures, events, censor_types = "Censored")
+
+# Folds keep each subject's intervals together
 cv_ss <- cv_coxnet(
-  Surv(tstart, tstop, status) ~ x1 + x2, data = long,
+  Surv(tstart, tstop, event) ~ x1 + x2, data = long,
   subject_id = "subject_id", v = 5
 )
 ```
@@ -254,11 +270,28 @@ get_render_plan(pipeline)
 | **05** | [Cross-Validating Advanced Survival Models: R to SAS](https://jkylearmstrong.github.io/TempleCBE/articles/R_to_SAS.html) | Automated macro exports, macro validation suites, `cbe_compare_df` verification, and numerical concordance benchmarks. |
 | **06** | [Multi-Language Interoperability and Python Pipelines](https://jkylearmstrong.github.io/TempleCBE/articles/reticulate_export.html) | Reticulate bridges, exporting survival matrices and models to Python (`DALEXtra`, `survex`), and cross-language artifact transfer. |
 | **07** | [Principal Component Analysis in R and SAS](https://jkylearmstrong.github.io/TempleCBE/articles/pca_analysis.html) | SAS `PROC PRINCOMP` eigenvalue parity, Kaiser-Guttman scree plots, biplots, and clinical TAS dimension reduction. |
+| **08** | [Proportional Hazards, Competing Risks and Imputation Pooling](https://jkylearmstrong.github.io/TempleCBE/articles/competing_risks_and_imputation.html) | Fine-Gray subdistribution hazards, cumulative incidence, Schoenfeld proportional-hazards audit, and imputation pooling. |
+| **09** | [End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data](https://jkylearmstrong.github.io/TempleCBE/articles/rossi_nested_survival.html) | End-to-end `nested_survival_run()`, multi-machine sharding, and `repro_appendix()`. |
 
 Access any vignette locally after installation via:
 ```r
 vignette("nested_survival_cv", package = "TempleCBE")
 ```
+
+### From render to publication
+
+The pipeline tools form one journey from a dependency graph to a
+published snapshot — see the compute-graph vignette, Pattern 6:
+
+1.  **Render** the reports that are out of date with
+    `render_pipeline()` (run it with `dry_run = TRUE` first to see the
+    plan).
+2.  **Bundle** the rendered reports and data deliverables into one zip
+    with `package_deliverables()`.
+3.  **Publish** a clean git snapshot of the repository with
+    `clean_publish()` (rehearse with `push = FALSE`; the remote has
+    deliberately no default, and standalone mode force-pushes a single
+    clean commit).
 
 ---
 
@@ -276,7 +309,7 @@ vignette("nested_survival_cv", package = "TempleCBE")
 
 In preparation for the v0.5.0 release, `TempleCBE` underwent an exhaustive, multi-tiered code and statistical audit addressing 137 verified findings across data privacy, numerical accuracy, cross-platform containment, and survival methodology:
 
-- **Data Privacy & De-Identification**: Hardened identifier pseudonymization (the keyed HMAC methods now require a secret key and warn on short keys), synthetic investigator names sampled from the 250 most common US Census surnames and a pool of common first names, and automated redaction in multi-reviewer DOCX review tracking.
+- **Data Privacy & De-Identification**: Hardened identifier pseudonymization (the keyed HMAC methods now require a secret key and warn on short keys), synthetic investigator names sampled from the 250 most common US Census surnames and a pool of common first names, and automated redaction in multi-reviewer DOCX review tracking. Once reviewers reply, `apply_review_tracker()` merges a completed tracker's resolutions into the report as a dated appendix (`?apply_review_tracker`); it records resolutions, it does not edit the source DOCX.
 - **Statistical Integrity & Parity**: Smoke tests on five classic cohorts from R's `survival` package (`veteran`, `lung`, `rotterdam`, `heart`, `colon`) check that fits and predictions run and return well-formed output. SAS parity is checked against committed reference numbers printed by SAS 9.4 for `PROC PHREG` (the counting-process tumor data and the `lung` cohort), `PROC PRINCOMP` (the eigenvalue table of `run_pca()` on `iris`), `PROC COMPARE` (`compare_df()` on nine small comparisons) and the IPCW Brier score and integrated Brier score macro; re-running SAS itself is opt-in (`TEMPLECBE_RUN_SAS_TESTS`) and needs a SAS installation.
 - **Accelerated Racing Workflows**: Integrated `finetune` ANOVA and win-loss racing interfaces (`control_race_survival()`, `tune_race_survival()`) for fast hyperparameter optimization of penalized survival models and joint ensembles.
 - **Clean Canonical CBE API**: Refactored core functions to canonical names (`km_single`, `cox_multi`, `compare_df`, etc.) with full backwards-compatible `cbe_*` aliases.

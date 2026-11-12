@@ -105,9 +105,17 @@ batch_cox_single <- function(data,
       )
     }, error = function(e) conditionMessage(e))
     if (is.character(res)) return(fail(res))
-    sm <- summary(res, conf.int = conf_level)
-    cf <- sm$coefficients
-    ci <- stats::confint(res, level = conf_level)
+    # summary()/confint()/extraction used to sit outside the per-feature
+    # tryCatch above, so a failure there aborted the whole screen; a failing
+    # feature is now reported with its message like any other fit failure.
+    extracted <- tryCatch({
+      sm <- summary(res, conf.int = conf_level)
+      list(sm = sm, cf = sm$coefficients, ci = stats::confint(res, level = conf_level))
+    }, error = function(e) conditionMessage(e))
+    if (is.character(extracted)) return(fail(extracted))
+    sm <- extracted$sm
+    cf <- extracted$cf
+    ci <- extracted$ci
     est <- cf[, "coef"]
     lo <- ci[, 1]
     hi <- ci[, 2]

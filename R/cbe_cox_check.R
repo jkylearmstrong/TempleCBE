@@ -49,7 +49,9 @@ cox_check <- function(fit) {
   zph_tab <- as.data.frame(zph_res$table)
   term_names <- rownames(zph_tab)
   is_global <- term_names == "GLOBAL"
-  zph_violated <- stats::setNames(zph_tab$p[!is_global] < 0.05, term_names[!is_global])
+  # An NA p-value is not a violation (it is not assessable); without the
+  # !is.na() guard NA leaks into the logical vector.
+  zph_violated <- stats::setNames(!is.na(zph_tab$p[!is_global]) & zph_tab$p[!is_global] < 0.05, term_names[!is_global])
 
   if (sum(!is_global) == 1) {
     p_zph <- zph_tab$p[!is_global][1]

@@ -60,11 +60,14 @@ build_manual_versioned <- function(pkg = ".", path = NULL, latest = TRUE) {
   cat(result$stdout)
 
   if (isTRUE(latest)) {
-    fs::file_copy(
-      out_file,
-      fs::path(path, paste0(pkg$package, "_latest.pdf")),
-      overwrite = TRUE
-    )
+    latest_file <- fs::path(path, paste0(pkg$package, "_latest.pdf"))
+    fs::file_copy(out_file, latest_file, overwrite = TRUE)
+    # file_copy() reports success but a copy that is not on disk afterwards
+    # (a full disk, a permission change mid-copy) would leave the stable
+    # link pointing at a stale manual with no sign of it
+    if (!fs::file_exists(latest_file)) {
+      stop("The versioned manual was built, but its `latest` copy is not on disk: ", latest_file, ".", call. = FALSE)
+    }
   }
 
   message("Manual built: ", out_file)

@@ -32,6 +32,14 @@
 #' with `shard = NULL` (or `collect = TRUE`) to merge checkpoints and finalize
 #' the run object.
 #'
+#' With `recurrent = "gap"` (passed through `...` to [glmnet_IBS()]), recurrent
+#' data are scored by gap-time concordance instead of the integrated Brier
+#' score: `tune_results` and `outer_scores` then carry a `gap_concordance`
+#' column (higher is better) with `IBS` `NA`, candidates are selected on the
+#' highest concordance, and the censoring-weights comparison is skipped,
+#' because gap-time concordance uses no censoring weights. A recurrent-event
+#' Brier score is not computed; that is follow-up work.
+#'
 #' @param data A data frame containing counting-process `(start, stop]` or
 #'   right-censored survival intervals.
 #' @param recipe Optional [recipes::recipe()] object specifying preprocessing.
@@ -99,7 +107,7 @@
 #'   completes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param progress Logical (default `FALSE`). Display progress bars.
 #' @param ... Additional arguments passed to [glmnet_IBS()] (e.g. `cox.ties`,
-#'   `rule`, `metric`, `tune_engine`, `eval_time`).
+#'   `rule`, `metric`, `tune_engine`, `eval_time`, `recurrent`).
 #' @return An S3 object of class `cbe_nested_survival_run` containing:
 #'   \describe{
 #'     \item{`domain`}{Domain identifier string.}
@@ -117,6 +125,7 @@
 #'     \item{`seed_scheme`}{Seed generation scheme version (`"v0.5.6"`).}
 #'     \item{`shard`}{Shard specification (`NULL` or `c(i, n)`).}
 #'     \item{`status`}{`"completed"` or `"shard_completed"`.}
+#'     \item{`tuning_complete`}{`TRUE` when the tuning results cover every outer fold; `FALSE` when a sharded run proceeded with incomplete tuning checkpoints (a warning is also issued).}
 #'   }
 #' @seealso [validate_start_stop()], [tune_alpha_by_split()],
 #'   [select_candidate_models()], [score_outer()], [summarize_outer_importance()],
@@ -185,6 +194,11 @@ nested_survival_run <- function(data,
     expr = {
       t0 <- proc.time()[["elapsed"]]
 
+      # Recurrent data are validated as recurrent (an event does not end a
+      # subject's follow-up), so `error_on_invalid` does not stop a gap-mode
+      # run on its early events.
+      recurrent_arg <- match.arg(dots$recurrent %||% "error", c("error", "first", "gap"))
+
       # 1. Validate start/stop survival data first
       val <- validate_start_stop(
         data = data,
@@ -193,7 +207,8 @@ nested_survival_run <- function(data,
         stop = stop_col,
         status = status_col,
         warn_no_censoring = (no_censoring_action == "warn"),
-        error_on_invalid = error_on_invalid
+        error_on_invalid = error_on_invalid,
+        recurrent = !identical(recurrent_arg, "error")
       )
       if (!isTRUE(val$has_censoring)) {
         if (no_censoring_action == "stop") {
@@ -262,6 +277,22 @@ nested_survival_run <- function(data,
         }
       }
 
+      # User-supplied nested_folds are taken as-is, so check here that no
+      # subject is split across the analysis/assessment sides of any outer
+      # split or inner resample (the folds built above already group by id).
+      if (!is.null(nested_folds)) {
+        spec <- make_coxnet_spec(recipe, data, subject_id = id_col, group = NULL)
+        check_resample_overlap(nested_folds, spec, "The outer splits of `nested_folds`")
+        if ("inner_resamples" %in% names(nested_folds)) {
+          for (j in seq_len(nrow(nested_folds))) {
+            check_resample_overlap(
+              nested_folds$inner_resamples[[j]], spec,
+              paste0("The inner resamples of outer split `", if ("id" %in% names(nested_folds)) nested_folds$id[j] else j, "`")
+            )
+          }
+        }
+      }
+
       # Compute overall run fingerprint
       data_hash <- paste0(as.character(openssl::sha256(serialize(list(
         dim = dim(data),
@@ -303,7 +334,23 @@ nested_survival_run <- function(data,
           top_n = top_n,
           select_by = select_by,
           coefficients = coefficients,
-          compare_censoring = isTRUE(compare_censoring)
+          compare_censoring = isTRUE(compare_censoring),
+          # The fold assignments themselves (outer splits and every inner
+          # resample), the inner resampling design, and time_data: changing
+          # any of these must not reuse a cached run.
+          nested_folds = lapply(seq_len(nrow(nested_folds)), function(i) {
+            list(
+              outer = canonicalize_split_for_hash(nested_folds$splits[[i]]),
+              inner = if ("inner_resamples" %in% names(nested_folds)) {
+                lapply(nested_folds$inner_resamples[[i]]$splits, canonicalize_split_for_hash)
+              } else {
+                NULL
+              }
+            )
+          }),
+          inner_v = inner_v,
+          inner_bootstraps = inner_bootstraps,
+          time_data = time_data
         )
       )
 
@@ -356,6 +403,7 @@ nested_survival_run <- function(data,
               alphas = alphas,
               num_alpha_values = num_alpha_values,
               formulas = formulas,
+              inner_resamples = lapply(inner_rset$splits, canonicalize_split_for_hash),
               run_fp = run_fp
             )
           )
@@ -437,10 +485,17 @@ nested_survival_run <- function(data,
           })
         }, error = function(e) NULL)
         if (!is.null(collected_tune)) {
-          expected_per_fold <- length(nested_folds$inner_resamples[[1]]$splits) *
-            (if (!is.null(alphas)) length(alphas) else as.integer(num_alpha_values))
+          # Expected counts are per-fold (folds can have different inner-split
+          # counts) and formula-aware: one tuning row per inner split x alpha
+          # x formula.
+          n_formulas <- length(formulas)
+          n_alphas <- if (!is.null(alphas)) length(alphas) else as.integer(num_alpha_values)
+          expected_per_fold <- vapply(seq_len(n_outer), function(i) {
+            length(nested_folds$inner_resamples[[i]]$splits) * n_alphas * n_formulas
+          }, integer(1))
+          distinct_cols <- c("inner_resamples_splits", "alpha", "formula")
           actual_counts <- vapply(collected_tune, function(d) {
-            nrow(dplyr::distinct(d[, intersect(c("inner_resamples_splits", "alpha"), names(d)), drop = FALSE]))
+            nrow(dplyr::distinct(d[, intersect(distinct_cols, names(d)), drop = FALSE]))
           }, integer(1))
           if (all(actual_counts >= expected_per_fold)) {
             tune_results <- dplyr::bind_rows(collected_tune)
@@ -451,10 +506,30 @@ nested_survival_run <- function(data,
           all_tune_ready <- FALSE
         }
       }
+      # Incomplete tuning used to flow silently into candidate selection and
+      # outer scoring. Record it loudly and on the returned object instead.
+      if (!all_tune_ready) {
+        warning(
+          "nested_survival_run(): tuning checkpoints are incomplete across shards; candidates and outer scores ",
+          "were selected from the tuning results available in this run only (`tuning_complete = FALSE`). ",
+          "Collect all shards' checkpoints (or re-run without `shard`) for the full tuning set.",
+          call. = FALSE
+        )
+      }
 
-      # 4. Candidate model selection
+      # 4. Candidate model selection. Gap mode scores by concordance (higher
+      # is better), not IBS (lower is better): select on the negated
+      # concordance, on a local copy only, so the returned `tune_results`
+      # keep the real `gap_concordance` column.
+      tune_for_select <- tune_results
+      if (identical(recurrent_arg, "gap")) {
+        if (!"gap_concordance" %in% names(tune_for_select)) {
+          stop("`recurrent = \"gap\"` needs `gap_concordance` in the tuning results; rerun the tuning.", call. = FALSE)
+        }
+        tune_for_select$IBS <- -tune_for_select$gap_concordance
+      }
       candidates <- select_candidate_models(
-        tune_results = tune_results,
+        tune_results = tune_for_select,
         formulas = formulas,
         ntile = ntile,
         top_n = top_n,
@@ -575,9 +650,11 @@ nested_survival_run <- function(data,
       outer_coefficients <- tidy_outer_coefficients(outer_scores)
       importance <- summarize_outer_importance(outer_coefficients)
 
-      # 7. Censoring weight comparison (E3-aware: skips duplicate fit when no censoring)
+      # 7. Censoring weight comparison. Skipped in gap mode: gap-time
+      # concordance uses no censoring weights, so the two scorings would be
+      # identical and the comparison meaningless.
       censoring_comparison <- NULL
-      if (isTRUE(compare_censoring)) {
+      if (isTRUE(compare_censoring) && !identical(recurrent_arg, "gap")) {
         has_cens <- isTRUE(val$has_censoring) &&
           has_censored_subjects_in_splits(
             nested_folds,
@@ -709,6 +786,7 @@ nested_survival_run <- function(data,
           seed_scheme = current_seed_scheme(),
           shard = shard,
           status = run_status,
+          tuning_complete = all_tune_ready,
           resumed = FALSE,
           elapsed_sec = elapsed_sec,
           columns = list(
@@ -753,11 +831,19 @@ print.cbe_nested_survival_run <- function(x, ...) {
               nrow(x$nested_folds),
               nrow(x$candidates),
               nrow(x$outer_scores)))
-  cat(sprintf("  Median outer IBS: %.4f (IQR: %.4f) | Seed: %s (%s)\n",
-              stats::median(x$outer_scores$IBS, na.rm = TRUE),
-              stats::IQR(x$outer_scores$IBS, na.rm = TRUE),
-              as.character(x$seed %||% "NULL"),
-              x$seed_scheme))
+  if ("gap_concordance" %in% names(x$outer_scores) && all(is.na(x$outer_scores$IBS))) {
+    cat(sprintf("  Median outer gap concordance: %.4f (IQR: %.4f) | Seed: %s (%s)\n",
+                stats::median(x$outer_scores$gap_concordance, na.rm = TRUE),
+                stats::IQR(x$outer_scores$gap_concordance, na.rm = TRUE),
+                as.character(x$seed %||% "NULL"),
+                x$seed_scheme))
+  } else {
+    cat(sprintf("  Median outer IBS: %.4f (IQR: %.4f) | Seed: %s (%s)\n",
+                stats::median(x$outer_scores$IBS, na.rm = TRUE),
+                stats::IQR(x$outer_scores$IBS, na.rm = TRUE),
+                as.character(x$seed %||% "NULL"),
+                x$seed_scheme))
+  }
   if (!is.null(x$run_dir)) {
     cat(sprintf("  Run directory: %s (fingerprint: %s)\n",
                 x$run_dir, substr(x$fingerprint, 1, 12)))

@@ -34,6 +34,18 @@ run_pca <- function(data, center = TRUE, scale = TRUE, ...) {
       message("Dropping non-numeric column(s) from PCA: ", paste(dropped, collapse = ", "))
     }
     num_data <- data[is_num]
+    if (isTRUE(scale)) {
+      # prcomp() errors on a constant column with no package-level message
+      # naming it ("cannot rescale a constant/zero column to unit variance").
+      constant <- names(num_data)[vapply(num_data, function(x) {
+        x <- x[!is.na(x)]
+        length(x) == 0L || length(unique(x)) < 2L
+      }, logical(1))]
+      if (length(constant) > 0L) {
+        stop("Cannot scale constant column(s): ", paste(constant, collapse = ", "),
+             ". Drop them, or use `scale = FALSE`.", call. = FALSE)
+      }
+    }
     do.call(stats::prcomp, c(list(x = num_data, center = center, scale. = scale), dots))
   } else {
     do.call(stats::prcomp, c(list(x = data, center = center, scale. = scale), dots))
@@ -44,7 +56,9 @@ run_pca <- function(data, center = TRUE, scale = TRUE, ...) {
   }
 
   vars <- pca_obj$sdev^2
-  prop <- vars / sum(vars)
+  # All-constant input (scale = FALSE) has total variance 0, so the
+  # proportions used to be NaN.
+  prop <- if (sum(vars) > 0) vars / sum(vars) else rep(0, length(vars))
   pct_var <- prop * 100
   cum_pct <- cumsum(pct_var)
   diffs <- c(-diff(vars), NA_real_)

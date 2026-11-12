@@ -101,6 +101,12 @@ NULL
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
   check_named_column(outcome, "outcome", data)
   check_named_column(feature, "feature", data)
+  if (identical(outcome, feature)) {
+    stop("`outcome` and `feature` must be different columns.", call. = FALSE)
+  }
+  if (need_id && identical(feature, id_col)) {
+    stop("`feature` and `id_col` must be different columns.", call. = FALSE)
+  }
   if (need_id && (!is.character(id_col) || length(id_col) != 1L || is.na(id_col) || !id_col %in% names(data))) {
     stop("`id_col` must name one column of `data`.", call. = FALSE)
   }
@@ -276,6 +282,8 @@ plot_coef_forest <- function(results_df,
 
 #' @rdname coef_single
 #' @param digits Decimals for the estimate and its interval.
+#' @param conf_level Confidence level of the intervals in `results_df`; used
+#'   for the column heading only (default 0.95, matching [glm_single()]).
 #' @export
 tbl_coef_forest <- function(results_df,
                             term_col = "var_label",
@@ -285,9 +293,14 @@ tbl_coef_forest <- function(results_df,
                             p_col = "p.value",
                             p_breaks = c(0.001, 0.01, 0.05, 0.1, 0.2),
                             p_labels = c("****", "***", "**", "*", ".", "ns"),
-                            digits = 2) {
+                            digits = 2,
+                            conf_level = 0.95) {
   .coef_cols(results_df, term_col, estimate_col, low_col, high_col, p_col)
   .check_star_scheme(p_breaks, p_labels)
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) ||
+      conf_level <= 0 || conf_level >= 1) {
+    stop("`conf_level` must be a single number between 0 and 1.", call. = FALSE)
+  }
   f <- function(x) ifelse(is.na(x), "", formatC(x, format = "f", digits = digits))
   df <- as.data.frame(results_df)
   p <- df[[p_col]]
@@ -298,6 +311,9 @@ tbl_coef_forest <- function(results_df,
     `p-value` = ifelse(is.na(p), "", ifelse(p < 0.001, "<0.001", formatC(p, format = "f", digits = 3))),
     Significance = .coef_stars(p, p_breaks, p_labels)
   )
+  # The heading names the confidence level the intervals were fitted with;
+  # it used to say 95% even for a 90% interval.
+  names(out)[2] <- paste0("Estimate [", format(100 * conf_level, trim = TRUE), "% CI]")
   if ("scale" %in% names(df)) out$Scale <- as.character(df$scale)
   out
 }

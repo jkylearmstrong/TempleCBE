@@ -193,7 +193,7 @@ test_that("CP-L3-01: an unnormalizable public_url is reported without its creden
   expect_false(grepl(secret, err, fixed = TRUE))
 })
 
-test_that("CP-L3-04: a tracked-but-ignored file whose name git still quotes is reported, never allowed", {
+test_that("CP-L3-04: a tracked-but-ignored file whose name git quotes is allowed when named", {
   skip_if_no_git()
   skip_on_os("windows") # a tab cannot be part of a file name there
   fx <- cp_fixture()
@@ -202,13 +202,11 @@ test_that("CP-L3-04: a tracked-but-ignored file whose name git still quotes is r
   writeLines("tab*", file.path(fx$repo, ".gitignore"))
   cp_git(fx$repo, "add", "-f", "-A")
   cp_git(fx$repo, "commit", "--quiet", "-m", "tracked and ignored")
-  before <- cp_state(fx$repo)
-  err <- tryCatch(
-    cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, allow_ignored = name)),
-    error = function(e) conditionMessage(e)
-  )
-  expect_match(err, "match .gitignore patterns")
-  expect_identical(cp_state(fx$repo), before)
+
+  # git quotes a tab in the listing, but the allowance is now matched against
+  # git's quoted form as well as the raw path (item 123), so naming the file
+  # lets the publish through instead of refusing it as unpublishable
+  expect_no_error(cp_quiet(clean_publish(repo_root = fx$repo, push = FALSE, allow_ignored = name)))
 })
 
 test_that("CP-L3-04: a tracked-but-ignored name that is not valid UTF-8 is reported with escaped bytes and never allowed", {

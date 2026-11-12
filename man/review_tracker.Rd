@@ -14,8 +14,9 @@ review_tracker(
 }
 \arguments{
 \item{extract}{An object of class `cbe_review_extract` from
-[docx_review_extract()], a data frame of extracted comments, or a path
-to a `.docx` file or directory of `.docx` files.}
+[docx_review_extract()], a data frame of extracted comments, or one or
+more paths, each a `.docx` file or a directory of `.docx` files (several
+paths are extracted one by one and their comments combined).}
 
 \item{file}{Optional output path to write the tracker to: `.xlsx`, `.csv`,
 `.docx` or `.md`.}

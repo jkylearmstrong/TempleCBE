@@ -20,16 +20,22 @@ validate_start_stop(
 
 \item{id, start, stop, status}{Column names (as strings or bare symbols) for the
 subject identifier, interval start time, interval stop time, and event
-status indicator (`0` = censored, `1` = event). Defaults to `"id"`,
+status indicator (`0` = censored, `1` = event; any other value is invalid).
+Start times must be non-negative. Defaults to `"id"`,
 `"tstart"`, `"tstop"`, and `"status"`.}
 
 \item{warn_no_censoring}{Logical (default `TRUE`). Emit a warning when every
-subject experiences an event (`n_censored == 0`).}
+subject experiences an event (`n_censored == 0`). For recurrent data
+(`recurrent = TRUE`) the warning is based instead on trailing censored
+intervals: it fires only when no subject has a censored last interval, so
+recurrent data in which every subject has an event but is still followed
+after it does not warn spuriously.}
 
 \item{error_on_invalid}{Logical (default `FALSE`). When `TRUE`, stops with an
 error if any structural issue (missing values, `stop <= start`, overlapping
 intervals, events before the last interval, or rows after an event) is
-detected.}
+detected. Status values outside `\{0, 1\}` and negative start times are
+structural issues too, and empty data (`0` rows) is not valid.}
 
 \item{recurrent}{Logical (default `FALSE`). Set `TRUE` for recurrent-event data
 (repeated readmissions, Andersen-Gill / PWP input): an event does not end a

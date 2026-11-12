@@ -9,6 +9,9 @@ NULL
 #' Temple CBE Color Palette
 #'
 #' Official and complementary colors for CBE publications and slide decks.
+#'
+#' @format An object of class \code{character} of length 7.
+#' @keywords datasets
 #' @export
 cbe_palette <- c(
   cherry       = "#A41E35", # Temple Cherry
@@ -97,6 +100,31 @@ scale_fill_cbe <- function(...) {
 
 # --- Formatting Helpers ---
 
+# `digits` for the formatters below: how many decimal places (or significant
+# figures for fmt_sig) to print. A fractional, negative, missing or
+# non-numeric value would reach sprintf()/formatC() and fail there, or be
+# silently truncated, so it is refused here with one clear message.
+.check_digits <- function(digits) {
+  if (!is.numeric(digits) || length(digits) != 1L || is.na(digits) ||
+      !is.finite(digits) || digits < 0 || digits != trunc(digits)) {
+    stop("`digits` must be a single non-negative whole number.", call. = FALSE)
+  }
+  invisible(as.integer(digits))
+}
+
+# a p-value or proportion: between 0 and 1; a missing value is allowed
+# through (format_p_value() has a `na` text for it), including a bare NA,
+# which is logical rather than numeric
+.check_zero_to_one <- function(x, what) {
+  if (!is.numeric(x) && !all(is.na(x))) {
+    stop("`", what, "` must be numeric.", call. = FALSE)
+  }
+  if (any(!is.na(x) & (x < 0 | x > 1))) {
+    stop("`", what, "` must be between 0 and 1.", call. = FALSE)
+  }
+  invisible(x)
+}
+
 #' Format a Percentage
 #'
 #' @param x Numeric proportion between 0 and 1
@@ -104,6 +132,8 @@ scale_fill_cbe <- function(...) {
 #' @return Formatted character string with '\%'
 #' @export
 fmt_pct <- function(x, digits = 1) {
+  .check_digits(digits)
+  .check_zero_to_one(x, "x")
   sprintf(paste0("%.", digits, "f%%"), 100 * x)
 }
 
@@ -114,6 +144,7 @@ fmt_pct <- function(x, digits = 1) {
 #' @return Formatted character string
 #' @export
 fmt_num <- function(x, digits = 2) {
+  .check_digits(digits)
   formatC(x, format = "f", digits = digits)
 }
 
@@ -124,6 +155,7 @@ fmt_num <- function(x, digits = 2) {
 #' @return Formatted character string
 #' @export
 fmt_sig <- function(x, digits = 3) {
+  .check_digits(digits)
   trimws(formatC(x, digits = digits, format = "fg"))
 }
 
@@ -154,7 +186,9 @@ fmt_p <- function(p) {
 #' @keywords internal
 #' @noRd
 format_p_value <- function(p, digits = 3, prefix = FALSE, na = NA_character_) {
+  .check_digits(digits)
   p <- as.numeric(p)
+  .check_zero_to_one(p, "p")
   lim <- 10^-digits
   below <- paste0(if (prefix) "p < " else "<", formatC(lim, format = "f", digits = digits))
   out <- ifelse(
@@ -175,6 +209,7 @@ format_p_value <- function(p, digits = 3, prefix = FALSE, na = NA_character_) {
 #' @return Formatted string (e.g., "HR 1.25 (95\% CI 1.05--1.48)")
 #' @export
 fmt_hr <- function(hr, conf_low, conf_high, digits = 2) {
+  .check_digits(digits)
   sprintf(
     "HR %s (95%% CI %s\u2013%s)",
     fmt_num(hr, digits),

@@ -13,7 +13,7 @@ read_database_metadata(path, sheet = NULL, ...)
 \arguments{
 \item{metadata}{A tibble/data.frame of dataset metadata (e.g. from \code{\link{get_dataset_info}}).}
 
-\item{path}{File path ending in \code{.csv} or \code{.xlsx}.}
+\item{path}{File path ending in \code{.csv}, \code{.xlsx} or \code{.xls}.}
 
 \item{...}{Additional arguments passed to the underlying writer/reader.}
 

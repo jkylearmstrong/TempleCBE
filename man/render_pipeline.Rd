@@ -6,7 +6,7 @@
 \usage{
 render_pipeline(
   path,
-  formats = .pipeline_config_value("default_formats", c("pdf", "docx")),
+  formats = NULL,
   pattern = "\\\\.(qmd|Rmd|rmd)$",
   engine = c("auto", "quarto", "rmarkdown"),
   workers = 1,
@@ -32,15 +32,21 @@ render_pipeline(
 \item{path}{A file path (character), directory, list of files, or list of pipeline
 objects (`FilePath`, `FileUses`, `FileOutputs`).}
 
-\item{formats}{Character vector of output formats (e.g. `c("pdf", "docx", "html")`).}
+\item{formats}{Character vector of output formats (e.g. `c("pdf", "docx", "html")`).
+Defaults to the `default_formats` setting from [pipeline_config()]
+(or the `pipeline.default_formats` session option when nothing was set
+there), `c("pdf", "docx")` if neither is set. `NULL` extracts the
+formats from each document's YAML front matter, as `"yaml"` does.}
 
 \item{pattern}{File pattern regex matching documents to render.}
 
 \item{engine}{Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.}
 
 \item{workers}{Number of parallel workers for concurrent rendering via `future`/`furrr`.
-Defaults to `1` (sequential). Set to `> 1` to initialize multisession workers, or `NULL`
-to use an existing `future::plan()` without altering it.}
+Defaults to `1` (sequential). Must be a single whole number of at least 1
+(or `NULL` to use an existing `future::plan()` without altering it);
+a fractional value such as `1.5` is an error, not silently truncated.
+Set to `> 1` to initialize multisession workers.}
 
 \item{only_stale}{Logical. When `TRUE` (default), only out-of-date documents are rendered.
 When `FALSE`, performs a full graph rerun.}
@@ -52,7 +58,8 @@ When `FALSE`, performs a full graph rerun.}
 \item{dry_run}{Logical. When `TRUE`, prints the ordered render plan without executing.}
 
 \item{cache}{Cache handling: `"keep"` (default), `"refresh"` (wipes `_cache` and `_files`),
-or `"stale"`.}
+or `"stale"`, which is an alias for `"refresh"` (it wipes the caches the same way;
+the name is kept for callers that pass it).}
 
 \item{on_error}{Behavior upon error: `"continue"` (default) or `"stop"`.}
 

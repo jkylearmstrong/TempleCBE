@@ -64,7 +64,11 @@ dates). Standard errors are robust (clustered on the subject) except for
   time scale restarts after each event.
 * `"wlw"`, Wei-Lin-Weissfeld: marginal model in which a subject is at risk for every
   event number from time zero; a common effect is estimated over event numbers
-  (stratified by event number).
+  (stratified by event number). Only the covariates of each subject's first
+  interval (baseline covariates) are used: a predictor that varies within a
+  subject is taken at its first-interval value, with a warning naming it.
+  Use `"pwp_total"` (which uses interval-specific covariates) when the
+  time-varying values matter.
 * `"frailty"`: Andersen-Gill with a gamma frailty for the subject
   ([survival::frailty()]), so the variance of the frailty (`frailty_variance`)
   measures how much subjects differ beyond the covariates.

@@ -44,7 +44,10 @@
 #' @param progress Show progress bar (default `FALSE`).
 #' @return A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
 #'   `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
-#'   coefficient estimates).
+#'   coefficient estimates). With `recurrent = "gap"` (passed through `...` to
+#'   [glmnet_IBS()]) there is no IBS: `IBS` is `NA` and the tibble gains a
+#'   `gap_concordance` column (higher is better) with the gap-time concordance
+#'   of each outer-fold fit.
 #' @seealso [glmnet_IBS()], [tidy_outer_coefficients()], [summarize_outer_importance()],
 #'   [plot_outer_importance()], [collect_checkpoints()], [clean_checkpoints()],
 #'   [compare_censoring_weights()], [select_candidate_models()]
@@ -231,6 +234,14 @@ score_outer <- function(object,
       })
 
       active_indices <- which(shard_active_mask(n_tasks, shard))
+      if (length(active_indices) == 0L) {
+        stop(
+          "score_outer(): shard ", paste(shard, collapse = "/"),
+          " has no tasks assigned to it (", n_tasks, " task(s) in total), so nothing was scored. ",
+          "Check the shard specification.",
+          call. = FALSE
+        )
+      }
 
       if (!is.null(checkpoint_dir) && length(active_indices) > 0L) {
         mismatch_msgs <- character()
@@ -403,11 +414,19 @@ score_outer <- function(object,
             outer_fold = curr_fold,
             model = r$model[[1]],
             alpha = a,
-            formula = if ("formula" %in% names(r)) as.character(r$formula[[1]]) else NA_character_,
+            formula = if ("formula" %in% names(r)) as.character(r$formula[[1]]) else if ("formulas" %in% names(r)) as.character(r$formulas[[1]]) else NA_character_,
             IBS = if (nrow(res) > 0) res$IBS[1] else NA_real_,
             lambda = if (nrow(res) > 0) res$lambda[1] else NA_real_,
             coefficients = list(coef_tbl)
           )
+          # Only gap-mode scoring returns a gap concordance; keep the
+          # non-gap column set exactly as before so downstream code that
+          # expects those columns (e.g. tidy_outer_coefficients()) is
+          # unaffected.
+          if ("gap_concordance" %in% names(res)) {
+            res_row$gap_concordance <- if (nrow(res) > 0) res$gap_concordance[1] else NA_real_
+            res_row <- res_row[, c("outer_fold", "model", "alpha", "formula", "IBS", "gap_concordance", "lambda", "coefficients")]
+          }
 
           res_row <- write_verified_checkpoint(
             res_row,
@@ -452,10 +471,26 @@ score_outer <- function(object,
       }
 
       res_tbl <- dplyr::bind_rows(res_list)
-      if (!is.data.frame(res_tbl) || nrow(res_tbl) == 0L || all(is.na(res_tbl$IBS))) {
+      # A run scores by IBS or, with `recurrent = "gap"`, by gap-time
+      # concordance; only a run with neither has failed throughout. Older
+      # checkpoints have no `gap_concordance` column, so treat it as all `NA`.
+      gap_na <- if ("gap_concordance" %in% names(res_tbl)) is.na(res_tbl$gap_concordance) else rep(TRUE, nrow(res_tbl))
+      if (!is.data.frame(res_tbl) || nrow(res_tbl) == 0L || all(is.na(res_tbl$IBS) & gap_na)) {
         stop("All candidate model fits failed in score_outer().", call. = FALSE)
       }
-      n_failed <- sum(is.na(res_tbl$IBS))
+      if (!is.null(shard) && length(active_indices) < n_tasks) {
+        warning(
+          sprintf("score_outer(): shard %d/%d scored only %d of %d task(s); the result is partial. ",
+                  shard[1], shard[2], length(active_indices), n_tasks),
+          "Collect the other shards' checkpoints to complete it; see `attr(x, 'shard_partial')`.",
+          call. = FALSE
+        )
+        attr(res_tbl, "shard_partial") <- list(
+          shard = shard, n_tasks = n_tasks, n_evaluated = length(active_indices),
+          evaluated_tasks = active_indices
+        )
+      }
+      n_failed <- sum(is.na(res_tbl$IBS) & gap_na)
       if (n_failed > 0L) {
         warning(sprintf("%d candidate model fit(s) failed in score_outer().", n_failed), call. = FALSE)
       }
@@ -576,9 +611,14 @@ summarize_outer_importance <- function(x,
 
   terms_u <- unique(as.character(x$term))
   rows <- lapply(terms_u, function(tm) {
+    n_na <- sum(x$term == tm & is.na(x$estimate))
     sub_df <- x[x$term == tm & !is.na(x$estimate), , drop = FALSE]
     n_obs <- nrow(sub_df)
-    n_mod <- if (!is.na(n_distinct_models) && n_distinct_models > n_obs) n_distinct_models else n_obs
+    # Models where the term was not selected have estimate 0 (a real 0), but
+    # models where the estimate is NA (fit failed / term unassessable) must
+    # NOT be padded with 0: NA is not "not selected". Padding with 0 dragged
+    # medians toward 0 and hid unassessable terms.
+    n_mod <- if (!is.na(n_distinct_models) && n_distinct_models > n_obs + n_na) n_distinct_models - n_na else n_obs
     est_all <- if (n_mod > n_obs) c(sub_df$estimate, rep(0, n_mod - n_obs)) else sub_df$estimate
     nz_mask <- est_all != 0
     n_sel <- sum(nz_mask)
@@ -602,6 +642,7 @@ summarize_outer_importance <- function(x,
       label = resolve_cbe_labels(tm, label_map = label_map, style = style),
       n_models = as.integer(n_mod),
       n_selected = as.integer(n_sel),
+      n_unassessable = as.integer(n_na),
       selection_freq = as.numeric(freq),
       median_estimate = as.numeric(med_v),
       mean_estimate = as.numeric(mean_v),
@@ -868,7 +909,22 @@ compare_censoring_weights <- function(object,
         ibs_col_ipcw <- if ("ibs_ipcw" %in% names(tbl_ipcw)) "ibs_ipcw" else if ("IBS" %in% names(tbl_ipcw)) "IBS" else stop("Second table must contain 'IBS' or 'ibs_ipcw'.", call. = FALSE)
 
         id_cols <- intersect(c("outer_fold", "model", "alpha", "formula"), intersect(names(tbl_none), names(tbl_ipcw)))
-        if (length(id_cols) == 0) {
+        fabricated_ids <- length(id_cols) == 0
+        if (fabricated_ids) {
+          if (nrow(tbl_none) != nrow(tbl_ipcw)) {
+            stop(
+              "Pre-scored tables have different row counts (", nrow(tbl_none), " vs ", nrow(tbl_ipcw),
+              ") and share no id columns (outer_fold/model/alpha/formula), so rows cannot be matched. ",
+              "Supply shared id columns, or tables with the same rows in the same order.",
+              call. = FALSE
+            )
+          }
+          warning(
+            "Pre-scored tables share no id columns (outer_fold/model/alpha/formula); rows are matched ",
+            "by position using fabricated ids model_1..model_n. Supply shared id columns if the rows ",
+            "are not in the same order.",
+            call. = FALSE
+          )
           tbl_none$model <- paste0("model_", seq_len(nrow(tbl_none)))
           tbl_ipcw$model <- paste0("model_", seq_len(nrow(tbl_ipcw)))
           id_cols <- "model"
@@ -881,6 +937,14 @@ compare_censoring_weights <- function(object,
         sub_ipcw <- dplyr::rename(sub_ipcw, ibs_ipcw = !!ibs_col_ipcw)
 
         out <- dplyr::inner_join(sub_none, sub_ipcw, by = id_cols)
+        if (nrow(out) < nrow(sub_none) || nrow(out) < nrow(sub_ipcw)) {
+          warning(
+            sprintf("Pre-scored tables: the inner join kept %d of %d (first table) and %d (second table) rows; ",
+                    nrow(out), nrow(sub_none), nrow(sub_ipcw)),
+            "rows whose ids appear in only one table were dropped. Check that both tables cover the same models.",
+            call. = FALSE
+          )
+        }
       } else if (inherits(object, "rsplit") || inherits(object, "nested_cv") || inherits(object, "rset") || (is.data.frame(object) && "splits" %in% names(object) && is.list(object$splits)) || (is.list(object) && length(object) > 0 && all(vapply(object, inherits, logical(1), "rsplit")))) {
         if (is.null(recipe)) {
           stop("`recipe` is required when scoring on an rsplit `object`.", call. = FALSE)
@@ -937,6 +1001,14 @@ compare_censoring_weights <- function(object,
             by = id_cols,
             suffix = c("_none", "_ipcw")
           )
+          if (nrow(out) < nrow(scored_none) || nrow(out) < nrow(scored_ipcw)) {
+            warning(
+              sprintf("compare_censoring_weights(): the join of the 'none' and 'ipcw' scores kept %d of %d and %d rows; ",
+                      nrow(out), nrow(scored_none), nrow(scored_ipcw)),
+              "rows whose ids appear in only one weighting were dropped.",
+              call. = FALSE
+            )
+          }
           out <- dplyr::rename(out, ibs_none = .data$IBS_none, ibs_ipcw = .data$IBS_ipcw)
         }
       } else {
@@ -1002,8 +1074,10 @@ compare_censoring_weights <- function(object,
 #'   and `IBS` columns (e.g. from [tune_alpha_by_split()]).
 #' @param formulas Character vector of formulas, list of formula objects, or a single
 #'   formula to evaluate.
-#' @param ntile Numeric quantile cutoff (between 0 and 1, default `0.25`) for
-#'   selecting the best alphas with lowest IBS.
+#' @param ntile Numeric quantile cutoff in `(0, 1]` (default `0.25`) for
+#'   selecting the best alphas with lowest IBS. Values above 1 used to be
+#'   silently reinterpreted as a bin count in `"row"` mode but errored in
+#'   `"alpha"` mode; they are now an error in both.
 #' @param top_n Optional integer number of best alphas to keep (overrides `ntile`
 #'   if provided).
 #' @param by Selection granularity: `"row"` (default, selects alphas appearing in the
@@ -1018,6 +1092,9 @@ select_candidate_models <- function(tune_results,
                                     top_n = NULL,
                                     by = c("row", "alpha")) {
   by <- match.arg(by)
+  if (is.null(top_n) && (!is.numeric(ntile) || length(ntile) != 1L || is.na(ntile) || ntile <= 0 || ntile > 1)) {
+    stop("`ntile` must be a single number in (0, 1].", call. = FALSE)
+  }
   if (!is.data.frame(tune_results) || nrow(tune_results) == 0L) {
     stop("`tune_results` must be a non-empty data frame.", call. = FALSE)
   }
@@ -1036,7 +1113,7 @@ select_candidate_models <- function(tune_results,
       unique_alphas <- unique(ordered$alpha)
       head(unique_alphas, top_n)
     } else {
-      n_bins <- if (ntile > 1) as.integer(ntile) else max(1L, as.integer(round(1 / ntile)))
+      n_bins <- max(1L, as.integer(round(1 / ntile)))
       is_top_tile <- dplyr::ntile(tune_results$IBS, n_bins) == 1L
       sort(unique(tune_results$alpha[which(is_top_tile)]))
     }
@@ -1049,9 +1126,15 @@ select_candidate_models <- function(tune_results,
     selected_alphas <- if (!is.null(top_n)) {
       head(alpha_summary$alpha, top_n)
     } else {
+      if (all(is.na(alpha_summary$mean_ibs))) {
+        stop("No candidate survives selection: mean IBS is NA for every alpha in `tune_results`.", call. = FALSE)
+      }
       cutoff <- stats::quantile(alpha_summary$mean_ibs, probs = ntile, na.rm = TRUE)
       alpha_summary$alpha[alpha_summary$mean_ibs <= cutoff]
     }
+  }
+  if (length(selected_alphas) == 0L) {
+    stop("No candidate survives selection: no alpha was selected from `tune_results`.", call. = FALSE)
   }
 
   grid <- expand.grid(
@@ -1252,8 +1335,10 @@ compare_runs <- function(run1,
     }
   }
 
-  ibs_ok <- is.na(diff_ibs) | (diff_ibs <= tolerance)
-  lambda_ok <- is.na(diff_lambda) | (diff_lambda <= tolerance)
+  # A missing difference is unassessable, not "within tolerance": NA used to
+  # count as reproducible.
+  ibs_ok <- !is.na(diff_ibs) & (diff_ibs <= tolerance)
+  lambda_ok <- !is.na(diff_lambda) & (diff_lambda <= tolerance)
   coef_ok <- max_coef_diffs <= coef_tolerance
   reproducible <- ibs_ok & lambda_ok & coef_ok & terms_matched
 
@@ -1282,8 +1367,9 @@ compare_runs <- function(run1,
     coef_tolerance = coef_tolerance,
     n_models = nrow(out_df),
     all_reproducible = all(reproducible),
-    max_ibs_diff = max(diff_ibs, na.rm = TRUE),
-    max_lambda_diff = if (has_lambda) max(diff_lambda, na.rm = TRUE) else 0,
+    n_unassessable = sum(is.na(diff_ibs) | is.na(diff_lambda) | !terms_matched),
+    max_ibs_diff = if (all(is.na(diff_ibs))) NA_real_ else max(diff_ibs, na.rm = TRUE),
+    max_lambda_diff = if (has_lambda) (if (all(is.na(diff_lambda))) NA_real_ else max(diff_lambda, na.rm = TRUE)) else 0,
     max_coef_diff = if (has_coefs) max(max_coef_diffs, na.rm = TRUE) else 0,
     rank_correlation = spearman_rho
   )
@@ -1304,6 +1390,9 @@ print.templecbe_run_comparison <- function(x, ...) {
   cat(sprintf("Tolerance: IBS/lambda <= %g, Coefs <= %g\n", s$tolerance, s$coef_tolerance))
   cat("----------------------------------------------------\n")
   cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
+  if (!is.null(s$n_unassessable) && s$n_unassessable > 0L) {
+    cat(sprintf("Unassessable comparisons (missing diff): %d\n", s$n_unassessable))
+  }
   cat(sprintf("Max |IBS diff|:        %g\n", s$max_ibs_diff))
   cat(sprintf("Max |lambda diff|:     %g\n", s$max_lambda_diff))
   cat(sprintf("Max |coefficient diff|: %g\n", s$max_coef_diff))
@@ -1429,14 +1518,23 @@ compare_tuning_runs <- function(tune1,
     s2 <- summarize_tune_base(tune2)
 
     rows <- vector("list", nrow(s1))
+    unmatched_formulas <- character()
     for (i in seq_len(nrow(s1))) {
       a1 <- s1$alpha[i]
       cand_s2 <- if (has_formula) s2[s2$formula == s1$formula[i], , drop = FALSE] else s2
-      if (nrow(cand_s2) == 0L) cand_s2 <- s2
-
-      dist_a <- abs(cand_s2$alpha - a1)
-      best_idx <- which.min(dist_a)
-      match_row <- cand_s2[best_idx, , drop = FALSE]
+      if (nrow(cand_s2) == 0L) {
+        # No formula match in run2: the run-2 side is NA, not the nearest
+        # alpha from a different formula.
+        unmatched_formulas <- c(unmatched_formulas, s1$formula[i])
+        match_row <- tibble::tibble(
+          alpha = NA_real_, n_fits = NA_integer_, mean_ibs = NA_real_,
+          median_ibs = NA_real_, q25_ibs = NA_real_, q75_ibs = NA_real_
+        )
+      } else {
+        dist_a <- abs(cand_s2$alpha - a1)
+        best_idx <- which.min(dist_a)
+        match_row <- cand_s2[best_idx, , drop = FALSE]
+      }
 
       row_i <- tibble::tibble(
         alpha_1 = a1,
@@ -1458,6 +1556,14 @@ compare_tuning_runs <- function(tune1,
       row_i[[paste0("q25_ibs_", label2)]] <- match_row$q25_ibs
       row_i[[paste0("q75_ibs_", label2)]] <- match_row$q75_ibs
       rows[[i]] <- row_i
+    }
+    if (length(unmatched_formulas) > 0L) {
+      warning(
+        "compare_tuning_runs(match = 'nearest'): ", length(unmatched_formulas),
+        " formula(s) in run1 have no match in run2 (", paste(unique(unmatched_formulas), collapse = ", "),
+        "); the run-2 side is NA for those rows.",
+        call. = FALSE
+      )
     }
     merged <- dplyr::bind_rows(rows)
 
@@ -1501,7 +1607,8 @@ compare_tuning_runs <- function(tune1,
   mean1_col <- paste0("mean_ibs_", label1)
   mean2_col <- paste0("mean_ibs_", label2)
   diff_mean <- abs(merged[[mean1_col]] - merged[[mean2_col]])
-  reproducible <- is.na(diff_mean) | (diff_mean <= tolerance)
+  # A missing difference is unassessable, not "within tolerance".
+  reproducible <- !is.na(diff_mean) & (diff_mean <= tolerance)
 
   merged$diff_mean_ibs <- diff_mean
   merged$reproducible <- reproducible
@@ -1515,7 +1622,8 @@ compare_tuning_runs <- function(tune1,
     tolerance = tolerance,
     n_configs = nrow(merged),
     all_reproducible = all(reproducible),
-    max_mean_diff = max(diff_mean, na.rm = TRUE),
+    n_unassessable = sum(is.na(diff_mean)),
+    max_mean_diff = if (all(is.na(diff_mean))) NA_real_ else max(diff_mean, na.rm = TRUE),
     rank_correlation = spearman_rho,
     ks_pvalue = ks_p,
     ks_has_ties = has_ties,
@@ -1539,6 +1647,9 @@ print.templecbe_tuning_comparison <- function(x, ...) {
   cat(sprintf("Tolerance: mean |IBS diff| <= %g\n", s$tolerance))
   cat("----------------------------------------------------\n")
   cat(sprintf("Reproducible within tolerance: %s\n", if (s$all_reproducible) "YES (\u2714)" else "NO (\u2718)"))
+  if (!is.null(s$n_unassessable) && s$n_unassessable > 0L) {
+    cat(sprintf("Unassessable comparisons (missing diff): %d\n", s$n_unassessable))
+  }
   cat(sprintf("Max mean |IBS diff|:   %g\n", s$max_mean_diff))
   cat(sprintf("Spearman Rank Corr:    %.4f\n", s$rank_correlation))
   ties_note <- if (isTRUE(s$ks_has_ties)) " (approximate in presence of ties)" else ""

@@ -4,7 +4,12 @@
 \alias{validate_review_tracker}
 \title{Validate a Review Response Tracker for Required Location and Rationale}
 \usage{
-validate_review_tracker(tracker, allow_open = FALSE, error_on_invalid = TRUE)
+validate_review_tracker(
+  tracker,
+  allow_open = FALSE,
+  error_on_invalid = TRUE,
+  sheet = NULL
+)
 }
 \arguments{
 \item{tracker}{A `cbe_review_tracker` tibble, data frame, or file path to a
@@ -17,6 +22,10 @@ rows marked closed/resolved are checked for required location and rationale.}
 \item{error_on_invalid}{Logical (default `TRUE`). When `TRUE`, stops with an
 informative error listing all invalid rows. When `FALSE`, returns a
 validation report object with `$valid = FALSE` and `$issues`.}
+
+\item{sheet}{Sheet to read when `tracker` is an `.xlsx` file path. Defaults
+to the `"Review Tracker"` sheet when the workbook has one, else the first
+sheet. Ignored for a data frame or a `.csv` path.}
 }
 \value{
 A list of class `cbe_review_tracker_validation` with elements

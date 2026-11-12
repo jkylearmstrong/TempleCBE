@@ -97,15 +97,22 @@ if (
 
 ### Exporting R Data Frames to SAS Formats
 
-To transfer an R analysis cohort into SAS, biostatisticians can export directly to `.sas7bdat` or regulatory submission Transport (`.xpt`) files:
+To transfer an R analysis cohort into SAS, biostatisticians can export directly to `.sas7bdat` or regulatory submission Transport (`.xpt`) files. Use the TempleCBE wrappers rather than bare `haven` calls: `write_sas_data()` infers the format from the extension, stops on column names longer than 32 characters or not valid SAS names (instead of letting `haven` truncate them silently), and `read_sas_data()` reads any `.sas7bdat`, `.xpt` or `.csv` file back the same way.
 
 ```{r haven_write_sas}
-# Export to native SAS format (.sas7bdat)
-haven::write_sas(rossi_sas, path = "cohort_export.sas7bdat")
-
-# Export to FDA-compliant SAS Version 5 Transport format (.xpt)
-haven::write_xpt(rossi_sas, path = "adsl.xpt", version = 5)
+# Export to native SAS format (.sas7bdat) and to FDA-compliant
+# SAS Version 5 Transport format (.xpt), then read one back.
+if (requireNamespace("haven", quietly = TRUE)) {
+  write_sas_data(rossi_sas, path = "cohort_export.sas7bdat")
+  write_sas_data(rossi_sas, path = "adsl.xpt")
+  back <- read_sas_data("adsl.xpt")
+  nrow(back)
+}
 ```
+
+### The SAS parity boundary
+
+"SAS numerical parity" covers exactly the procedures listed by `sas_parity_boundary()`: `PROC PHREG`, `PROC COMPARE`, `PROC PRINCOMP`, zero-cell Fisher, and (partly) missing codes. The first increment beyond that boundary is `PROC LIFETEST` / Kaplan-Meier: the `%cbe_lifetest` macro in `inst/sas/cbe_lifetest.sas`, the benchmark program `inst/sas/benchmark_lifetest_km.sas`, and the R side `km_lifetest_quantities()` / `parse_lifetest_lst()` / `compare_km_lifetest()`. `PROC LOGISTIC`, `PROC MIXED` / `GLIMMIX`, `PROC FREQ` and `PROC MEANS` are documented follow-up work, not parity claims — see `?sas_parity_boundary`.
 
 In SAS, the corresponding import statements are:
 

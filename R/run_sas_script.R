@@ -118,6 +118,10 @@ run_sas_script <- function(path,
   if (!is.character(path) || length(path) != 1 || !file.exists(path)) {
     stop("`path` must be the path of an existing .sas file.", call. = FALSE)
   }
+  if (tolower(tools::file_ext(path)) != "sas") {
+    # a .txt or .R file would otherwise be handed to SAS as a program
+    stop("`path` must end in `.sas`.", call. = FALSE)
+  }
   if (!is.numeric(timeout) || length(timeout) != 1L || is.na(timeout) || timeout < 0) {
     stop("`timeout` must be a single number of seconds, or 0 for no limit.", call. = FALSE)
   }

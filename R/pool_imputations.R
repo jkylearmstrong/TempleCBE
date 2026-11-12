@@ -45,14 +45,34 @@ pool_imputations <- function(x, imputation_col = "imputation", conf_level = 0.95
   if (is.data.frame(x)) {
     if (!imputation_col %in% names(x)) stop("`x` has no column `", imputation_col, "`.", call. = FALSE)
     x <- split(x, x[[imputation_col]])
+    # split() makes an empty data frame for an unused factor level, which
+    # would otherwise trip the per-term missing check below.
+    x <- x[vapply(x, nrow, integer(1)) > 0L]
   }
   if (!is.list(x) || length(x) < 2L) stop("At least two imputations are needed.", call. = FALSE)
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be in (0, 1).", call. = FALSE)
   }
-  for (d in x) {
+  for (i in seq_along(x)) {
+    d <- x[[i]]
     if (!is.data.frame(d) || !all(c("term", "estimate", "std.error") %in% names(d))) {
       stop("Each imputation needs columns `term`, `estimate` and `std.error`.", call. = FALSE)
+    }
+    dup <- as.character(d$term)[duplicated(as.character(d$term))]
+    if (length(dup) > 0L) {
+      stop("Imputation ", i, " has duplicated rows for term(s): ",
+           paste(unique(dup), collapse = ", "), ".", call. = FALSE)
+    }
+    for (col in c("estimate", "std.error")) {
+      vals <- d[[col]]
+      if (!is.numeric(vals)) {
+        stop("Imputation ", i, ": `", col, "` must be numeric.", call. = FALSE)
+      }
+      bad <- !is.na(vals) & !is.finite(vals)
+      if (any(bad)) {
+        stop("Imputation ", i, ": `", col, "` has non-finite value(s) for term(s): ",
+             paste(as.character(d$term)[bad], collapse = ", "), ".", call. = FALSE)
+      }
     }
   }
   terms <- unique(unlist(lapply(x, function(d) as.character(d$term))))

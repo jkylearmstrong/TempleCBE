@@ -85,6 +85,9 @@ step_lencode_coxnet <- function(recipe,
   if (!requireNamespace("recipes", quietly = TRUE)) {
     stop("Package 'recipes' is required for step_lencode_coxnet().", call. = FALSE)
   }
+  .check_lencode_outcome(outcome)
+  .check_lencode_penalty(penalty)
+  .check_lencode_mixture(mixture)
 
   recipes::add_step(
     recipe,
@@ -118,6 +121,44 @@ step_lencode_coxnet_new <- function(terms, outcome, role, trained, penalty, mixt
   )
 }
 
+# Validate the tuning parameters up front. A vector `penalty` used to reach
+# fit_glmnet_cox(), which treats it as the glmnet path and takes column 1
+# (the largest lambda), so only the largest penalty was ever used; a negative
+# penalty or a mixture outside [0, 1] only surfaced as a glmnet error inside
+# tryCatch, degrading the encoding to all zeros with a warning.
+.check_lencode_penalty <- function(penalty) {
+  if (!is.numeric(penalty) || length(penalty) != 1L || is.na(penalty) ||
+      !is.finite(penalty) || penalty < 0) {
+    stop("`penalty` must be a single non-negative number.", call. = FALSE)
+  }
+  invisible(penalty)
+}
+.check_lencode_mixture <- function(mixture) {
+  if (!is.numeric(mixture) || length(mixture) != 1L || is.na(mixture) ||
+      !is.finite(mixture) || mixture < 0 || mixture > 1) {
+    stop("`mixture` must be a single number between 0 and 1.", call. = FALSE)
+  }
+  invisible(mixture)
+}
+# `outcome` must name 2 or 3 columns. With 4+ names only the first three
+# were used (the extra column silently became the event indicator), and a
+# 3-name outcome with a missing column was silently demoted to a 2-column Surv.
+.check_lencode_outcome <- function(outcome, training = NULL) {
+  if (!is.character(outcome) || length(outcome) < 2L || length(outcome) > 3L ||
+      anyNA(outcome) || any(!nzchar(outcome))) {
+    stop("`outcome` must name 2 or 3 columns (e.g. c(\"time\", \"status\") or ",
+         "c(\"tstart\", \"tstop\", \"status\")).", call. = FALSE)
+  }
+  if (!is.null(training)) {
+    missing <- setdiff(outcome, names(training))
+    if (length(missing) > 0L) {
+      stop("`outcome` names column(s) not in the training data: ",
+           paste(missing, collapse = ", "), ".", call. = FALSE)
+    }
+  }
+  invisible(outcome)
+}
+
 # The factor that the lencode steps fit on: a missing value counts as the
 # reference level (the first level), which is how `bake()` encodes it.
 lencode_factor <- function(vals) {
@@ -146,13 +187,14 @@ prep.step_lencode_coxnet <- function(x, training, info = NULL, ...) {
   }
 
   # 2. Resolve outcome columns
-  outcome_names <- if (is.character(x$outcome)) {
-    intersect(x$outcome, names(training))
+  .check_lencode_penalty(x$penalty)
+  .check_lencode_mixture(x$mixture)
+  if (is.character(x$outcome)) {
+    .check_lencode_outcome(x$outcome, training)
+    outcome_names <- x$outcome
   } else {
-    recipes::recipes_eval_select(x$outcome, training, info)
-  }
-  if (length(outcome_names) < 2) {
-    stop("`outcome` in step_lencode_coxnet must specify at least two columns (e.g. time, status).", call. = FALSE)
+    outcome_names <- recipes::recipes_eval_select(x$outcome, training, info)
+    .check_lencode_outcome(outcome_names)
   }
 
   # Build Surv object from outcome columns
@@ -360,6 +402,8 @@ step_lencode_joint_model <- function(recipe,
   if (!requireNamespace("recipes", quietly = TRUE)) {
     stop("Package 'recipes' is required for step_lencode_joint_model().", call. = FALSE)
   }
+  .check_lencode_outcome(outcome)
+  .check_lencode_penalty(penalty)
   if (!identical(engine, "glmnet")) {
     warning(
       "step_lencode_joint_model(): `engine` (", paste(engine, collapse = ", "), ") has no effect ",
@@ -419,13 +463,13 @@ prep.step_lencode_joint_model <- function(x, training, info = NULL, ...) {
     ))
   }
 
-  outcome_names <- if (is.character(x$outcome)) {
-    intersect(x$outcome, names(training))
+  .check_lencode_penalty(x$penalty)
+  if (is.character(x$outcome)) {
+    .check_lencode_outcome(x$outcome, training)
+    outcome_names <- x$outcome
   } else {
-    recipes::recipes_eval_select(x$outcome, training, info)
-  }
-  if (length(outcome_names) < 2) {
-    stop("`outcome` in step_lencode_joint_model must specify outcome columns.", call. = FALSE)
+    outcome_names <- recipes::recipes_eval_select(x$outcome, training, info)
+    .check_lencode_outcome(outcome_names)
   }
 
   mapping <- list()

@@ -139,7 +139,7 @@ completes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 \item{progress}{Logical (default `FALSE`). Display progress bars.}
 
 \item{...}{Additional arguments passed to [glmnet_IBS()] (e.g. `cox.ties`,
-`rule`, `metric`, `tune_engine`, `eval_time`).}
+`rule`, `metric`, `tune_engine`, `eval_time`, `recurrent`).}
 }
 \value{
 An S3 object of class `cbe_nested_survival_run` containing:
@@ -159,6 +159,7 @@ An S3 object of class `cbe_nested_survival_run` containing:
     \item{`seed_scheme`}{Seed generation scheme version (`"v0.5.6"`).}
     \item{`shard`}{Shard specification (`NULL` or `c(i, n)`).}
     \item{`status`}{`"completed"` or `"shard_completed"`.}
+    \item{`tuning_complete`}{`TRUE` when the tuning results cover every outer fold; `FALSE` when a sharded run proceeded with incomplete tuning checkpoints (a warning is also issued).}
   }
 }
 \description{
@@ -188,6 +189,14 @@ on rerun without recomputing completed tasks. When `shard = c(i, n)` is
 supplied, only shard `i` of `n` is evaluated; once all shards finish, rerun
 with `shard = NULL` (or `collect = TRUE`) to merge checkpoints and finalize
 the run object.
+
+With `recurrent = "gap"` (passed through `...` to [glmnet_IBS()]), recurrent
+data are scored by gap-time concordance instead of the integrated Brier
+score: `tune_results` and `outer_scores` then carry a `gap_concordance`
+column (higher is better) with `IBS` `NA`, candidates are selected on the
+highest concordance, and the censoring-weights comparison is skipped,
+because gap-time concordance uses no censoring weights. A recurrent-event
+Brier score is not computed; that is follow-up work.
 }
 \seealso{
 [validate_start_stop()], [tune_alpha_by_split()],

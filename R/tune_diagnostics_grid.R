@@ -31,7 +31,7 @@
 # non-intercept coefficients with a finite estimate and IBS, terms relabelled
 .tune_coefs <- function(data, terms, label_map, style) {
   df <- as.data.frame(data)
-  df <- df[df$term != "(Intercept)" & !is.na(df$estimate) & !is.na(df$IBS), , drop = FALSE]
+  df <- df[!is.na(df$term) & df$term != "(Intercept)" & !is.na(df$estimate) & !is.na(df$IBS), , drop = FALSE]
   if (!is.null(terms)) {
     gone <- setdiff(terms, df$term)
     if (length(gone)) stop("`terms` not in `data`: ", paste(gone, collapse = ", "), ".", call. = FALSE)
@@ -82,7 +82,12 @@ plot_tune_coefficients <- function(data, top_frac = 0.2, terms = NULL, drop_zero
   if (nrow(df) == 0L) stop("No non-zero coefficients to plot.", call. = FALSE)
   df$.set <- "All models"
   if (!is.null(top_frac)) {
-    cut <- stats::quantile(unique(df$IBS), top_frac, names = FALSE)
+    # The cut is the quantile over distinct fitted models (one IBS per model),
+    # not over distinct IBS values: tied IBS values repeated across models
+    # would otherwise make the "best 20% of models" panel hold a different
+    # share of models.
+    model_ibs <- .tune_fits(df)$IBS
+    cut <- stats::quantile(if (length(model_ibs)) model_ibs else unique(df$IBS), top_frac, names = FALSE)
     best <- df[df$IBS <= cut, , drop = FALSE]
     best_lab <- sprintf("Best %s%% of models (IBS \u2264 %s)", format(100 * top_frac), formatC(cut, digits = 3, format = "g"))
     best$.set <- best_lab
@@ -211,11 +216,13 @@ plot_tune_ibs_density <- function(data, facet = FALSE, log_ibs = FALSE, label_ma
 #'
 #' @section Inference:
 #' The tibble reports Wald intervals and p-values from the normal approximation
-#' (`estimate / std.error`), which is reasonable here because a tuning grid has many models per
+#' (`estimate / std.error`) for the mixed model, which is reasonable here because a tuning grid has many models per
 #' resample; they are optimistic when there are few resamples. The models of one grid are fitted to
 #' the same data, so treat the p-values as a description of the response surface, not as tests.
 #' When there is a single resample, \pkg{lme4} is not installed, or the mixed model fails, an
-#' ordinary linear model is fitted instead and `attr(, "method")` is `"lm"`.
+#' ordinary linear model is fitted instead and `attr(, "method")` is `"lm"`; for that
+#' fallback the intervals and p-values use the t-distribution with the model's residual
+#' degrees of freedom, which is the correct small-sample reference distribution for `lm`.
 #'
 #' @param data A tuning table with `alpha`, `lambda`, `IBS` and a resample column
 #'   (`inner_resamples_splits`, `inner_resamples` or `split`). Rows are reduced to one per model.
@@ -289,15 +296,24 @@ tbl_tune_mixed_model <- function(data, log_ibs = FALSE, random = NULL, interacti
     est <- stats::coef(fit)
     se <- sqrt(diag(stats::vcov(fit)))[names(est)]
   }
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  if (method == "lm") {
+    df_resid <- stats::df.residual(fit)
+    crit <- stats::qt(1 - (1 - conf_level) / 2, df = df_resid)
+    stat <- unname(est / se)
+    pval <- unname(2 * stats::pt(-abs(stat), df = df_resid))
+  } else {
+    crit <- stats::qnorm(1 - (1 - conf_level) / 2)
+    stat <- unname(est / se)
+    pval <- unname(2 * stats::pnorm(-abs(stat)))
+  }
   out <- tibble::tibble(
     term = names(est),
     estimate = unname(est),
     std.error = unname(se),
-    statistic = unname(est / se),
-    conf.low = unname(est - z * se),
-    conf.high = unname(est + z * se),
-    p.value = unname(2 * stats::pnorm(-abs(est / se)))
+    statistic = stat,
+    conf.low = unname(est - crit * se),
+    conf.high = unname(est + crit * se),
+    p.value = pval
   )
   attr(out, "model") <- fit
   attr(out, "formula") <- form

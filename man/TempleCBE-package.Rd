@@ -45,11 +45,16 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: J Kyle Armstrong \email{j.kyle.armstrong@temple.edu} (\href{https://orcid.org/0000-0002-4269-0121}{ORCID}) (Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology)
+\strong{Maintainer}: J Kyle Armstrong \email{j.kyle.armstrong@temple.edu} (\href{https://orcid.org/0000-0002-4269-0121}{ORCID}) (affiliation: Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology)
+
+Authors:
+\itemize{
+  \item J Kyle Armstrong \email{j.kyle.armstrong@temple.edu} (\href{https://orcid.org/0000-0002-4269-0121}{ORCID}) (affiliation: Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology)
+}
 
 Other contributors:
 \itemize{
-  \item Darina Chudnovskaya \email{darina.c@temple.edu} (Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology) [contributor]
+  \item Darina Chudnovskaya \email{darina.c@temple.edu} (affiliation: Lewis Katz School of Medicine at Temple University, Center for Biostatistics & Epidemiology) [contributor]
 }
 
 }

@@ -263,6 +263,10 @@ clean_publish <- function(
   disarm_push_url = TRUE
 ) {
   repo_root <- repo_root %||% .cp_default_repo_root()
+  # whether the push of this run has happened: clean_publish_cli() reads it
+  # while clean_publish() runs, so a warning raised after the push does not
+  # stop the run (the push is irreversible) while one raised before it does
+  .cp_state$pushed <- FALSE
   mode <- match.arg(mode)
   .cp_check_flag(confirm_guard, "confirm_guard")
   .cp_check_flag(allow_other_refs, "allow_other_refs")
@@ -395,6 +399,10 @@ clean_publish <- function(
   # reported, never silently allowed.
   ignored_res <- run_git(c("-c", "core.quotePath=false", "ls-files", "-ci", "--exclude-standard"))
   tracked_ignored <- ignored_res$output[nzchar(ignored_res$output)]
+  # core.quotePath=false still C-quotes a path with a tab, newline, quote or
+  # non-UTF-8 byte ("a\tb", "caf\303\251"), so unquote it before comparing:
+  # as quoted, it could never match the path the caller spelled
+  tracked_ignored <- .cp_unquote_c(tracked_ignored)
   Encoding(tracked_ignored) <- "UTF-8"
   # trimws() fails on bytes that are not valid UTF-8, so only valid names are trimmed
   tracked_ignored[validUTF8(tracked_ignored)] <- trimws(tracked_ignored[validUTF8(tracked_ignored)])
@@ -729,6 +737,7 @@ clean_publish <- function(
       run_git(c("push", "--", push_url, refspec))
     }
     pushed <- TRUE
+    .cp_state$pushed <- TRUE
   } else {
     message("[PUSH] Skipped (push = FALSE). ", publish_branch, " rewritten locally only.")
   }
@@ -1069,6 +1078,25 @@ guard_public_remote <- function(public_url, repo_root = NULL, allow_unmatched = 
         call. = FALSE
       )
     }
+    if (!run$must && refused) {
+      # the fence was checked only one way: a hook that refuses an unfenced
+      # push is over-broad, and a push that should be allowed would fail.
+      # `must` is per remote, but the hook refuses by URL: two remotes can
+      # share one push URL, and a fenced URL is refused for every remote that
+      # points at it (CPB-03: origin and public share one push URL). Only a
+      # refusal of a URL the fence does not cover is over-blocking; the
+      # comparison is .cp_normalize_url(), the same normalization the hook
+      # itself applies (_tcbe_norm_url).
+      if (!(.cp_normalize_url(run$url) %in% .cp_normalize_url(fence))) {
+        stop(
+          "The pre-push hook refused a push to ", if (nzchar(run$remote)) paste0("remote '", run$remote, "' at ") else "",
+          "'", .cp_strip_credentials(run$url), "', which the fence does not cover, so the hook is blocking pushes it should allow. Run by hand: `sh ", hook_path,
+          " <remote> <url>` printed:\n", paste(res$output, collapse = "\n"),
+          "\nThe fence was recorded in git config.",
+          call. = FALSE
+        )
+      }
+    }
   }
   invisible(TRUE)
 }
@@ -1175,16 +1203,22 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
 # ------------------------------------------------------------------------------
 # Internal helpers of clean_publish() (all named .cp_*)
 # ------------------------------------------------------------------------------
+# Run state shared with clean_publish_cli(): whether the push of the current
+# clean_publish() run has happened. A message regex cannot say that (a message
+# is printed before the push runs, and a branch or URL could contain the text).
+.cp_state <- new.env(parent = emptyenv())
+.cp_state$pushed <- FALSE
 # Run git in `repo_root`. Every argument is quoted, so a repository path with a
 # space (or a branch or remote name with shell characters) reaches git as one
 # argument on Windows and on Unix alike. Returns list(output, stderr, status) and
-# stops on a non-zero status unless `error_ok`.
+# stops on a non-zero status unless `error_ok`. Runs through safe_system2(), so a
+# missing git binary is a clear error instead of a bare system2() failure.
 .cp_git <- function(repo_root, args, error_ok = FALSE) {
   stderr_file <- tempfile("clean_publish_stderr_")
   on.exit(unlink(stderr_file), add = TRUE)
-  out <- suppressWarnings(system2(
+  out <- suppressWarnings(safe_system2(
     "git", shQuote(c("-C", repo_root, args)),
-    stdout = TRUE, stderr = stderr_file
+    stdout = TRUE, stderr = stderr_file, check = FALSE, log_failures = FALSE
   ))
   status <- attr(out, "status") %||% 0L
   attr(out, "status") <- NULL
@@ -1199,6 +1233,49 @@ resolve_publish_branch <- function(publish_branch, current_branch, private_branc
   }
   list(output = out, stderr = err, status = status)
 }
+# Undo git's C-quoting of a path: a path holding a tab, newline, quote or
+# non-UTF-8 byte is printed in double quotes with \" \\ \a \b \f \n \r \t \v
+# and octal \ooo escapes for the raw bytes. A single left-to-right scan, so a
+# backslash that is itself escaped (\\) is not mistaken for an escape start.
+# Paths that are not quoted are returned unchanged.
+.cp_unquote_c <- function(x) {
+  # byte counts, not character counts: a name that is not valid UTF-8 (a
+  # Latin-1 byte git printed raw) must pass through untouched, and nchar()
+  # in characters errors on such a string in a UTF-8 locale
+  quoted <- startsWith(x, '"') & endsWith(x, '"') & nchar(x, type = "bytes") >= 2L
+  if (!any(quoted)) return(x)
+  out <- x
+  for (idx in which(quoted)) {
+    chars <- strsplit(substr(x[idx], 2L, nchar(x[idx], type = "bytes") - 1L), "", fixed = TRUE)[[1]]
+    buf <- character()
+    i <- 1L
+    while (i <= length(chars)) {
+      ch <- chars[i]
+      if (identical(ch, "\\") && i < length(chars)) {
+        nx <- chars[i + 1L]
+        if (nx == '"') {
+          buf <- c(buf, '"'); i <- i + 2L
+        } else if (nx == "\\") {
+          buf <- c(buf, "\\"); i <- i + 2L
+        } else if (nx %in% c("a", "b", "f", "n", "r", "t", "v")) {
+          buf <- c(buf, switch(nx, a = "\a", b = "\b", f = "\f", n = "\n", r = "\r", t = "\t", v = "\v"))
+          i <- i + 2L
+        } else if (grepl("^[0-7]$", nx) && i + 3L <= length(chars) &&
+                   grepl("^[0-7]$", chars[i + 2L]) && grepl("^[0-7]$", chars[i + 3L])) {
+          buf <- c(buf, rawToChar(as.raw(strtoi(paste0(chars[i + 1L], chars[i + 2L], chars[i + 3L]), base = 8L))))
+          i <- i + 4L
+        } else {
+          buf <- c(buf, ch); i <- i + 1L
+        }
+      } else {
+        buf <- c(buf, ch); i <- i + 1L
+      }
+    }
+    out[idx] <- paste(buf, collapse = "")
+  }
+  out
+}
+
 # A branch or remote name: one non-empty string that cannot be taken for an option
 .cp_check_name <- function(x, arg) {
   if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x) || startsWith(x, "-")) {
@@ -1816,7 +1893,7 @@ clean_publish_usage <- function() {
     "                        configured remote, or a URL that is the push URL of one",
     "                        (configures cleanpublish.publicurl, installs and checks the pre-push hook)",
     "  --allow-ignored PATH  Allow a tracked-but-ignored file in the clean snapshot",
-    "                        (may be specified multiple times, or comma-separated)",
+    "                        (may be specified multiple times)",
     "  --allow-other-refs    Push although the remote has refs other than the publish branch",
     "                        (branches, tags, notes, refs/pull/*): they keep the old history",
     "  --allow-overwrite-history",
@@ -1913,8 +1990,9 @@ parse_clean_publish_args <- function(args) {
         }
       }
       if (key == "allow_ignored") {
-        split_vals <- unlist(strsplit(value, ",", fixed = TRUE))
-        allow_ignored <- c(allow_ignored, trimws(split_vals[nzchar(trimws(split_vals))]))
+        # one flag, one path: a comma is a legal character in a file name,
+        # so splitting on it would break a path that contains one
+        allow_ignored <- c(allow_ignored, value)
       } else {
         if (!is.null(vals[[key]])) fail("'", flag, "' (or its alias) was given more than once.")
         vals[[key]] <- value
@@ -2016,7 +2094,6 @@ clean_publish_cli <- function(args = commandArgs(trailingOnly = TRUE)) {
   }
 
   # the push is the one step that cannot be undone: a warning before it stops the run
-  pushing <- FALSE
   published <- tryCatch(
     withCallingHandlers(
       clean_publish(
@@ -2032,11 +2109,10 @@ clean_publish_cli <- function(args = commandArgs(trailingOnly = TRUE)) {
         allow_submodules = opts$allow_submodules,
         disarm_push_url = opts$disarm_push_url
       ),
-      message = function(m) {
-        if (grepl("^\\[PUSH\\] (Force-pushing|Fast-forward pushing)", conditionMessage(m))) pushing <<- TRUE
-      },
       warning = function(w) {
-        if (!pushing) {
+        # clean_publish() sets .cp_state$pushed the moment the push succeeds;
+        # a warning before that stops the run, one after it is only shown
+        if (!isTRUE(.cp_state$pushed)) {
           stop(
             "A warning was raised before the push, so the run was stopped. Nothing was pushed. The warning: ",
             conditionMessage(w),

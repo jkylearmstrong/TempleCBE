@@ -32,6 +32,12 @@
 #'
 #' @export
 summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.output = FALSE) {
+  for (arg in c("na.rm", "data.output", "table.output")) {
+    val <- get(arg, envir = environment())
+    if (!is.logical(val) || length(val) != 1L || is.na(val)) {
+      stop("`", arg, "` must be a single logical (TRUE or FALSE).", call. = FALSE)
+    }
+  }
   if (table.output == TRUE) {
     data.output <- FALSE
   }
@@ -40,6 +46,10 @@ summary_table <- function(data, var, na.rm = FALSE, data.output = TRUE, table.ou
     ungroup() %>%
     select({{var}}) %>%
     colnames()
+
+  if (length(a_var_name) == 1L && !is.numeric(data[[a_var_name]])) {
+    stop("`var` must be a numeric column.", call. = FALSE)
+  }
 
   T1 <- if (na.rm) {
     data %>%

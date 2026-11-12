@@ -30,7 +30,9 @@ concurrency:
 #   - master (after R-CMD-check succeeds on its tip): `master` and `latest`
 #   - a release tag that is on master: the version (`0.6.3`), never `latest`
 #   - with Docker Hub credentials, the same tags are copied to GHCR (ghcr.io/<owner>/templecbe)
-#   - a manual run from any other branch: built to check that the image builds, nothing is pushed
+#   - a manual dispatch from a release tag on master: the same as a tag push (re-publish)
+#   - a manual dispatch from master or any other branch: built to check that the image builds,
+#     nothing is pushed (no R-CMD-check run has vetted that SHA)
 # A run for a commit that is no longer the master tip is skipped.
 
 jobs:
@@ -77,13 +79,17 @@ jobs:
               if on_master "$GITHUB_SHA"; then publish=true
               else echo "::error::tag $GITHUB_REF_NAME is not on master; nothing is published"; exit 1; fi ;;
             workflow_dispatch)
-              if [ "$GITHUB_REF" = "refs/heads/master" ]; then
-                publish=true
-              elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              # A manual dispatch publishes only from a release tag on master. A tag is a
+              # deliberate release marker, and the tag push itself publishes that exact
+              # tag, so a dispatch on it re-publishes an already-vetted release. A
+              # dispatch from master (or any other ref) is rebuild-only: it builds to
+              # check the image, nothing is pushed, because no R-CMD-check run has
+              # vetted that SHA the way the workflow_run path requires.
+              if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
                 if on_master "$GITHUB_SHA"; then publish=true
                 else echo "::error::tag $GITHUB_REF_NAME is not on master; nothing is published"; exit 1; fi
               else
-                echo "::notice::$GITHUB_REF is not master or a release tag: building to check the image, nothing is pushed"
+                echo "::notice::Manual dispatch from $GITHUB_REF is rebuild-only: building to check the image, nothing is pushed (only a dispatch from a release tag on master publishes)"
               fi ;;
           esac
           {

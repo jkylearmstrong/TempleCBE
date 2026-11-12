@@ -66,9 +66,26 @@ compute_composite_index <- function(data,
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
   }
+  if (!is.character(cols) || length(cols) == 0L || anyNA(cols) || any(!nzchar(cols))) {
+    stop("`cols` must be a non-empty character vector of column names.", call. = FALSE)
+  }
+  if (anyDuplicated(cols)) {
+    stop("`cols` has duplicated column(s): ",
+         paste(unique(cols[duplicated(cols)]), collapse = ", "), "; a column would be counted twice.", call. = FALSE)
+  }
   missing_cols <- setdiff(cols, names(data))
   if (length(missing_cols) > 0) {
     stop("Column(s) not found in `data`: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  non_num <- cols[!vapply(data[cols], is.numeric, logical(1))]
+  if (length(non_num) > 0L) {
+    stop("Column(s) in `cols` must be numeric: ", paste(non_num, collapse = ", "), ".", call. = FALSE)
+  }
+  if (!is.character(index_name) || length(index_name) != 1L || is.na(index_name) || !nzchar(index_name)) {
+    stop("`index_name` must be a single non-empty string.", call. = FALSE)
+  }
+  if (index_name %in% names(data)) {
+    warning("Column `", index_name, "` already exists in `data` and will be overwritten.", call. = FALSE)
   }
 
   method <- match.arg(method)
@@ -80,6 +97,9 @@ compute_composite_index <- function(data,
   }
 
   if (!is.null(weights)) {
+    if (!is.numeric(weights) || anyNA(weights) || any(!is.finite(weights))) {
+      stop("`weights` must be finite numbers without NA.", call. = FALSE)
+    }
     if (length(weights) != p) {
       stop("`weights` length (", length(weights), ") must match `cols` length (", p, ").", call. = FALSE)
     }
@@ -171,15 +191,27 @@ index_variable_table <- function(data,
   if (!index_col %in% names(data)) {
     stop("`index_col` '", index_col, "' not found in `data`.", call. = FALSE)
   }
+  if (!is.character(cols) || length(cols) == 0L || anyNA(cols) || any(!nzchar(cols))) {
+    stop("`cols` must be a non-empty character vector of column names.", call. = FALSE)
+  }
+  if (anyDuplicated(cols)) {
+    stop("`cols` has duplicated column(s): ",
+         paste(unique(cols[duplicated(cols)]), collapse = ", "), ".", call. = FALSE)
+  }
   missing_cols <- setdiff(cols, names(data))
   if (length(missing_cols) > 0) {
     stop("Column(s) not found in `data`: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
+  non_num <- cols[!vapply(data[cols], is.numeric, logical(1))]
+  if (length(non_num) > 0L) {
+    stop("Column(s) in `cols` must be numeric: ", paste(non_num, collapse = ", "), ".", call. = FALSE)
+  }
 
   method <- match.arg(method)
   polarities <- .index_polarities(polarities, cols)
-  if (!is.null(weights) && (!is.numeric(weights) || length(weights) != length(cols))) {
-    stop("`weights` must be numeric, one per column of `cols`.", call. = FALSE)
+  if (!is.null(weights) && (!is.numeric(weights) || anyNA(weights) || any(!is.finite(weights)) ||
+                            length(weights) != length(cols))) {
+    stop("`weights` must be finite numbers, one per column of `cols`.", call. = FALSE)
   }
 
   rows <- lapply(cols, function(col) {

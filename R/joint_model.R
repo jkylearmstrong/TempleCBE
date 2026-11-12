@@ -847,11 +847,8 @@ cv_joint_model <- function(data,
 
     run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = resamples$id), NULL))), collapse = "")
 
-    active_mask <- if (!is.null(shard)) {
-      ((seq_len(n_splits) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-    } else {
-      rep(TRUE, n_splits)
-    }
+    shard <- validate_shard_spec(shard)
+    active_mask <- shard_active_mask(n_splits, shard)
 
     eval_fold_ckpt <- function(i) {
       sp_id <- resamples$id[i]
@@ -999,7 +996,7 @@ nested_cv_joint_model <- function(object,
 
     inner_penalty <- NULL
     if (tune_method %in% c("race_anova", "race_win_loss")) {
-      rlang::check_installed(c("finetune", "parsnip", "workflows"), reason = "for racing in nested_cv_joint_model.")
+      rlang::check_installed(c("finetune", "parsnip", "workflows", "tune"), reason = "for racing in nested_cv_joint_model.")
       spec_cox <- parsnip::set_engine(
         parsnip::proportional_hazards(penalty = tune::tune(), mixture = 1),
         "coxnet"
@@ -1063,11 +1060,8 @@ nested_cv_joint_model <- function(object,
 
     run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, ids = object$id), NULL))), collapse = "")
 
-    active_mask <- if (!is.null(shard)) {
-      ((seq_len(n_outer) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-    } else {
-      rep(TRUE, n_outer)
-    }
+    shard <- validate_shard_spec(shard)
+    active_mask <- shard_active_mask(n_outer, shard)
 
     eval_outer_ckpt <- function(i) {
       sp_id <- object$id[i]

@@ -9,7 +9,7 @@ create_qmd_renderer(
   path,
   deps = list(),
   file_stage = NA_character_,
-  output_format = .pipeline_config_value("default_formats", "pdf"),
+  output_format = NULL,
   description = NA_character_
 )
 }

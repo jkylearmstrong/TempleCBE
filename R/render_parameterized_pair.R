@@ -73,7 +73,8 @@ render_parameterized_pair <- function(input,
     stop("A parameter is named twice in `params_original` or `params_imputed`.", call. = FALSE)
   }
   if (!is.character(output_names) || length(output_names) != 2L || anyNA(output_names) ||
-      !all(nzchar(output_names)) || identical(tolower(output_names[1L]), tolower(output_names[2L]))) {
+      !all(nzchar(output_names)) || identical(output_names[1L], output_names[2L]) ||
+      (.case_insensitive_fs() && identical(tolower(output_names[1L]), tolower(output_names[2L])))) {
     stop("`output_names` must be two different, non-empty names.", call. = FALSE)
   }
 

@@ -28,7 +28,11 @@ workflow_map_checkpointed(
 \item{verbose}{Logical (default `FALSE`). Display progress from [workflowsets::workflow_map()].}
 
 \item{checkpoint_dir}{Directory to store per-workflow checkpoints. They are read back
-with [readRDS()]: use a directory that only trusted processes write to.}
+with [readRDS()]: use a directory that only trusted processes write to.
+Each workflow's result is stored with a fingerprint of that workflow, the
+function and its arguments, so a changed workflow or setting does not
+silently reuse a stale cached result (including for workflows this shard
+did not evaluate).}
 
 \item{shard}{Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
 evaluate shard `i` of `n`. Anything else is an error.}

@@ -52,7 +52,9 @@ surv_components <- function(truth, arg = "truth") {
 #' first event are ignored, and a subject without an event is censored at the
 #' stop of their last interval. That is the one-row-per-subject outcome that
 #' yardstick's survival metrics can score. The recurrent process itself is
-#' modelled with [recurrent_cox()].
+#' modelled with [recurrent_cox()]; to score the whole recurrent process
+#' instead of only the first event, see [surv_gap_truth()] and
+#' `cv_coxnet(recurrent = "gap")`, which score gap-time concordance.
 #'
 #' @param truth A [survival::Surv()] object: `Surv(time, event)` or
 #'   `Surv(start, stop, event)`.
@@ -131,8 +133,9 @@ surv_subject_truth <- function(truth, subject_id = NULL, recurrent = c("error", 
   } else if (any(early)) {
     stop(
       "Subject(s) with an event before their last interval: ", format_ids(sid[early]),
-      ". Use `recurrent = \"first\"` to score the time to first event, or `recurrent_cox()` ",
-      "to model the recurrent process.",
+      ". Use `recurrent = \"first\"` to score the time to first event, `recurrent_cox()` ",
+      "to model the recurrent process, or `surv_gap_truth()` / `cv_coxnet(recurrent = \"gap\")` ",
+      "to score gap-time concordance over the whole recurrent process.",
       call. = FALSE
     )
   }
@@ -142,6 +145,125 @@ surv_subject_truth <- function(truth, subject_id = NULL, recurrent = c("error", 
     .entry = start[first],
     .truth = survival::Surv(stop[last], status[last])
   )
+}
+
+#' Gap-Time Truth for Recurrent-Event Data
+#'
+#' Turns counting-process (start/stop) survival outcomes into one row per
+#' **gap** -- one row per interval -- with the gap time (`stop - start`) and
+#' the interval's event status as a right-censored `Surv` outcome. That is the
+#' truth that gap-time concordance scores: how well a model's per-interval
+#' risk orders the gaps, from the shortest to the longest time to the next
+#' event.
+#'
+#' Unlike [surv_subject_truth()], which collapses each subject to one row and
+#' so can only score the time to first (or last) event, this keeps every gap.
+#' Gaps within a subject are correlated -- a subject with a short first gap
+#' tends to have short later gaps -- and gap-time concordance treats them as
+#' independent observations, so it describes the ordering of gaps, not of
+#' subjects. There is no recurrent-event Brier score here: a recurrent IBS
+#' (scoring the whole counting process, not one gap at a time) is follow-up
+#' work, not part of this draft.
+#'
+#' @param truth A [survival::Surv()] object: `Surv(time, event)` or
+#'   `Surv(start, stop, event)`.
+#' @param subject_id Subject identifiers, one per element of `truth`. Required
+#'   for counting-process data; for right-censored data each row is its own
+#'   subject when `subject_id` is `NULL`.
+#' @return A tibble with one row per interval, sorted by `subject_id` and gap:
+#'   `.subject_id`, `.gap` (the 1-based gap number within the subject),
+#'   `.entry` (the calendar start of the gap; 0 for right-censored data), and
+#'   `.truth`, a right-censored `Surv` object of gap times.
+#' @seealso [surv_subject_truth()], [cv_coxnet()], [glmnet_IBS()]
+#' @export
+#' @examples
+#' if (requireNamespace("survival", quietly = TRUE)) {
+#'   long <- data.frame(
+#'     subject_id = c(1, 1, 2, 3, 3),
+#'     tstart = c(0, 5, 0, 0, 4),
+#'     tstop = c(5, 9, 6, 4, 10),
+#'     status = c(1, 1, 0, 0, 0)
+#'   )
+#'   surv_gap_truth(
+#'     survival::Surv(long$tstart, long$tstop, long$status),
+#'     subject_id = long$subject_id
+#'   )
+#' }
+surv_gap_truth <- function(truth, subject_id = NULL) {
+  rlang::check_installed("survival", reason = "to build gap-time survival truth.")
+  parts <- surv_components(truth)
+  n <- length(parts$stop)
+  if (is.null(subject_id)) {
+    if (parts$type == "counting") {
+      stop(
+        "`subject_id` is required for counting-process Surv(start, stop, event) outcomes, ",
+        "so each subject's intervals can be combined.",
+        call. = FALSE
+      )
+    }
+    subject_id <- seq_len(n)
+  }
+  if (length(subject_id) != n) {
+    stop(
+      "`subject_id` must have one value per element of `truth` (", n, "); it has ",
+      length(subject_id), ".",
+      call. = FALSE
+    )
+  }
+  if (anyNA(subject_id) || anyNA(parts$start) || anyNA(parts$stop) || anyNA(parts$status)) {
+    stop("`truth` and `subject_id` must not contain missing values.", call. = FALSE)
+  }
+
+  ord <- order(subject_id, parts$start, parts$stop)
+  sid <- subject_id[ord]
+  start <- parts$start[ord]
+  stop <- parts$stop[ord]
+  status <- parts$status[ord]
+  first <- !duplicated(sid)
+
+  overlap <- !first & start < c(NA, stop[-length(stop)])
+  if (any(overlap, na.rm = TRUE)) {
+    stop("Intervals overlap within subject(s): ", format_ids(sid[which(overlap)]), ".", call. = FALSE)
+  }
+
+  # `sid` is sorted by subject, so runs of equal ids are the subjects' gaps.
+  gap <- sequence(rle(as.character(sid))$lengths)
+  tibble::tibble(
+    .subject_id = sid,
+    .gap = as.integer(gap),
+    .entry = start,
+    .truth = survival::Surv(stop - start, status)
+  )
+}
+
+#' Gap-Time Concordance From Per-Gap Linear Predictors
+#'
+#' Harrell's concordance between gap times and per-gap risk: a gap is scored
+#' by the linear predictor of its interval, so a model that ranks short gaps
+#' as high risk scores highly. `lp` must be in the same row order as
+#' `gap_truth` (see [surv_gap_truth()]). With no comparable gap pair -- no
+#' events, or a single gap -- yardstick returns `NaN`, reported here as `NA`.
+#'
+#' @param gap_truth Output of [surv_gap_truth()].
+#' @param lp Numeric vector of per-gap linear predictors, one per row of
+#'   `gap_truth`; larger means higher risk (shorter predicted gap).
+#' @return A single number: the gap-time concordance, or `NA` when no gap
+#'   pair is comparable.
+#' @keywords internal
+#' @noRd
+gap_time_concordance <- function(gap_truth, lp) {
+  if (!is.data.frame(gap_truth) || !all(c(".truth") %in% names(gap_truth))) {
+    stop("`gap_truth` must be the output of surv_gap_truth().", call. = FALSE)
+  }
+  if (!is.numeric(lp) || length(lp) != nrow(gap_truth) || anyNA(lp)) {
+    stop("`lp` must be a numeric vector with one finite value per row of `gap_truth`.", call. = FALSE)
+  }
+  rlang::check_installed("yardstick", reason = "to compute gap-time concordance.")
+  est <- yardstick::concordance_survival(
+    tibble::tibble(truth = gap_truth$.truth, estimate = -lp),
+    truth = "truth", estimate = "estimate"
+  )$.estimate[1]
+  if (length(est) != 1L || is.nan(est)) NA_real_ else unname(est)
 }
 
 #' Kaplan-Meier Estimate of the Censoring Distribution
@@ -434,6 +556,9 @@ predict_subject_survival <- function(lp, start, stop, id, eval_time, bh, covaria
 #' @noRd
 subject_keys <- function(y, subject) {
   parts <- surv_components(y)
+  if (anyNA(subject) || anyNA(parts$start) || anyNA(parts$stop) || anyNA(parts$status)) {
+    stop("`y` and `subject` must not contain missing values: an NA start, stop, status or subject id cannot be keyed.", call. = FALSE)
+  }
   # One grouping key per (subject, start, stop). stats::ave() with three
   # grouping vectors builds their full interaction, subjects x distinct starts
   # x distinct stops, which is hundreds of millions of levels on start-stop
@@ -506,14 +631,20 @@ format_ids <- function(ids, max = 10) {
 #' @param data A data frame containing counting-process survival intervals.
 #' @param id,start,stop,status Column names (as strings or bare symbols) for the
 #'   subject identifier, interval start time, interval stop time, and event
-#'   status indicator (`0` = censored, `1` = event). Defaults to `"id"`,
+#'   status indicator (`0` = censored, `1` = event; any other value is invalid).
+#'   Start times must be non-negative. Defaults to `"id"`,
 #'   `"tstart"`, `"tstop"`, and `"status"`.
 #' @param warn_no_censoring Logical (default `TRUE`). Emit a warning when every
-#'   subject experiences an event (`n_censored == 0`).
+#'   subject experiences an event (`n_censored == 0`). For recurrent data
+#'   (`recurrent = TRUE`) the warning is based instead on trailing censored
+#'   intervals: it fires only when no subject has a censored last interval, so
+#'   recurrent data in which every subject has an event but is still followed
+#'   after it does not warn spuriously.
 #' @param error_on_invalid Logical (default `FALSE`). When `TRUE`, stops with an
 #'   error if any structural issue (missing values, `stop <= start`, overlapping
 #'   intervals, events before the last interval, or rows after an event) is
-#'   detected.
+#'   detected. Status values outside `\{0, 1\}` and negative start times are
+#'   structural issues too, and empty data (`0` rows) is not valid.
 #' @param recurrent Logical (default `FALSE`). Set `TRUE` for recurrent-event data
 #'   (repeated readmissions, Andersen-Gill / PWP input): an event does not end a
 #'   subject's follow-up, so events before the last interval and rows after an
@@ -603,6 +734,9 @@ validate_start_stop <- function(data,
 
   n_intervals <- nrow(data)
   if (length(sid) == 0L) {
+    # Empty data (or data with no usable row) is not valid: there is nothing
+    # to validate, and a `valid = TRUE` answer would let downstream code
+    # proceed on zero subjects.
     out <- tibble::tibble(
       n_subjects = 0L,
       n_intervals = as.integer(n_intervals),
@@ -619,7 +753,7 @@ validate_start_stop <- function(data,
       n_tied_event_times = 0L,
       n_missing = as.integer(n_missing),
       has_censoring = FALSE,
-      valid = n_missing == 0L
+      valid = FALSE
     )
     attr(out, "details") <- list(
       overlapping_ids = character(),
@@ -627,7 +761,10 @@ validate_start_stop <- function(data,
       events_before_last_ids = character(),
       rows_after_event_ids = character(),
       nonpositive_length_ids = character(),
-      issues = if (n_missing > 0L) sprintf("%d row(s) with missing values", n_missing) else character()
+      issues = c(
+        if (nrow(data) == 0L) "data has no rows" else character(),
+        if (n_missing > 0L) sprintf("%d row(s) with missing values", n_missing) else character()
+      )
     )
     class(out) <- c("cbe_start_stop_validation", class(out))
     return(out)
@@ -679,6 +816,22 @@ validate_start_stop <- function(data,
   if (n_missing > 0L) {
     issues <- c(issues, sprintf("%d row(s) contain missing values in id/start/stop/status", n_missing))
   }
+  invalid_status <- !st %in% c(0, 1)
+  if (any(invalid_status)) {
+    bad_vals <- unique(st[invalid_status])
+    issues <- c(issues, sprintf(
+      "%d interval(s) have a status outside {0, 1} (subjects: %s; values: %s)",
+      sum(invalid_status), format_ids(unique(sid[invalid_status])),
+      paste(bad_vals, collapse = ", ")
+    ))
+  }
+  negative_start <- t0 < 0
+  if (any(negative_start)) {
+    issues <- c(issues, sprintf(
+      "%d interval(s) have a negative start time (subjects: %s)",
+      sum(negative_start), format_ids(unique(sid[negative_start]))
+    ))
+  }
   if (sum(nonpos) > 0L) {
     issues <- c(issues, sprintf("%d interval(s) have stop <= start (subjects: %s)", sum(nonpos), format_ids(nonpos_ids)))
   }
@@ -695,11 +848,23 @@ validate_start_stop <- function(data,
   is_valid <- length(issues) == 0L
   has_cens <- n_censored > 0L
 
-  if (!has_cens && n_subjects > 0L && isTRUE(warn_no_censoring)) {
-    warning(sprintf(
-      "No censoring detected in start/stop data: all %d of %d subject(s) experienced an event (0 censored subjects). Verify `%s` before model tuning.",
-      n_subj_event, n_subjects, status_col
-    ), call. = FALSE)
+  # In recurrent mode every subject may have an event yet still be followed
+  # afterwards: censoring is then the trailing censored intervals, not the
+  # subjects with no event at all.
+  n_trailing_censored <- if (isTRUE(recurrent)) sum(last & st_s == 0) else n_censored
+  warn_censoring <- if (isTRUE(recurrent)) n_trailing_censored == 0L else !has_cens
+  if (warn_censoring && n_subjects > 0L && isTRUE(warn_no_censoring)) {
+    if (isTRUE(recurrent)) {
+      warning(sprintf(
+        "No censoring detected in recurrent start/stop data: no subject has a censored trailing interval (all %d subject(s) end on an event). Verify `%s` before model tuning.",
+        n_subjects, status_col
+      ), call. = FALSE)
+    } else {
+      warning(sprintf(
+        "No censoring detected in start/stop data: all %d of %d subject(s) experienced an event (0 censored subjects). Verify `%s` before model tuning.",
+        n_subj_event, n_subjects, status_col
+      ), call. = FALSE)
+    }
   }
 
   if (!is_valid && isTRUE(error_on_invalid)) {

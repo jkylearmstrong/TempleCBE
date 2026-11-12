@@ -198,7 +198,16 @@ test_that("render_variants() checks its arguments", {
   expect_error(render_variants(other, v), "must be a .qmd or .Rmd")
   expect_error(render_variants(tpl, list()), "named list")
   expect_error(render_variants(tpl, list(list(label = "x"))), "named list")
-  expect_error(render_variants(tpl, list(a = list(), A = list())), "must be unique")
+  # case-differing names are one file on a case-insensitive file system, and
+  # two files on a case-sensitive one (item 129)
+  if (.case_insensitive_fs()) {
+    expect_error(render_variants(tpl, list(a = list(), A = list())), "must be unique")
+  } else {
+    plan <- render_variants(tpl, list(a = list(), A = list()), dry_run = TRUE)
+    expect_identical(plan$variant, c("a", "A"))
+    expect_identical(basename(plan$output), c("analysis_a.html", "analysis_A.html"))
+    expect_identical(unique(plan$status), "planned")
+  }
   expect_error(render_variants(tpl, list(`a b` = list())), "letters, digits")
   expect_error(render_variants(tpl, list(a = list(1))), "named list of parameters")
   expect_error(render_variants(tpl, v, formats = character()), "formats")

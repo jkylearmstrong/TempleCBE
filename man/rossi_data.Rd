@@ -40,5 +40,6 @@ df <- rossi_data()
 head(df[, 1:10])
 }
 \seealso{
-[sas_macro_path()], [run_sas_script()]
+[sas_macro_path()], [run_sas_script()], [read_sas_data()], [write_sas_data()],
+  [sas_parity_boundary()]
 }

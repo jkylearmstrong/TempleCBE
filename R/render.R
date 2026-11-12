@@ -19,6 +19,28 @@ extract_yaml_formats <- function(file_path) {
     }
   }, error = function(e) NULL)
 
+  if (requireNamespace("yaml", quietly = TRUE) &&
+      (is.null(yaml_data) || (is.list(yaml_data) && is.null(yaml_data$format) && is.null(yaml_data$output)))) {
+    # rmarkdown is absent, or its front-matter parse found nothing (a UTF-8
+    # byte-order mark, or trailing spaces after a fence, hides the front
+    # matter from it: it returns an empty list, not NULL): read the front
+    # matter with the yaml package directly
+    yaml_data <- tryCatch({
+      lines <- readLines(file_path, warn = FALSE, encoding = "UTF-8")
+      if (length(lines) == 0L) {
+        NULL
+      } else {
+        lines[1] <- sub("^\uFEFF", "", lines[1])
+        fence <- which(grepl("^---\\s*$", lines))
+        if (length(fence) >= 2L) {
+          yaml::yaml.load(paste(lines[(fence[1] + 1L):(fence[2] - 1L)], collapse = "\n"))
+        } else {
+          NULL
+        }
+      }
+    }, error = function(e) NULL)
+  }
+
   if (!is.null(yaml_data)) {
     # 1. Quarto 'format'
     if (!is.null(yaml_data$format)) {
@@ -111,28 +133,39 @@ check_renv_guard <- function(project_root = NULL) {
   }
 
   if (requireNamespace("jsonlite", quietly = TRUE)) {
-    tryCatch({
-      lock_data <- jsonlite::read_json(lock_path)
-      if (!is.null(lock_data$Packages)) {
-        disagreements <- character()
-        loaded_pkgs <- loadedNamespaces()
-        for (pkg_name in intersect(names(lock_data$Packages), loaded_pkgs)) {
-          expected_ver <- lock_data$Packages[[pkg_name]]$Version
-          actual_ver <- as.character(utils::packageVersion(pkg_name))
-          if (!is.null(expected_ver) && expected_ver != actual_ver) {
-            disagreements <- c(disagreements, paste0(pkg_name, " (lock: ", expected_ver, ", loaded: ", actual_ver, ")"))
-          }
-        }
-        if (length(disagreements) > 0) {
-          warning(
-            "renv.lock disagrees with currently loaded package version(s): ",
-            paste(disagreements, collapse = ", "),
-            call. = FALSE
-          )
-          return(invisible(FALSE))
+    lock_data <- tryCatch(
+      jsonlite::read_json(lock_path),
+      error = function(e) {
+        warning(
+          "Could not read 'renv.lock' at '", lock_path, "': ", conditionMessage(e),
+          "; package version checks were skipped.",
+          call. = FALSE
+        )
+        NULL
+      }
+    )
+    if (is.null(lock_data)) {
+      return(invisible(FALSE))
+    }
+    if (!is.null(lock_data$Packages)) {
+      disagreements <- character()
+      loaded_pkgs <- loadedNamespaces()
+      for (pkg_name in intersect(names(lock_data$Packages), loaded_pkgs)) {
+        expected_ver <- lock_data$Packages[[pkg_name]]$Version
+        actual_ver <- as.character(utils::packageVersion(pkg_name))
+        if (!is.null(expected_ver) && expected_ver != actual_ver) {
+          disagreements <- c(disagreements, paste0(pkg_name, " (lock: ", expected_ver, ", loaded: ", actual_ver, ")"))
         }
       }
-    }, error = function(e) NULL)
+      if (length(disagreements) > 0) {
+        warning(
+          "renv.lock disagrees with currently loaded package version(s): ",
+          paste(disagreements, collapse = ", "),
+          call. = FALSE
+        )
+        return(invisible(FALSE))
+      }
+    }
   }
 
   invisible(TRUE)
@@ -209,11 +242,17 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #' @param path A file path (character), directory, list of files, or list of pipeline
 #'   objects (`FilePath`, `FileUses`, `FileOutputs`).
 #' @param formats Character vector of output formats (e.g. `c("pdf", "docx", "html")`).
+#'   Defaults to the `default_formats` setting from [pipeline_config()]
+#'   (or the `pipeline.default_formats` session option when nothing was set
+#'   there), `c("pdf", "docx")` if neither is set. `NULL` extracts the
+#'   formats from each document's YAML front matter, as `"yaml"` does.
 #' @param pattern File pattern regex matching documents to render.
 #' @param engine Rendering engine: `"auto"` (default), `"quarto"`, or `"rmarkdown"`.
 #' @param workers Number of parallel workers for concurrent rendering via `future`/`furrr`.
-#'   Defaults to `1` (sequential). Set to `> 1` to initialize multisession workers, or `NULL`
-#'   to use an existing `future::plan()` without altering it.
+#'   Defaults to `1` (sequential). Must be a single whole number of at least 1
+#'   (or `NULL` to use an existing `future::plan()` without altering it);
+#'   a fractional value such as `1.5` is an error, not silently truncated.
+#'   Set to `> 1` to initialize multisession workers.
 #' @param only_stale Logical. When `TRUE` (default), only out-of-date documents are rendered.
 #'   When `FALSE`, performs a full graph rerun.
 #' @param from Optional starting node name or index in the topological plan.
@@ -226,7 +265,8 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #'   pipeline rendering (with `on_error = "continue"`), all dependent downstream reports are
 #'   skipped and marked with status `"skipped_upstream_failure"` to prevent compiling on stale data.
 #' @param cache Cache handling: `"keep"` (default), `"refresh"` (wipes `_cache` and `_files`),
-#'   or `"stale"`.
+#'   or `"stale"`, which is an alias for `"refresh"` (it wipes the caches the same way;
+#'   the name is kept for callers that pass it).
 #' @param on_error Behavior upon error: `"continue"` (default) or `"stop"`.
 #' @param resume Optional data frame of previous render results to resume from.
 #' @param manifest Logical. When \code{TRUE} (default), writes a \code{render_manifest.json}
@@ -245,7 +285,7 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
 render_pipeline <- function(path,
-                   formats = .pipeline_config_value("default_formats", c("pdf", "docx")),
+                   formats = NULL,
                    pattern = "\\.(qmd|Rmd|rmd)$",
                    engine = c("auto", "quarto", "rmarkdown"),
                    workers = 1,
@@ -266,6 +306,13 @@ render_pipeline <- function(path,
                    on_complete = getOption("templecbe.on_complete", NULL),
                    ...) {
   formats_explicit <- !missing(formats)
+  # The default is resolved here, not in the formals, so the help page does
+  # not show the internal .pipeline_config_value() call as the default.
+  # An explicit NULL keeps its meaning: extract the formats from each
+  # document's YAML front matter.
+  if (!formats_explicit) {
+    formats <- .pipeline_config_value("default_formats", c("pdf", "docx"))
+  }
   dots <- list(...)
   run_with_on_complete(
     fn_name = "render",
@@ -277,6 +324,12 @@ render_pipeline <- function(path,
   if (rerun == "full") {
     only_stale <- FALSE
     cache <- "refresh"
+  }
+  # `workers` is checked up front, before the RNG seed is set, before a
+  # dry run returns, and before any rendering starts: a bad value is an
+  # error, not a truncation (as.integer(1.5) is 1) discovered halfway through.
+  if (!is.null(workers) && (!is.numeric(workers) || length(workers) != 1L || is.na(workers) || workers < 1 || workers != as.integer(workers))) {
+    stop("`workers` must be NULL or a single whole number of at least 1.", call. = FALSE)
   }
   if (isTRUE(renv_guard)) {
     check_renv_guard()
@@ -295,7 +348,17 @@ render_pipeline <- function(path,
   if (is.list(path) && length(path) > 0L && all(vapply(path, is_pipeline_obj, logical(1)))) {
     path <- refresh_pipeline(path)
     orig_pipeline_objects <- path
-    pipeline_graph <- tryCatch(as_igraph(path), error = function(e) NULL)
+    pipeline_graph <- tryCatch(
+      as_igraph(path),
+      error = function(e) {
+        warning(
+          "Could not build the dependency graph: ", conditionMessage(e),
+          "; downstream skipping and wave ordering fall back to the declared dependencies.",
+          call. = FALSE
+        )
+        NULL
+      }
+    )
     plan <- get_render_plan(
       path,
       only_stale = only_stale,
@@ -308,7 +371,10 @@ render_pipeline <- function(path,
     path <- plan
   } else if (is_pipeline_obj(path)) {
     orig_pipeline_objects <- refresh_pipeline(list(path))
-    if (stale_by == "hash" && isTRUE(only_stale)) {
+    # a single renderer goes through the plan like a list does, so `only_stale`
+    # and `stale_by` apply to it too; a single FilePath/FileUses has nothing
+    # to render, so it keeps the old behaviour (rendered below, unplanned)
+    if (is(path, "FileOutputs")) {
       plan <- get_render_plan(
         orig_pipeline_objects,
         only_stale = only_stale,
@@ -361,7 +427,15 @@ render_pipeline <- function(path,
       }
     } else if (identical(resolved_fmts, "yaml") || identical(resolved_fmts, "auto")) {
       yaml_f <- extract_yaml_formats(fpath)
-      resolved_fmts <- if (length(yaml_f) > 0) yaml_f else formats
+      # a document with no formats in its YAML, and no other format to fall
+      # back on, used to resolve to the literal format "yaml", which no
+      # engine renders; fall back to the usual defaults instead
+      resolved_fmts <- if (length(yaml_f) > 0) yaml_f else c("pdf", "docx")
+    }
+
+    resolved_fmts <- resolved_fmts[nzchar(resolved_fmts)]
+    if (length(resolved_fmts) == 0L) {
+      stop("No output formats resolved for '", fpath, "': the formats are empty.", call. = FALSE)
     }
 
     targets[[length(targets) + 1L]] <<- list(
@@ -382,7 +456,9 @@ render_pipeline <- function(path,
 
       # Extract deliverable report formats from item@output
       report_outs <- Filter(function(o) {
-        if (.hasSlot(o, "artifact_role") && length(o@artifact_role) > 0 && o@artifact_role == "deliverable_report") return(TRUE)
+        # artifact_role may be NA (or empty): `o@artifact_role == "deliverable_report"`
+        # is then NA, and `if (NA)` errors, so the comparison is NA-safe
+        if (.hasSlot(o, "artifact_role") && any(o@artifact_role == "deliverable_report", na.rm = TRUE)) return(TRUE)
         ext <- tolower(tools::file_ext(o@path))
         ext %in% doc_exts
       }, item@output)
@@ -564,11 +640,27 @@ render_pipeline <- function(path,
       if (dir.exists(files_dir)) remove_dir_tree(files_dir)
     }
 
+    # `...` arguments that no rendering engine accepts are dropped by the
+    # formals filter at each call site below; warn once per document and
+    # engine instead of once per format (and instead of never)
+    dropped_warned <- character()
+    warn_dropped_dots <- function(dropped, engine_label) {
+      if (length(dropped) == 0L || engine_label %in% dropped_warned) return()
+      dropped_warned <<- c(dropped_warned, engine_label)
+      warning(
+        "Ignoring unsupported `...` argument(s) for ", engine_label, " when rendering '",
+        basename(file_path), "': ", paste(dropped, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+
     rows <- purrr::map_dfr(file_formats, function(fmt) {
       # Check resume
       if (!is.null(resume) && is.data.frame(resume)) {
         m <- resume$file == basename(file_path) & tolower(resume$output) == tolower(fmt) & resume$status == "success"
-        if (any(m)) {
+        # resume columns may hold NA (a hand-edited or partial table): any(NA)
+        # is NA, and `if (NA)` errors, so the match is NA-safe
+        if (any(m, na.rm = TRUE)) {
           message("Resuming: skipping already completed '", basename(file_path), "' to ", toupper(fmt))
           dur <- if ("duration" %in% names(resume)) resume$duration[which(m)[1]] else 0
           return(data.frame(
@@ -593,6 +685,7 @@ render_pipeline <- function(path,
             q_dots$execute_params <- q_dots$params
             q_dots$params <- NULL
           }
+          warn_dropped_dots(setdiff(names(q_dots), q_formals), "quarto::quarto_render")
           valid_q_dots <- q_dots[names(q_dots) %in% q_formals]
           do.call(quarto::quarto_render, c(q_args, valid_q_dots))
         } else if (engine == "rmarkdown" || (!has_quarto && has_rmarkdown)) {
@@ -607,6 +700,7 @@ render_pipeline <- function(path,
           if (!"quiet" %in% names(rmd_dots)) {
             rmd_dots$quiet <- TRUE
           }
+          warn_dropped_dots(setdiff(names(rmd_dots), rmd_formals), "rmarkdown::render")
           valid_rmd_dots <- rmd_dots[names(rmd_dots) %in% rmd_formals]
           do.call(rmarkdown::render, c(rmd_args, valid_rmd_dots))
         } else {
@@ -619,10 +713,17 @@ render_pipeline <- function(path,
               q_dots$execute_params <- q_dots$params
               q_dots$params <- NULL
             }
+            warn_dropped_dots(setdiff(names(q_dots), q_formals), "quarto::quarto_render")
             valid_q_dots <- q_dots[names(q_dots) %in% q_formals]
             do.call(quarto::quarto_render, c(q_args, valid_q_dots))
           }, error = function(e) {
             if (has_rmarkdown) {
+              # the Quarto error is not hidden: say why rmarkdown is being tried
+              warning(
+                "Quarto failed to render '", basename(file_path), "' to ", toupper(fmt),
+                "; falling back to rmarkdown: ", conditionMessage(e),
+                call. = FALSE
+              )
               rmd_fmt <- map_rmd_format(fmt)
               rmd_formals <- names(formals(rmarkdown::render))
               rmd_args <- list(input = file_path, output_format = rmd_fmt)
@@ -634,6 +735,7 @@ render_pipeline <- function(path,
               if (!"quiet" %in% names(rmd_dots)) {
                 rmd_dots$quiet <- TRUE
               }
+              warn_dropped_dots(setdiff(names(rmd_dots), rmd_formals), "rmarkdown::render")
               valid_rmd_dots <- rmd_dots[names(rmd_dots) %in% rmd_formals]
               do.call(rmarkdown::render, c(rmd_args, valid_rmd_dots))
             } else {
@@ -663,7 +765,7 @@ render_pipeline <- function(path,
 
     if (isTRUE(derive_docx)) {
       docx_row <- if (!is.null(resume) && is.data.frame(resume) &&
-                      any(resume$file == basename(file_path) & tolower(resume$output) == "docx" & resume$status == "success")) {
+                      any(resume$file == basename(file_path) & tolower(resume$output) == "docx" & resume$status == "success", na.rm = TRUE)) {
         message("Resuming: skipping already completed '", basename(file_path), "' to DOCX")
         m_idx <- which(resume$file == basename(file_path) & tolower(resume$output) == "docx" & resume$status == "success")[1]
         data.frame(
@@ -709,9 +811,6 @@ render_pipeline <- function(path,
   # Independent branches within each wave can render in parallel when explicitly requested.
   has_future <- requireNamespace("future", quietly = TRUE) && requireNamespace("furrr", quietly = TRUE)
 
-  if (!is.null(workers) && (!is.numeric(workers) || length(workers) != 1L || is.na(workers) || workers < 1)) {
-    stop("`workers` must be NULL or a single number of at least 1.", call. = FALSE)
-  }
   # Fleet rule: never touch future::plan() inside functions unless explicitly asked (workers > 1)
   touch_plan <- !is.null(workers) && is.numeric(workers) && as.integer(workers) > 1L
 
@@ -771,6 +870,15 @@ render_pipeline <- function(path,
       !any(target_deps[[idx]] %in% remaining)
     }, logical(1))]
     if (length(ready) == 0) {
+      # no target is free of unrendered dependencies: the graph has a cycle,
+      # and rendering the first remaining target breaks it (its dependency is
+      # rendered later, so it may be built on stale input)
+      cycled <- vapply(targets[remaining], function(t) t$name, character(1))
+      warning(
+        "Dependency cycle detected among: ", paste(cycled, collapse = ", "),
+        "; rendering '", cycled[1], "' first to break the cycle.",
+        call. = FALSE
+      )
       ready <- remaining[1]
     }
     waves[[length(waves) + 1L]] <- ready
@@ -852,7 +960,10 @@ render_pipeline <- function(path,
     if (!is.null(objs_for_hash) && length(objs_for_hash) > 0L) {
       hf_written <- tryCatch(
         record_pipeline_hashes(refresh_pipeline(objs_for_hash), hash_file = hash_file),
-        error = function(e) NULL
+        error = function(e) {
+          warning("Could not record pipeline hashes: ", conditionMessage(e), call. = FALSE)
+          NULL
+        }
       )
       if (!is.null(hf_written)) {
         attr(times, "hash_file") <- hf_written
@@ -865,7 +976,13 @@ render_pipeline <- function(path,
     manifest_paths <- character()
     for (od in out_dirs) {
       if (dir.exists(od)) {
-        mf <- tryCatch(write_run_manifest(od, times, seed = seed), error = function(e) NULL)
+        mf <- tryCatch(
+          write_run_manifest(od, times, seed = seed),
+          error = function(e) {
+            warning("Could not write the run manifest in '", od, "': ", conditionMessage(e), call. = FALSE)
+            NULL
+          }
+        )
         if (!is.null(mf)) manifest_paths <- c(manifest_paths, mf)
       }
     }

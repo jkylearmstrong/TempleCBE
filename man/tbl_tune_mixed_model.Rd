@@ -42,11 +42,13 @@ returns the fixed effects as a table, so the report does not have to rebuild the
 \section{Inference}{
 
 The tibble reports Wald intervals and p-values from the normal approximation
-(`estimate / std.error`), which is reasonable here because a tuning grid has many models per
+(`estimate / std.error`) for the mixed model, which is reasonable here because a tuning grid has many models per
 resample; they are optimistic when there are few resamples. The models of one grid are fitted to
 the same data, so treat the p-values as a description of the response surface, not as tests.
 When there is a single resample, \pkg{lme4} is not installed, or the mixed model fails, an
-ordinary linear model is fitted instead and `attr(, "method")` is `"lm"`.
+ordinary linear model is fitted instead and `attr(, "method")` is `"lm"`; for that
+fallback the intervals and p-values use the t-distribution with the model's residual
+degrees of freedom, which is the correct small-sample reference distribution for `lm`.
 }
 
 \examples{

@@ -66,9 +66,13 @@ cbe_cox_table <- function(x,
       call. = FALSE
     )
   }
-  # p-values arrive formatted ("<0.001", "0.032", an em dash for a reference row)
+  # p-values arrive formatted ("<0.001", "0.032", an em dash for a reference row).
+  # A "<x" value is just below x, not x itself: parsing "<0.001" as 0.001 would
+  # give it two stars instead of three and distort p-value sorting.
   p_as_number <- function(p) {
+    is_lt <- grepl("^<", p)
     num <- suppressWarnings(as.numeric(gsub("^<", "", p)))
+    num[is_lt] <- num[is_lt] * 0.999
     num[p == "\u2014"] <- NA_real_
     num
   }

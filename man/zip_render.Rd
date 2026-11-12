@@ -20,7 +20,11 @@ zip_render(
 \arguments{
 \item{input}{Path to the input \code{.qmd} file.}
 
-\item{formats}{Character vector of output formats (e.g. \code{c("html","pdf","docx")} or \code{"all"}).}
+\item{formats}{Character vector of output formats (e.g. \code{c("html","pdf","docx")} or \code{"all"}).
+\code{"all"} renders the formats declared in the document's YAML front matter
+(or \code{"html"} when it declares none), as \code{quarto render --to all} does;
+it is resolved to those formats before rendering, so the rendered outputs
+are matched by exactly the extensions those formats write.}
 
 \item{resources}{Optional character vector of extra files to include, absolute or project-relative.}
 

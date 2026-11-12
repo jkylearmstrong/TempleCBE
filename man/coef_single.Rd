@@ -42,7 +42,8 @@ tbl_coef_forest(
   p_col = "p.value",
   p_breaks = c(0.001, 0.01, 0.05, 0.1, 0.2),
   p_labels = c("****", "***", "**", "*", ".", "ns"),
-  digits = 2
+  digits = 2,
+  conf_level = 0.95
 )
 }
 \arguments{
@@ -55,7 +56,8 @@ the name of one of the families of \pkg{stats} (`"binomial"`, `"poisson"`, ...).
 
 \item{normalize}{If `TRUE` (default) also fit on the 0..1 scaled predictor.}
 
-\item{conf_level}{Confidence level (default 0.95).}
+\item{conf_level}{Confidence level of the intervals in `results_df`; used
+for the column heading only (default 0.95, matching [glm_single()]).}
 
 \item{id_col}{Name of the grouping (subject) column for the random intercept.}
 

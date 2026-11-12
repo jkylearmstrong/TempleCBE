@@ -113,7 +113,10 @@ copy_data_manifest <- function(dir = ".",
     }
   }
 
-  file.copy(src_paths, dst_paths, overwrite = overwrite, copy.date = TRUE)
+  copied <- suppressWarnings(file.copy(src_paths, dst_paths, overwrite = overwrite, copy.date = TRUE))
+  if (!all(copied)) {
+    stop("Failed to copy file(s): ", paste(dst_paths[!copied], collapse = ", "), ".", call. = FALSE)
+  }
   validate_data_manifest(dir = dir, manifest = manifest, project_root = project_root)
 }
 
@@ -131,6 +134,10 @@ copy_data_manifest <- function(dir = ".",
 #' @param manifest Data frame with columns \code{file} and \code{source}.
 #' @param project_root Root directory for resolving \code{source} paths (default: \code{here::here()}).
 #' @return A tibble with validation status per file.
+#' @details
+#' \code{.rds} files are compared with \code{readRDS()}, which can run code stored in
+#' the file: only validate manifests and files that you or a process you trust
+#' wrote.
 #' @export
 validate_data_manifest <- function(dir = ".",
                                    manifest = NULL,

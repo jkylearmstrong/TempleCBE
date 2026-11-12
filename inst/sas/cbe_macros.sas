@@ -19,6 +19,7 @@
 %put NOTE:   3. %nrstr(%cbe_counting_process) - Repeated Measures to Counting Process;
 %put NOTE:   4. %nrstr(%coxtvc)               - Survival Estimation with Time-Varying Coefs;
 %put NOTE:   5. %nrstr(%cpdata)               - Counting Process Data Splitting;
+%put NOTE:   6. %nrstr(%cbe_lifetest)         - PROC LIFETEST KM & Log-Rank Parity;
 %put NOTE: ====================================================================;
 
 /* Automatically resolve the directory of this macro file if executed via %include */

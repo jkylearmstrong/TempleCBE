@@ -49,6 +49,18 @@ simulate_section_data <- function(mapping,
   id_col <- section_map$new[section_map$ID_var]
   time_col <- section_map$new[section_map$Time_var]
 
+  # Only the first ID/time column was used to build the grid, while the rest
+  # were silently left out of the result and then failed cryptically at the
+  # final subset.
+  if (length(id_col) > 1L) {
+    stop("Section '", index, "' of `mapping` has more than one `ID_var` column (",
+         paste(id_col, collapse = ", "), "); mark exactly one.", call. = FALSE)
+  }
+  if (length(time_col) > 1L) {
+    stop("Section '", index, "' of `mapping` has more than one `Time_var` column (",
+         paste(time_col, collapse = ", "), "); mark exactly one.", call. = FALSE)
+  }
+
   if (length(time_col) > 0 && length(id_col) == 0) {
     stop(
       "Section '", index, "' of `mapping` has a time variable (`Time_var`) but no ID variable (`ID_var`); ",

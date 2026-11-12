@@ -21,7 +21,8 @@ read_database(path, include_metadata = TRUE, metadata_sheet = "METADATA", ...)
 \code{metadata_sheet} is found, it is separated and attached as attribute
 \code{"metadata"} on the returned database list.}
 
-\item{metadata_sheet}{Name of the metadata sheet to recognize (default: \code{"METADATA"}).}
+\item{metadata_sheet}{Name of the metadata sheet to recognize (default: \code{"METADATA"}).
+More than one sheet matching it (ignoring case) is an error.}
 
 \item{...}{Additional arguments passed to \code{\link[readxl]{read_excel}}.}
 }

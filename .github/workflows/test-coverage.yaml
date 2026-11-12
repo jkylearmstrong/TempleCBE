@@ -101,7 +101,7 @@ jobs:
           plugins: noop
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
       # RUNNER_TEMP is the path inside the job's container; runner.temp in an expression is the host's
       - name: Show testthat output

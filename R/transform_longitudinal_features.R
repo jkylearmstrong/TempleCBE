@@ -50,13 +50,36 @@ transform_longitudinal_features <- function(data,
   if (!is.numeric(data[[time_col]])) stop("`time_col` must be numeric.", call. = FALSE)
   features <- as.character(features)
   if (length(features) == 0L) stop("`features` must name at least one column.", call. = FALSE)
+  if (anyDuplicated(features)) {
+    warning("Duplicate feature(s) kept once: ",
+            paste(unique(features[duplicated(features)]), collapse = ", "), ".", call. = FALSE)
+    features <- unique(features)
+  }
   gone <- setdiff(features, names(data))
   if (length(gone)) stop("Feature(s) not in `data`: ", paste(gone, collapse = ", "), ".", call. = FALSE)
   bad <- features[!vapply(data[features], is.numeric, logical(1))]
   if (length(bad)) stop("Feature(s) must be numeric: ", paste(bad, collapse = ", "), ".", call. = FALSE)
   if (anyNA(data[[id_col]])) stop("`id_col` must not contain missing values.", call. = FALSE)
-  if (id_col %in% c("feature", "method", "value", "n_obs")) {
-    stop("`id_col` must not be named feature, method, value or n_obs; rename the column first.", call. = FALSE)
+  if (id_col %in% c("feature", "method", "value", "n_obs", ".col")) {
+    stop("`id_col` must not be named feature, method, value, n_obs or .col; rename the column first.", call. = FALSE)
+  }
+
+  # A 0-row input used to fall through to an empty tibble with a `names<-`
+  # warning (long) or a "columns do not exist" error (wide).
+  if (nrow(data) == 0L) {
+    if (format == "long") {
+      out <- tibble::tibble(
+        id = data[[id_col]], feature = character(), method = character(),
+        value = numeric(), n_obs = integer()
+      )
+      names(out)[1] <- id_col
+      return(out)
+    }
+    wide_cols <- as.list(stats::setNames(rep(list(numeric()), length(features) * length(methods)),
+                                         as.vector(t(outer(features, methods, paste, sep = "__")))))
+    out <- tibble::tibble(id = data[[id_col]], !!!wide_cols)
+    names(out)[1] <- id_col
+    return(out)
   }
 
   summarise_one <- function(x, tm) {

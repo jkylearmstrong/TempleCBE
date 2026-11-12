@@ -61,6 +61,11 @@ scan_data_io <- function(code_path,
     }
   }
 
+  if (!is.numeric(max_depth) || length(max_depth) != 1L || is.na(max_depth) ||
+      (!is.infinite(max_depth) && (max_depth < 1 || max_depth != round(max_depth)))) {
+    stop("`max_depth` must be a single whole number of at least 1, or Inf for no limit.", call. = FALSE)
+  }
+
   if (!is.character(ext) || length(ext) != 1 || is.na(ext)) {
     stop("ext must be a single non-NA character string", call. = FALSE)
   }
@@ -82,12 +87,17 @@ scan_data_io <- function(code_path,
     grepl("^[/\\\\]|^[A-Za-z]:", path.expand(p))
   }
 
+  # Case-insensitive filesystems (Windows) need the paths folded before
+  # comparing; on case-sensitive filesystems two directories differing only
+  # by case are distinct, so folding there would wrongly treat them as one.
+  .fold_case <- function(x) if (.Platform$OS.type == "windows") tolower(x) else x
+
   is_subpath <- function(p, root) {
     if (is.na(p) || is.na(root)) return(FALSE)
     # .canonical_path() resolves links and 8.3 names for the part of `p` that
     # exists, so a file that is not there yet is spelled like its folder
-    p_norm <- tolower(.canonical_path(p))
-    r_norm <- tolower(.canonical_path(root))
+    p_norm <- .fold_case(.canonical_path(p))
+    r_norm <- .fold_case(.canonical_path(root))
     r_slash <- if (grepl("[/\\\\]$", r_norm)) r_norm else paste0(r_norm, "/")
     startsWith(p_norm, r_slash) || p_norm == r_norm
   }
@@ -95,14 +105,14 @@ scan_data_io <- function(code_path,
   adjust_here_path <- function(p) {
     if (is.null(p) || length(p) == 0) return(p)
     p_norm <- normalize_path_safely(p)
-    actual_root_lower <- tolower(actual_root)
+    actual_root_lower <- .fold_case(actual_root)
     actual_root_lower_slash <- if (grepl("[/\\\\]$", actual_root_lower)) actual_root_lower else paste0(actual_root_lower, "/")
 
     out <- p
     for (i in seq_along(p_norm)) {
       pn <- p_norm[i]
       if (!is.na(pn) && !is.na(actual_root)) {
-        pn_lower <- tolower(pn)
+        pn_lower <- .fold_case(pn)
         if (startsWith(pn_lower, actual_root_lower_slash)) {
           rel <- substring(pn, nchar(actual_root_lower_slash) + 1)
           out[i] <- file.path(custom_root, rel)
@@ -125,8 +135,28 @@ scan_data_io <- function(code_path,
       chars <- strsplit(substring(sub_l, open_paren), "")[[1]]
       depth <- 0
       end_idx <- length(chars)
-      for (i in seq_along(chars)) {
+      # String-aware: a ")" inside a string literal (e.g. "file).csv") is not
+      # a closing parenthesis, and used to truncate the extracted call and
+      # lose the file tokens after it.
+      quote <- ""
+      i <- 1L
+      while (i <= length(chars)) {
         ch <- chars[i]
+        if (nzchar(quote)) {
+          if (ch == "\\" && quote != "`") {
+            # skip the escaped character after the backslash as well
+            i <- i + 2L
+            next
+          }
+          if (ch == quote) quote <- ""
+          i <- i + 1L
+          next
+        }
+        if (ch %in% c("\"", "'", "`")) {
+          quote <- ch
+          i <- i + 1L
+          next
+        }
         if (ch == "(") {
           depth <- depth + 1
         } else if (ch == ")") {
@@ -136,6 +166,7 @@ scan_data_io <- function(code_path,
             break
           }
         }
+        i <- i + 1L
       }
       substring(sub_l, 1, open_paren + end_idx - 1)
     })

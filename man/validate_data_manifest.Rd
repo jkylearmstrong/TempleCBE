@@ -25,4 +25,9 @@ Compares destination files against upstream source files checking:
 \details{
 Path entries in \code{manifest} are validated to ensure they are relative and do not escape
 \code{dir} or \code{project_root}.
+
+
+\code{.rds} files are compared with \code{readRDS()}, which can run code stored in
+the file: only validate manifests and files that you or a process you trust
+wrote.
 }

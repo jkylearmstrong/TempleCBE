@@ -57,11 +57,19 @@ remove_dir_tree <- function(path) {
     } else if (dir.exists(p)) {
       links <- tryCatch(
         as.character(fs::dir_ls(p, recurse = TRUE, all = TRUE, type = "symlink")),
-        error = function(e) character()
+        error = function(e) e
       )
-      # deepest first, so that a link inside a linked-to tree is never reached
-      for (l in links[order(nchar(links), decreasing = TRUE)]) remove_dir_link(l)
-      unlink(p, recursive = TRUE, force = TRUE)
+      if (inherits(links, "error")) {
+        # the link scan is what makes this safe: without it a junction below
+        # would be met by unlink() itself, which fails on Windows junctions
+        # and leaves a half-deleted tree. Leave the tree and say so.
+        warning("Could not list the links under '", p, "' (", conditionMessage(links),
+                "); leaving the directory in place.", call. = FALSE)
+      } else {
+        # deepest first, so that a link inside a linked-to tree is never reached
+        for (l in links[order(nchar(links), decreasing = TRUE)]) remove_dir_link(l)
+        unlink(p, recursive = TRUE, force = TRUE)
+      }
     } else if (file.exists(p)) {
       unlink(p, force = TRUE)
     }

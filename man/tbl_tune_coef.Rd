@@ -21,8 +21,11 @@ Calculates selection frequency and distribution of coefficient estimates for
 each feature across resamples.
 }
 \details{
-`prop_selected` is `n_selected` divided by the number of resampling splits
-when `data` identifies them (a column `inner_resamples_splits`,
-`inner_resamples` or `split`). Without such a column it is the share of the
-fits of the term with a non-zero estimate, and a message says so.
+`prop_selected` is `n_selected` divided by the number of fits of the term
+(distinct resampling-split by `alpha` combinations when `data` identifies
+them with a column `inner_resamples_splits`, `inner_resamples` or `split`;
+without such a column it is the share of the fits of each term with a
+non-zero estimate, and a message says so). Dividing by the number of splits
+alone would overstate the proportion whenever several alphas are tuned per
+split.
 }

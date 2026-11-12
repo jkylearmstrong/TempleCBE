@@ -611,15 +611,17 @@ test_that("load_pipeline() leaves elements that are not pipeline files as they a
   expect_identical(back[[2]], "note")
 })
 
-test_that("hash staleness skips a recorded source that has since been deleted", {
+test_that("hash staleness treats a deleted recorded source as out of date", {
   fx <- hash_fixture()
   helper <- FileUses("helper", file.path(fx$dir, "helper.R"))
   writeLines("h", helper@path)
   prod <- FileOutputs("make", file.path(fx$dir, "make.R"), dependencies = list(helper), output = list(fx$out), renders = FALSE)
   # recorded store: the producer and its helper are known
   record_pipeline_hashes(list(prod), hash_file = fx$hf)
+  # a source that is no longer on disk cannot be shown to be unchanged, so
+  # the output built from it is out of date (item 85)
   unlink(helper@path)
-  expect_false(is_stale(fx$out, prod, stale_by = "hash", hash_file = fx$hf))
+  expect_true(is_stale(fx$out, prod, stale_by = "hash", hash_file = fx$hf))
 
   # same through the flat store
   flat <- list(files = list(
@@ -627,5 +629,5 @@ test_that("hash staleness skips a recorded source that has since been deleted", 
     make = .file_content_hash(file.path(fx$dir, "make.R"))
   ))
   jsonlite::write_json(flat, fx$hf, auto_unbox = TRUE)
-  expect_false(is_stale(fx$out, prod, stale_by = "hash", hash_file = fx$hf))
+  expect_true(is_stale(fx$out, prod, stale_by = "hash", hash_file = fx$hf))
 })

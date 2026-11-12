@@ -62,6 +62,9 @@ fit_ibs_mixed_model <- function(data, log_ibs = TRUE) {
     df$y <- log10(df$IBS)
     y_name <- "log10(IBS)"
   } else {
+    if (nrow(df) == 0L) {
+      stop("No fits remain after filtering: `log_ibs = FALSE` cannot model an empty data set.", call. = FALSE)
+    }
     df$y <- df$IBS
     y_name <- "IBS"
   }
@@ -218,8 +221,18 @@ plot_tune_lambda_ibs <- function(data, label_map = NULL, style = NULL) {
   keep_cols <- intersect(c("inner_resamples_splits", "alpha", "IBS", "lambda"), names(data))
   df <- unique(data[, keep_cols, drop = FALSE])
   df <- df[!is.na(df$lambda) & !is.na(df$IBS) & !is.na(df$alpha), , drop = FALSE]
+  n_nonpos <- sum(df$lambda <= 0)
+  if (n_nonpos > 0L) {
+    warning(n_nonpos, " fit(s) with lambda <= 0 were dropped: log10(lambda) is not defined for them.", call. = FALSE)
+    df <- df[df$lambda > 0, , drop = FALSE]
+  }
+  if (nrow(df) == 0L) {
+    stop("No fits with a positive `lambda` remain to plot.", call. = FALSE)
+  }
 
-  df$alpha_factor <- factor(round(df$alpha, 2))
+  # Do not round alpha: distinct alphas that differ only after the second
+  # decimal (e.g. 0.501 vs 0.505) must stay distinct in the legend.
+  df$alpha_factor <- factor(df$alpha)
 
   ggplot2::ggplot(df, ggplot2::aes(x = log10(.data$lambda), y = .data$IBS, color = .data$alpha_factor)) +
     ggplot2::geom_point(alpha = 0.7, size = 2.5) +
@@ -283,7 +296,7 @@ plot_tune_coef_boxplot <- function(data, top_n = NULL, label_map = NULL, style =
   if (!all(c("term", "estimate") %in% names(data))) {
     stop("`data` must contain 'term' and 'estimate' columns.", call. = FALSE)
   }
-  df <- data[data$term != "(Intercept)" & !is.na(data$estimate), , drop = FALSE]
+  df <- data[!is.na(data$term) & data$term != "(Intercept)" & !is.na(data$estimate), , drop = FALSE]
   if (nrow(df) == 0L) {
     stop("No feature coefficients found in `data`.", call. = FALSE)
   }
@@ -371,10 +384,13 @@ tbl_tune_alpha <- function(data, label_map = NULL, style = NULL) {
 #' Calculates selection frequency and distribution of coefficient estimates for
 #' each feature across resamples.
 #'
-#' `prop_selected` is `n_selected` divided by the number of resampling splits
-#' when `data` identifies them (a column `inner_resamples_splits`,
-#' `inner_resamples` or `split`). Without such a column it is the share of the
-#' fits of the term with a non-zero estimate, and a message says so.
+#' `prop_selected` is `n_selected` divided by the number of fits of the term
+#' (distinct resampling-split by `alpha` combinations when `data` identifies
+#' them with a column `inner_resamples_splits`, `inner_resamples` or `split`;
+#' without such a column it is the share of the fits of each term with a
+#' non-zero estimate, and a message says so). Dividing by the number of splits
+#' alone would overstate the proportion whenever several alphas are tuned per
+#' split.
 #'
 #' @param data A data frame from [tune_alpha_by_split()].
 #' @param label_map Optional label mapping (see [cbe_labels()]).
@@ -385,23 +401,30 @@ tbl_tune_coef <- function(data, label_map = NULL, style = NULL) {
   if (!all(c("term", "estimate") %in% names(data))) {
     stop("`data` must contain 'term' and 'estimate' columns.", call. = FALSE)
   }
-  df <- data[data$term != "(Intercept)" & !is.na(data$estimate), , drop = FALSE]
+  df <- data[!is.na(data$term) & data$term != "(Intercept)" & !is.na(data$estimate), , drop = FALSE]
   split_col <- .tune_split_col(data)
-  # Without a split column the number of splits is unknown: dividing by 1 (as
-  # this did) returned the count itself under the name of a proportion.
-  total_splits <- if (is.null(split_col)) NA_integer_ else length(unique(data[[split_col]]))
   if (is.null(split_col)) {
     message(
       "`data` has no resampling split column: `prop_selected` is the share of the fits of each term ",
       "with a non-zero estimate."
     )
   }
+  # One fit per (split, alpha) combination: the denominator for a term is the
+  # number of distinct fits that term appears in, not the number of splits
+  # (several alphas are tuned per split).
+  df$.fit_id <- if (is.null(split_col)) {
+    seq_len(nrow(df))
+  } else if ("alpha" %in% names(df)) {
+    paste(df[[split_col]], df$alpha, sep = " | ")
+  } else {
+    as.character(df[[split_col]])
+  }
 
   res <- dplyr::group_by(df, .data$term)
   out <- dplyr::summarize(
     res,
     n_selected = sum(.data$estimate != 0),
-    prop_selected = sum(.data$estimate != 0) / if (is.na(total_splits)) dplyr::n() else max(1L, total_splits),
+    prop_selected = sum(.data$estimate != 0) / max(1L, dplyr::n_distinct(.data$.fit_id)),
     mean_estimate = mean(.data$estimate),
     sd_estimate = stats::sd(.data$estimate),
     median_estimate = stats::median(.data$estimate),

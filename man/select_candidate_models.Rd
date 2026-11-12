@@ -19,8 +19,10 @@ and `IBS` columns (e.g. from [tune_alpha_by_split()]).}
 \item{formulas}{Character vector of formulas, list of formula objects, or a single
 formula to evaluate.}
 
-\item{ntile}{Numeric quantile cutoff (between 0 and 1, default `0.25`) for
-selecting the best alphas with lowest IBS.}
+\item{ntile}{Numeric quantile cutoff in `(0, 1]` (default `0.25`) for
+selecting the best alphas with lowest IBS. Values above 1 used to be
+silently reinterpreted as a bin count in `"row"` mode but errored in
+`"alpha"` mode; they are now an error in both.}
 
 \item{top_n}{Optional integer number of best alphas to keep (overrides `ntile`
 if provided).}
