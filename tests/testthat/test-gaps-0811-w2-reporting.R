@@ -280,6 +280,9 @@ test_that("apply_review_tracker() guards its inputs (A5)", {
 
 test_that("README lists all nine vignettes and DESCRIPTION states the full scope (A6, A7)", {
   root <- file.path(testthat::test_path(), "..", "..")
+  # README.qmd is .Rbuildignore-d: absent when the tests run from the built/installed package
+  skip_if_not(file.exists(file.path(root, "README.qmd")) && file.exists(file.path(root, "README.md")),
+              "README sources are not part of the built package")
   readme_md <- readLines(file.path(root, "README.md"), warn = FALSE)
   readme_qmd <- readLines(file.path(root, "README.qmd"), warn = FALSE)
   for (lines in list(readme_md, readme_qmd)) {
