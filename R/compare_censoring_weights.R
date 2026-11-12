@@ -1358,7 +1358,7 @@ compare_runs <- function(run1,
   }
   out_df$reproducible <- reproducible
 
-  spearman_rho <- if (nrow(out_df) >= 2) stats::cor(out_df[[paste0("ibs_", label1)]], out_df[[paste0("ibs_", label2)]], method = "spearman", use = "complete.obs") else NA_real_
+  spearman_rho <- .safe_spearman_cor(out_df[[paste0("ibs_", label1)]], out_df[[paste0("ibs_", label2)]])
 
   summary_info <- list(
     label1 = label1,
@@ -1401,9 +1401,32 @@ print.templecbe_run_comparison <- function(x, ...) {
   if (!s$all_reproducible) {
     discrepant <- x[!x$reproducible, , drop = FALSE]
     cat(sprintf("\n%d model(s) exceeded tolerance:\n", nrow(discrepant)))
-    print(utils::head(discrepant, 10))
+    print(as.data.frame(utils::head(discrepant, 10)))
   }
   invisible(x)
+}
+
+#' Spearman Correlation That Is `NA` When There Is Nothing to Correlate
+#'
+#' `stats::cor(..., use = "complete.obs")` errors ("no complete element
+#' pairs") when fewer than two complete pairs exist, e.g. when both runs'
+#' IBS values are all `NA`. A comparison with no complete pair has no rank
+#' correlation, not an error.
+#'
+#' @param x,y Numeric vectors to correlate.
+#' @return A single number, or `NA_real_` when fewer than two complete pairs
+#'   exist or the correlation cannot be computed.
+#' @keywords internal
+#' @noRd
+.safe_spearman_cor <- function(x, y) {
+  ok <- stats::complete.cases(x, y)
+  if (sum(ok) < 2L) {
+    return(NA_real_)
+  }
+  suppressWarnings(tryCatch(
+    stats::cor(x[ok], y[ok], method = "spearman", use = "complete.obs"),
+    error = function(e) NA_real_
+  ))
 }
 
 #' Compare and Summarize Two Tuning Runs
@@ -1613,7 +1636,7 @@ compare_tuning_runs <- function(tune1,
   merged$diff_mean_ibs <- diff_mean
   merged$reproducible <- reproducible
 
-  spearman_rho <- if (nrow(merged) >= 2) stats::cor(merged[[mean1_col]], merged[[mean2_col]], method = "spearman", use = "complete.obs") else NA_real_
+  spearman_rho <- .safe_spearman_cor(merged[[mean1_col]], merged[[mean2_col]])
 
   summary_info <- list(
     label1 = label1,

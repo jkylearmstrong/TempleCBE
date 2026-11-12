@@ -31,8 +31,11 @@ vector. It must return finite values at the observed event times, so
 
 \item{conf_level}{Confidence level of the hazard ratios (default `0.95`).}
 
-\item{...}{Further arguments passed to [survival::coxph()], such as `ties`
-or `weights`. Not `tt`, which this function sets itself.}
+\item{...}{Further arguments passed to [survival::coxph()], such as
+`weights`. `ties` may be passed and overrides the default `"efron"`.
+`tt`, `model`, `x` and `y` are set by this function itself: `tt` passed
+via `...` is an error, and `model`/`x`/`y` passed via `...` are ignored
+with a warning.}
 }
 \value{
 An object of class `cox_time_varying`: a list with `fit` (the

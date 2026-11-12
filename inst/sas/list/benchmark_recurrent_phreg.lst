@@ -1,0 +1,178 @@
+                                CGD recurrent data check (PROC FREQ)
+
+                                         The FREQ Procedure
+
+                                  status    Frequency     Percent
+                                  -------------------------------
+                                       0         127       62.56 
+                                       1          76       37.44 
+                Recurrent PHREG -- Andersen-Gill (total time): COVS(AGGREGATE) COVM
+
+                                        The PHREG Procedure
+
+                                         Model Information
+
+                                Data Set                 WORK.CGD_R
+                                Dependent Variable       tstart    
+                                Dependent Variable       tstop     
+                                Censoring Variable       status    
+                                Censoring Value(s)       0         
+                                Ties Handling            EFRON     
+
+
+                              Number of Observations Read         203
+                              Number of Observations Used         203
+
+
+                         Summary of the Number of Event and Censored Values
+ 
+                                                                 Percent
+                               Total       Event    Censored    Censored
+
+                                 203          76         127       62.56
+
+
+                                         Convergence Status
+
+                           Convergence criterion (GCONV=1E-8) satisfied.          
+
+
+                                       Model Fit Statistics
+ 
+                                               Without           With
+                              Criterion     Covariates     Covariates
+
+                              -2 LOG L         684.289        658.327
+                              AIC              684.289        664.327
+                              SBC              684.289        671.319
+
+
+                               Testing Global Null Hypothesis: BETA=0
+ 
+                     Test                    Chi-Square       DF     Pr > ChiSq
+
+                     Likelihood Ratio           25.9627        3         <.0001
+                     Score (Model-Based)        24.8373        3         <.0001
+                     Score (Sandwich)           11.1648        3         0.0109
+                     Wald (Model-Based)         23.1203        3         <.0001
+                     Wald (Sandwich)            16.5536        3         0.0009
+
+
+                             Analysis of Maximum Likelihood Estimates
+                                with Model-Based Variance Estimate
+ 
+                  Parameter     Standard                               Hazard     95% Hazard Ratio
+Parameter   DF     Estimate        Error   Chi-Square   Pr > ChiSq      Ratio    Confidence Limits
+
+treat        1     -1.11911      0.26130      18.3424       <.0001      0.327      0.196      0.545
+sex          1     -0.08275      0.33098       0.0625       0.8026      0.921      0.481      1.761
+age          1     -0.03002      0.01330       5.0945       0.0240      0.970      0.945      0.996
+
+
+                             Analysis of Maximum Likelihood Estimates
+                                  with Sandwich Variance Estimate
+ 
+                Parameter    Standard  StdErr                            Hazard   95% Hazard Ratio
+Parameter  DF    Estimate       Error   Ratio  Chi-Square  Pr > ChiSq     Ratio   Confidence Limits
+
+treat       1    -1.11911     0.31018   1.187     13.0175      0.0003     0.327     0.178     0.600
+sex         1    -0.08275     0.36614   1.106      0.0511      0.8212     0.921     0.449     1.887
+age         1    -0.03002     0.01415   1.064      4.5010      0.0339     0.970     0.944     0.998
+                         ODS ParameterEstimates data set: Andersen-Gill fit
+
+                                                                 Prob   Hazard  HRLower  HRUpper
+    Parameter DF   Estimate     StdErr  StdErrRatio      ChiSq  ChiSq    Ratio       CL       CL
+
+      treat    1   -1.11911    0.26130            .    18.3424 <.0001    0.327    0.196    0.545
+      sex      1   -0.08275    0.33098            .     0.0625 0.8026    0.921    0.481    1.761
+      age      1   -0.03002    0.01330            .     5.0945 0.0240    0.970    0.945    0.996
+      treat    1   -1.11911    0.31018     1.187039    13.0175 0.0003    0.327    0.178    0.600
+      sex      1   -0.08275    0.36614     1.106228     0.0511 0.8212    0.921    0.449    1.887
+      age      1   -0.03002    0.01415     1.063894     4.5010 0.0339    0.970    0.944    0.998
+                       Recurrent PHREG -- PWP gap time: COVS(AGGREGATE) COVM
+
+                                        The PHREG Procedure
+
+                                         Model Information
+
+                                Data Set                 WORK.CGD_R
+                                Dependent Variable       gap_tstart
+                                Dependent Variable       gap_tstop 
+                                Censoring Variable       status    
+                                Censoring Value(s)       0         
+                                Ties Handling            EFRON     
+
+
+                              Number of Observations Read         203
+                              Number of Observations Used         203
+
+
+                         Summary of the Number of Event and Censored Values
+ 
+                                                                            Percent
+                Stratum    enum3          Total       Event    Censored    Censored
+
+                      1    1                128          44          84       65.63
+                      2    2                 44          17          27       61.36
+                      3    3                 31          15          16       51.61
+                -------------------------------------------------------------------
+                  Total                     203          76         127       62.56
+
+
+                                         Convergence Status
+
+                           Convergence criterion (GCONV=1E-8) satisfied.          
+
+
+                                       Model Fit Statistics
+ 
+                                               Without           With
+                              Criterion     Covariates     Covariates
+
+                              -2 LOG L         568.816        553.291
+                              AIC              568.816        559.291
+                              SBC              568.816        566.283
+
+
+                               Testing Global Null Hypothesis: BETA=0
+ 
+                     Test                    Chi-Square       DF     Pr > ChiSq
+
+                     Likelihood Ratio           15.5251        3         0.0014
+                     Score (Model-Based)        14.5442        3         0.0023
+                     Score (Sandwich)           15.4207        3         0.0015
+                     Wald (Model-Based)         14.0016        3         0.0029
+                     Wald (Sandwich)            13.9971        3         0.0029
+
+
+                             Analysis of Maximum Likelihood Estimates
+                                with Model-Based Variance Estimate
+ 
+                  Parameter     Standard                               Hazard     95% Hazard Ratio
+Parameter   DF     Estimate        Error   Chi-Square   Pr > ChiSq      Ratio    Confidence Limits
+
+treat        1     -0.93121      0.27807      11.2144       0.0008      0.394      0.228      0.680
+sex          1     -0.21370      0.33801       0.3997       0.5272      0.808      0.416      1.566
+age          1     -0.02270      0.01356       2.8000       0.0943      0.978      0.952      1.004
+
+
+                             Analysis of Maximum Likelihood Estimates
+                                  with Sandwich Variance Estimate
+ 
+                Parameter    Standard  StdErr                            Hazard   95% Hazard Ratio
+Parameter  DF    Estimate       Error   Ratio  Chi-Square  Pr > ChiSq     Ratio   Confidence Limits
+
+treat       1    -0.93121     0.27968   1.006     11.0858      0.0009     0.394     0.228     0.682
+sex         1    -0.21370     0.32147   0.951      0.4419      0.5062     0.808     0.430     1.516
+age         1    -0.02270     0.01088   0.802      4.3495      0.0370     0.978     0.957     0.999
+                         ODS ParameterEstimates data set: PWP gap-time fit
+
+                                                                 Prob   Hazard  HRLower  HRUpper
+    Parameter DF   Estimate     StdErr  StdErrRatio      ChiSq  ChiSq    Ratio       CL       CL
+
+      treat    1   -0.93121    0.27807            .    11.2144 0.0008    0.394    0.228    0.680
+      sex      1   -0.21370    0.33801            .     0.3997 0.5272    0.808    0.416    1.566
+      age      1   -0.02270    0.01356            .     2.8000 0.0943    0.978    0.952    1.004
+      treat    1   -0.93121    0.27968     1.005786    11.0858 0.0009    0.394    0.228    0.682
+      sex      1   -0.21370    0.32147     0.951077     0.4419 0.5062    0.808    0.430    1.516
+      age      1   -0.02270    0.01088     0.802340     4.3495 0.0370    0.978    0.957    0.999

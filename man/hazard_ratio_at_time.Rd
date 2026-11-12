@@ -12,7 +12,10 @@ hazard_ratio_at_time(object, variable, times)
 \item{variable}{One time-varying predictor name (an element of
 `object$tv_vars`).}
 
-\item{times}{Numeric vector of times to report the hazard ratio at.}
+\item{times}{Numeric vector of times to report the hazard ratio at.
+Each time must give a finite value of the fitted `time_fn`: with
+`time_fn = "log"`, `t = 0` gives `log(0) = -Inf` and is an error, not a
+hazard ratio of `Inf`/`NaN`.}
 }
 \value{
 A tibble with `variable`, `time`, `hazard_ratio`, `conf_low` and

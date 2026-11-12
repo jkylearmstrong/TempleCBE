@@ -41,8 +41,11 @@
 #'   vector. It must return finite values at the observed event times, so
 #'   `"log"` needs event times above zero.
 #' @param conf_level Confidence level of the hazard ratios (default `0.95`).
-#' @param ... Further arguments passed to [survival::coxph()], such as `ties`
-#'   or `weights`. Not `tt`, which this function sets itself.
+#' @param ... Further arguments passed to [survival::coxph()], such as
+#'   `weights`. `ties` may be passed and overrides the default `"efron"`.
+#'   `tt`, `model`, `x` and `y` are set by this function itself: `tt` passed
+#'   via `...` is an error, and `model`/`x`/`y` passed via `...` are ignored
+#'   with a warning.
 #' @return An object of class `cox_time_varying`: a list with `fit` (the
 #'   [survival::coxph()] fit), `terms` (a tibble with `term`, `estimate`,
 #'   `std_error`, `hr`, `conf_low`, `conf_high`, `statistic`, `p_value` and
@@ -80,6 +83,22 @@ cox_time_varying <- function(data, formula, tv_vars, time_fn = c("log", "identit
   dots <- list(...)
   if ("tt" %in% names(dots)) {
     stop("`tt` is set by `cox_time_varying()` itself; name time-varying predictors in `tv_vars`.", call. = FALSE)
+  }
+  # `ties` is documented as passable via `...`, but it was hardcoded before
+  # `...` in the coxph() call, so passing it errored cryptically ("formal
+  # argument matched by multiple actual arguments"). Honour it instead.
+  # `model`/`x`/`y` are likewise set by this function and cannot be
+  # overridden; ignore them with a warning rather than the same cryptic error.
+  ties <- if ("ties" %in% names(dots)) dots$ties else "efron"
+  if (!is.null(names(dots))) {
+    dropped <- intersect(c("model", "x", "y"), names(dots))
+    if (length(dropped)) {
+      warning(
+        "`cox_time_varying()` sets `", paste(dropped, collapse = "`, `"),
+        "` itself; the value(s) passed via `...` are ignored.", call. = FALSE
+      )
+    }
+    dots <- dots[!names(dots) %in% c("ties", "model", "x", "y")]
   }
   if (!is.character(tv_vars) || !length(tv_vars) || anyNA(tv_vars) || any(!nzchar(tv_vars))) {
     stop("`tv_vars` must be a non-empty character vector of predictor names.", call. = FALSE)
@@ -143,7 +162,10 @@ cox_time_varying <- function(data, formula, tv_vars, time_fn = c("log", "identit
   env <- new.env(parent = asNamespace("survival"))
   fml <- stats::as.formula(paste(lhs_str, "~", paste(rhs, collapse = " + ")), env = env)
   tt_fn <- function(x, t, ...) x * time_fn(t)
-  fit <- survival::coxph(fml, data = data, tt = tt_fn, ties = "efron", model = FALSE, x = FALSE, y = TRUE, ...)
+  fit <- do.call(
+    survival::coxph,
+    c(list(formula = fml, data = data, tt = tt_fn, ties = ties, model = FALSE, x = FALSE, y = TRUE), dots)
+  )
 
   # Fixed (non-tt) design matrix, aligned with the fixed coefficients by
   # name, so factors expand to the dummy columns coxph fitted.
@@ -352,7 +374,15 @@ tvc_new_design <- function(object, new_data) {
 tvc_linear_predictor <- function(object, x_fixed, x_tv, t) {
   beta_f <- stats::coef(object$fit)[object$fixed_names]
   gamma <- stats::coef(object$fit)[paste0("tt(", object$tv_vars, ")")]
-  as.numeric(x_fixed %*% beta_f) + as.numeric((x_tv * object$time_fn(t)) %*% gamma)
+  f_t <- object$time_fn(t)
+  if (!is.numeric(f_t) || length(f_t) != 1L || !is.finite(f_t)) {
+    stop(
+      "`time_fn` returns a non-finite value at time ", t,
+      " (e.g. `time_fn = \"log\"` is `-Inf` at `t = 0`); the linear predictor is undefined there.",
+      call. = FALSE
+    )
+  }
+  as.numeric(x_fixed %*% beta_f) + as.numeric((x_tv * f_t) %*% gamma)
 }
 
 #' Predict From a `cox_time_varying` Model
@@ -453,6 +483,9 @@ print.cox_time_varying <- function(x, ...) {
 #' @param variable One time-varying predictor name (an element of
 #'   `object$tv_vars`).
 #' @param times Numeric vector of times to report the hazard ratio at.
+#'   Each time must give a finite value of the fitted `time_fn`: with
+#'   `time_fn = "log"`, `t = 0` gives `log(0) = -Inf` and is an error, not a
+#'   hazard ratio of `Inf`/`NaN`.
 #' @return A tibble with `variable`, `time`, `hazard_ratio`, `conf_low` and
 #'   `conf_high`.
 #' @seealso [cox_time_varying()]
@@ -484,6 +517,15 @@ hazard_ratio_at_time <- function(object, variable, times) {
   vc <- stats::vcov(object$fit)[c(variable, paste0("tt(", variable, ")")), c(variable, paste0("tt(", variable, ")")), drop = FALSE]
   z <- stats::qnorm(1 - (1 - object$conf_level) / 2)
   f <- object$time_fn(times)
+  if (!is.numeric(f) || length(f) != length(times) || any(!is.finite(f))) {
+    bad_times <- if (is.numeric(f) && length(f) == length(times)) times[!is.finite(f)] else times
+    stop(
+      "`time_fn` returns non-finite value(s) at `times` ",
+      paste(bad_times, collapse = ", "),
+      " (e.g. `time_fn = \"log\"` is `-Inf` at `t = 0`); the hazard ratio is undefined there.",
+      call. = FALSE
+    )
+  }
   log_hr <- beta + gamma * f
   var_log_hr <- vc[1, 1] + f^2 * vc[2, 2] + 2 * f * vc[1, 2]
   tibble::tibble(

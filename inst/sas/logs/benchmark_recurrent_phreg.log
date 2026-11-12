@@ -1,0 +1,325 @@
+1                                           The SAS System           01:21 Thursday, November 12, 2026
+
+NOTE: Copyright (c) 2023 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M8) 
+      Licensed to TEMPLE UNIVERSITY - T&R - SFA, Site 70092167.
+NOTE: This session is executing on the X64_WIN+HOME  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.3
+      SAS/ETS 15.3
+      SAS/OR 15.3
+      SAS/IML 15.3
+      SAS/QC 15.3
+
+NOTE: Additional host information:
+
+ X64_WIN+HOME WIN 10.0.26300  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.54 seconds
+      cpu time            0.56 seconds
+      
+1          /*==============================================================================
+2            TempleCBE SAS Validation Benchmark: PROC PHREG on recurrent events
+3            (Andersen-Gill and Prentice-Williams-Peterson gap time) against
+4            recurrent_cox() / recurrent_phreg_quantities() (R/sas_phreg_parity.R)
+5          
+6            ----------------------------------------------------------------------------
+7            STATUS: DRAFT -- THIS PROGRAM HAS NEVER BEEN RUN. There is no SAS licence
+8            on the machine where it was written, so no listing and no log exist yet
+9            (there is deliberately no inst/sas/list/benchmark_recurrent_phreg.lst and
+10           no inst/sas/logs/benchmark_recurrent_phreg.log). Do NOT claim parity for
+11           recurrent-event PHREG until it has been run once on SAS 9.4 and the
+12           comparison in R/sas_phreg_parity.R has been run against the stored
+13           listing (see "After the run" below). The numbers in the R-side tests are
+14           R values formatted to look like SAS output; they are NOT SAS output.
+15           ----------------------------------------------------------------------------
+16         
+17           Data: survival::cgd, the chronic granulomatous disease trial -- 203
+18           counting-process intervals (tstart, tstop, status) for 128 patients,
+19           76 recurrent serious infections. The data are NOT typed into this
+20           program (203 rows): they are exported from R with the package's own
+21           write_sas_data() and read back here from a SAS transport file (see
+22           "Getting the data into SAS" below). The export is cgd_recurrent_data()
+23           in R/sas_phreg_parity.R: id, tstart, tstop, status, treat, sex, age,
+24           enum, with the two factors recoded to 0/1 so that both sides fit the
+25           same parameters with the same names:
+26         
+27             treat  1 = rIFN-g, 0 = placebo
+28             sex    1 = female, 0 = male
+29             age    age at entry, in years (numeric)
+30             enum   event number of the interval (1, 2, ...); verified in the
+31                    tests to equal 1 + the number of earlier events of the patient
+2                                           The SAS System           01:21 Thursday, November 12, 2026
+
+32         
+33           Exact model, both fits (the R side is recurrent_phreg_quantities(),
+34           which fits recurrent_cox() with the same specification):
+35         
+36             (tstart, tstop) * status(0) = treat sex age / ties=efron rl
+37             id id;                       -- COVS(AGGREGATE) needs the ID statement
+38             proc phreg ... covs(aggregate) covm;
+39         
+40           * TIES=EFRON, not the SAS default BRESLOW: recurrent_cox() fits with
+41             Efron ties, so SAS must too. (The R_to_SAS vignette's cox_multi()
+42             cgd fit uses Breslow and matches SAS Breslow; do not copy that
+43             option here -- the Efron fit differs in the 4th-5th decimal, e.g.
+44             the Andersen-Gill treat coefficient is -1.11911 with Efron ties
+45             against -1.12110 with Breslow.)
+46           * COVS(AGGREGATE) with ID id requests the Lin-Wei robust sandwich
+47             covariance, aggregated by patient, which is what recurrent_cox()
+48             reports: its terms$std_error comes from the clustered (robust)
+49             covariance. COVM additionally requests the model-based covariance,
+50             so each fit prints TWO "Analysis of Maximum Likelihood Estimates"
+51             tables -- one "with Model-Based Variance Estimate" and one "with
+52             Sandwich Variance Estimate" (the sandwich table has an extra
+53             StdErr Ratio column). parse_recurrent_phreg_lst() reads both.
+54           * Andersen-Gill fit: one baseline hazard, total (study) time.
+55           * PWP gap-time fit: the same model on gap time (time since the
+56             previous infection) with a baseline hazard per event number,
+57             STRATA enum3, where enum3 = min(event_no, 3): event numbers 1, 2,
+58             and 3-or-later, which hold 44, 17 and 15 events. This is the same
+59             pooling recurrent_cox(model = "pwp_gap", max_events = 3) applies.
+60             The gap times and event numbers are derived in the DATA step below
+61             from (tstart, tstop, status) alone, so they do not depend on the
+62             exported enum column; enum is kept in the export as a cross-check.
+63           * No %cbe_* macro is needed or used: %cbe_cox_phreg has no COVS or
+64             STRATA option, so this benchmark calls PROC PHREG directly.
+65         
+66           Getting the data into SAS (run this in R first):
+67         
+68             TempleCBE::write_sas_data(
+69               TempleCBE::cgd_recurrent_data(),
+70               "<folder>/cgdrec.xpt"      # file stem at most 8 characters (.xpt rule)
+71             )
+72         
+73           and put cgdrec.xpt in the same folder as this program
+74           (inst/sas/cgdrec.xpt when run from the package). The program reads it
+75           from the folder it was submitted from (the %let script_dir pattern
+76           benchmark_lifetest_km.sas uses). If you submit this program
+77           interactively rather than in batch, set script_dir by hand first:
+78         
+79             %let script_dir = <path-to-TempleCBE/inst/sas>/;
+80         
+81           CSV fallback (if the transport file cannot be used): export the same
+82           data frame with utils::write.csv(..., row.names = FALSE) to
+83           cgdrec.csv and replace the LIBNAME / DATA step below with
+84         
+85             proc import datafile="&script_dir.cgdrec.csv" out=work.cgd
+3                                           The SAS System           01:21 Thursday, November 12, 2026
+
+86                 dbms=csv replace; getnames=yes; run;
+87         
+88           How to run (SAS 9.4):
+89         
+90             From R (the program, log and listing land beside it, as run_sas_script()
+91             arranges for the other benchmarks):
+92               TempleCBE::run_sas_script(
+93                 TempleCBE::sas_macro_path("benchmark_recurrent_phreg.sas")
+94               )
+95         
+96             Or in SAS directly, in batch:
+97               sas -sysin <path-to-TempleCBE/inst/sas>/benchmark_recurrent_phreg.sas
+98                   -log <path-to-TempleCBE/inst/sas>/logs/benchmark_recurrent_phreg.log
+99                   -print <path-to-TempleCBE/inst/sas>/list/benchmark_recurrent_phreg.lst
+100        
+101          What to expect: two PROC PHREG runs (Andersen-Gill, then PWP gap time),
+102          each printing Model Information, the global-null tests (with extra
+103          Wald (COVM) and Wald (COVS) rows), and the two Maximum Likelihood
+104          Estimates tables (model-based, then sandwich). Each run also writes an
+105          ODS ParameterEstimates data set, printed for the record by PROC PRINT
+106          under an "ODS ParameterEstimates data set:" title. A PROC FREQ of
+107          status (76 events, 127 censored) prints first, as an import check.
+108        
+109          Where to store the outputs (following the LIFETEST benchmark):
+110        
+111            inst/sas/list/benchmark_recurrent_phreg.lst
+112            inst/sas/logs/benchmark_recurrent_phreg.log
+113        
+114          After the run: in R, with the listing stored,
+115        
+116            sas <- TempleCBE::parse_recurrent_phreg_lst(
+117              system.file("sas", "list", "benchmark_recurrent_phreg.lst",
+118                          package = "TempleCBE")
+119            )
+120            r <- TempleCBE::recurrent_phreg_quantities(
+121              TempleCBE::cgd_recurrent_data()
+122            )
+123            TempleCBE::compare_recurrent_phreg(r, sas)
+124        
+125          tests/testthat/test-round2-0911-sas.R has a Tier-1 test in the LIFETEST
+126          pattern that skips until the listing exists and exercises it once it
+127          does. Until then sas_parity_boundary() lists this as "not_started":
+128          program drafted, run pending.
+129        ==============================================================================*/
+130        
+131        /* formchar: plain-ASCII table borders, so the stored listing is portable
+132           (the Windows default draws PROC FREQ rules with a non-ASCII byte). */
+133        options nodate nonumber linesize=100 pagesize=32767
+134                formchar="|----|+|---+=|-/\<>*";
+135        
+136        /* 1. Locate this program's folder (the pattern benchmark_lifetest_km.sas
+137           uses), so the transport file beside it can be found. When submitted
+138           interactively rather than in batch, %sysfunc(getoption(sysin)) is
+139           blank: set script_dir by hand before running (see the header). */
+140        %let script_dir = %sysfunc(tranwrd(%sysfunc(getoption(sysin)),
+140      ! benchmark_recurrent_phreg.sas, %str()));
+141        %let xpt_path = &script_dir.cgdrec.xpt;
+142        
+143        /* 2. Read the transport file written by write_sas_data(cgd_recurrent_data()).
+144           The transport member name is the file stem, CGDREC. */
+145        libname cgd_xpt xport "&xpt_path";
+NOTE: Libref CGD_XPT was successfully assigned as follows: 
+      Engine:        XPORT 
+      Physical Name: 
+      C:\Users\jkyle\Documents\GitHub\TempleCBE\.claude\worktrees\templecbe-round2-patch-e8f7c6\inst
+      \sas\cgdrec.xpt
+146        data work.cgd;
+147            set cgd_xpt.cgdrec;
+148        run;
+
+NOTE: There were 203 observations read from the data set CGD_XPT.CGDREC.
+NOTE: The data set WORK.CGD has 203 observations and 8 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.01 seconds
+      
+
+149        libname cgd_xpt clear;
+NOTE: Libref CGD_XPT has been deassigned.
+150        
+151        /* Import check: 203 intervals, 76 events, 127 censored. */
+152        title1 "CGD recurrent data check (PROC FREQ)";
+153        proc freq data=work.cgd;
+154            tables status / nocum;
+155        run;
+
+NOTE: There were 203 observations read from the data set WORK.CGD.
+NOTE: The PROCEDURE FREQ printed page 1.
+NOTE: PROCEDURE FREQ used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.06 seconds
+      
+
+156        
+157        /* 3. Derive the gap times and the (capped) event number from
+158           (tstart, tstop, status) alone, in the same way recurrent_cox()
+159           model = "pwp_gap" does in R: gap time restarts at the previous
+160           event (0 before the first), and event_no is 1 + the number of
+161           earlier events of the patient. enum3 pools event numbers 3 and
+162           above into one stratum (44 / 17 / 15 events). */
+163        proc sort data=work.cgd out=work.cgd_r;
+164            by id tstart;
+165        run;
+
+NOTE: There were 203 observations read from the data set WORK.CGD.
+NOTE: The data set WORK.CGD_R has 203 observations and 8 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+166        
+167        data work.cgd_r;
+168            set work.cgd_r;
+169            by id;
+170            retain _prev_event 0 _n_prior 0;
+171            if first.id then do;
+172                _prev_event = 0;
+173                _n_prior = 0;
+174            end;
+175            event_no = _n_prior + 1;
+176            enum3 = min(event_no, 3);
+177            gap_tstart = tstart - _prev_event;
+178            gap_tstop = tstop - _prev_event;
+179            output;
+180            if status = 1 then do;
+181                _prev_event = tstop;
+182                _n_prior = _n_prior + 1;
+183            end;
+184            drop _prev_event _n_prior;
+185        run;
+
+NOTE: There were 203 observations read from the data set WORK.CGD_R.
+NOTE: The data set WORK.CGD_R has 203 observations and 12 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+186        
+187        /* 4. Andersen-Gill fit: total (study) time, one baseline hazard.
+188           COVS(AGGREGATE) + ID id gives the robust sandwich standard errors
+189           that recurrent_cox() reports; COVM adds the model-based table. */
+190        title1 "Recurrent PHREG -- Andersen-Gill (total time): COVS(AGGREGATE) COVM";
+191        ods output ParameterEstimates=work.phreg_ag_est;
+192        proc phreg data=work.cgd_r covs(aggregate) covm;
+193            model (tstart, tstop)*status(0) = treat sex age / ties=efron rl;
+194            id id;
+195        run;
+
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set WORK.PHREG_AG_EST has 6 observations and 10 variables.
+NOTE: The PROCEDURE PHREG printed page 2.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           0.07 seconds
+      cpu time            0.07 seconds
+      
+
+196        ods output close;
+197        
+198        title1 "ODS ParameterEstimates data set: Andersen-Gill fit";
+199        proc print data=work.phreg_ag_est noobs;
+200        run;
+
+NOTE: There were 6 observations read from the data set WORK.PHREG_AG_EST.
+NOTE: The PROCEDURE PRINT printed page 3.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+201        
+202        /* 5. Prentice-Williams-Peterson gap-time fit: gap time since the
+203           previous infection, baseline hazard per event number (1, 2, 3+). */
+204        title1 "Recurrent PHREG -- PWP gap time: COVS(AGGREGATE) COVM";
+205        ods output ParameterEstimates=work.phreg_gap_est;
+206        proc phreg data=work.cgd_r covs(aggregate) covm;
+207            model (gap_tstart, gap_tstop)*status(0) = treat sex age / ties=efron rl;
+208            strata enum3;
+209            id id;
+210        run;
+
+NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+NOTE: The data set WORK.PHREG_GAP_EST has 6 observations and 10 variables.
+NOTE: The PROCEDURE PHREG printed page 4.
+NOTE: PROCEDURE PHREG used (Total process time):
+      real time           0.05 seconds
+      cpu time            0.06 seconds
+      
+
+211        ods output close;
+212        
+213        title1 "ODS ParameterEstimates data set: PWP gap-time fit";
+214        proc print data=work.phreg_gap_est noobs;
+215        run;
+
+NOTE: There were 6 observations read from the data set WORK.PHREG_GAP_EST.
+NOTE: The PROCEDURE PRINT printed page 5.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+216        
+217        title1;
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           0.86 seconds
+      cpu time            0.87 seconds
+      

@@ -63,7 +63,8 @@
 #'   [recurrent_cox()].
 #' @param readmission_predictors Covariates of the readmission model: a
 #'   character vector of column names, or a one-sided formula such as
-#'   `~ age + sex`.
+#'   `~ age + sex`. In this draft they must be numeric columns (see
+#'   `predict()`).
 #' @param death_predictors Covariates of the death model: a character vector
 #'   of column names, or a one-sided formula. In this draft they must be
 #'   numeric columns (see `predict()`).
@@ -75,7 +76,9 @@
 #' @param conf_level Confidence level of the hazard ratios (default `0.95`).
 #' @return An object of class `joint_readmission_death`: a list with
 #'   `readmission` (the [recurrent_cox()] fit), `death_fit` (the
-#'   [survival::coxph()] death fit), `terms` (a combined tibble with
+#'   [survival::coxph()] death fit, fitted with `model = TRUE`, so the stored
+#'   model frame makes it usable with standard generics such as
+#'   [survival::basehaz()] and [survival::survfit()]), `terms` (a combined tibble with
 #'   `process`, `term`, `estimate`, `std_error`, `hr`, `conf_low`,
 #'   `conf_high`, `statistic` and `p_value`), `death_terms` (the death
 #'   sub-model's terms), `n_subjects`, `n_intervals`, `n_readmissions`,
@@ -154,6 +157,14 @@ joint_readmission_death <- function(data,
   if (length(not_numeric)) {
     stop("Death-model predictors must be numeric columns in this draft; not numeric: ", paste(not_numeric, collapse = ", "), ".", call. = FALSE)
   }
+  # The readmission predictors need the same check: predict() (via
+  # joint_lp()) can only use numeric predictors, and a factor readmission
+  # predictor otherwise fits (coxph dummy-expands it) but can never be
+  # predicted from, since the dummy coefficients never match `vars`.
+  not_numeric_read <- read_vars[!vapply(data[read_vars], is.numeric, logical(1))]
+  if (length(not_numeric_read)) {
+    stop("Readmission-model predictors must be numeric columns in this draft; not numeric: ", paste(not_numeric_read, collapse = ", "), ".", call. = FALSE)
+  }
 
   # Validate the death column: 0/1, only on a subject's last interval, never
   # on the same row as a readmission, and nothing after a death.
@@ -184,7 +195,7 @@ joint_readmission_death <- function(data,
   )
   env <- new.env(parent = asNamespace("survival"))
   death_fml <- stats::as.formula(paste(lhs_str, "~", paste(death_rhs, collapse = " + ")), env = env)
-  death_fit <- survival::coxph(death_fml, data = dd, ties = "efron", model = FALSE, x = FALSE, y = FALSE)
+  death_fit <- survival::coxph(death_fml, data = dd, ties = "efron", model = TRUE, x = FALSE, y = FALSE)
 
   beta <- stats::coef(death_fit)
   keep <- !is.na(beta)

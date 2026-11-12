@@ -2,7 +2,7 @@
 title: "09. End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{08. End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data}
+  %\VignetteIndexEntry{09. End-to-End Nested Survival Run and Multi-Machine Sharding on Rossi Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

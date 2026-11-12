@@ -20,11 +20,13 @@ default); any other value must be a single non-empty string.}
 
 \item{stage_labels}{Named character vector mapping raw stage identifiers to human-readable labels.
 A single `NA` clears the setting; otherwise every entry must be named
-and hold a single non-empty string.}
+and hold a single non-empty string. An empty value (`list()` or
+`character(0)`) means no labels.}
 
 \item{stage_colors}{Named list or character vector mapping stage identifiers to hex colors.
 A single `NA` clears the setting; otherwise every entry must be named
-and hold a single non-empty string.}
+and hold a single non-empty string. An empty value (`list()` or
+`character(0)`) means no colours.}
 
 \item{default_formats}{Optional character vector of default output formats
 for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides

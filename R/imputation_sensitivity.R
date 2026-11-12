@@ -47,7 +47,9 @@
 #' @return A list of class `imputation_sensitivity` with
 #'   \item{strategies}{the strategy names, in order}
 #'   \item{n_imputed}{a tibble with `strategy`, `n_imputed` (missing cells
-#'     filled) and `n_dropped` (rows dropped; non-zero only for
+#'     filled; `NA` when a strategy reordered the rows and changed values,
+#'     so its rows cannot be aligned with `data` without a row id) and
+#'     `n_dropped` (rows dropped; non-zero only for
 #'     `"complete_cases"`)}
 #'   \item{estimates}{a tibble with `term`, `strategy`, `estimate` and
 #'     `std.error`}
@@ -154,11 +156,26 @@ imputation_sensitivity <- function(data, fit_fn, strategies, conf_level = 0.95, 
               " missing value(s) in the completed data.", call. = FALSE)
     }
     # Cells filled are only countable when the completed data has the same
-    # rows and columns as `data` (a strategy that drops or reorders rows,
-    # such as "complete_cases", reports its dropped rows instead).
+    # rows and columns as `data` (a strategy that drops rows, such as
+    # "complete_cases", reports its dropped rows instead), and only when the
+    # rows are still in the same order: a positional comparison miscounts
+    # when a strategy reorders rows. Row names identify the order for data
+    # frames; a pure reordering fills nothing (0), while a reordering
+    # combined with changed values cannot be aligned without a row id, so
+    # it reports NA rather than a positional guess. (Tibbles carry no row
+    # names, so only the pure-reordering case is detected for them.)
+    comp <- NULL
     n_filled <- if (identical(nrow(completed), nrow(data)) &&
                    all(names(data) %in% names(completed))) {
-      sum(is.na(data) & !is.na(completed[, names(data), drop = FALSE]))
+      comp <- completed[, names(data), drop = FALSE]
+      if (.same_row_multiset(comp, data) && !.same_row_sequence(comp, data)) {
+        0L
+      } else if (!is.null(rownames(comp)) && !is.null(rownames(data)) &&
+                 !identical(rownames(comp), rownames(data))) {
+        NA_integer_
+      } else {
+        sum(is.na(data) & !is.na(comp))
+      }
     } else {
       0L
     }
@@ -180,14 +197,18 @@ imputation_sensitivity <- function(data, fit_fn, strategies, conf_level = 0.95, 
   terms <- unique(estimates$term)
   summary_rows <- lapply(terms, function(tm) {
     sub <- estimates[estimates$term == tm, , drop = FALSE]
+    # min()/max() on all-NA estimates return Inf/-Inf (with a warning);
+    # a term with no finite estimate has no minimum, maximum or range.
+    fin <- sub$estimate[is.finite(sub$estimate)]
+    fin_se <- sub$std.error[is.finite(sub$std.error)]
     tibble::tibble(
       term = tm,
       n_strategies = nrow(sub),
-      min = min(sub$estimate, na.rm = TRUE),
-      max = max(sub$estimate, na.rm = TRUE),
-      range = max(sub$estimate, na.rm = TRUE) - min(sub$estimate, na.rm = TRUE),
-      sd = if (nrow(sub) > 1L) stats::sd(sub$estimate) else NA_real_,
-      median_se = stats::median(sub$std.error, na.rm = TRUE)
+      min = if (length(fin)) min(fin) else NA_real_,
+      max = if (length(fin)) max(fin) else NA_real_,
+      range = if (length(fin)) max(fin) - min(fin) else NA_real_,
+      sd = if (length(fin) > 1L) stats::sd(fin) else NA_real_,
+      median_se = if (length(fin_se)) stats::median(fin_se) else NA_real_
     )
   })
   summary <- dplyr::bind_rows(summary_rows)
@@ -227,6 +248,51 @@ print.imputation_sensitivity <- function(x, ...) {
   print(x$summary, n = nrow(x$summary))
   if (!is.null(x$pooled_note)) cat("  pooled: ", x$pooled_note, "\n", sep = "")
   invisible(x)
+}
+
+# One string key per row, so two frames can be compared as a multiset or as
+# a sequence of rows regardless of column types. Missing values get their
+# own token so that a filled cell (NA -> value) changes the key. A frame
+# with a column this cannot stringify (for example a list-column) yields
+# NULL, and the caller falls back to the positional count.
+.row_keys <- function(df) {
+  if (nrow(df) == 0L) {
+    return(character())
+  }
+  keys <- tryCatch(
+    {
+      parts <- lapply(df, function(z) {
+        z <- as.character(z)
+        z[is.na(z)] <- "\001"
+        z
+      })
+      do.call(paste, c(parts, list(sep = "\002")))
+    },
+    error = function(e) NULL
+  )
+  keys
+}
+
+# TRUE when `a` and `b` hold the same rows in any order (a pure reordering
+# fills nothing, so its `n_imputed` is 0); FALSE when the keys cannot be
+# compared or the multisets differ.
+.same_row_multiset <- function(a, b) {
+  ka <- .row_keys(a)
+  kb <- .row_keys(b)
+  if (is.null(ka) || is.null(kb) || length(ka) != length(kb)) {
+    return(FALSE)
+  }
+  identical(sort(ka), sort(kb))
+}
+
+# TRUE when `a` and `b` hold the same rows in the same order.
+.same_row_sequence <- function(a, b) {
+  ka <- .row_keys(a)
+  kb <- .row_keys(b)
+  if (is.null(ka) || is.null(kb)) {
+    return(FALSE)
+  }
+  identical(ka, kb)
 }
 
 # Fill numeric columns with a constant summary (median/mean) and

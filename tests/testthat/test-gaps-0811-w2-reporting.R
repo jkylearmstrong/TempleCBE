@@ -278,25 +278,37 @@ test_that("apply_review_tracker() guards its inputs (A5)", {
 
 # A6/A7: docs pins --------------------------------------------------------------
 
-test_that("README lists all nine vignettes and DESCRIPTION states the full scope (A6, A7)", {
+# DESCRIPTION ships in the built/installed package, so these assertions run
+# under R CMD check too — unlike the README pins below, which used to be
+# skipped together with them.
+test_that("DESCRIPTION states the full scope (A7)", {
   root <- file.path(testthat::test_path(), "..", "..")
-  # README.qmd is .Rbuildignore-d: absent when the tests run from the built/installed package
-  skip_if_not(file.exists(file.path(root, "README.qmd")) && file.exists(file.path(root, "README.md")),
-              "README sources are not part of the built package")
-  readme_md <- readLines(file.path(root, "README.md"), warn = FALSE)
-  readme_qmd <- readLines(file.path(root, "README.qmd"), warn = FALSE)
-  for (lines in list(readme_md, readme_qmd)) {
-    text <- paste(lines, collapse = "\n")
-    expect_match(text, "competing_risks_and_imputation", fixed = TRUE)
-    expect_match(text, "rossi_nested_survival", fixed = TRUE)
-    expect_match(text, "From render to publication", fixed = TRUE)
-    expect_match(text, "apply_review_tracker", fixed = TRUE)
-  }
   desc <- read.dcf(file.path(root, "DESCRIPTION"))
   expect_match(desc[, "Description"], "SAS", fixed = TRUE)
   expect_match(desc[, "Description"], "Python", fixed = TRUE)
   expect_match(desc[, "Description"], "multi-table", fixed = TRUE)
   expect_match(desc[, "Description"], "pipeline", fixed = TRUE)
+})
+
+test_that("README lists all nine vignettes (A6)", {
+  root <- file.path(testthat::test_path(), "..", "..")
+  # README.md ships in the built package; only README.qmd is .Rbuildignore-d,
+  # so the .md pins run under R CMD check and the .qmd pins only from source.
+  # Skip only when neither source is present (installed-package test run).
+  readme_files <- c(
+    file.path(root, "README.md"),
+    file.path(root, "README.qmd")
+  )
+  readme_files <- readme_files[file.exists(readme_files)]
+  skip_if(length(readme_files) == 0L,
+          "README.md and README.qmd are not part of the installed package")
+  for (f in readme_files) {
+    text <- paste(readLines(f, warn = FALSE), collapse = "\n")
+    expect_match(text, "competing_risks_and_imputation", fixed = TRUE)
+    expect_match(text, "rossi_nested_survival", fixed = TRUE)
+    expect_match(text, "From render to publication", fixed = TRUE)
+    expect_match(text, "apply_review_tracker", fixed = TRUE)
+  }
 })
 
 # A8: visualize_pipeline_interactive() ------------------------------------------

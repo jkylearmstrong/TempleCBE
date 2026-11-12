@@ -255,7 +255,7 @@ gap_time_concordance <- function(gap_truth, lp) {
   if (!is.data.frame(gap_truth) || !all(c(".truth") %in% names(gap_truth))) {
     stop("`gap_truth` must be the output of surv_gap_truth().", call. = FALSE)
   }
-  if (!is.numeric(lp) || length(lp) != nrow(gap_truth) || anyNA(lp)) {
+  if (!is.numeric(lp) || length(lp) != nrow(gap_truth) || any(!is.finite(lp))) {
     stop("`lp` must be a numeric vector with one finite value per row of `gap_truth`.", call. = FALSE)
   }
   rlang::check_installed("yardstick", reason = "to compute gap-time concordance.")

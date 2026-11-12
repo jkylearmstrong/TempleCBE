@@ -282,6 +282,8 @@ write_run_manifest <- function(output_dir, targets_result, seed = NULL, seed_sch
 #' @param on_complete Optional callback `function(result)` invoked when `render_pipeline()`
 #'   finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).
 #' @param ... Additional arguments passed to rendering engines.
+#'   Named arguments no engine accepts are ignored with a warning; unnamed
+#'   arguments are always ignored, with a warning naming them.
 #' @return A data frame of rendered files, output formats, durations, and status.
 #' @export
 render_pipeline <- function(path,
@@ -314,6 +316,23 @@ render_pipeline <- function(path,
     formats <- .pipeline_config_value("default_formats", c("pdf", "docx"))
   }
   dots <- list(...)
+  # Unnamed `...` arguments are dropped by the formals filter at every call
+  # site below and would otherwise vanish silently: warn_dropped_dots()
+  # only sees named arguments, and the dry-run return below never reaches
+  # it at all. Warn once, up front, so dry runs warn too.
+  if (length(dots) > 0L) {
+    dot_names <- names(dots)
+    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(!nzchar(dot_names))
+    if (length(unnamed) > 0L) {
+      shown <- vapply(dots[unnamed], function(x) {
+        txt <- paste(deparse(x, width.cutoff = 60L), collapse = " ")
+        if (nchar(txt) > 60L) txt <- paste0(substr(txt, 1L, 57L), "...")
+        txt
+      }, character(1))
+      warning("Ignoring unnamed `...` argument(s) to `render_pipeline()`: ",
+              paste(shown, collapse = ", "), ".", call. = FALSE)
+    }
+  }
   run_with_on_complete(
     fn_name = "render",
     on_complete = on_complete,

@@ -45,7 +45,7 @@ attributes. [read_sas_data()] additionally converts SAS date variables
 (class `Date` already, from `haven`) and leaves SAS datetimes as
 `POSIXct`; it does not strip labels. SAS missing values (`.`, `.A`--`.Z`)
 arrive as `NA`; SAS special missing values are not distinguished on the
-way in, matching the parity boundary in [sas_parity_boundary()] — see the
+way in, matching the parity boundary in [sas_parity_boundary()] - see the
 `PROC COMPARE` row there.
 
 SAS variable names are at most 32 characters; [write_sas_data()] stops
@@ -56,14 +56,15 @@ error: rename first, for example with [reconcile_column_dictionary()].
 
 Note that `haven` 2.5.2 deprecated writing `.sas7bdat` files
 ([haven::write_sas()]) in favour of transport files, so a `.sas7bdat`
-write emits haven's deprecation warning; the write itself still works.
+write warns (with TempleCBE's own message, once per call, rather than
+haven's once-in-a-while lifecycle warning); the write itself still works.
 Prefer `.xpt` for new exports (with its 8-character name limits, checked
 above).
 }
 \examples{
 \donttest{
 if (requireNamespace("haven", quietly = TRUE)) {
-  p <- file.path(tempdir(), "rossi_xpt.xpt")
+  p <- file.path(tempdir(), "rossi.xpt")
   write_sas_data(rossi_data(), p)
   back <- read_sas_data(p)
   nrow(back)

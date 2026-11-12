@@ -30,7 +30,8 @@ Must be a single string without a path separator.}
 
 \item{eval_time, new_data}{Passed to [predict()] for `coxnet_model` /
 `cv_coxnet` / `joint_model` objects to also export a survival matrix.
-Both must be given together; otherwise no survival matrix is written.}
+Both must be given together; otherwise no survival matrix is written.
+`eval_time` must be finite and non-negative.}
 
 \item{penalty}{Penalty passed to [generics::tidy()] / [predict()] for
 `coxnet_model` objects. Defaults to the model's own penalty.}
@@ -45,6 +46,7 @@ alongside `object`, as `dictionary.csv` and `dictionary.json`.}
 that already holds an export with the same `name`.}
 
 \item{x}{The object to print (the result of the function).}
+
 \item{...}{Not used.}
 }
 \value{
@@ -73,9 +75,9 @@ code calling Python from R.
 * A `cv_coxnet` object: coefficients at `"lambda.min"`, `metrics.csv`
   (the cross-validated metrics, when present), and `model.json`.
 * A `joint_model`: the [generics::tidy()] coefficients and `model.json`
-  (component model classes); a survival matrix is added when
-  `predict()` on it returns one in a recognised shape, and skipped with a
-  warning otherwise.
+  (component model classes); a survival matrix is added when `new_data`
+  and `eval_time` are given, from the `.pred_survival` list-column of
+  [predict.joint_model()].
 * A named list: each data-frame element as `<name>_<element>.csv` and the
   whole list as `<name>.json`.
 * A data dictionary passed as `dictionary` (a data frame, for example the
@@ -84,9 +86,12 @@ code calling Python from R.
 
 Every export also writes `manifest.json` (package and R versions, object
 class, file list, creation time) and `<name>_load.py`. The loader exposes
-`load_data()`, `load_coefficients()`, `load_survival()`,
-`load_dictionary()` and `load_manifest()`, each returning `pandas`
-DataFrames when `pandas` is importable and plain lists of dicts otherwise.
+`load_coefficients()`, `load_survival()`, `load_dictionary()` and
+`load_manifest()`, each returning `pandas` DataFrames when `pandas` is
+importable and plain lists of dicts otherwise, and `load_data()` only when
+a data file was actually exported (a data frame or matrix object): model
+exports write no `<name>_data.csv`, so their loaders do not define it
+instead of raising `FileNotFoundError`.
 }
 
 \section{Reticulate pickle format}{

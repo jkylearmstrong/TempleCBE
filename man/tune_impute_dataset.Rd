@@ -27,7 +27,11 @@ tune_impute_dataset(
 
 \item{targets}{Character vector of columns to impute, or `NULL` (default)
 for every incomplete numeric column ( `"workflows"` engine) or every
-incomplete column (`"missforest"` / `"missranger"` engines).}
+incomplete column (`"missforest"` / `"missranger"` engines). For the
+forest engines `targets` only selects which columns are summarised in
+`$summary`: the sweep imputes the whole data set, so non-target
+incomplete columns are filled in `$data` as well (see the Forest engines
+section).}
 
 \item{engine}{`"workflows"`, `"missforest"` or `"missranger"`.}
 
@@ -54,7 +58,9 @@ A list of class `impute_tune_dataset` with
   \item{summary}{one row per imputed variable: `variable`, and for the
     `"workflows"` engine `best_workflow_id`, `rmse`, `null_rmse`, `rse`
     and `n_imputed`; for the forest engines `best_mtry` and `best_error`}
-  \item{data}{`data` with every target column filled in}
+  \item{data}{`data` with every target column filled in; for the forest
+    engines, every incomplete column except `exclude`d ones (see the
+    Forest engines section)}
   \item{engine, targets}{the engine used and the variables imputed}
 }
 \description{
@@ -78,10 +84,27 @@ Each variable is tuned against the **original** data (the other columns as
 they stand, with the recipe's own median/mode imputation of predictors),
 not against already-imputed values, so the result does not depend on the
 order variables are tuned in. The completed data takes each tuned
-variable's column from its own fit. A variable that is complete, or that
-is not numeric, is never a target for the `"workflows"` engine; the
-forest engines impute every column they are given (numeric, factor and
-character) except `exclude`d ones.
+variable's column from its own fit. Imputations are **not chained**: an
+earlier target's tuned imputation is never used as a predictor for a later
+target, and no sequential (chained-equations) imputation is intended here.
+A variable that is complete, or that is not numeric, is never a target for
+the `"workflows"` engine; the forest engines impute every column they are
+given (numeric, factor and character) except `exclude`d ones.
+}
+
+\section{Forest engines impute the whole data set}{
+
+With `engine = "missforest"` or `"missranger"`, the sweep
+([missforest_sweep_mtry()] / [missranger_sweep_mtry()]) is run on the
+whole data frame, not on `targets` alone, so `$data` has **every**
+incomplete column filled in — not only the columns named in `targets` —
+except columns in `exclude` (and columns held out by the sweep itself for
+exceeding `max_pct_missing`). `$summary` still reports one row per target
+only, so a non-target column that was filled is not listed there. When
+`targets` is `NULL` (the default) this is invisible, because every
+incomplete column is then a target; it only matters when `targets` names a
+subset. If only the target columns should be filled, use the
+`"workflows"` engine, or pass the non-target columns in `exclude`.
 }
 
 \examples{

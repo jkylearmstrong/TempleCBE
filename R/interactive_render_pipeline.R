@@ -92,9 +92,11 @@ interactive_render_pipeline <- function(all_file_objects, ...) {
     stop("No item given; nothing was rendered.", call. = FALSE)
   }
   if (grepl("^[0-9]+$", answer)) {
-    i <- as.integer(answer)
-    if (i < 1L || i > length(items)) {
-      stop("No item number ", i, " (1 to ", length(items), "); nothing was rendered.", call. = FALSE)
+    # a number too large for an integer coerces to NA (with a warning):
+    # say so plainly instead of erroring on `if (NA)` below
+    i <- suppressWarnings(as.integer(answer))
+    if (is.na(i) || i < 1L || i > length(items)) {
+      stop("No item number ", answer, " (1 to ", length(items), "); nothing was rendered.", call. = FALSE)
     }
     return(i)
   }

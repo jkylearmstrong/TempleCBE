@@ -23,7 +23,8 @@ joint_readmission_death(
 
 \item{readmission_predictors}{Covariates of the readmission model: a
 character vector of column names, or a one-sided formula such as
-`~ age + sex`.}
+`~ age + sex`. In this draft they must be numeric columns (see
+`predict()`).}
 
 \item{death_predictors}{Covariates of the death model: a character vector
 of column names, or a one-sided formula. In this draft they must be
@@ -41,7 +42,9 @@ a gamma frailty for the subject.}
 \value{
 An object of class `joint_readmission_death`: a list with
   `readmission` (the [recurrent_cox()] fit), `death_fit` (the
-  [survival::coxph()] death fit), `terms` (a combined tibble with
+  [survival::coxph()] death fit, fitted with `model = TRUE`, so the stored
+  model frame makes it usable with standard generics such as
+  [survival::basehaz()] and [survival::survfit()]), `terms` (a combined tibble with
   `process`, `term`, `estimate`, `std_error`, `hr`, `conf_low`,
   `conf_high`, `statistic` and `p_value`), `death_terms` (the death
   sub-model's terms), `n_subjects`, `n_intervals`, `n_readmissions`,

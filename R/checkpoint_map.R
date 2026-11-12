@@ -759,6 +759,16 @@ tune_race_survival_checkpointed <- function(object,
     }, character(1))
     paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, shard = shard), NULL))), collapse = "")
   }, error = function(e) {
+    # The per-split fingerprint failed, so the fallback below fingerprints
+    # only the first split -- exactly the weak fingerprint the per-split
+    # computation exists to avoid. Say so loudly instead of caching the
+    # result silently under it.
+    warning(
+      "tune_race_survival_checkpointed(): could not compute the per-split fingerprint (",
+      conditionMessage(e),
+      "); falling back to the first split only, so a change to splits 2..n will not invalidate the cached result.",
+      call. = FALSE
+    )
     compute_tidymodels_split_fingerprint(
       object = object,
       split = resamples$splits[[1]],
