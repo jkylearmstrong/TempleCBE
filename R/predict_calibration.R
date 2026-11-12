@@ -42,17 +42,25 @@ extract_horizon_risk <- function(pred, horizon) {
   if (!is.data.frame(pred)) {
     stop("`pred` must be a tibble from `predict(..., type = \"survival\")`.", call. = FALSE)
   }
-  if (!is.numeric(horizon) || length(horizon) != 1L || is.na(horizon) || horizon < 0) {
-    stop("`horizon` must be a single non-negative time.", call. = FALSE)
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon < 0) {
+    stop("`horizon` must be a single finite, non-negative time.", call. = FALSE)
   }
-  col <- if (".pred" %in% names(pred)) ".pred" else if (".pred_survival" %in% names(pred)) ".pred_survival" else if (".pred_cif" %in% names(pred)) ".pred_cif" else NA_character_
-  if (is.na(col)) {
-    stop("`pred` has neither a `.pred` nor a `.pred_survival` list-column: ",
+  pred_col <- if (".pred" %in% names(pred)) {
+    ".pred"
+  } else if (".pred_survival" %in% names(pred)) {
+    ".pred_survival"
+  } else if (".pred_cif" %in% names(pred)) {
+    ".pred_cif"
+  } else {
+    NA_character_
+  }
+  if (is.na(pred_col)) {
+    stop("`pred` has neither a `.pred`, a `.pred_survival` nor a `.pred_cif` list-column: ",
          "pass the output of `predict(..., type = \"survival\")` (or `predict()` on a `fine_gray()` fit).", call. = FALSE)
   }
-  curves <- pred[[col]]
+  curves <- pred[[pred_col]]
   if (!is.list(curves) || length(curves) != nrow(pred)) {
-    stop("`pred$`", col, " must be a list-column with one curve per row.", call. = FALSE)
+    stop("`pred$`", pred_col, " must be a list-column with one curve per row.", call. = FALSE)
   }
   if (nrow(pred) == 0L) {
     stop("`pred` has no rows: pass the output of `predict(..., type = \"survival\")` for at least one subject.", call. = FALSE)
@@ -60,10 +68,10 @@ extract_horizon_risk <- function(pred, horizon) {
   # A curve carries either survival probabilities (`.pred_survival`, risk is
   # one minus survival) or a Fine-Gray cumulative incidence (`.pred_cif`,
   # risk is the CIF itself). All curves must carry the same one.
-  value_col <- function(cv) {
+  curve_value_col <- function(cv) {
     if (".pred_survival" %in% names(cv)) ".pred_survival" else if (".pred_cif" %in% names(cv)) ".pred_cif" else NA_character_
   }
-  value_cols <- vapply(curves, value_col, character(1))
+  value_cols <- vapply(curves, curve_value_col, character(1))
   if (anyNA(value_cols)) {
     stop("Each curve in `pred` must be a tibble with `.eval_time` and `.pred_survival` (survival predictions) ",
          "or `.eval_time` and `.pred_cif` (Fine-Gray predictions).", call. = FALSE)
@@ -153,8 +161,21 @@ predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
     if (is.null(penalty)) penalty <- "lambda.min"
     pred <- stats::predict(object, new_data, type = "survival", eval_time = horizon, penalty = penalty)
   } else if (inherits(object, "joint_model")) {
-    pred <- stats::predict(object, new_data = new_data, eval_time = horizon, type = "survival")
+    pred <- stats::predict(object, new_data, eval_time = horizon, type = "survival")
   } else if (inherits(object, "cox_time_varying")) {
+    # predict.cox_time_varying() stops on any missing predictor. As for a
+    # Fine-Gray fit, a row it cannot score gets NA risk (and is dropped by
+    # the validation) instead of aborting the whole call.
+    vars <- intersect(union(object$needed_vars, object$tv_vars), names(new_data))
+    ok <- stats::complete.cases(new_data[, vars, drop = FALSE])
+    if (!all(ok)) {
+      risk <- rep(NA_real_, nrow(new_data))
+      if (any(ok)) {
+        part <- stats::predict(object, new_data[ok, , drop = FALSE], type = "survival", eval_time = horizon)
+        risk[ok] <- extract_horizon_risk(part, horizon)
+      }
+      return(risk)
+    }
     pred <- stats::predict(object, new_data, type = "survival", eval_time = horizon)
   } else if (inherits(object, "fine_gray_model")) {
     # The CIF is a step function, so any horizon is a valid prediction time;
@@ -176,7 +197,7 @@ predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
       stop("`", v, "` is not a column of `new_data`.", call. = FALSE)
     }
   }
-  if (!is.numeric(horizon) || length(horizon) != 1L || is.na(horizon) || horizon <= 0) {
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
     stop("`horizon` must be a single positive time.", call. = FALSE)
   }
   if (!is.numeric(new_data[[time_col]])) stop("`time_col` must be numeric.", call. = FALSE)

@@ -66,7 +66,7 @@ tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, f
   if (!is.logical(race) || length(race) != 1L || is.na(race)) {
     stop("`race` must be TRUE or FALSE.", call. = FALSE)
   }
-  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || !is.finite(seed) || seed != round(seed) || abs(seed) > .Machine$integer.max)) {
     stop("`seed` must be a single whole number or NULL.", call. = FALSE)
   }
   # `grid` is passed straight to workflow_map(): a non-integer, a data frame
@@ -140,8 +140,17 @@ tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, f
       # a full-data rset totals nrow(data) instead. Bootstrap splits
       # resample rows with replacement, so their totals legitimately
       # exceed nrow(train) and are exempt (their in_id has duplicates).
-      if (is.null(in_id) || !anyDuplicated(in_id)) {
+      # Rolling-origin splits are time windows, not partitions: they cover
+      # fewer rows than nrow(train) until the last split, so they are
+      # exempt from the total (their indices were range-checked above).
+      if (!inherits(resamples, "rolling_origin") && (is.null(in_id) || !anyDuplicated(in_id))) {
         n_split <- nrow(rsample::analysis(s)) + nrow(rsample::assessment(s))
+        out_id <- s$out_id
+        if (is.numeric(out_id) && !is.null(in_id) && !all(is.na(out_id)) &&
+            length(intersect(in_id, out_id)) > 0L) {
+          stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
+               "a split's analysis and assessment rows overlap.", call. = FALSE)
+        }
         if (n_split != nrow(train)) {
           stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
                "a split covers ", n_split, " rows, not ", nrow(train), ".", call. = FALSE)
@@ -381,7 +390,7 @@ tune_impute_dataset <- function(data, targets = NULL, engine = c("workflows", "m
   # Validate `seed` up front, with the same check tune_impute_workflows()
   # uses, so a non-numeric seed fails here instead of cryptically at
   # `seed + i - 1L` in the per-variable loop (or deep inside a sweep).
-  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || !is.finite(seed) || seed != round(seed) || abs(seed) > .Machine$integer.max)) {
     stop("`seed` must be a single whole number or NULL.", call. = FALSE)
   }
   if (!is.null(exclude) && (!is.character(exclude) || any(!exclude %in% names(data)))) {

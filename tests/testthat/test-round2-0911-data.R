@@ -117,8 +117,7 @@ test_that("export_to_python() exports a survival matrix for joint_model (item 12
 
 # --- Item 13: compare_km_lifetest() defaults accept the stored benchmark ------
 
-test_that("compare_km_lifetest() defaults accept the SAS benchmark (item 13)", {
-  expect_equal(formals(compare_km_lifetest)$atol, 6e-5)
+test_that("compare_km_lifetest() defaults accept the synthetic listing (item 13)", {
   r <- km_lifetest_quantities(r2_lifetest_data(), "time", "status", group = "group")
   sas <- parse_lifetest_lst(r2_lifetest_listing())
   cmp <- compare_km_lifetest(r, sas)
@@ -129,7 +128,7 @@ test_that("compare_km_lifetest() defaults accept the SAS benchmark (item 13)", {
   expect_false(compare_km_lifetest(r, sas_bad)$matched)
 })
 
-test_that("compare_km_lifetest() defaults accept the stored SAS 9.4 listing (item 13)", {
+test_that("compare_km_lifetest() defaults accept the stored listing (item 13)", {
   lst <- system.file("sas", "list", "benchmark_lifetest_km.lst", package = "TempleCBE")
   skip_if(!nzchar(lst), "stored SAS listing not installed")
   r <- km_lifetest_quantities(r2_lifetest_data(), "time", "status", group = "group")

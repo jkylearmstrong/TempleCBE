@@ -31,7 +31,7 @@ Must be a single string without a path separator.}
 \item{eval_time, new_data}{Passed to [predict()] for `coxnet_model` /
 `cv_coxnet` / `joint_model` objects to also export a survival matrix.
 Both must be given together; otherwise no survival matrix is written.
-`eval_time` must be finite and non-negative.}
+`eval_time` must be finite, non-negative, sorted and free of duplicates.}
 
 \item{penalty}{Penalty passed to [generics::tidy()] / [predict()] for
 `coxnet_model` objects. Defaults to the model's own penalty.}

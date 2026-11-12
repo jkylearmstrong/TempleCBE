@@ -1045,8 +1045,8 @@ compare_censoring_weights <- function(object,
         spearman_rho <- 1.0
         kendall_tau <- 1.0
       } else {
-        spearman_rho <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "spearman", use = "complete.obs") else NA_real_
-        kendall_tau <- if (n_valid >= 2) stats::cor(out$ibs_none, out$ibs_ipcw, method = "kendall", use = "complete.obs") else NA_real_
+        spearman_rho <- if (n_valid >= 2) .safe_spearman_cor(out$ibs_none, out$ibs_ipcw) else NA_real_
+        kendall_tau <- if (n_valid >= 2) .safe_spearman_cor(out$ibs_none, out$ibs_ipcw, method = "kendall") else NA_real_
       }
 
       attr(out, "seed") <- shared_seed
@@ -1414,17 +1414,19 @@ print.templecbe_run_comparison <- function(x, ...) {
 #' correlation, not an error.
 #'
 #' @param x,y Numeric vectors to correlate.
+#' @param method Correlation method passed to [stats::cor()]: `"spearman"`
+#'   (default) or `"kendall"`. A constant vector gives `NA` silently.
 #' @return A single number, or `NA_real_` when fewer than two complete pairs
 #'   exist or the correlation cannot be computed.
 #' @keywords internal
 #' @noRd
-.safe_spearman_cor <- function(x, y) {
+.safe_spearman_cor <- function(x, y, method = "spearman") {
   ok <- stats::complete.cases(x, y)
   if (sum(ok) < 2L) {
     return(NA_real_)
   }
   suppressWarnings(tryCatch(
-    stats::cor(x[ok], y[ok], method = "spearman", use = "complete.obs"),
+    stats::cor(x[ok], y[ok], method = method, use = "complete.obs"),
     error = function(e) NA_real_
   ))
 }

@@ -285,7 +285,8 @@ recurrent_cox <- function(data,
   rlang::check_installed("survival", reason = "to fit recurrent-event Cox models.")
   model <- match.arg(model)
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
-  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) ||
+      conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be a number between 0 and 1.", call. = FALSE)
   }
   if (!is.null(max_events) && (!is.numeric(max_events) || length(max_events) != 1L || is.na(max_events) || !is.finite(max_events) || max_events < 1 || max_events != round(max_events))) {

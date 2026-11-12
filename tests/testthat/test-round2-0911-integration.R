@@ -209,6 +209,7 @@ test_that("read_sas_data() example uses an 8-character XPT stem and round-trips 
   rd <- readLines(file.path(r2_root(), "man", "read_sas_data.Rd"), warn = FALSE)
   expect_true(any(grepl("rossi.xpt", rd, fixed = TRUE)))
   expect_false(any(grepl("rossi_xpt", rd, fixed = TRUE)))
+  skip_if_not(file.exists(file.path(r2_root(), "R", "sas_io_data.R")), "R sources not available")
   r_src <- readLines(file.path(r2_root(), "R", "sas_io_data.R"), warn = FALSE)
   expect_false(any(grepl("rossi_xpt", r_src, fixed = TRUE)))
 })
@@ -259,9 +260,11 @@ test_that("export_to_python() loader omits load_data() for model exports but kee
 # Item 40 ---------------------------------------------------------------------
 
 test_that("README narrows the Python claim to one-way export (40)", {
-  skip_if_not(file.exists(file.path(r2_root(), "README.md")), "README.md not in the built package")
-  skip_if_not(file.exists(file.path(r2_root(), "README.qmd")), "README.qmd not in the built package")
-  for (f in c("README.md", "README.qmd")) {
+  # README.qmd is .Rbuildignore-d, so check whichever README files exist and
+  # skip only when there are none.
+  readmes <- Filter(function(f) file.exists(file.path(r2_root(), f)), c("README.md", "README.qmd"))
+  skip_if(length(readmes) == 0L, "no README in this layout")
+  for (f in readmes) {
     text <- paste(readLines(file.path(r2_root(), f), warn = FALSE), collapse = "\n")
     expect_match(text, "One-way export to Python", fixed = TRUE)
     expect_false(grepl("two-way", text, fixed = TRUE))
@@ -278,6 +281,8 @@ test_that("vignettes demonstrate fine_gray()/predict_fine_gray() and export_to_p
   expect_match(cr, "fine_gray(d", fixed = TRUE)
   expect_match(cr, "predict(fg, d[1:3, ]", fixed = TRUE)
   expect_match(cr, "predict_event_risk()", fixed = TRUE)
+  skip_if_not(file.exists(file.path(r2_root(), "vignettes", "reticulate_export.Rmd")),
+              "vignettes are not in the built package")
   rx <- paste(readLines(file.path(r2_root(), "vignettes", "reticulate_export.Rmd"),
                         warn = FALSE), collapse = "\n")
   expect_match(rx, "export_to_python(fit_py", fixed = TRUE)
@@ -313,6 +318,7 @@ test_that("tune_impute_dataset() documents the forest whole-data sweep and no ch
   expect_match(rd, "not chained", fixed = TRUE)
   # Code-read check: the forest branch passes the whole data frame to the
   # sweep (not a targets-only subset), which is what the docs describe.
+  skip_if_not(file.exists(file.path(r2_root(), "R", "tune_impute_workflows.R")), "R sources not available")
   src <- paste(readLines(file.path(r2_root(), "R", "tune_impute_workflows.R"), warn = FALSE),
                collapse = "\n")
   expect_match(src, "sweep <- sweep_fn(data, exclude = exclude", fixed = TRUE)
