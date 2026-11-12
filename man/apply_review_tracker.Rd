@@ -23,6 +23,9 @@ name with `_reviewed` before the extension, beside the report.}
 \item{overwrite}{Logical (default `FALSE`): allow `output` to be an
 existing file. Appending in place (`output` the same file as `report`)
 also needs `overwrite = TRUE`.}
+
+\item{x}{The object to print (the result of the function).}
+\item{...}{Not used.}
 }
 \value{
 Invisibly, a list of class `review_apply` with `output` (the

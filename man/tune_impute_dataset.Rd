@@ -43,6 +43,8 @@ from the tuning data).}
 \item{...}{For the forest engines, passed to [missforest_sweep_mtry()] /
 [missranger_sweep_mtry()] (for example `mtry_values`, `ntree`,
 `num.trees`, `parallel`, `max_pct_missing`, `checkpoint_dir`, `shard`).}
+
+\item{x}{The object to print (the result of the function).}
 }
 \value{
 A list of class `impute_tune_dataset` with

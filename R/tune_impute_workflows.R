@@ -323,6 +323,7 @@ tbl_tune_best_model <- function(x, digits = 3) {
 #'   \item{engine, targets}{the engine used and the variables imputed}
 #' @seealso [tune_impute_workflows()], [missforest_sweep_mtry()],
 #'   [missranger_sweep_mtry()]
+#' @param x The object to print (the result of the function).
 #' @export
 #' @examples
 #' \donttest{

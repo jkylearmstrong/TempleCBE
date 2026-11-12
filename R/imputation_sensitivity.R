@@ -61,6 +61,7 @@
 #'   \item{fits}{named list of the fitted model per strategy}
 #' @seealso [pool_imputations()], [tune_impute_dataset()],
 #'   [missforest_sweep_mtry()], [missranger_sweep_mtry()]
+#' @param x The object to print (the result of the function).
 #' @export
 #' @examples
 #' d <- mtcars

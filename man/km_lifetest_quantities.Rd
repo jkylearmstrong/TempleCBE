@@ -35,6 +35,9 @@ read by [readLines()]), or a single path to one.}
 
 \item{atol, rtol}{Absolute and relative tolerances, as in the other SAS
 parity checks (`helper-sas-reference.R`: SAS prints 4-5 decimals).}
+
+\item{x}{The object to print (the result of the function).}
+\item{...}{Not used.}
 }
 \value{
 [km_lifetest_quantities()]: a tibble with `quantity`, `term`,
@@ -71,16 +74,12 @@ increment.
 
 \section{Status}{
 
-Draft. The R quantities and the listing parser are implemented and tested
-against hand-computed Kaplan-Meier values (see the tests); the SAS side
-has **not** been run yet — no SAS licence is available in this
-environment, so no SAS reference values exist and no
-`tests/testthat/reference/sas_lifetest_km.csv` has been written. The next
-step is to run `benchmark_lifetest_km.sas` in SAS once and store its
-listing under `inst/sas/list/`, as the PHREG/COMPARE/PRINCOMP benchmarks
-did. Until then, [sas_parity_boundary()] lists PROC LIFETEST as
-`"parity"` for the R side only in the sense above; treat the SAS half as
-pending.
+First increment. The R quantities and the listing parser are tested against
+hand-computed Kaplan-Meier values and against a PROC LIFETEST listing from
+SAS 9.4 stored under `inst/sas/list/benchmark_lifetest_km.lst`
+(`benchmark_lifetest_km.sas`). The SAS run showed that SAS prints the
+midpoint of a flat step at exactly 0.5 as the median; the R side follows
+that. Standard errors and confidence limits are not compared.
 }
 
 \section{Follow-up PROCs (not in this increment)}{

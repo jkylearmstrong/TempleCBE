@@ -27,6 +27,8 @@ censoring code, then one code per cause.}
 \item{...}{Passed to `cmprsk::crr()` (for example `maxiter`). Keep the
 default `variance = TRUE`: prediction needs the baseline hazard
 `crr()` stores only then.}
+
+\item{x}{The object to print (the result of the function).}
 }
 \value{
 An object of class `fine_gray_model` with the `crr` fit (`$fit`),

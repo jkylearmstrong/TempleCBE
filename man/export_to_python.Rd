@@ -28,7 +28,7 @@ a `cv_coxnet`, a `joint_model`, or a named list.}
 \item{name}{File-name stem for the artifacts (default `"templecbe_export"`).
 Must be a single string without a path separator.}
 
-\item{eval_time, }{new_data Passed to [predict()] for `coxnet_model` /
+\item{eval_time, new_data}{Passed to [predict()] for `coxnet_model` /
 `cv_coxnet` / `joint_model` objects to also export a survival matrix.
 Both must be given together; otherwise no survival matrix is written.}
 
@@ -43,6 +43,9 @@ alongside `object`, as `dictionary.csv` and `dictionary.json`.}
 
 \item{overwrite}{If `FALSE` (default), refuse to write into a directory
 that already holds an export with the same `name`.}
+
+\item{x}{The object to print (the result of the function).}
+\item{...}{Not used.}
 }
 \value{
 Invisibly, a list of class `python_export` with `path`, `name`,

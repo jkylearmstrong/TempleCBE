@@ -25,6 +25,8 @@ pooled table.}
 
 \item{...}{Passed to [missforest_sweep_mtry()] / [missranger_sweep_mtry()]
 for the `"missforest"` / `"missranger"` strategies.}
+
+\item{x}{The object to print (the result of the function).}
 }
 \value{
 A list of class `imputation_sensitivity` with

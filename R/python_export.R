@@ -50,7 +50,7 @@
 #' @param path Directory the export is written to. Created if needed.
 #' @param name File-name stem for the artifacts (default `"templecbe_export"`).
 #'   Must be a single string without a path separator.
-#' @param eval_time, new_data Passed to [predict()] for `coxnet_model` /
+#' @param eval_time,new_data Passed to [predict()] for `coxnet_model` /
 #'   `cv_coxnet` / `joint_model` objects to also export a survival matrix.
 #'   Both must be given together; otherwise no survival matrix is written.
 #' @param penalty Penalty passed to [generics::tidy()] / [predict()] for
@@ -65,6 +65,8 @@
 #'   `object_class`, `format` and the `files` written (absolute paths).
 #' @seealso [find_python()], [reconcile_column_dictionary()],
 #'   [adapter_tidymodels_survex()]
+#' @param x The object to print (the result of the function).
+#' @param ... Not used.
 #' @export
 #' @examples
 #' \donttest{

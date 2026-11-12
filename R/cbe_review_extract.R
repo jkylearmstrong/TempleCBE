@@ -5221,6 +5221,8 @@ validate_review_tracker <- function(tracker,
 #'   `n_applied`.
 #' @seealso [review_tracker()], [format_review_tracker()],
 #'   [validate_review_tracker()]
+#' @param x The object to print (the result of the function).
+#' @param ... Not used.
 #' @export
 #' @examples
 #' tracker <- data.frame(

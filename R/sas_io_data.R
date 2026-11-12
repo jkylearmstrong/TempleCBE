@@ -75,7 +75,7 @@ rossi_data <- function(format = c("csv", "sas")) {
 #' (class `Date` already, from `haven`) and leaves SAS datetimes as
 #' `POSIXct`; it does not strip labels. SAS missing values (`.`, `.A`--`.Z`)
 #' arrive as `NA`; SAS special missing values are not distinguished on the
-#' way in, matching the parity boundary in [sas_parity_boundary()] — see the
+#' way in, matching the parity boundary in [sas_parity_boundary()] - see the
 #' `PROC COMPARE` row there.
 #'
 #' SAS variable names are at most 32 characters; [write_sas_data()] stops
@@ -246,7 +246,7 @@ sas_parity_boundary <- function() {
       "inst/sas/benchmark_princomp_iris.sas; tests/testthat/test-sas_parity_reference.R",
       "cbe_exact2x2 tests",
       "compare_df() documents the difference: SAS special missing values are not part of the benchmark",
-      "inst/sas/benchmark_lifetest_km.sas (draft; SAS listing not yet run — see ?compare_km_lifetest)",
+      "inst/sas/benchmark_lifetest_km.sas (run on SAS 9.4; listing in inst/sas/list - see ?compare_km_lifetest)",
       "Follow-up work; no benchmark program yet",
       "Follow-up work; no benchmark program yet",
       "Follow-up work; no benchmark program yet",
@@ -254,7 +254,7 @@ sas_parity_boundary <- function() {
     ),
     notes = c(
       "Breslow ties; SAS GCONV=1E-8 vs R convergence leaves estimates ~5 decimals apart (see helper-sas-reference.R).",
-      "METHOD=ABSOLUTE only; sign of diff, type-mismatch handling, trailing blanks and length/format/label checks differ — see ?compare_df.",
+      "METHOD=ABSOLUTE only; sign of diff, type-mismatch handling, trailing blanks and length/format/label checks differ - see ?compare_df.",
       "PRINCOMP on iris; agreement on eigenvalues / loadings as benchmarked.",
       "Zero-cell Fisher exact handling matches SAS.",
       "SAS special missing values (.A-.Z) are not distinguished on read; see ?read_sas_data.",

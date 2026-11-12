@@ -33,6 +33,7 @@
 #' @seealso [predict.fine_gray_model()], [predict_fine_gray()],
 #'   [tbl_fine_gray_multi()], [tbl_fine_gray_single()],
 #'   [tbl_cumulative_incidence()]
+#' @param x The object to print (the result of the function).
 #' @export
 #' @examples
 #' if (requireNamespace("cmprsk", quietly = TRUE)) {
