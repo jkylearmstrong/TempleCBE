@@ -32,7 +32,9 @@ for the `"missforest"` / `"missranger"` strategies.}
 A list of class `imputation_sensitivity` with
   \item{strategies}{the strategy names, in order}
   \item{n_imputed}{a tibble with `strategy`, `n_imputed` (missing cells
-    filled) and `n_dropped` (rows dropped; non-zero only for
+    filled; `NA` when a strategy reordered the rows and changed values,
+    so its rows cannot be aligned with `data` without a row id) and
+    `n_dropped` (rows dropped; non-zero only for
     `"complete_cases"`)}
   \item{estimates}{a tibble with `term`, `strategy`, `estimate` and
     `std.error`}

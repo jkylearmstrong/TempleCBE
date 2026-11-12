@@ -132,6 +132,21 @@ tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, f
         stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
              "a split has row indices outside those rows.", call. = FALSE)
       }
+      # The checks above are heuristic: a split built on the full data
+      # whose indices happen to fall in range and whose rows happen to
+      # have observed targets would pass them. A partition-style split
+      # (vfold, validation split, manual rset) covers every row exactly
+      # once, so its analysis + assessment rows must total nrow(train);
+      # a full-data rset totals nrow(data) instead. Bootstrap splits
+      # resample rows with replacement, so their totals legitimately
+      # exceed nrow(train) and are exempt (their in_id has duplicates).
+      if (is.null(in_id) || !anyDuplicated(in_id)) {
+        n_split <- nrow(rsample::analysis(s)) + nrow(rsample::assessment(s))
+        if (n_split != nrow(train)) {
+          stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
+               "a split covers ", n_split, " rows, not ", nrow(train), ".", call. = FALSE)
+        }
+      }
       for (part in list(rsample::analysis(s), rsample::assessment(s))) {
         if (target %in% names(part) && anyNA(part[[target]])) {
           stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
@@ -292,15 +307,34 @@ tbl_tune_best_model <- function(x, digits = 3) {
 #' they stand, with the recipe's own median/mode imputation of predictors),
 #' not against already-imputed values, so the result does not depend on the
 #' order variables are tuned in. The completed data takes each tuned
-#' variable's column from its own fit. A variable that is complete, or that
-#' is not numeric, is never a target for the `"workflows"` engine; the
-#' forest engines impute every column they are given (numeric, factor and
-#' character) except `exclude`d ones.
+#' variable's column from its own fit. Imputations are **not chained**: an
+#' earlier target's tuned imputation is never used as a predictor for a later
+#' target, and no sequential (chained-equations) imputation is intended here.
+#' A variable that is complete, or that is not numeric, is never a target for
+#' the `"workflows"` engine; the forest engines impute every column they are
+#' given (numeric, factor and character) except `exclude`d ones.
+#'
+#' @section Forest engines impute the whole data set:
+#' With `engine = "missforest"` or `"missranger"`, the sweep
+#' ([missforest_sweep_mtry()] / [missranger_sweep_mtry()]) is run on the
+#' whole data frame, not on `targets` alone, so `$data` has **every**
+#' incomplete column filled in — not only the columns named in `targets` —
+#' except columns in `exclude` (and columns held out by the sweep itself for
+#' exceeding `max_pct_missing`). `$summary` still reports one row per target
+#' only, so a non-target column that was filled is not listed there. When
+#' `targets` is `NULL` (the default) this is invisible, because every
+#' incomplete column is then a target; it only matters when `targets` names a
+#' subset. If only the target columns should be filled, use the
+#' `"workflows"` engine, or pass the non-target columns in `exclude`.
 #'
 #' @param data A data frame.
 #' @param targets Character vector of columns to impute, or `NULL` (default)
 #'   for every incomplete numeric column ( `"workflows"` engine) or every
-#'   incomplete column (`"missforest"` / `"missranger"` engines).
+#'   incomplete column (`"missforest"` / `"missranger"` engines). For the
+#'   forest engines `targets` only selects which columns are summarised in
+#'   `$summary`: the sweep imputes the whole data set, so non-target
+#'   incomplete columns are filled in `$data` as well (see the Forest engines
+#'   section).
 #' @param engine `"workflows"`, `"missforest"` or `"missranger"`.
 #' @param exclude Character vector of columns to hold out of the imputation
 #'   entirely (identifiers, time columns). Passed through to the sweep for
@@ -319,7 +353,9 @@ tbl_tune_best_model <- function(x, digits = 3) {
 #'   \item{summary}{one row per imputed variable: `variable`, and for the
 #'     `"workflows"` engine `best_workflow_id`, `rmse`, `null_rmse`, `rse`
 #'     and `n_imputed`; for the forest engines `best_mtry` and `best_error`}
-#'   \item{data}{`data` with every target column filled in}
+#'   \item{data}{`data` with every target column filled in; for the forest
+#'     engines, every incomplete column except `exclude`d ones (see the
+#'     Forest engines section)}
 #'   \item{engine, targets}{the engine used and the variables imputed}
 #' @seealso [tune_impute_workflows()], [missforest_sweep_mtry()],
 #'   [missranger_sweep_mtry()]
@@ -342,6 +378,12 @@ tune_impute_dataset <- function(data, targets = NULL, engine = c("workflows", "m
                                 race = TRUE, seed = 123, verbose = FALSE, ...) {
   engine <- match.arg(engine)
   if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  # Validate `seed` up front, with the same check tune_impute_workflows()
+  # uses, so a non-numeric seed fails here instead of cryptically at
+  # `seed + i - 1L` in the per-variable loop (or deep inside a sweep).
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+    stop("`seed` must be a single whole number or NULL.", call. = FALSE)
+  }
   if (!is.null(exclude) && (!is.character(exclude) || any(!exclude %in% names(data)))) {
     stop("`exclude` must name columns of `data`.", call. = FALSE)
   }

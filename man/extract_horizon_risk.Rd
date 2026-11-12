@@ -8,9 +8,12 @@ extract_horizon_risk(pred, horizon)
 }
 \arguments{
 \item{pred}{A tibble from `predict(..., type = "survival")`: one row per
-subject, with a `.pred` list-column (from [coxnet()] / [cv_coxnet()]) or a
-`.pred_survival` list-column (from [joint_model()]) whose elements are
-tibbles with `.eval_time` and `.pred_survival`.}
+subject, with a `.pred` list-column (from [coxnet()] / [cv_coxnet()] /
+[cox_time_varying()]) or a `.pred_survival` list-column (from
+[joint_model()]) whose elements are tibbles with `.eval_time` and
+`.pred_survival`; or a tibble from `predict()` on a [fine_gray()] fit,
+with a `.pred` list-column whose elements are tibbles with `.eval_time`
+and `.pred_cif`.}
 
 \item{horizon}{A single time: the horizon the risk applies to. It must be
 one of the `.eval_time` values in `pred`; otherwise an error lists the
@@ -18,16 +21,23 @@ available times.}
 }
 \value{
 `extract_horizon_risk()`: a numeric vector of event probabilities
-  by `horizon`, one per row of `pred`.
+  by `horizon`, one per row of `pred` — one minus survival for survival
+  predictions, the CIF itself for Fine-Gray predictions. A row whose
+  predicted survival is `NA` returns `NA` risk, so the result always
+  aligns with `pred`.
 }
 \description{
 Adapters from the survival-probability output of `predict()` on a
-[coxnet()], [cv_coxnet()] or [joint_model()] fit to the predicted-risk
-inputs of [calibration_table()] and [decision_curve()], so a fitted model
-can be validated without hand-extracting one horizon's probabilities.
-`predict()` returns survival probabilities; calibration and decision curves
-take event probabilities, so the risk at a horizon is one minus the
-survival probability at that horizon.
+[coxnet()], [cv_coxnet()] or [joint_model()] fit — or from the
+cumulative-incidence output of `predict()` on a [fine_gray()] fit — to the
+predicted-risk inputs of [calibration_table()] and [decision_curve()], so a
+fitted model can be validated without hand-extracting one horizon's
+probabilities. `predict()` returns survival probabilities; calibration and
+decision curves take event probabilities, so the risk at a horizon is one
+minus the survival probability at that horizon. For a Fine-Gray fit the
+risk is the cumulative incidence (CIF) at the horizon itself: the
+`.pred_cif` column of the predict output is returned as-is, not subtracted
+from one.
 }
 \examples{
 set.seed(1)

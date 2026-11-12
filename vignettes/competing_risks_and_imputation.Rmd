@@ -93,6 +93,24 @@ cause of interest. It is not the hazard ratio of a Cox model that censors the co
 the two answer different questions. Report the one that matches the question (the incidence a
 patient faces, or the rate among those still at risk), and say which.
 
+### Fitted Fine-Gray model and predicted cumulative incidence
+
+`tbl_fine_gray_single()` is a table only. To predict the cumulative incidence for new subjects,
+fit the model with `fine_gray()` and predict with `predict()` (or `predict_fine_gray()` in one
+step): the result is one CIF curve per subject, at the event times of the cause of interest (or at
+`times`).
+
+```{r fine-gray-fit, eval = requireNamespace("cmprsk", quietly = TRUE)}
+fg <- fine_gray(d, "time", "type", ~ age + arm)
+fg
+predict(fg, d[1:3, ], times = c(5, 10, 20))
+```
+
+The CIF is the probability of the cause of interest by that time in the presence of the competing
+cause. The same fit feeds the validation adapters: `predict_event_risk()` returns the CIF at a
+horizon, and `calibration_from_model()` / `decision_curve_from_model()` accept a `fine_gray_model`
+fit (the outcome is dichotomised to the cause of interest; competing events count as censoring).
+
 ## 4. Pooling multiple imputations
 
 Fit the same model to each of `m` imputed data sets, collect the tidy results, and pool with

@@ -19,7 +19,11 @@ zip_reports(
 \item{reports}{A data frame/tibble with one row per report and columns
 \code{name} (display name), \code{path} (path to the \code{.qmd}
 source — the corresponding \code{.pdf}/\code{.docx}/\code{.html}
-output paths are derived by swapping its extension), and optionally
+output paths are derived by swapping its extension, so every \code{path}
+must end in \code{.qmd} or \code{.Rmd}: any other extension (or none)
+is an error, because the derived output path would otherwise be the
+source itself and the source would be shipped mislabelled as the
+output), and optionally
 \code{stage} (subfolder to group the report under; \code{NA}/empty
 becomes \code{"99_Other"}) and \code{description}. The stage is used as a
 folder name inside the zip, so path separators and the characters a file

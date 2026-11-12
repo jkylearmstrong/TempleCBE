@@ -7,7 +7,8 @@
 predict_event_risk(object, new_data, horizon, penalty = NULL, ...)
 }
 \arguments{
-\item{object}{A fitted `coxnet_model`, `cv_coxnet` or `joint_model` object.}
+\item{object}{A fitted `coxnet_model`, `cv_coxnet`, `joint_model`,
+`cox_time_varying` or `fine_gray_model` object.}
 
 \item{new_data}{A data frame of new predictors, as for `predict()`.}
 
@@ -15,7 +16,8 @@ predict_event_risk(object, new_data, horizon, penalty = NULL, ...)
 
 \item{penalty}{For `coxnet_model`: the penalty to predict at; defaults to
 the model's `penalty`. For `cv_coxnet`: `"lambda.min"` (default),
-`"lambda.1se"`, or a number. Ignored for `joint_model`.}
+`"lambda.1se"`, or a number. Ignored for `joint_model`,
+`cox_time_varying` and `fine_gray_model`.}
 
 \item{...}{Not used.}
 }
@@ -25,9 +27,12 @@ A numeric vector of event probabilities by `horizon`, one per row
 }
 \description{
 Predicts the event probability by `horizon` (one minus the survival
-probability) for new data under a fitted [coxnet()], [cv_coxnet()] or
-[joint_model()] model. This is the model-level adapter: for the raw
-`predict()` output, use [extract_horizon_risk()].
+probability) for new data under a fitted [coxnet()], [cv_coxnet()],
+[joint_model()], [cox_time_varying()] or [fine_gray()] model. This is the
+model-level adapter: for the raw `predict()` output, use
+[extract_horizon_risk()]. For a [fine_gray()] fit the risk is the
+cumulative incidence (CIF) of the cause of interest at `horizon`, not one
+minus a survival probability.
 }
 \details{
 (A plain function dispatching on the model class, not an S3 generic, so it

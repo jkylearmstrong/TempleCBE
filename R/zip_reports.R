@@ -19,7 +19,11 @@
 #' @param reports A data frame/tibble with one row per report and columns
 #'   \code{name} (display name), \code{path} (path to the \code{.qmd}
 #'   source — the corresponding \code{.pdf}/\code{.docx}/\code{.html}
-#'   output paths are derived by swapping its extension), and optionally
+#'   output paths are derived by swapping its extension, so every \code{path}
+#'   must end in \code{.qmd} or \code{.Rmd}: any other extension (or none)
+#'   is an error, because the derived output path would otherwise be the
+#'   source itself and the source would be shipped mislabelled as the
+#'   output), and optionally
 #'   \code{stage} (subfolder to group the report under; \code{NA}/empty
 #'   becomes \code{"99_Other"}) and \code{description}. The stage is used as a
 #'   folder name inside the zip, so path separators and the characters a file
@@ -88,6 +92,14 @@ zip_reports <- function(reports,
   }
   if (nrow(reports) == 0L) {
     stop("`reports` has no rows: there is nothing to zip.", call. = FALSE)
+  }
+  # The output paths below are derived by swapping the source extension, so
+  # a path not ending in `.qmd`/`.Rmd` would derive to itself and the source
+  # would be shipped mislabelled as the PDF/DOCX/HTML output.
+  bad_path <- is.na(reports$path) | !grepl("\\.(qmd|rmd)$", reports$path, ignore.case = TRUE)
+  if (any(bad_path)) {
+    stop("Every `reports$path` must end in `.qmd` or `.Rmd` (the `.qmd` source); ",
+         "these do not: ", paste(reports$path[bad_path], collapse = ", "), ".", call. = FALSE)
   }
   if (!("stage" %in% names(reports))) reports$stage <- NA_character_
   if (!("description" %in% names(reports))) reports$description <- NA_character_

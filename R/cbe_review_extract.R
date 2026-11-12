@@ -4572,6 +4572,20 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
   )
 }
 
+# Combine the `$paths` lists of several `docx_review_extract()` results the
+# way the tables are combined: every named entry (master, forks, manifest,
+# CSV paths) is concatenated across parts, so no part's paths are lost.
+.combine_review_extract_paths <- function(parts) {
+  all_names <- unique(unlist(lapply(parts, function(p) names(p$paths))))
+  out <- lapply(all_names, function(nm) {
+    vals <- lapply(parts, function(p) p$paths[[nm]])
+    vals <- vals[!vapply(vals, is.null, logical(1))]
+    if (length(vals) == 0L) return(NULL)
+    unlist(vals, use.names = TRUE)
+  })
+  stats::setNames(out, all_names)
+}
+
 #' Build a Structured Review Response Tracker Requiring Location and Rationale
 #'
 #' Constructs a review response tracker table (and optional Excel workbook or
@@ -4621,6 +4635,9 @@ review_tracker <- function(extract,
     combine_tbl <- function(field) {
       dplyr::bind_rows(lapply(parts, function(x) x[[field]]))
     }
+    # the `$paths` lists combine the same way as the tables: every named
+    # entry is concatenated across parts, so the master/fork/CSV paths of
+    # parts 2..n are kept instead of being dropped
     extract <- structure(
       list(
         comments = combine_tbl("comments"),
@@ -4630,7 +4647,7 @@ review_tracker <- function(extract,
         docxwalk = combine_tbl("docxwalk"),
         summary = combine_tbl("summary"),
         errors = combine_tbl("errors"),
-        paths = parts[[1]]$paths
+        paths = .combine_review_extract_paths(parts)
       ),
       class = c("docx_review_extract", "cbe_review_extract")
     )

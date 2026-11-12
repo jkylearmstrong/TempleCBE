@@ -25,6 +25,7 @@ existing file. Appending in place (`output` the same file as `report`)
 also needs `overwrite = TRUE`.}
 
 \item{x}{The object to print (the result of the function).}
+
 \item{...}{Not used.}
 }
 \value{

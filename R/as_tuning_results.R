@@ -223,6 +223,26 @@ as_tuning_results <- function(x, ...) {
     # integrated Brier score. A `brier_score` column may be a point Brier
     # score, so it gets the generic "brier" name instead.
     df$.metric <- if (identical(ibs_source, "brier_score")) "brier" else "brier_survival_integrated"
+  } else {
+    # The output's `IBS` column is always an integrated Brier score, so a
+    # `.metric` that says otherwise mislabels it (e.g. an input with
+    # `.metric = "concordance"` and an `ibs` column used to keep
+    # `.metric = "concordance"` next to the new `IBS` column). Overwrite it
+    # with the Brier name and say so; a `.metric` that already names a Brier
+    # metric is left untouched.
+    brier_name <- if (identical(ibs_source, "brier_score")) "brier" else "brier_survival_integrated"
+    brier_names <- c("brier_survival_integrated", "brier_survival", "brier", "ibs")
+    non_brier <- unique(stats::na.omit(df$.metric[!df$.metric %in% brier_names]))
+    if (length(non_brier) || anyNA(df$.metric)) {
+      warning(
+        "The `.metric` column names a non-Brier metric",
+        if (length(non_brier)) paste0(" (", paste(non_brier, collapse = ", "), ")") else " (or is missing)",
+        " but `IBS` holds an integrated Brier score; `.metric` is overwritten with \"",
+        brier_name, "\".",
+        call. = FALSE
+      )
+      df$.metric <- brier_name
+    }
   }
   if (!".estimate" %in% names(df) && "IBS" %in% names(df)) {
     df$.estimate <- df$IBS

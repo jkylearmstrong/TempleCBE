@@ -99,7 +99,7 @@ rossi_data <- function(format = c("csv", "sas")) {
 #' @examples
 #' \donttest{
 #' if (requireNamespace("haven", quietly = TRUE)) {
-#'   p <- file.path(tempdir(), "rossi_xpt.xpt")
+#'   p <- file.path(tempdir(), "rossi.xpt")
 #'   write_sas_data(rossi_data(), p)
 #'   back <- read_sas_data(p)
 #'   nrow(back)
@@ -218,8 +218,8 @@ write_sas_data <- function(data, path, format = c("auto", "sas7bdat", "xpt"), ..
 #'   columns `proc` (SAS procedure or topic), `r_counterpart`, `status`
 #'   (`"parity"`, `"partial"` or `"not_started"`), `evidence` (where the
 #'   agreement was checked) and `notes`.
-#' @seealso [compare_df()], [compare_km_lifetest()], [read_sas_data()],
-#'   [write_sas_data()]
+#' @seealso [compare_df()], [compare_km_lifetest()], [compare_recurrent_phreg()],
+#'   [read_sas_data()], [write_sas_data()]
 #' @export
 #' @examples
 #' sas_parity_boundary()
@@ -227,18 +227,19 @@ sas_parity_boundary <- function() {
   tibble::tibble(
     proc = c(
       "PROC PHREG", "PROC COMPARE", "PROC PRINCOMP", "Zero-cell Fisher",
-      "Missing codes", "PROC LIFETEST", "PROC LOGISTIC", "PROC MIXED / GLIMMIX",
+      "Missing codes", "PROC LIFETEST", "PROC PHREG (recurrent)", "PROC LOGISTIC", "PROC MIXED / GLIMMIX",
       "PROC FREQ", "PROC MEANS"
     ),
     r_counterpart = c(
       "cox_multi() / coxnet()", "compare_df()", "run_pca()",
       "exact2x2()", "add_missing() / compare_df()", "km_single() / survfit() via compare_km_lifetest()",
+      "recurrent_cox() via compare_recurrent_phreg()",
       "glm_single()", "lmm_single() / piecewise_lmm()", "tbl_contingency_2x2()",
       "summary_table()"
     ),
     status = c(
       "parity", "parity", "parity", "parity", "partial",
-      "parity", "not_started", "not_started", "not_started", "not_started"
+      "parity", "parity", "not_started", "not_started", "not_started", "not_started"
     ),
     evidence = c(
       "inst/sas/benchmark_brier_lung.sas, benchmark_brier_lung_full.sas, example_85_7.sas; tests/testthat/test-sas_parity_reference.R",
@@ -246,7 +247,8 @@ sas_parity_boundary <- function() {
       "inst/sas/benchmark_princomp_iris.sas; tests/testthat/test-sas_parity_reference.R",
       "cbe_exact2x2 tests",
       "compare_df() documents the difference: SAS special missing values are not part of the benchmark",
-      "inst/sas/benchmark_lifetest_km.sas (run on SAS 9.4; listing in inst/sas/list - see ?compare_km_lifetest)",
+      "inst/sas/benchmark_lifetest_km.sas; run once on SAS 9.4 (TS1M8), 11 Nov 2026 - listing inst/sas/list/benchmark_lifetest_km.lst, log inst/sas/logs/benchmark_lifetest_km.log; Tier-1 test tests/testthat/test-gaps-0811-w2-data.R",
+      "inst/sas/benchmark_recurrent_phreg.sas; run once on SAS 9.4 (TS1M8), 12 Nov 2026 - listing inst/sas/list/benchmark_recurrent_phreg.lst, log inst/sas/logs/benchmark_recurrent_phreg.log; Tier-1 test tests/testthat/test-round2-0911-sas.R",
       "Follow-up work; no benchmark program yet",
       "Follow-up work; no benchmark program yet",
       "Follow-up work; no benchmark program yet",
@@ -258,7 +260,8 @@ sas_parity_boundary <- function() {
       "PRINCOMP on iris; agreement on eigenvalues / loadings as benchmarked.",
       "Zero-cell Fisher exact handling matches SAS.",
       "SAS special missing values (.A-.Z) are not distinguished on read; see ?read_sas_data.",
-      "First increment beyond the original boundary (B5): KM estimates, median survival and the log-rank test. R quantities and the listing parser are drafted; the SAS reference values are not yet generated.",
+      "First increment beyond the original boundary (B5): KM estimates, median survival and the log-rank test. R quantities agree with the stored SAS 9.4 listing (see ?compare_km_lifetest).",
+      "Recurrent-admission baseline (round 2): Andersen-Gill and PWP gap-time fits on survival::cgd with COVS(AGGREGATE) robust SEs. R quantities agree with the stored SAS 9.4 listing (Efron ties, robust and model-based SEs); see ?compare_recurrent_phreg.",
       "glm_single() has no SAS benchmark; LOGISTIC parity (estimates, odds ratios, Wald tests) is follow-up work.",
       "Mixed-model parity (REML estimates, covariance parameters) is follow-up work.",
       "FREQ parity (chi-square, exact tests beyond zero-cell Fisher) is follow-up work.",

@@ -23,13 +23,15 @@
 #'   `~ age + arm + sex`.
 #' @param failcode Code of the cause of interest (default 1).
 #' @param cencode Code for censoring (default 0).
-#' @param ... Passed to `cmprsk::crr()` (for example `maxiter`). Keep the
-#'   default `variance = TRUE`: prediction needs the baseline hazard
-#'   `crr()` stores only then.
+#' @param ... Passed to `cmprsk::crr()` (for example `maxiter`).
+#'   Prediction works whether `variance` is `TRUE` or `FALSE`: `crr()`
+#'   stores the baseline hazard either way.
 #' @return An object of class `fine_gray_model` with the `crr` fit (`$fit`),
 #'   the design matrix (`$x`), the model terms and factor levels (`$terms`,
 #'   `$xlevels`), the event codes (`$failcode`, `$cencode`), and `n` /
-#'   `n_event` (rows used / events of the cause of interest).
+#'   `n_event` (rows used / events of the cause of interest) / `n_dropped`
+#'   (rows dropped for missing values; a warning reports the count when it
+#'   is not zero).
 #' @seealso [predict.fine_gray_model()], [predict_fine_gray()],
 #'   [tbl_fine_gray_multi()], [tbl_fine_gray_single()],
 #'   [tbl_cumulative_incidence()]
@@ -88,6 +90,7 @@ fine_gray <- function(data, time_col, event_col, formula, failcode = 1, cencode 
 
   rhs <- data[, all.vars(formula), drop = FALSE]
   keep <- !is.na(data[[time_col]]) & !is.na(ev) & stats::complete.cases(rhs)
+  n_dropped <- sum(!keep)
   d <- data[keep, , drop = FALSE]
   ev <- ev[keep]
   time <- d[[time_col]]
@@ -113,12 +116,17 @@ fine_gray <- function(data, time_col, event_col, formula, failcode = 1, cencode 
   }
 
   fit <- cmprsk::crr(ftime = time, fstatus = ev, cov1 = mm, failcode = failcode, cencode = cencode, ...)
+  if (n_dropped > 0L) {
+    warning("`fine_gray()` dropped ", n_dropped, " of ", nrow(data),
+            " rows with missing values in the follow-up time, the event code or a predictor; ",
+            "the fit uses ", nrow(d), " rows.", call. = FALSE)
+  }
   structure(
     list(
       fit = fit, x = mm, terms = terms, xlevels = xlevels,
       time_col = time_col, event_col = event_col, formula = formula,
       failcode = failcode, cencode = cencode,
-      n = nrow(d), n_event = sum(ev == failcode)
+      n = nrow(d), n_event = sum(ev == failcode), n_dropped = n_dropped
     ),
     class = "fine_gray_model"
   )
@@ -139,61 +147,85 @@ fine_gray <- function(data, time_col, event_col, formula, failcode = 1, cencode 
 #' @param ... Not used.
 #' @return A tibble with one row per row of `new_data`: `.pred`, a list-column
 #'   of tibbles with `.eval_time` and `.pred_cif` (the predicted cumulative
-#'   incidence of the cause of interest by that time).
+#'   incidence of the cause of interest by that time). Rows of `new_data`
+#'   with a missing predictor are kept, with an all-`NA` CIF, so the output
+#'   always aligns positionally with `new_data`.
 #' @seealso [fine_gray()], [predict_fine_gray()], [tbl_cumulative_incidence()]
 #' @exportS3Method
 predict.fine_gray_model <- function(object, new_data = NULL, times = NULL, ...) {
   if (!requireNamespace("cmprsk", quietly = TRUE)) {
     stop("Package 'cmprsk' is required for `predict.fine_gray_model()`.", call. = FALSE)
   }
-  if (is.null(object$fit$bfitj)) {
-    stop("This `fine_gray_model` was fitted with `variance = FALSE`, so it holds no baseline ",
-         "hazard; refit with the default `variance = TRUE` to predict.", call. = FALSE)
-  }
   if (is.null(new_data)) {
     new_mm <- object$x
     n_new <- nrow(new_mm)
+    na_rows <- rep(FALSE, n_new)
   } else {
     if (!is.data.frame(new_data)) stop("`new_data` must be a data frame.", call. = FALSE)
-    mf <- tryCatch(
-      stats::model.frame(object$terms, data = new_data, xlev = object$xlevels),
-      error = function(e) stop("Could not encode `new_data` with the training predictors: ", conditionMessage(e), call. = FALSE)
-    )
-    new_mm <- stats::model.matrix(object$terms, data = mf)
-    new_mm <- new_mm[, colnames(new_mm) != "(Intercept)", drop = FALSE]
-    if (!identical(colnames(new_mm), colnames(object$x))) {
-      stop("`new_data` does not give the training predictors (expected: ",
-           paste(colnames(object$x), collapse = ", "), ").", call. = FALSE)
+    if (nrow(new_data) == 0L) stop("`new_data` has no rows.", call. = FALSE)
+    n_new <- nrow(new_data)
+    # Rows with a missing predictor keep their place in the output with an
+    # NA CIF. They are split out before encoding: model.frame() would
+    # otherwise drop them silently (its default na.omit), and model.matrix()
+    # on an all-NA column does not even keep the training columns, so the
+    # dropped rows could not be re-attached afterwards.
+    pred_vars <- all.vars(object$terms)
+    miss_vars <- setdiff(pred_vars, names(new_data))
+    if (length(miss_vars)) {
+      stop("`new_data` is missing predictor(s): ", paste(miss_vars, collapse = ", "), ".", call. = FALSE)
     }
-    n_new <- nrow(new_mm)
+    na_rows <- !stats::complete.cases(new_data[, pred_vars, drop = FALSE])
+    complete_data <- new_data[!na_rows, , drop = FALSE]
+    if (nrow(complete_data) == 0L) {
+      new_mm <- NULL
+    } else {
+      mf <- tryCatch(
+        stats::model.frame(object$terms, data = complete_data, xlev = object$xlevels),
+        error = function(e) stop("Could not encode `new_data` with the training predictors: ", conditionMessage(e), call. = FALSE)
+      )
+      new_mm <- stats::model.matrix(object$terms, data = mf)
+      new_mm <- new_mm[, colnames(new_mm) != "(Intercept)", drop = FALSE]
+      if (!identical(colnames(new_mm), colnames(object$x))) {
+        stop("`new_data` does not give the training predictors (expected: ",
+             paste(colnames(object$x), collapse = ", "), ").", call. = FALSE)
+      }
+    }
   }
-  if (n_new == 0L) stop("`new_data` has no rows.", call. = FALSE)
   if (!is.null(times)) {
     if (!is.numeric(times) || anyNA(times) || any(times < 0)) {
       stop("`times` must be non-negative numbers.", call. = FALSE)
     }
     times <- sort(unique(times))
+    eval_time <- times
+  } else {
+    # the training event times of the cause of interest, from the fit itself
+    eval_time <- object$fit$uftime
   }
 
   # predict.crr() returns a matrix whose first column is the event times and
-  # whose remaining columns are the CIF of one subject each.
-  pr <- cmprsk::predict.crr(object$fit, cov1 = as.matrix(new_mm))
-  uftime <- unname(pr[, 1L])
-  cif <- t(unclass(pr)[, -1L, drop = FALSE]) # rows: subjects, columns: uftime
-  if (!is.null(times)) {
-    # step-function lookup: the value at the latest event time at or before
-    # each requested time, 0 before the first event time
-    idx <- findInterval(times, uftime)
-    cif_req <- matrix(0, nrow = n_new, ncol = length(times))
-    hit <- idx > 0L
-    # no `drop = FALSE` on the replacement side: `[<-` does not take it
-    if (any(hit)) cif_req[, hit] <- cif[, idx[hit], drop = FALSE]
-    cif <- cif_req
-    eval_time <- times
-  } else {
-    eval_time <- uftime
+  # whose remaining columns are the CIF of one subject each. Only the rows
+  # with complete predictors go through it; the NA rows stay NA below.
+  complete_idx <- which(!na_rows)
+  cif <- matrix(NA_real_, nrow = n_new, ncol = length(eval_time))
+  if (length(complete_idx) > 0L) {
+    pr <- cmprsk::predict.crr(object$fit, cov1 = as.matrix(new_mm))
+    uftime <- unname(pr[, 1L])
+    cif_complete <- t(unclass(pr)[, -1L, drop = FALSE]) # rows: subjects, columns: uftime
+    if (!is.null(times)) {
+      # step-function lookup: the value at the latest event time at or before
+      # each requested time, 0 before the first event time
+      idx <- findInterval(times, uftime)
+      cif_req <- matrix(0, nrow = length(complete_idx), ncol = length(times))
+      hit <- idx > 0L
+      # no `drop = FALSE` on the replacement side: `[<-` does not take it
+      if (any(hit)) cif_req[, hit] <- cif_complete[, idx[hit], drop = FALSE]
+      cif_complete <- cif_req
+    } else {
+      eval_time <- uftime
+    }
+    cif[complete_idx, ] <- cif_complete
   }
-  if (any(!is.finite(cif))) stop("Predicted cumulative incidence must be finite.", call. = FALSE)
+  if (any(!is.finite(cif) & !is.na(cif))) stop("Predicted cumulative incidence must be finite.", call. = FALSE)
   cif <- pmin(pmax(cif, 0), 1)
   tibble::tibble(.pred = lapply(seq_len(n_new), function(i) {
     tibble::tibble(.eval_time = eval_time, .pred_cif = cif[i, ])

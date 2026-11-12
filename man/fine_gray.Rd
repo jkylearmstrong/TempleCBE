@@ -24,9 +24,9 @@ censoring code, then one code per cause.}
 
 \item{cencode}{Code for censoring (default 0).}
 
-\item{...}{Passed to `cmprsk::crr()` (for example `maxiter`). Keep the
-default `variance = TRUE`: prediction needs the baseline hazard
-`crr()` stores only then.}
+\item{...}{Passed to `cmprsk::crr()` (for example `maxiter`).
+Prediction works whether `variance` is `TRUE` or `FALSE`: `crr()`
+stores the baseline hazard either way.}
 
 \item{x}{The object to print (the result of the function).}
 }
@@ -34,7 +34,9 @@ default `variance = TRUE`: prediction needs the baseline hazard
 An object of class `fine_gray_model` with the `crr` fit (`$fit`),
   the design matrix (`$x`), the model terms and factor levels (`$terms`,
   `$xlevels`), the event codes (`$failcode`, `$cencode`), and `n` /
-  `n_event` (rows used / events of the cause of interest).
+  `n_event` (rows used / events of the cause of interest) / `n_dropped`
+  (rows dropped for missing values; a warning reports the count when it
+  is not zero).
 }
 \description{
 Fits the Fine-Gray (1999) proportional subdistribution hazards model of one

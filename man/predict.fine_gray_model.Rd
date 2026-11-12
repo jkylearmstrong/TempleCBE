@@ -20,7 +20,9 @@ event time of the cause of interest in the training data.}
 \value{
 A tibble with one row per row of `new_data`: `.pred`, a list-column
   of tibbles with `.eval_time` and `.pred_cif` (the predicted cumulative
-  incidence of the cause of interest by that time).
+  incidence of the cause of interest by that time). Rows of `new_data`
+  with a missing predictor are kept, with an all-`NA` CIF, so the output
+  always aligns positionally with `new_data`.
 }
 \description{
 Predicted cumulative incidence of the cause of interest for new subjects

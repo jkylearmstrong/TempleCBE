@@ -32,6 +32,9 @@ articles:
       - eda_and_missingness
       - nested_survival_cv
       - rossi_nested_survival
+      # The compute_graph vignette: the help topic of the same name is also
+      # listed under reference: below. Intentional, not a duplicate (see
+      # tests/testthat/test-gaps-0811-docs.R).
       - compute_graph
       - sas_survival
       - R_to_SAS
@@ -383,6 +386,9 @@ reference:
       Language-, format-, and tool-agnostic dependency graphs, file-level metadata tracking,
       and interactive DAG visualizations for reproducible biostatistical pipelines.
     contents:
+      # The compute_graph help topic: the vignette of the same name is also
+      # listed under articles: above. Intentional, not a duplicate (see
+      # tests/testthat/test-gaps-0811-docs.R).
       - compute_graph
       - pipeline_config
       - pipeline_summary

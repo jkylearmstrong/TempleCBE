@@ -11,7 +11,7 @@ km_lifetest_quantities(data, time, status, group = NULL, conf_level = 0.95)
 
 parse_lifetest_lst(lines)
 
-compare_km_lifetest(r, sas, atol = 6e-06, rtol = 5e-04)
+compare_km_lifetest(r, sas, atol = 6e-05, rtol = 5e-04)
 
 \method{print}{km_lifetest_comparison}(x, ...)
 }
@@ -34,9 +34,14 @@ read by [readLines()]), or a single path to one.}
 [km_lifetest_quantities()] and [parse_lifetest_lst()].}
 
 \item{atol, rtol}{Absolute and relative tolerances, as in the other SAS
-parity checks (`helper-sas-reference.R`: SAS prints 4-5 decimals).}
+parity checks (`helper-sas-reference.R`: SAS prints 4-5 decimals).
+The defaults are set to the listing's own precision: SAS prints 4
+decimals, so rounding alone can move a small quantity by up to 5e-05,
+and `atol = 6e-5` accepts that while still failing a genuinely
+different value.}
 
 \item{x}{The object to print (the result of the function).}
+
 \item{...}{Not used.}
 }
 \value{
@@ -74,12 +79,21 @@ increment.
 
 \section{Status}{
 
-First increment. The R quantities and the listing parser are tested against
-hand-computed Kaplan-Meier values and against a PROC LIFETEST listing from
-SAS 9.4 stored under `inst/sas/list/benchmark_lifetest_km.lst`
-(`benchmark_lifetest_km.sas`). The SAS run showed that SAS prints the
-midpoint of a flat step at exactly 0.5 as the median; the R side follows
-that. Standard errors and confidence limits are not compared.
+Run once on SAS 9.4 (TS1M8, Temple University licence, 11 November 2026).
+The benchmark program `inst/sas/benchmark_lifetest_km.sas` was run and its
+listing stored at `inst/sas/list/benchmark_lifetest_km.lst` (log at
+`inst/sas/logs/benchmark_lifetest_km.log`). [parse_lifetest_lst()] parses
+the stored listing and [compare_km_lifetest()] agrees with
+[km_lifetest_quantities()] on the benchmark data (13 rows: 8 KM survival
+estimates, both medians, the log-rank test) at the tolerances the Tier-1
+test uses (`atol = 1e-4`, `rtol = 1e-3`; SAS prints 4 decimals), asserted
+in `tests/testthat/test-gaps-0811-w2-data.R`; [sas_parity_boundary()]
+lists PROC LIFETEST as `"parity"` on that evidence. No reference CSV is
+kept: the test parses the stored listing directly, so no
+`tests/testthat/reference/sas_lifetest_km.csv` exists or is needed. Note
+the stored log still echoes the pre-run "DRAFT / has not been run" comment
+text from the program as it stood at run time; the program header has
+since been updated, and the log is kept as run evidence, not re-written.
 }
 
 \section{Follow-up PROCs (not in this increment)}{

@@ -1,7 +1,8 @@
 # Draft Part 2 data/SAS/Python features (fresh-review A2, A3, B2, B4, B5).
-# Tier note: the SAS half of B5 is a draft — no SAS licence is available here,
-# so the LIFETEST tests check the R quantities against hand-computed values
-# and the listing parser against a synthetic listing, not against SAS output.
+# B5: the SAS 9.4 LIFETEST run has happened — the listing and log are stored
+# under inst/sas/list/ and inst/sas/logs/, and the Tier-1 test below parses
+# the stored listing and compares it with the R quantities. The hand-computed
+# values and the synthetic listing are still used for the R-side unit tests.
 # The workflowsets/finetune/tune/parsnip and missForest/missRanger tests are
 # skipped when those Suggests packages are absent (as on this machine); CI
 # exercises them.
@@ -141,7 +142,7 @@ test_that("sas_parity_boundary() documents the boundary, including LIFETEST and 
   expect_equal(b$status[b$proc == "PROC MEANS"], "not_started")
 })
 
-# --- B5: PROC LIFETEST parity (R side; SAS run pending) -----------------------
+# --- B5: PROC LIFETEST parity (SAS 9.4 run stored; Tier-1 test below) --------
 
 test_that("benchmark_lifetest_km.sas holds the benchmark data typed in R", {
   sas <- sas_datalines(

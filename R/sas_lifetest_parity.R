@@ -23,12 +23,21 @@
 #' increment.
 #'
 #' @section Status:
-#' First increment. The R quantities and the listing parser are tested against
-#' hand-computed Kaplan-Meier values and against a PROC LIFETEST listing from
-#' SAS 9.4 stored under `inst/sas/list/benchmark_lifetest_km.lst`
-#' (`benchmark_lifetest_km.sas`). The SAS run showed that SAS prints the
-#' midpoint of a flat step at exactly 0.5 as the median; the R side follows
-#' that. Standard errors and confidence limits are not compared.
+#' Run once on SAS 9.4 (TS1M8, Temple University licence, 11 November 2026).
+#' The benchmark program `inst/sas/benchmark_lifetest_km.sas` was run and its
+#' listing stored at `inst/sas/list/benchmark_lifetest_km.lst` (log at
+#' `inst/sas/logs/benchmark_lifetest_km.log`). [parse_lifetest_lst()] parses
+#' the stored listing and [compare_km_lifetest()] agrees with
+#' [km_lifetest_quantities()] on the benchmark data (13 rows: 8 KM survival
+#' estimates, both medians, the log-rank test) at the tolerances the Tier-1
+#' test uses (`atol = 1e-4`, `rtol = 1e-3`; SAS prints 4 decimals), asserted
+#' in `tests/testthat/test-gaps-0811-w2-data.R`; [sas_parity_boundary()]
+#' lists PROC LIFETEST as `"parity"` on that evidence. No reference CSV is
+#' kept: the test parses the stored listing directly, so no
+#' `tests/testthat/reference/sas_lifetest_km.csv` exists or is needed. Note
+#' the stored log still echoes the pre-run "DRAFT / has not been run" comment
+#' text from the program as it stood at run time; the program header has
+#' since been updated, and the log is kept as run evidence, not re-written.
 #'
 #' @section Follow-up PROCs (not in this increment):
 #' `PROC LOGISTIC` (counterpart [glm_single()]), `PROC MIXED` / `GLIMMIX`
@@ -65,6 +74,9 @@
 km_lifetest_quantities <- function(data, time, status, group = NULL, conf_level = 0.95) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
+  }
+  if (nrow(data) == 0L) {
+    stop("`data` must have at least one row.", call. = FALSE)
   }
   for (col in c(time, status, group)) {
     if (!is.null(col) && (!is.character(col) || length(col) != 1L || !col %in% names(data))) {
@@ -237,8 +249,12 @@ parse_lifetest_lst <- function(lines) {
 #'   [km_lifetest_quantities()] and [parse_lifetest_lst()].
 #' @param atol,rtol Absolute and relative tolerances, as in the other SAS
 #'   parity checks (`helper-sas-reference.R`: SAS prints 4-5 decimals).
+#'   The defaults are set to the listing's own precision: SAS prints 4
+#'   decimals, so rounding alone can move a small quantity by up to 5e-05,
+#'   and `atol = 6e-5` accepts that while still failing a genuinely
+#'   different value.
 #' @export
-compare_km_lifetest <- function(r, sas, atol = 6e-6, rtol = 5e-4) {
+compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
   for (nm in c("r", "sas")) {
     tbl <- get(nm)
     if (!is.data.frame(tbl) || !all(c("quantity", "term", "time", "value") %in% names(tbl))) {
@@ -259,16 +275,22 @@ compare_km_lifetest <- function(r, sas, atol = 6e-6, rtol = 5e-4) {
   abs_diff <- abs(r$value - sas_value)
   # A p-value SAS prints as <.0001 parses to NA: it matches when R's value
   # is below 1e-4, and is otherwise unassessable rather than a failure.
+  # Likewise a quantity that is NA on both sides (for example a median
+  # neither side reaches) is agreement, not a failure.
+  both_na <- is.na(r$value) & is.na(sas_value)
   matched <- ifelse(
     is.na(sas_value) & r$quantity == "logrank_p",
     !is.na(r$value) & r$value < 1e-4,
-    !is.na(abs_diff) & (abs_diff <= atol | abs_diff <= rtol * abs(sas_value))
+    both_na | (!is.na(abs_diff) & (abs_diff <= atol | abs_diff <= rtol * abs(sas_value)))
   )
   table <- tibble::tibble(
     quantity = r$quantity, term = r$term, time = r$time,
     r_value = r$value, sas_value = sas_value, abs_diff = abs_diff, matched = matched
   )
-  out <- list(table = table, matched = all(matched), max_abs_diff = max(abs_diff, na.rm = TRUE))
+  out <- list(
+    table = table, matched = all(matched),
+    max_abs_diff = if (all(is.na(abs_diff))) NA_real_ else max(abs_diff, na.rm = TRUE)
+  )
   class(out) <- c("km_lifetest_comparison", "list")
   out
 }

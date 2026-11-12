@@ -46,10 +46,12 @@ NULL
 #'   default); any other value must be a single non-empty string.
 #' @param stage_labels Named character vector mapping raw stage identifiers to human-readable labels.
 #'   A single `NA` clears the setting; otherwise every entry must be named
-#'   and hold a single non-empty string.
+#'   and hold a single non-empty string. An empty value (`list()` or
+#'   `character(0)`) means no labels.
 #' @param stage_colors Named list or character vector mapping stage identifiers to hex colors.
 #'   A single `NA` clears the setting; otherwise every entry must be named
-#'   and hold a single non-empty string.
+#'   and hold a single non-empty string. An empty value (`list()` or
+#'   `character(0)`) means no colours.
 #' @param default_formats Optional character vector of default output formats
 #'   for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
 #'   the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
@@ -180,7 +182,12 @@ pipeline_config <- function(
       stop("`", name, "` must be a named character vector or a named list of single strings (or a single `NA` to clear it).", call. = FALSE)
     }
     vals <- if (is.list(value)) value else as.list(value)
-    if (length(vals) == 0L || is.null(names(vals)) || anyNA(names(vals)) || any(!nzchar(trimws(names(vals))))) {
+    if (length(vals) == 0L) {
+      # an empty value is a natural "no labels / no colours": accept it as
+      # the empty list, the same shape as the unset default
+      return(list())
+    }
+    if (is.null(names(vals)) || anyNA(names(vals)) || any(!nzchar(trimws(names(vals))))) {
       stop("`", name, "` must have a non-empty name for every entry.", call. = FALSE)
     }
     bad <- vapply(vals, function(v) !is.character(v) || length(v) != 1L || is.na(v) || !nzchar(trimws(v)), logical(1))

@@ -91,7 +91,9 @@ outputs stored in `pipeline_hashes.json`).}
 \item{on_complete}{Optional callback `function(result)` invoked when `render_pipeline()`
 finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 
-\item{...}{Additional arguments passed to rendering engines.}
+\item{...}{Additional arguments passed to rendering engines.
+Named arguments no engine accepts are ignored with a warning; unnamed
+arguments are always ignored, with a warning naming them.}
 }
 \value{
 A data frame of rendered files, output formats, durations, and status.

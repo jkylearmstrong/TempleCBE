@@ -24,6 +24,6 @@ them, PROC LIFETEST).
 sas_parity_boundary()
 }
 \seealso{
-[compare_df()], [compare_km_lifetest()], [read_sas_data()],
-  [write_sas_data()]
+[compare_df()], [compare_km_lifetest()], [compare_recurrent_phreg()],
+  [read_sas_data()], [write_sas_data()]
 }
