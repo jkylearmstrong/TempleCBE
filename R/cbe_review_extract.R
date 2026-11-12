@@ -427,8 +427,11 @@ docx_review_extract <- function(input_dir = NULL,
   # 7. Generate Excel Master Workbook (backed up first, now that it will be written).
   # Cell values, per-document figures, the crosswalk and the comment summary are the
   # same in every workbook of the run, so they are prepared once and the master and
-  # the forks are written from them.
-  backup_review_file(master_tracker_path)
+  # the forks are written from them. A failed backup stops the run: overwriting
+  # the tracker without one would lose the state before this run.
+  if (file.exists(master_tracker_path) && is.null(backup_review_file(master_tracker_path))) {
+    stop("Could not back up the existing tracker '", master_tracker_path, "' before overwriting it; nothing was written.", call. = FALSE)
+  }
   prepared <- prepare_review_workbook_data(
     columns = comments_columns,
     comments_rows = merged_comments,
@@ -470,7 +473,9 @@ docx_review_extract <- function(input_dir = NULL,
   for (rev in fork_reviewers) {
     fork_filename <- sprintf("%s_%s%s", tracker_base, rev, tracker_ext)
     fork_path <- file.path(output_dir, fork_filename)
-    backup_review_file(fork_path)
+    if (file.exists(fork_path) && is.null(backup_review_file(fork_path))) {
+      stop("Could not back up the existing fork tracker '", fork_path, "' before overwriting it; nothing was written.", call. = FALSE)
+    }
 
     write_review_tracker_excel(
       columns = comments_columns,
@@ -641,6 +646,12 @@ print.cbe_review_extract <- print.docx_review_extract
 #' existing columns, keep configuring the same reviewer identifiers used
 #' when that file was created.
 #'
+#' The settings are kept in the session options (\code{review.fork_reviewers}
+#' and so on): they persist for the rest of the R session and are read by
+#' \code{\link{docx_review_extract}} and the tracker functions, so a call
+#' here changes later review calls in the same session. \code{reset = TRUE}
+#' clears them back to the defaults; there is no per-call override.
+#'
 #' @param fork_reviewers Character vector of fork-reviewer identifiers. An id
 #'   is used as a column name, as a fork-workbook file suffix and (with
 #'   \code{documents_sheet_mode = "per_reviewer"}) in a sheet name, so it is
@@ -719,6 +730,9 @@ review_config <- function(
   reset = FALSE
 ) {
   # Validate everything before setting anything, so a rejected call changes nothing
+  if (!is.logical(reset) || length(reset) != 1L || is.na(reset)) {
+    stop("`reset` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
   ids <- validate_reviewer_ids(fork_reviewers, signoff_reviewers)
   if (!is.null(documents_sheet_mode)) {
     documents_sheet_mode <- match.arg(documents_sheet_mode, c("columns", "per_reviewer"))
@@ -1526,12 +1540,20 @@ find_default_review_input_dir <- function(input_dirs = review_config()$input_dir
 #' same second used to share a name, so the second erased the first backup and
 #' the state before the first run was lost.
 #' @param filepath Path to file
-#' @return Backup path or NULL
+#' @return Backup path, or `NULL` when there is nothing to back up (the file
+#'   does not exist) or the backup could not be made (a warning is issued);
+#'   callers that are about to overwrite the file must stop on that `NULL`.
 #' @noRd
 backup_review_file <- function(filepath) {
   if (!file.exists(filepath)) return(NULL)
   bdir <- file.path(dirname(filepath), "backups")
-  if (!dir.exists(bdir)) dir.create(bdir, recursive = TRUE, showWarnings = FALSE)
+  if (!dir.exists(bdir)) {
+    dir.create(bdir, recursive = TRUE, showWarnings = FALSE)
+    if (!dir.exists(bdir)) {
+      warning("Could not create the backup directory '", bdir, "'; no backup of '", filepath, "' was made.", call. = FALSE)
+      return(NULL)
+    }
+  }
   now <- Sys.time()
   ts <- sprintf("%s_%03d", format(now, "%Y%m%d_%H%M%S"), as.integer((as.numeric(now) %% 1) * 1000))
   stem <- tools::file_path_sans_ext(basename(filepath))
@@ -1543,7 +1565,10 @@ backup_review_file <- function(filepath) {
     counter <- counter + 1L
     bak_path <- file.path(bdir, sprintf("%s_%s_%d%s.bak", stem, ts, counter, ext))
   }
-  file.copy(filepath, bak_path, overwrite = FALSE)
+  if (!isTRUE(file.copy(filepath, bak_path, overwrite = FALSE))) {
+    warning("Could not back up '", filepath, "' to '", bak_path, "'; no backup was made.", call. = FALSE)
+    return(NULL)
+  }
   bak_path
 }
 
@@ -2375,20 +2400,44 @@ load_existing_tracker <- function(tracker_path) {
   )
   if (!file.exists(tracker_path)) return(res)
 
-  sheets <- tryCatch(readxl::excel_sheets(tracker_path), error = function(e) character(0))
+  # A sheet that cannot be read is not silently empty: the tracker may hold
+  # sign-offs that would be lost if the run rewrote it from an empty read
+  sheets <- tryCatch(
+    readxl::excel_sheets(tracker_path),
+    error = function(e) {
+      warning("Could not list the sheets of '", tracker_path, "': ", conditionMessage(e),
+              "; the tracker is treated as empty.", call. = FALSE)
+      character(0)
+    }
+  )
   if (length(sheets) == 0) return(res)
+
+  read_sheet <- function(sheet) {
+    tryCatch(
+      readxl::read_excel(tracker_path, sheet = sheet, col_types = "text"),
+      error = function(e) {
+        warning("Could not read sheet '", sheet, "' of '", tracker_path, "': ", conditionMessage(e),
+                "; the sheet is treated as empty.", call. = FALSE)
+        tibble::tibble()
+      }
+    )
+  }
 
   # A fork workbook carries the reviewer's cells as they were generated (see
   # build_fork_baseline()); a master or an older fork does not.
   if (FORK_BASELINE_SHEET %in% sheets) {
     res$fork_baseline <- tryCatch(
       readxl::read_excel(tracker_path, sheet = FORK_BASELINE_SHEET, col_types = "text"),
-      error = function(e) NULL
+      error = function(e) {
+        warning("Could not read sheet '", FORK_BASELINE_SHEET, "' of '", tracker_path, "': ", conditionMessage(e),
+                "; the fork baseline is treated as empty.", call. = FALSE)
+        NULL
+      }
     )
   }
 
   if ("Comments" %in% sheets) {
-    df_c <- tryCatch(readxl::read_excel(tracker_path, sheet = "Comments", col_types = "text"), error = function(e) tibble::tibble())
+    df_c <- read_sheet("Comments")
     if (nrow(df_c) > 0 || ncol(df_c) > 0) {
       clean_h <- names(df_c)
       clean_h <- clean_h[!clean_h %in% c("duplicate_count_x", "duplicate_count_y")]
@@ -2398,13 +2447,13 @@ load_existing_tracker <- function(tracker_path) {
   }
 
   if ("TrackedChanges" %in% sheets) {
-    df_tc <- tryCatch(readxl::read_excel(tracker_path, sheet = "TrackedChanges", col_types = "text"), error = function(e) tibble::tibble())
+    df_tc <- read_sheet("TrackedChanges")
     res$revisions <- df_tc
   }
 
   rl_sheet <- intersect(c("SuggestedChanges", "ParagraphRedlines"), sheets)
   if (length(rl_sheet) > 0) {
-    df_rl <- tryCatch(readxl::read_excel(tracker_path, sheet = rl_sheet[1], col_types = "text"), error = function(e) tibble::tibble())
+    df_rl <- read_sheet(rl_sheet[1])
     res$redlines <- df_rl
     res$redline_headers <- names(df_rl)
   }
@@ -2417,7 +2466,7 @@ load_existing_tracker <- function(tracker_path) {
   doc_sheets <- c(intersect("Documents", sheets), grep("^Documents_", sheets, value = TRUE))
   doc_map <- list()
   for (sheet in doc_sheets) {
-    df_d <- tryCatch(readxl::read_excel(tracker_path, sheet = sheet, col_types = "text"), error = function(e) tibble::tibble())
+    df_d <- read_sheet(sheet)
     if (nrow(df_d) == 0 || !"file" %in% names(df_d)) next
     for (i in seq_len(nrow(df_d))) {
       fn <- as.character(df_d$file[i])
@@ -2498,12 +2547,28 @@ FORK_BASELINE_SHEET <- "ForkBaseline"
 #' A reviewer's sign-off cell in a canonical form, for comparing cells
 #' @param x Cell values (logical, "TRUE"/"FALSE" text, or anything typed).
 #' @return Character vector: "" for a blank cell, else "TRUE" or "FALSE".
+#'   "TRUE", "yes", "y", "1" and "done" (any case) count as signed off;
+#'   "FALSE", "no", "n" and "0" count as not. Any other non-blank value is
+#'   treated as not signed off, and warned about once per call, so a sign-off
+#'   typed as, say, "ok" is not silently revoked without anyone knowing.
 #' @noRd
 normalize_flag_cell <- function(x) {
   x <- trimws(as.character(x))
   out <- rep("", length(x))
   filled <- !is.na(x) & nzchar(x)
-  out[filled] <- ifelse(toupper(x[filled]) == "TRUE", "TRUE", "FALSE")
+  upper <- toupper(x[filled])
+  truthy <- c("TRUE", "YES", "Y", "1", "DONE")
+  falsy <- c("FALSE", "NO", "N", "0")
+  out[filled] <- ifelse(upper %in% truthy, "TRUE", "FALSE")
+  unknown <- unique(upper[!upper %in% c(truthy, falsy)])
+  if (length(unknown) > 0L) {
+    warning(
+      "Unrecognised sign-off value(s), treated as not signed off: ",
+      paste(unknown, collapse = ", "),
+      ". Recognised values are TRUE/FALSE, yes/no, y/n, 1/0 and done.",
+      call. = FALSE
+    )
+  }
   out
 }
 
@@ -4433,7 +4498,16 @@ write_review_csv <- function(df, path) {
     if (is.factor(col)) col <- as.character(col)
     neutralise_csv_formulas(col)
   })
-  utils::write.csv(df, file = path, row.names = FALSE, fileEncoding = "UTF-8")
+  # write.csv has no BOM option ("UTF-8-BOM" is not a connection encoding,
+  # so fileEncoding = "UTF-8-BOM" errors), so the mark is prepended after
+  # writing: without it, Excel on Windows opens the UTF-8 as the system
+  # code page and non-ASCII text comes out garbled
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp), add = TRUE)
+  utils::write.csv(df, file = tmp, row.names = FALSE, fileEncoding = "UTF-8")
+  bytes <- readBin(tmp, what = "raw", n = file.info(tmp)$size)
+  writeBin(c(as.raw(c(0xef, 0xbb, 0xbf)), bytes), path)
+  invisible(path)
 }
 
 #' Export Tabular Data to CSVs
@@ -4508,8 +4582,9 @@ export_review_csvs <- function(output_dir, columns, comments_rows, revisions_row
 #' by [validate_review_tracker()].
 #'
 #' @param extract An object of class `cbe_review_extract` from
-#'   [docx_review_extract()], a data frame of extracted comments, or a path
-#'   to a `.docx` file or directory of `.docx` files.
+#'   [docx_review_extract()], a data frame of extracted comments, or one or
+#'   more paths, each a `.docx` file or a directory of `.docx` files (several
+#'   paths are extracted one by one and their comments combined).
 #' @param file Optional output path to write the tracker to: `.xlsx`, `.csv`,
 #'   `.docx` or `.md`.
 #' @param format How to write `file`: `"auto"` (default) takes it from the file
@@ -4537,8 +4612,28 @@ review_tracker <- function(extract,
   if (format != "auto" && is.null(file)) {
     stop("`format` = \"", format, "\" needs `file`; use format_review_tracker() to format a tracker in memory.", call. = FALSE)
   }
-  if (is.character(extract) && length(extract) == 1L) {
-    extract <- docx_review_extract(extract, verbose = FALSE)
+  if (is.character(extract)) {
+    if (length(extract) == 0L) {
+      stop("`extract` must be a `cbe_review_extract` object, a data frame, or a path to `.docx` file(s).", call. = FALSE)
+    }
+    # several paths are extracted one by one and their tables combined
+    parts <- lapply(extract, function(p) docx_review_extract(p, verbose = FALSE))
+    combine_tbl <- function(field) {
+      dplyr::bind_rows(lapply(parts, function(x) x[[field]]))
+    }
+    extract <- structure(
+      list(
+        comments = combine_tbl("comments"),
+        revisions = combine_tbl("revisions"),
+        redlines = combine_tbl("redlines"),
+        documents = combine_tbl("documents"),
+        docxwalk = combine_tbl("docxwalk"),
+        summary = combine_tbl("summary"),
+        errors = combine_tbl("errors"),
+        paths = parts[[1]]$paths
+      ),
+      class = c("docx_review_extract", "cbe_review_extract")
+    )
   }
 
   rows_list <- list()
@@ -4564,7 +4659,9 @@ review_tracker <- function(extract,
     if (is.data.frame(cdf) && nrow(cdf) > 0L) {
       comm_txt <- as.character(col_or(cdf, c("comment_text", "comment", "text"), rep("", nrow(cdf))))
       triv_vec <- if ("trivial" %in% names(cdf)) {
-        as.logical(cdf$trivial)
+        # a "trivial" column typed as yes/done/1 is a sign-off, not a
+        # coercion warning: as.logical("yes") is NA (with a warning)
+        normalize_flag_cell(cdf$trivial) == "TRUE"
       } else {
         vapply(comm_txt, is_trivial_comment, logical(1), USE.NAMES = FALSE)
       }
@@ -4602,7 +4699,7 @@ review_tracker <- function(extract,
     n <- nrow(extract)
     comm_txt <- if ("comment" %in% names(extract)) as.character(extract$comment) else if ("comment_text" %in% names(extract)) as.character(extract$comment_text) else if ("text" %in% names(extract)) as.character(extract$text) else rep("", n)
     triv_vec <- if ("trivial" %in% names(extract)) {
-      as.logical(extract$trivial)
+      normalize_flag_cell(extract$trivial) == "TRUE"
     } else {
       vapply(comm_txt, is_trivial_comment, logical(1), USE.NAMES = FALSE)
     }
@@ -4710,10 +4807,20 @@ xml_escape_tracker <- function(x) {
 #' @noRd
 write_tracker_docx <- function(df, file, title) {
   require_packages("zip", "format_review_tracker")
+  # Text inside one <w:t> run: a literal newline is rendered as a space by
+  # Word, so each line gets its own <w:t> with a <w:br/> between them, inside
+  # the same run (so the run's font size and boldness still apply).
+  # (A NUL byte needs no stripping here: R strings cannot hold one -- the
+  # parser rejects a NUL literal -- and XML 1.0 forbids it, so no value
+  # read from a document can carry one.)
+  w_t <- function(txt) {
+    parts <- strsplit(xml_escape_tracker(txt), "\n", fixed = TRUE)[[1]]
+    paste(parts, collapse = "</w:t><w:br/><w:t xml:space=\"preserve\">")
+  }
   cell <- function(txt, bold = FALSE, width = NULL) {
     props <- if (!is.null(width)) sprintf("<w:tcPr><w:tcW w:w=\"%d\" w:type=\"dxa\"/></w:tcPr>", width) else ""
     run_props <- if (bold) "<w:rPr><w:b/><w:sz w:val=\"18\"/></w:rPr>" else "<w:rPr><w:sz w:val=\"18\"/></w:rPr>"
-    sprintf("<w:tc>%s<w:p><w:r>%s<w:t xml:space=\"preserve\">%s</w:t></w:r></w:p></w:tc>", props, run_props, xml_escape_tracker(txt))
+    sprintf("<w:tc>%s<w:p><w:r>%s<w:t xml:space=\"preserve\">%s</w:t></w:r></w:p></w:tc>", props, run_props, w_t(txt))
   }
   total <- 13000L
   widths <- rep(as.integer(total / max(ncol(df), 1L)), ncol(df))
@@ -4731,7 +4838,7 @@ write_tracker_docx <- function(df, file, title) {
     "</w:tblBorders>"
   )
   body <- paste0(
-    "<w:p><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr><w:t>", xml_escape_tracker(title), "</w:t></w:r></w:p>",
+    "<w:p><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr><w:t>", w_t(title), "</w:t></w:r></w:p>",
     "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/>", borders, "</w:tblPr>", header, paste(rows, collapse = ""), "</w:tbl>",
     "<w:sectPr><w:pgSz w:w=\"15840\" w:h=\"12240\" w:orient=\"landscape\"/>",
     "<w:pgMar w:top=\"720\" w:right=\"720\" w:bottom=\"720\" w:left=\"720\" w:header=\"360\" w:footer=\"360\" w:gutter=\"0\"/></w:sectPr>"
@@ -4763,7 +4870,11 @@ write_tracker_docx <- function(df, file, title) {
   write_utf8(rels, file.path(stage, "_rels", ".rels"))
   write_utf8(document, file.path(stage, "word", "document.xml"))
   target <- normalizePath(file, winslash = "/", mustWork = FALSE)
-  if (file.exists(target)) unlink(target)
+  # the target is removed so the zip starts clean; if it cannot be removed
+  # (open in Word, say) the zip would fail or leave a half-written file, so stop
+  if (file.exists(target) && unlink(target) != 0L) {
+    stop("Could not remove the existing '", target, "' before writing the tracker.", call. = FALSE)
+  }
   zip::zipr(target, files = list.files(stage, all.files = TRUE, no.. = TRUE), root = stage, mode = "mirror")
   invisible(file)
 }
@@ -4877,6 +4988,9 @@ format_review_tracker <- function(changes_df,
 #' @param error_on_invalid Logical (default `TRUE`). When `TRUE`, stops with an
 #'   informative error listing all invalid rows. When `FALSE`, returns a
 #'   validation report object with `$valid = FALSE` and `$issues`.
+#' @param sheet Sheet to read when `tracker` is an `.xlsx` file path. Defaults
+#'   to the `"Review Tracker"` sheet when the workbook has one, else the first
+#'   sheet. Ignored for a data frame or a `.csv` path.
 #' @return A list of class `cbe_review_tracker_validation` with elements
 #'   `valid` (logical), `n_rows` (integer), `n_invalid` (integer), and
 #'   `issues` (a tibble with columns `row`, `item_id`, `file`, `status`, and
@@ -4885,17 +4999,35 @@ format_review_tracker <- function(changes_df,
 #' @export
 validate_review_tracker <- function(tracker,
                                     allow_open = FALSE,
-                                    error_on_invalid = TRUE) {
+                                    error_on_invalid = TRUE,
+                                    sheet = NULL) {
   if (is.character(tracker) && length(tracker) == 1L) {
     if (!file.exists(tracker)) {
       stop(sprintf("Tracker file does not exist: %s", tracker), call. = FALSE)
     }
     ext <- tolower(tools::file_ext(tracker))
+    if (!is.null(sheet) && (!is.character(sheet) || length(sheet) != 1L || is.na(sheet) || !nzchar(sheet))) {
+      stop("`sheet` must be a single non-empty sheet name.", call. = FALSE)
+    }
     tracker <- if (ext == "xlsx") {
       require_packages("readxl", "validate_review_tracker")
-      readxl::read_excel(tracker)
-    } else {
+      sheets <- readxl::excel_sheets(tracker)
+      use_sheet <- if (!is.null(sheet)) {
+        if (!sheet %in% sheets) {
+          stop("Sheet '", sheet, "' not found in '", tracker, "'; the workbook has: ",
+               paste(sheets, collapse = ", "), ".", call. = FALSE)
+        }
+        sheet
+      } else if ("Review Tracker" %in% sheets) {
+        "Review Tracker"
+      } else {
+        sheets[1]
+      }
+      readxl::read_excel(tracker, sheet = use_sheet)
+    } else if (ext == "csv") {
       utils::read.csv(tracker, stringsAsFactors = FALSE)
+    } else {
+      stop("`tracker` must be a path to a `.xlsx` or `.csv` tracker file (got '", ext, "').", call. = FALSE)
     }
   }
 
@@ -4929,8 +5061,9 @@ validate_review_tracker <- function(tracker,
 
   item_ids <- if ("item_id" %in% names(tracker)) as.character(tracker$item_id) else as.character(seq_len(n))
   files <- if ("file" %in% names(tracker)) as.character(tracker$file) else rep("", n)
-  trivials <- if ("trivial" %in% names(tracker)) as.logical(tracker$trivial) else rep(FALSE, n)
-  trivials[is.na(trivials)] <- FALSE
+  # a "trivial" column typed as yes/done/1 is a sign-off, not a coercion
+  # warning: as.logical("yes") is NA (with a warning) and would be read as FALSE
+  trivials <- if ("trivial" %in% names(tracker)) normalize_flag_cell(tracker$trivial) == "TRUE" else rep(FALSE, n)
 
   bare_forbidden <- c("true", "false", "done", "yes", "no", "ok", "okay", "fixed", "na", "n/a", "tbd", "none", "t", "f", "y", "n")
   open_states <- c("", "open", "pending", "in_progress", "in progress", "todo", "to do")
@@ -4945,11 +5078,15 @@ validate_review_tracker <- function(tracker,
 
   issue_rows <- list()
   add_issue <- function(r_idx, reason_str) {
+    # `%||%` does not catch NA (NA is not NULL), so an NA status would land
+    # in the report as NA instead of the blank the loop sees
+    st <- tracker$status[r_idx]
+    st <- if (length(st) == 0L || is.na(st)) "" else as.character(st)
     issue_rows[[length(issue_rows) + 1L]] <<- tibble::tibble(
       row = as.integer(r_idx),
       item_id = item_ids[r_idx],
       file = files[r_idx],
-      status = as.character(tracker$status[r_idx] %||% ""),
+      status = st,
       reason = reason_str
     )
   }
@@ -4997,10 +5134,10 @@ validate_review_tracker <- function(tracker,
         add_issue(i, "Row closed/adopted without a concrete location (page, section, table, or figure).")
       }
     } else {
+      # an unknown status is not adopted or rejected, so neither field is
+      # the required one: one of the two is enough, and only neither is an issue
       if (!has_loc && !has_rat) {
         add_issue(i, sprintf("Row with status '%s' is missing both a location and a rationale.", st_raw))
-      } else if (!has_loc) {
-        add_issue(i, sprintf("Row with status '%s' is missing a concrete location.", st_raw))
       }
     }
   }
@@ -5041,4 +5178,223 @@ validate_review_tracker <- function(tracker,
   )
   class(res) <- "cbe_review_tracker_validation"
   res
+}
+
+#' Apply a Review Tracker Back to a Report as a Resolutions Appendix
+#'
+#' Merges the resolutions of a completed review tracker into a report
+#' (`.qmd`, `.Rmd` or `.md`) by appending a "Review resolutions" appendix
+#' that records, per tracker item, what was done and where. It is the
+#' apply-back step of the review workflow: [docx_review_extract()] extracts
+#' comments, [review_tracker()] builds the tracker,
+#' [format_review_tracker()] formats it for the response, and this function
+#' carries the closed resolutions back into the deliverable.
+#'
+#' @section What it does and does not do:
+#' A tracker row is *applied* when it is closed (adopted/addressed or not
+#' adopted) and records a concrete location or rationale — an adopted row
+#' needs a location, a not-adopted row needs a rationale, as checked by
+#' [validate_review_tracker()]. Applied rows become the appendix table.
+#' Rows that are still open, and closed rows with nothing concrete recorded,
+#' are not applied; they are listed under "Not applied" with the reason, so
+#' nothing is silently dropped. The function does **not** edit the source
+#' `.docx` the comments came from, does **not** change the report body, and
+#' does **not** mark tracker rows closed: the appendix is a record of the
+#' resolutions, and the edits the tracker describes still have to be made
+#' (or verified) in the report by the author. Run
+#' [validate_review_tracker()] first when the tracker must be complete
+#' before anything is applied.
+#'
+#' @param tracker A `cbe_review_tracker` tibble, a data frame with the
+#'   `status`, `location` and `rationale` columns, or a path to a `.xlsx` or
+#'   `.csv` tracker file (read as in [validate_review_tracker()]).
+#' @param report Path to the `.qmd`, `.Rmd` or `.md` report to append the
+#'   resolutions appendix to.
+#' @param output Path for the report with the appendix. Default: the report
+#'   name with `_reviewed` before the extension, beside the report.
+#' @param overwrite Logical (default `FALSE`): allow `output` to be an
+#'   existing file. Appending in place (`output` the same file as `report`)
+#'   also needs `overwrite = TRUE`.
+#' @return Invisibly, a list of class `review_apply` with `output` (the
+#'   written path), `applied` (the applied tracker rows), `not_applied` (a
+#'   tibble with `item_id`, `file`, `status` and `reason`), `n_items` and
+#'   `n_applied`.
+#' @seealso [review_tracker()], [format_review_tracker()],
+#'   [validate_review_tracker()]
+#' @param x The object to print (the result of the function).
+#' @param ... Not used.
+#' @export
+#' @examples
+#' tracker <- data.frame(
+#'   item_id = 1:3, file = "manuscript.docx", author = c("Reviewer 1", "Reviewer 2", "Reviewer 1"),
+#'   comment = c("Define the cohort", "Report the sample size", "Check Table 2"),
+#'   status = c("adopted", "not_adopted", "open"),
+#'   location = c("Methods, page 4", "", ""),
+#'   rationale = c("Added the inclusion criteria", "Outside the scope of the study", "")
+#' )
+#' report <- file.path(tempdir(), "report.qmd")
+#' writeLines(c("# Results", "", "The cohort is described here."), report)
+#' res <- apply_review_tracker(tracker, report)
+#' res$n_applied
+#' cat(readLines(res$output), sep = "\n")
+apply_review_tracker <- function(tracker, report, output = NULL, overwrite = FALSE) {
+  tracker_src <- if (is.character(tracker) && length(tracker) == 1L) tracker else NULL
+  if (!is.null(tracker_src)) {
+    if (!file.exists(tracker_src)) {
+      stop(sprintf("Tracker file does not exist: %s", tracker_src), call. = FALSE)
+    }
+    ext <- tolower(tools::file_ext(tracker_src))
+    tracker <- if (ext == "xlsx") {
+      require_packages("readxl", "apply_review_tracker")
+      sheets <- readxl::excel_sheets(tracker_src)
+      use_sheet <- if ("Review Tracker" %in% sheets) "Review Tracker" else sheets[1]
+      readxl::read_excel(tracker_src, sheet = use_sheet)
+    } else if (ext == "csv") {
+      utils::read.csv(tracker_src, stringsAsFactors = FALSE)
+    } else {
+      stop("`tracker` must be a data frame or a path to a `.xlsx`/`.csv` tracker file (got '", ext, "').", call. = FALSE)
+    }
+  }
+  if (!is.data.frame(tracker)) {
+    stop("`tracker` must be a data frame or a path to a `.xlsx`/`.csv` tracker file.", call. = FALSE)
+  }
+  need <- setdiff(c("status", "location", "rationale"), names(tracker))
+  if (length(need)) {
+    stop("`tracker` is missing required column(s): ", paste(need, collapse = ", "), call. = FALSE)
+  }
+  if (nrow(tracker) == 0L) stop("`tracker` has no rows: nothing to apply.", call. = FALSE)
+  if (!is.character(report) || length(report) != 1L || !nzchar(report) || !file.exists(report)) {
+    stop("`report` must be an existing file path.", call. = FALSE)
+  }
+  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
+    stop("`overwrite` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  report_ext <- tolower(tools::file_ext(report))
+  if (!report_ext %in% c("qmd", "rmd", "md")) {
+    stop("`report` must be a `.qmd`, `.Rmd` or `.md` file (got '", report_ext, "').", call. = FALSE)
+  }
+  if (is.null(output)) {
+    stem <- tools::file_path_sans_ext(basename(report))
+    output <- file.path(dirname(report), paste0(stem, "_reviewed.", report_ext))
+  }
+  if (!is.character(output) || length(output) != 1L || !nzchar(output)) {
+    stop("`output` must be a single file path.", call. = FALSE)
+  }
+  same_file <- identical(
+    normalizePath(report, winslash = "/", mustWork = FALSE),
+    normalizePath(output, winslash = "/", mustWork = FALSE)
+  )
+  if ((file.exists(output) || same_file) && !isTRUE(overwrite)) {
+    stop("`output` ('", output, "') already exists; pass `overwrite = TRUE` to replace it.", call. = FALSE)
+  }
+
+  # Status words, mirroring validate_review_tracker(): open rows are not
+  # resolutions yet, adopted rows need a concrete location, not-adopted rows
+  # need a concrete rationale, and any other closed status needs one of the two.
+  open_states <- c("", "open", "pending", "in_progress", "in progress", "todo", "to do")
+  adopted_states <- c("adopted", "addressed", "accepted", "implemented", "completed", "resolved", "closed")
+  rejected_states <- c("not_adopted", "not adopted", "declined", "rejected", "wont_fix", "won't fix", "deferred", "disagree")
+  bare_forbidden <- c("true", "false", "done", "yes", "no", "ok", "okay", "fixed", "na", "n/a", "tbd", "none", "t", "f", "y", "n")
+  is_concrete_text <- function(val) {
+    if (is.null(val) || is.na(val)) return(FALSE)
+    v <- tolower(trimws(as.character(val)))
+    nzchar(v) && !(v %in% bare_forbidden)
+  }
+  df <- tibble::as_tibble(as.data.frame(unclass(tracker), stringsAsFactors = FALSE, check.names = FALSE))
+  n <- nrow(df)
+  item_ids <- if ("item_id" %in% names(df)) as.character(df$item_id) else as.character(seq_len(n))
+  files <- if ("file" %in% names(df)) as.character(df$file) else rep("", n)
+  status <- ifelse(is.na(df$status), "", trimws(as.character(df$status)))
+  has_loc <- vapply(df$location, is_concrete_text, logical(1))
+  has_rat <- vapply(df$rationale, is_concrete_text, logical(1))
+
+  applied_idx <- integer()
+  not_applied <- list()
+  for (i in seq_len(n)) {
+    st <- tolower(status[i])
+    reason <- NULL
+    if (st %in% open_states) {
+      reason <- "still open: no resolution recorded"
+    } else if (st %in% adopted_states) {
+      if (!has_loc[i]) reason <- "closed as adopted but no concrete location is recorded"
+    } else if (st %in% rejected_states) {
+      if (!has_rat[i]) reason <- "closed as not adopted but no rationale is recorded"
+    } else if (!has_loc[i] && !has_rat[i]) {
+      reason <- paste0("status '", status[i], "' with neither a concrete location nor a rationale")
+    }
+    if (is.null(reason)) {
+      applied_idx <- c(applied_idx, i)
+    } else {
+      not_applied[[length(not_applied) + 1L]] <- tibble::tibble(
+        item_id = item_ids[i], file = files[i], status = status[i], reason = reason
+      )
+    }
+  }
+  applied <- df[applied_idx, , drop = FALSE]
+  not_applied_tbl <- if (length(not_applied)) dplyr::bind_rows(not_applied) else {
+    tibble::tibble(item_id = character(), file = character(), status = character(), reason = character())
+  }
+
+  lines <- readLines(report, warn = FALSE)
+  if (any(grepl("^## Review resolutions\\s*$", lines))) {
+    warning("'", report, "' already has a 'Review resolutions' section; another appendix is appended below it.",
+            call. = FALSE)
+  }
+  tracker_label <- if (!is.null(tracker_src)) paste0("`", basename(tracker_src), "`") else "the supplied tracker"
+  appendix <- c(
+    "", "",
+    "## Review resolutions",
+    "",
+    paste0(
+      "Review resolutions applied from ", tracker_label, " on ", format(Sys.Date(), "%Y-%m-%d"), ": ",
+      length(applied_idx), " of ", n, " tracker item(s) are recorded below. ",
+      "The remaining items are listed under \u201cNot applied\u201d and still need a decision. ",
+      "This appendix records what the tracker says was done and where; it does not change the ",
+      "report body and does not edit the source document the comments came from."
+    ),
+    ""
+  )
+  if (length(applied_idx) > 0L) {
+    shown <- applied[, intersect(REVIEW_TRACKER_COMPACT_COLUMNS, names(applied)), drop = FALSE]
+    appendix <- c(appendix, tracker_markdown(shown), "")
+  } else {
+    appendix <- c(appendix, "No resolutions were applied: every tracker item is still open or has nothing concrete recorded.", "")
+  }
+  appendix <- c(
+    appendix,
+    "### Not applied",
+    ""
+  )
+  if (nrow(not_applied_tbl) > 0L) {
+    appendix <- c(appendix, vapply(seq_len(nrow(not_applied_tbl)), function(i) {
+      paste0("- Item ", not_applied_tbl$item_id[i],
+             if (nzchar(not_applied_tbl$file[i])) paste0(" (", not_applied_tbl$file[i], ")") else "",
+             ": ", not_applied_tbl$reason[i], ".")
+    }, character(1)), "")
+  } else {
+    appendix <- c(appendix, "None: every tracker item is recorded above.", "")
+  }
+
+  dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
+  writeLines(c(lines, appendix), output, useBytes = TRUE)
+  out <- list(
+    output = normalizePath(output, winslash = "/", mustWork = FALSE),
+    applied = applied,
+    not_applied = not_applied_tbl,
+    n_items = as.integer(n),
+    n_applied = as.integer(length(applied_idx))
+  )
+  class(out) <- "review_apply"
+  invisible(out)
+}
+
+#' @rdname apply_review_tracker
+#' @exportS3Method
+print.review_apply <- function(x, ...) {
+  cat("Review resolutions applied: ", x$n_applied, " of ", x$n_items, " tracker item(s)\n", sep = "")
+  cat("  report: ", x$output, "\n", sep = "")
+  if (nrow(x$not_applied) > 0L) {
+    cat("  not applied: ", nrow(x$not_applied), " item(s) (see `$not_applied`)\n", sep = "")
+  }
+  invisible(x)
 }

@@ -122,9 +122,10 @@ test_that("convert_pdfs_to_docx rejects non-existent or empty source files", {
   w <- testthat::capture_warnings(
     res_missing <- convert_pdfs_to_docx(data.frame(src = missing_pdf, dest = dest), strict = FALSE)
   )
-  expect_length(w, 2L)
+  # the row was never attempted, so there is no "conversion(s) failed"
+  # summary on top of the skip warning (item 110)
+  expect_length(w, 1L)
   expect_match(w[1], paste0("Source PDF file '", missing_pdf, "' does not exist; skipping conversion."), fixed = TRUE)
-  expect_match(w[2], "1 of 1 PDF -> DOCX conversion(s) failed.", fixed = TRUE)
   expect_false(res_missing$converted[1])
 
   # Empty (0-byte) source file
@@ -139,9 +140,9 @@ test_that("convert_pdfs_to_docx rejects non-existent or empty source files", {
   w <- testthat::capture_warnings(
     res_empty <- convert_pdfs_to_docx(data.frame(src = empty_pdf, dest = dest), strict = FALSE)
   )
-  expect_length(w, 2L)
+  # as above: skipped, never attempted, so no failure summary (item 110)
+  expect_length(w, 1L)
   expect_match(w[1], "is empty (0 bytes); skipping conversion.", fixed = TRUE)
-  expect_match(w[2], "1 of 1 PDF -> DOCX conversion(s) failed.", fixed = TRUE)
   expect_false(res_empty$converted[1])
 })
 
@@ -230,7 +231,7 @@ test_that("a dest or temp_dest that ends in .pdf is a bad row", {
   expect_equal(readLines(other), original)
 })
 
-test_that("a temp_dest copy that fails is reported, and the conversion still counts", {
+test_that("a temp_dest copy that fails is reported as not converted", {
   dir <- withr::local_tempdir()
   pdf <- local_fake_pdf(dir = dir)
   dest <- file.path(dir, "out.docx")
@@ -249,9 +250,16 @@ test_that("a temp_dest copy that fails is reported, and the conversion still cou
       data.frame(src = pdf, dest = dest, temp_dest = file.path(not_a_folder, "copy.docx"), stringsAsFactors = FALSE)
     ))
   )
-  expect_true(res$converted[1])
+  # the copy is part of the delivery: a row whose second copy failed is not
+  # a converted row (item 111), although the DOCX at dest itself was written
+  expect_false(res$converted[1])
   expect_true(file.exists(dest))
-  expect_match(w, "could not copy the DOCX to temp_dest", all = FALSE)
+  # w[1] is file.copy()'s own "cannot create file" warning for the copy
+  # under a plain file; w[2] is the package's temp_dest warning, w[3] the
+  # failure summary for the one attempted row
+  expect_length(w, 3L)
+  expect_match(w[2], "could not copy the DOCX to temp_dest", fixed = TRUE)
+  expect_match(w[3], "1 of 1 PDF -> DOCX conversion(s) failed.", fixed = TRUE)
 })
 
 test_that("invalid input is reported even when no backend exists", {
@@ -290,12 +298,12 @@ test_that("invalid input is reported even when no backend exists", {
 
   # With strict = FALSE, rows that are all bad are skipped with their own
   # warnings and come back unconverted: no error, and no "no backend" warning.
+  # Nothing was attempted, so there is no failure summary either (item 110).
   all_bad <- data.frame(src = c(missing_pdf, empty_pdf), dest = c(dest, dest), stringsAsFactors = FALSE)
   w <- testthat::capture_warnings(res <- convert_pdfs_to_docx(all_bad, strict = FALSE))
-  expect_length(w, 3L)
+  expect_length(w, 2L)
   expect_match(w[1], "does not exist; skipping conversion.", fixed = TRUE)
   expect_match(w[2], "is empty (0 bytes); skipping conversion.", fixed = TRUE)
-  expect_match(w[3], "2 of 2 PDF -> DOCX conversion(s) failed.", fixed = TRUE)
   expect_false(any(grepl("No PDF -> DOCX backend", w, fixed = TRUE)))
   expect_equal(res$converted, c(FALSE, FALSE))
   expect_equal(res$src, all_bad$src)
@@ -373,8 +381,10 @@ test_that("the whole table is checked before any file is converted", {
   expect_equal(calls, c("good1.pdf", "good2.pdf"))
   expect_true(all(file.exists(out(c("good1.docx", "good2.docx")))))
   expect_false(any(file.exists(out(c("missing.docx", "empty.docx")))))
-  expect_length(w, 3L)
-  expect_match(w[3], "2 of 4 PDF -> DOCX conversion(s) failed.", fixed = TRUE)
+  # only the two skip warnings: both attempted rows converted, so the
+  # failure summary does not fire, and skipped rows are not counted (item 110)
+  expect_length(w, 2L)
+  expect_false(any(grepl("conversion(s) failed", w, fixed = TRUE)))
 })
 
 test_that("convert_pdfs_to_docx handles missing toolchain correctly in strict vs non-strict mode", {

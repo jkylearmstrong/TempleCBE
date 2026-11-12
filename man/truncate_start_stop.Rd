@@ -17,7 +17,9 @@ truncate_start_stop(
 
 \item{at}{The window length, in the units of the time columns.}
 
-\item{start, stop, status}{Column names (strings).}
+\item{start, stop, status}{Column names (strings). A factor `status` must have a level
+that means censored (`"0"`, `"FALSE"` or a label starting with "censor"); otherwise
+an interval that is cut would have to be given a guessed status, and the function stops.}
 }
 \value{
 `data` restricted to the window, with the same columns.

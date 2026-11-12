@@ -2,11 +2,11 @@
 % Please edit documentation in R/as_tuning_results.R, R/audit_render_parity.R,
 %   R/balance_diagnostics.R, R/boot_lmer.R, R/bundle_deliverables.R,
 %   R/cbe_compare_df.R, R/cbe_database_relationships.R, R/cbe_review_extract.R,
-%   R/column_dictionary.R, R/compare_censoring_weights.R, R/coxnet.R,
-%   R/cv_coxnet.R, R/database_setops.R, R/loco_mp_coxnet.R,
-%   R/nested_survival_run.R, R/recurrent_events.R, R/step_famd.R,
-%   R/step_lencode_survival.R, R/surv_helpers.R, R/survival_metrics.R,
-%   R/templecbe_methods.R
+%   R/column_dictionary.R, R/compare_censoring_weights.R, R/cox_time_varying.R,
+%   R/coxnet.R, R/cv_coxnet.R, R/database_setops.R,
+%   R/joint_readmission_death.R, R/loco_mp_coxnet.R, R/nested_survival_run.R,
+%   R/recurrent_events.R, R/step_famd.R, R/step_lencode_survival.R,
+%   R/surv_helpers.R, R/survival_metrics.R, R/templecbe_methods.R
 \name{summary.cbe_tuning_results}
 \alias{summary.cbe_tuning_results}
 \alias{tidy.cbe_tuning_results}
@@ -25,11 +25,13 @@
 \alias{print.cbe_column_reconciliation}
 \alias{print.templecbe_run_comparison}
 \alias{print.templecbe_tuning_comparison}
+\alias{print.cox_time_varying}
 \alias{print.coxnet_model}
 \alias{print.cv_coxnet}
 \alias{intersect.cbe_database}
 \alias{setdiff.cbe_database}
 \alias{union.cbe_database}
+\alias{print.joint_readmission_death}
 \alias{print.loco_mp_coxnet}
 \alias{print.cbe_loco_mp_coxnet}
 \alias{tidy.cbe_loco_mp_coxnet}
@@ -103,6 +105,8 @@
 
 \method{print}{templecbe_tuning_comparison}(x, ...)
 
+\method{print}{cox_time_varying}(x, ...)
+
 \method{print}{coxnet_model}(x, ...)
 
 \method{print}{cv_coxnet}(x, ...)
@@ -112,6 +116,8 @@
 \method{setdiff}{cbe_database}(x, y, node_by = NULL, edge_by = c("from", "to"), ...)
 
 \method{union}{cbe_database}(x, y, node_by = NULL, edge_by = c("from", "to"), ...)
+
+\method{print}{joint_readmission_death}(x, ...)
 
 \method{print}{loco_mp_coxnet}(x, ...)
 

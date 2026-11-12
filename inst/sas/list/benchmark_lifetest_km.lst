@@ -1,0 +1,171 @@
+                                           The SAS System
+
+                                       The LIFETEST Procedure
+ 
+                                        Stratum 1: group = A
+
+                                  Product-Limit Survival Estimates
+ 
+                                                      Survival
+                                                      Standard    Number    Number
+                     time     Survival    Failure      Error      Failed     Left
+
+                   0.0000       1.0000           0           0      0         6   
+                   5.0000       0.8333      0.1667      0.1521      1         5   
+                   6.0000       0.6667      0.3333      0.1925      2         4   
+                   6.0000*           .           .           .      2         3   
+                   8.0000       0.4444      0.5556      0.2222      3         2   
+                  10.0000       0.2222      0.7778      0.1925      4         1   
+                  12.0000*           .           .           .      4         0   
+
+                     NOTE: The marked survival times are censored observations.
+
+
+                             Summary Statistics for Time Variable time
+
+                                         Quartile Estimates
+ 
+                                    Point         95% Confidence Interval
+                      Percent    Estimate    Transform      [Lower      Upper)
+
+                           75     10.0000    LOGLOG         6.0000       .    
+                           50      8.0000    LOGLOG         5.0000       .    
+                           25      6.0000    LOGLOG         5.0000     10.0000
+
+
+                                                    Standard
+                                            Mean       Error
+
+                                          8.0556      0.9590
+
+NOTE: The mean survival time and its standard error were underestimated because the largest 
+      observation was censored and the estimation was restricted to the largest event time.
+                                           The SAS System
+
+                                       The LIFETEST Procedure
+ 
+                                        Stratum 2: group = B
+
+                                  Product-Limit Survival Estimates
+ 
+                                                      Survival
+                                                      Standard    Number    Number
+                     time     Survival    Failure      Error      Failed     Left
+
+                   0.0000       1.0000           0           0      0         6   
+                   3.0000       0.8333      0.1667      0.1521      1         5   
+                   4.0000       0.6667      0.3333      0.1925      2         4   
+                   7.0000       0.5000      0.5000      0.2041      3         3   
+                   9.0000       0.3333      0.6667      0.1925      4         2   
+                   9.0000*           .           .           .      4         1   
+                  11.0000*           .           .           .      4         0   
+
+                     NOTE: The marked survival times are censored observations.
+
+
+                             Summary Statistics for Time Variable time
+
+                                         Quartile Estimates
+ 
+                                    Point         95% Confidence Interval
+                      Percent    Estimate    Transform      [Lower      Upper)
+
+                           75       .        LOGLOG         4.0000       .    
+                           50      8.0000    LOGLOG         3.0000       .    
+                           25      4.0000    LOGLOG         3.0000      9.0000
+
+
+                                                    Standard
+                                            Mean       Error
+
+                                          6.8333      1.1680
+
+NOTE: The mean survival time and its standard error were underestimated because the largest 
+      observation was censored and the estimation was restricted to the largest event time.
+
+
+                       Summary of the Number of Censored and Uncensored Values
+ 
+                                                                         Percent
+                    Stratum    group       Total  Failed    Censored    Censored
+
+                          1    A               6       4           2       33.33
+                          2    B               6       4           2       33.33
+                    ------------------------------------------------------------
+                      Total                   12       8           4       33.33
+                                           The SAS System
+
+                                       The LIFETEST Procedure
+
+                    Testing Homogeneity of Survival Curves for time over Strata
+
+
+                                          Rank Statistics
+ 
+                                  group       Log-Rank    Wilcoxon
+
+                                  A           -0.19625     -5.0000
+                                  B            0.19625      5.0000
+
+
+                           Covariance Matrix for the Log-Rank Statistics
+ 
+                                 group             A             B
+
+                                 A           1.94197      -1.94197
+                                 B          -1.94197       1.94197
+
+
+                           Covariance Matrix for the Wilcoxon Statistics
+ 
+                                 group             A             B
+
+                                 A           139.000      -139.000
+                                 B          -139.000       139.000
+
+
+                                    Test of Equality over Strata
+ 
+                                                                Pr >
+                             Test      Chi-Square      DF    Chi-Square
+
+                             Log-Rank      0.0198       1      0.8880  
+                             Wilcoxon      0.1799       1      0.6715  
+                             -2Log(LR)     0.0158       1      0.8999  
+                    Product-Limit Survival Estimates (ODS ProductLimitEstimates)
+
+    STRATUM    group        time    Censor    Survival     Failure      StdErr    Failed    Left
+
+       1         A        0.0000      .         1.0000           0           0      0        6  
+       1         A        5.0000      0         0.8333      0.1667      0.1521      1        5  
+       1         A        6.0000      0         0.6667      0.3333      0.1925      2        4  
+       1         A        6.0000      1              .           .           .      2        3  
+       1         A        8.0000      0         0.4444      0.5556      0.2222      3        2  
+       1         A       10.0000      0         0.2222      0.7778      0.1925      4        1  
+       1         A       12.0000      1              .           .           .      4        0  
+       2         B        0.0000      .         1.0000           0           0      0        6  
+       2         B        3.0000      0         0.8333      0.1667      0.1521      1        5  
+       2         B        4.0000      0         0.6667      0.3333      0.1925      2        4  
+       2         B        7.0000      0         0.5000      0.5000      0.2041      3        3  
+       2         B        9.0000      0         0.3333      0.6667      0.1925      4        2  
+       2         B        9.0000      1              .           .           .      4        1  
+       2         B       11.0000      1              .           .           .      4        0  
+                                     Quartiles (ODS Quartiles)
+
+                                                                       Lower       Upper
+            STRATUM    group    Percent    Estimate    Transform       Limit       Limit
+
+               1         A          75      10.0000     LOGLOG        6.0000       .    
+               1         A          50       8.0000     LOGLOG        5.0000       .    
+               1         A          25       6.0000     LOGLOG        5.0000     10.0000
+               2         B          75        .         LOGLOG        4.0000       .    
+               2         B          50       8.0000     LOGLOG        3.0000       .    
+               2         B          25       4.0000     LOGLOG        3.0000      9.0000
+                            Test of Equality over Strata (ODS HomTests)
+
+                                                                  Prob
+                               Test            ChiSq      DF     ChiSq
+
+                             Log-Rank         0.0198       1    0.8880
+                             Wilcoxon         0.1799       1    0.6715
+                             -2Log(LR)        0.0158       1    0.8999

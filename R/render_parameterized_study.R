@@ -16,7 +16,8 @@
 #' @param recursive Also look in sub-folders (default `FALSE`).
 #' @param formats Output formats (default `"html"`).
 #' @param on_error `"continue"` (default; failures are reported in the result) or `"stop"`.
-#' @param dry_run Plan only; nothing is rendered.
+#' @param dry_run Plan only; nothing is rendered. With no documents to plan,
+#'   the empty result (with the usual columns) is returned instead of an error.
 #' @param ... Further arguments for [render_variants()] (`self_contained`, `check_params`, `renderer`, `quiet`).
 #' @return A tibble, one row per document, parameter set and format, with the columns of
 #'   [render_variants()] plus `document` and `target_dir`.
@@ -49,9 +50,10 @@ render_parameterized_study <- function(source_dir,
   if (!is.list(param_list) || length(param_list) != length(target_dirs)) {
     stop("`param_list` must be a list with one parameter set per entry of `target_dirs`.", call. = FALSE)
   }
-  # Windows file names are not case-sensitive: "Out/A" and "out/a" are one folder there
-  same_folder_key <- function(p) if (.Platform$OS.type == "windows") tolower(p) else p
+  # Windows and macOS file names are not case-sensitive: "Out/A" and "out/a" are one folder there
+  same_folder_key <- function(p) if (.case_insensitive_fs()) tolower(p) else p
   norm <- same_folder_key(normalizePath(target_dirs, winslash = "/", mustWork = FALSE))
+  norm <- sub("/+$", "", norm)
   if (anyDuplicated(norm)) stop("`target_dirs` must be different folders.", call. = FALSE)
   for (i in seq_along(param_list)) {
     p <- param_list[[i]]
@@ -62,10 +64,22 @@ render_parameterized_study <- function(source_dir,
 
   files <- list.files(source_dir, pattern = pattern, recursive = recursive, full.names = TRUE, ignore.case = TRUE)
   files <- files[!grepl("^[_.]", basename(files))]
-  if (length(files) == 0L) stop("No document matching `pattern` in `source_dir`.", call. = FALSE)
+  if (length(files) == 0L) {
+    if (isTRUE(dry_run)) {
+      # a plan over no documents: the empty result with the columns a real run returns
+      return(tibble::tibble(
+        document = character(), target_dir = character(), variant = character(),
+        format = character(), params = list(), output = character(),
+        status = character(), error = character()
+      ))
+    }
+    stop("No document matching `pattern` in `source_dir`.", call. = FALSE)
+  }
   src_norm <- same_folder_key(normalizePath(source_dir, winslash = "/", mustWork = TRUE))
-  if (any(norm == src_norm) && !dry_run) {
-    stop("A target folder is the source folder; outputs would mix with the templates.", call. = FALSE)
+  src_norm <- sub("/+$", "", src_norm)
+  inside <- norm == src_norm | startsWith(norm, paste0(src_norm, "/"))
+  if (any(inside) && !dry_run) {
+    stop("A target folder is the source folder or inside it; outputs would mix with the templates.", call. = FALSE)
   }
 
   rows <- list()

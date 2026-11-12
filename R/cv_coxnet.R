@@ -45,8 +45,14 @@
 #' penalty, so all penalties are scored on the same subjects, with one warning
 #' per resample that gives the count. A resample with no subject left is skipped.
 #' Recurrent events (an event before a subject's last interval) stop with an
-#' error: the metrics need one event time per subject. See
-#' [surv_subject_truth()] (`recurrent = "first"`) and [recurrent_cox()].
+#' error unless `recurrent` says otherwise: `"first"` scores the time to first
+#' event ([surv_subject_truth()]), and `"gap"` scores the whole recurrent
+#' process by gap-time concordance (see [surv_gap_truth()]). Gap-time
+#' concordance is Harrell's C over gaps, using each interval's linear
+#' predictor as its risk: it treats a subject's gaps as independent
+#' observations, needs no censoring weights, and is the only metric in gap
+#' mode. A recurrent-event Brier score is not computed; that is follow-up
+#' work, not part of this draft.
 #'
 #' **Selection.** `lambda.min` is the penalty, across all `mixture` values,
 #' with the best mean `metric` over folds (for time-specific metrics, at the
@@ -83,9 +89,18 @@
 #' @param metric Name of the metric used to choose settings; the first metric
 #'   in `metrics` by default.
 #' @param covariates `"path"` or `"baseline"`; see Details.
+#' @param recurrent How recurrent (start/stop) data are scored: `"error"`
+#'   (default; a subject with an event before its last interval stops the fit),
+#'   `"first"` (score the time to the first event only), or `"gap"` (score the
+#'   whole recurrent process by gap-time concordance; see Details). In gap
+#'   mode `metrics` must contain only `concordance_survival` (the default
+#'   there), and `eval_time` is used only for the refit model's predictions,
+#'   not for scoring.
 #' @param trunc Lower bound for the censoring probability in the Graf weights.
 #' @param parallel If `TRUE`, fit folds with [furrr::future_map()]; set a
 #'   [future::plan()] first.
+#' @param parallel_over How to parallelize when `parallel` is `TRUE`:
+#'   `"resamples"` (default) or `"everything"`, as in [glmnet_IBS()].
 #' @param check_subject_overlap If `TRUE` (the default), stop when a supplied
 #'   `resamples` puts the same subject (or, when `group` is set, the same group)
 #'   in both the analysis and the assessment set of a split; see Details. `FALSE`
@@ -114,7 +129,8 @@
 #'   * `mixture`, `lambda_min`, `lambda_1se`, `metric`, `direction`;
 #'   * `fit`: a [coxnet()] model fit to all of `data` at the chosen `mixture`,
 #'     with `lambda_min` as its default penalty;
-#'   * `eval_time`, `resamples`, and `covariates`.
+#'   * `eval_time`, `resamples`, `covariates`, and `recurrent` (how recurrent
+#'     data were scored: `"error"`, `"first"`, or `"gap"`).
 #'
 #'   Use `predict()`, `tidy()`, `autoplot()`, and `tune::collect_metrics()` on
 #'   it.
@@ -164,7 +180,9 @@ cv_coxnet.default <- function(x, ...) {
 cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                                  resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                                  metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                                 parallel = FALSE, check_subject_overlap = TRUE,
+                                 recurrent = c("error", "first", "gap"),
+                                 parallel = FALSE, parallel_over = c("resamples", "everything"),
+                                 check_subject_overlap = TRUE,
                                  checkpoint_dir = NULL, shard = NULL,
                                  checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                  seed = NULL,
@@ -174,7 +192,9 @@ cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture 
       spec_xy(x, y, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      recurrent = recurrent,
+      parallel = parallel, parallel_over = parallel_over,
+      check_subject_overlap = check_subject_overlap,
       checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, seed = seed, ...
     )
   })
@@ -185,7 +205,9 @@ cv_coxnet.data.frame <- function(x, y, subject_id = NULL, group = NULL, mixture 
 cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                             parallel = FALSE, check_subject_overlap = TRUE,
+                             recurrent = c("error", "first", "gap"),
+                             parallel = FALSE, parallel_over = c("resamples", "everything"),
+                             check_subject_overlap = TRUE,
                              checkpoint_dir = NULL, shard = NULL,
                              checkpoint_mismatch = c("recompute", "overwrite", "error"),
                              seed = NULL,
@@ -195,7 +217,9 @@ cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1,
       spec_xy(matrix_to_df(x), y, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      recurrent = recurrent,
+      parallel = parallel, parallel_over = parallel_over,
+      check_subject_overlap = check_subject_overlap,
       checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, seed = seed, ...
     )
   })
@@ -206,7 +230,9 @@ cv_coxnet.matrix <- function(x, y, subject_id = NULL, group = NULL, mixture = 1,
 cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                               resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                               metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                              parallel = FALSE, check_subject_overlap = TRUE,
+                              recurrent = c("error", "first", "gap"),
+                              parallel = FALSE, parallel_over = c("resamples", "everything"),
+                             check_subject_overlap = TRUE,
                               checkpoint_dir = NULL, shard = NULL,
                               checkpoint_mismatch = c("recompute", "overwrite", "error"),
                               seed = NULL,
@@ -216,7 +242,9 @@ cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mi
       spec_formula(formula, data, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      recurrent = recurrent,
+      parallel = parallel, parallel_over = parallel_over,
+      check_subject_overlap = check_subject_overlap,
       checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, seed = seed, ...
     )
   })
@@ -227,7 +255,9 @@ cv_coxnet.formula <- function(formula, data, subject_id = NULL, group = NULL, mi
 cv_coxnet.recipe <- function(x, data, subject_id = NULL, group = NULL, mixture = 1, penalty = NULL,
                              resamples = NULL, v = 10, metrics = NULL, eval_time = NULL,
                              metric = NULL, covariates = c("path", "baseline"), trunc = 0.05,
-                             parallel = FALSE, check_subject_overlap = TRUE,
+                             recurrent = c("error", "first", "gap"),
+                             parallel = FALSE, parallel_over = c("resamples", "everything"),
+                             check_subject_overlap = TRUE,
                              checkpoint_dir = NULL, shard = NULL,
                              checkpoint_mismatch = c("recompute", "overwrite", "error"),
                               seed = NULL,
@@ -237,7 +267,9 @@ cv_coxnet.recipe <- function(x, data, subject_id = NULL, group = NULL, mixture =
       spec_recipe(x, data, subject_id, group),
       mixture = mixture, penalty = penalty, resamples = resamples, v = v, metrics = metrics,
       eval_time = eval_time, metric = metric, covariates = covariates, trunc = trunc,
-      parallel = parallel, check_subject_overlap = check_subject_overlap,
+      recurrent = recurrent,
+      parallel = parallel, parallel_over = parallel_over,
+      check_subject_overlap = check_subject_overlap,
       checkpoint_dir = checkpoint_dir, shard = shard, checkpoint_mismatch = checkpoint_mismatch, seed = seed, ...
     )
   })
@@ -332,7 +364,8 @@ print.cv_coxnet <- function(x, ...) {
 
 cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, resamples = NULL,
                            v = 10, metrics = NULL, eval_time = NULL, metric = NULL,
-                           covariates = c("path", "baseline"), trunc = 0.05, parallel = FALSE,
+                           covariates = c("path", "baseline"), trunc = 0.05,
+                           recurrent = c("error", "first", "gap"), parallel = FALSE,
                            parallel_over = c("resamples", "everything"),
                            check_subject_overlap = TRUE,
                            checkpoint_dir = NULL,
@@ -341,10 +374,30 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
                            seed = NULL, ...) {
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
   rlang::check_installed(
-    c("glmnet", "survival", "rsample", "yardstick"),
+    c("glmnet", "survival", "rsample", "yardstick", "withr"),
     reason = "to cross-validate `coxnet()` models."
   )
   covariates <- match.arg(covariates)
+  recurrent <- match.arg(recurrent)
+  gap_mode <- identical(recurrent, "gap")
+  # Gap-time concordance is the only metric that scores the whole recurrent
+  # process; the other yardstick survival metrics need one event time per
+  # subject and a survival curve per subject.
+  if (gap_mode) {
+    if (is.null(metrics)) {
+      metrics <- yardstick::metric_set(yardstick::concordance_survival)
+    } else {
+      gap_info <- surv_metric_info(metrics)
+      if (!all(gap_info$metric == "concordance_survival")) {
+        stop(
+          "`recurrent = \"gap\"` scores gap-time concordance only; pass ",
+          "`metrics = yardstick::metric_set(yardstick::concordance_survival)`. ",
+          "A recurrent-event Brier score is not implemented.",
+          call. = FALSE
+        )
+      }
+    }
+  }
   check_true_false(check_subject_overlap, "check_subject_overlap")
   mixture <- check_mixture(mixture)
   path_user <- check_path(penalty)
@@ -367,15 +420,25 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
       call. = FALSE
     )
   }
-  truth_full <- surv_subject_truth(full$y, subject_keys(full$y, subject_values(data, spec)))
-  if (any(truth_full$.entry > 0)) {
+  truth_full <- if (gap_mode) {
+    surv_gap_truth(full$y, subject_keys(full$y, subject_values(data, spec)))
+  } else {
+    surv_subject_truth(full$y, subject_keys(full$y, subject_values(data, spec)), recurrent = recurrent)
+  }
+  if (!gap_mode && any(truth_full$.entry > 0)) {
     warning(
       "Some subjects enter after time 0. Survival is predicted from time 0 and the Graf ",
       "censoring weights don't correct for delayed entry.",
       call. = FALSE
     )
   }
-  eval_time <- eval_time %||% default_eval_time(truth_full$.truth)
+  if (is.null(eval_time)) {
+    eval_time <- if (gap_mode) {
+      default_gap_eval_time(truth_full)
+    } else {
+      default_eval_time(truth_full$.truth)
+    }
+  }
   needs_two <- any(info$class == "integrated_survival_metric")
   check_eval_time(eval_time, min_length = if (needs_two) 2 else 1)
 
@@ -422,8 +485,22 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
     }
     test <- list(x = test$x[usable, , drop = FALSE], y = test$y[usable])
     subject_test <- subject_test[usable]
-    truth_train <- surv_subject_truth(train$y, subject_keys(train$y, subject_values(analysis, spec)))
-    truth_test <- surv_subject_truth(test$y, subject_test)
+    if (gap_mode) {
+      # Gap-time concordance needs no censoring weights and no baseline
+      # hazard: each assessment interval is scored by its linear predictor.
+      return(purrr::list_rbind(purrr::map2(mixture, paths, function(m, path) {
+        fit <- tryCatch(fit_glmnet_cox(train$x, train$y, m, path, glmnet_args), error = function(e) e)
+        if (inherits(fit, "error")) {
+          warning("glmnet failed on a resample at mixture ", m, ": ", conditionMessage(fit), call. = FALSE)
+          return(NULL)
+        }
+        res <- score_gap_path(fit, test$x, test$y, subject_test, penalty = path)
+        res$mixture <- m
+        res
+      })))
+    }
+    truth_train <- surv_subject_truth(train$y, subject_keys(train$y, subject_values(analysis, spec)), recurrent = recurrent)
+    truth_test <- surv_subject_truth(test$y, subject_test, recurrent = recurrent)
     weights <- graf_weights(truth_test$.truth, eval_time, censoring_km(truth_train$.truth), trunc)
 
     purrr::list_rbind(purrr::map2(mixture, paths, function(m, path) {
@@ -449,6 +526,7 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
 
   fold_ids <- resample_ids(resamples)
   n_splits <- length(resamples$splits)
+  partial_shard <- NULL
 
   if (!is.null(checkpoint_dir)) {
     if (!dir.exists(checkpoint_dir)) {
@@ -484,6 +562,7 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
         eval_time = eval_time,
         metrics = metrics_repr,
         covariates = covariates,
+        recurrent = recurrent,
         trunc = trunc
       )
       paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
@@ -496,6 +575,12 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
       ((seq_len(n_splits) - 1L) %% shard_parsed[2]) + 1L == shard_parsed[1]
     } else {
       rep(TRUE, n_splits)
+    }
+    if (!is.null(shard_parsed) && any(!active_mask)) {
+      partial_shard <- list(
+        shard = shard_parsed, n_splits = n_splits,
+        evaluated_folds = fold_ids[active_mask], missing_folds = fold_ids[!active_mask]
+      )
     }
 
     # Verify existing checkpoints up front
@@ -565,6 +650,15 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
     res$id <- id
     res
   }, results, fold_ids))
+  if (!is.null(partial_shard)) {
+    warning(
+      sprintf("cv_coxnet(): shard %d/%d evaluated only %d of %d resample(s) (%s); the summary averages over the evaluated folds only. ",
+              partial_shard$shard[1], partial_shard$shard[2], length(partial_shard$evaluated_folds),
+              partial_shard$n_splits, paste(partial_shard$evaluated_folds, collapse = ", ")),
+      "Collect the other shards' checkpoints to complete it; see `x$shard_partial`.",
+      call. = FALSE
+    )
+  }
   if (is.null(fold_metrics) || !nrow(fold_metrics)) {
     stop("No resample could be fit; see the warnings.", call. = FALSE)
   }
@@ -606,11 +700,64 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
       metric_eval_time = metric_eval_time,
       eval_time = eval_time,
       covariates = covariates,
+      recurrent = recurrent,
       fit = new_coxnet(final, selection$lambda_min, selection$mixture, full$x, full$y, full$blueprint),
-      resamples = resamples
+      resamples = resamples,
+      shard_partial = partial_shard
     ),
     class = "cv_coxnet"
   )
+}
+
+#' Default Evaluation Times From Gap Event Times
+#'
+#' Deciles of the observed gap event times; a single distinct event time is
+#' enough, where the subject-level default needs two. Gap mode scores
+#' concordance, not survival curves, so these times only feed the refit
+#' model's predictions.
+#'
+#' @param gap_truth Output of [surv_gap_truth()].
+#' @keywords internal
+#' @noRd
+default_gap_eval_time <- function(gap_truth) {
+  gap_event_times <- unname(gap_truth$.truth[gap_truth$.truth[, "status"] == 1, "time"])
+  if (!length(gap_event_times)) {
+    stop("No gap events to choose default evaluation times from; pass `eval_time`.", call. = FALSE)
+  }
+  gap_times <- sort(unique(stats::quantile(
+    gap_event_times, probs = seq(0.1, 0.9, by = 0.1), type = 1, names = FALSE
+  )))
+  if (!length(gap_times)) {
+    stop("Too few gap event times to choose default evaluation times; pass `eval_time`.", call. = FALSE)
+  }
+  gap_times
+}
+
+#' Score a glmnet Cox Fit Along a Penalty Path by Gap-Time Concordance
+#'
+#' For recurrent data: each assessment interval is a gap, scored by its
+#' linear predictor (see [gap_time_concordance()]). The linear predictors are
+#' reordered to the gap-truth row order (by subject, start, stop) before
+#' scoring.
+#'
+#' @return A tibble with `penalty`, `.metric`, `.estimator`, `.eval_time`
+#'   (`NA`) and `.estimate`, one row per penalty.
+#' @keywords internal
+#' @noRd
+score_gap_path <- function(fit, x_new, y_new, subject_new, penalty) {
+  gap_truth <- surv_gap_truth(y_new, subject_new)
+  parts <- surv_components(y_new)
+  ord <- order(subject_new, parts$start, parts$stop)
+  lp <- coxnet_link(fit, x_new, penalty)[ord, , drop = FALSE]
+  purrr::list_rbind(lapply(seq_along(penalty), function(l) {
+    tibble::tibble(
+      penalty = penalty[l],
+      .metric = "concordance_survival",
+      .estimator = "standard",
+      .eval_time = NA_real_,
+      .estimate = gap_time_concordance(gap_truth, lp[, l])
+    )
+  }))
 }
 
 #' Score a glmnet Cox Fit Along a Penalty Path on New Data

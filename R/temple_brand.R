@@ -86,6 +86,7 @@ temple_pal <- function(palette = c("main", "diverging", "sequential"), reverse =
 
   if (palette == "main") {
     function(n) {
+      n <- .check_palette_n(n)
       if (n > length(cols)) {
         stop("The Temple \"main\" palette has ", length(cols), " colors; ", n,
              " were requested.", call. = FALSE)
@@ -93,8 +94,19 @@ temple_pal <- function(palette = c("main", "diverging", "sequential"), reverse =
       cols[seq_len(n)]
     }
   } else {
-    grDevices::colorRampPalette(cols)
+    ramp <- grDevices::colorRampPalette(cols)
+    function(n) ramp(.check_palette_n(n))
   }
+}
+
+# `n` for a palette function: how many colors to return. Without this a
+# fractional n is silently truncated (main) or rounded (the ramps) and a
+# missing n fails inside seq_len()/colorRampPalette() with no context.
+.check_palette_n <- function(n) {
+  if (!is.numeric(n) || length(n) != 1L || is.na(n) || !is.finite(n) || n < 0 || n != trunc(n)) {
+    stop("`n` must be a single whole number of 0 or more.", call. = FALSE)
+  }
+  as.integer(n)
 }
 
 #' Temple Color and Fill Scales for ggplot2
@@ -290,6 +302,11 @@ use_temple_brand <- function(path = ".",
   }
 
   quarto_yml <- file.path(path, c("_quarto.yml", "_quarto.yaml"))
+  if (any(dir.exists(quarto_yml))) {
+    # file.exists() is also TRUE for a directory, so a folder of that name
+    # would otherwise be taken for the project file and fail much later
+    stop("`_quarto.yml` (or `_quarto.yaml`) in '", path, "' is a directory, not a file.", call. = FALSE)
+  }
   created <- !any(file.exists(quarto_yml))
   quarto_yml <- if (created) quarto_yml[1] else quarto_yml[file.exists(quarto_yml)][1]
   if (created) writeLines(c("project:", "  type: default"), quarto_yml)
@@ -340,10 +357,12 @@ temple_extension_dir_upward <- function(path) {
     stop("`extension` must be a single string: a GitHub source such as \"owner/repo@v1.0.0\" or a local path.", call. = FALSE)
   }
   github <- grepl("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9._-]+(/[A-Za-z0-9._/-]+)?(@[A-Za-z0-9._/-]+)?$", extension)
-  if (github && !file.exists(extension)) {
+  # an existing local path first: a directory named like a GitHub slug
+  # ("owner/repo" as a relative path) is a local extension, not a download
+  if (file.exists(extension)) {
     return(invisible(extension))
   }
-  if (file.exists(extension)) {
+  if (github) {
     return(invisible(extension))
   }
   if (grepl("^https://[^[:space:]]+$", extension)) {

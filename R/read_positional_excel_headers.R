@@ -85,8 +85,9 @@ read_positional_excel_headers <- function(path, sheet = 1, header_rows = 1:2, cl
     out[] <- lapply(out, function(x) {
       vals <- x[!is.na(x)]
       # numbers only; text such as ids with leading zeros ("00123"), single letters ("F") and the like stay text
+      nums <- suppressWarnings(as.numeric(vals))
       if (length(vals) > 0L && !any(grepl("^[+-]?0[0-9]", vals)) &&
-          !anyNA(suppressWarnings(as.numeric(vals))) && all(grepl("^[+-]?[0-9.]+([eE][+-]?[0-9]+)?$", vals))) {
+          !anyNA(nums) && all(is.finite(nums)) && all(grepl("^[+-]?[0-9.]+([eE][+-]?[0-9]+)?$", vals))) {
         as.numeric(x)
       } else {
         x

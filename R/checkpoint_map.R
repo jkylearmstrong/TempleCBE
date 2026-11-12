@@ -513,6 +513,15 @@ checkpointed_resamples <- function(resamples,
   if (length(good_rows) == 0L) {
     stop(sprintf("No resample could be %s in %s().", verb, fn), call. = FALSE)
   }
+  if (!is.null(shard) && length(good_rows) < n_splits) {
+    warning(
+      sprintf("%s(): shard %d/%d evaluated only %d of %d resample(s); the result is partial (missing: %s). ",
+              fn, shard[1], shard[2], length(good_rows), n_splits,
+              paste(fold_ids[!(seq_len(n_splits) %in% which(!vapply(rows, is.null, logical(1))))], collapse = ", ")),
+      "Collect the other shards' checkpoints to complete it.",
+      call. = FALSE
+    )
+  }
 
   # Combine rows while retaining the full structure of the results object
   combined <- dplyr::bind_rows(good_rows)
@@ -525,6 +534,12 @@ checkpointed_resamples <- function(resamples,
   }
   attr(combined, "checkpoint_run_fingerprint") <- run_fp
   attr(combined, "checkpoint_dir") <- checkpoint_dir
+  if (!is.null(shard) && length(good_rows) < n_splits) {
+    attr(combined, "shard_partial") <- list(
+      shard = shard, n_splits = n_splits, n_evaluated = length(good_rows),
+      evaluated_folds = fold_ids[!vapply(rows, is.null, logical(1))]
+    )
+  }
   combined
 }
 
@@ -541,6 +556,10 @@ checkpointed_resamples <- function(resamples,
 #' @param verbose Logical (default `FALSE`). Display progress from [workflowsets::workflow_map()].
 #' @param checkpoint_dir Directory to store per-workflow checkpoints. They are read back
 #'   with [readRDS()]: use a directory that only trusted processes write to.
+#'   Each workflow's result is stored with a fingerprint of that workflow, the
+#'   function and its arguments, so a changed workflow or setting does not
+#'   silently reuse a stale cached result (including for workflows this shard
+#'   did not evaluate).
 #' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
 #'   evaluate shard `i` of `n`. Anything else is an error.
 #' @param checkpoint_mismatch Action on fingerprint mismatch.
@@ -585,17 +604,46 @@ workflow_map_checkpointed <- function(object,
     dots$verbose <- NULL
   }
 
+  # One fingerprint per workflow: the workflow spec, the function and its
+  # arguments (including the resamples), and the seed. The run fingerprint
+  # combines them all.
+  ckpt_schema <- checkpoint_schema_version()
+  wflow_fp <- function(i) {
+    payload <- list(
+      schema = ckpt_schema,
+      seed_scheme = current_seed_scheme(),
+      fn = fn,
+      wflow_id = wflow_ids[i],
+      workflow = tryCatch(object$info[[i]]$workflow[[1]], error = function(e) NULL),
+      dots = dots,
+      seed = seed
+    )
+    paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+  }
+  wflow_fps <- vapply(seq_len(n_wflow), wflow_fp, character(1))
+  run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = wflow_fps, ids = wflow_ids), NULL))), collapse = "")
+
   for (i in seq_len(n_wflow)) {
     w_id <- wflow_ids[i]
     w_dir <- file.path(checkpoint_dir, safe_ids[i])
     w_spec <- object$info[[i]]$workflow[[1]]
 
     if (!active_mask[i]) {
-      # Try loading if exists
+      # Try loading if exists, but only when its fingerprint still matches:
+      # an unfingerprinted load would silently reuse a stale result when the
+      # workflow or settings changed.
       ckpt_file <- file.path(w_dir, "workflow_result.rds")
       if (file.exists(ckpt_file)) {
-        chk <- read_checkpoint_rds(ckpt_file)
-        results_list[[i]] <- chk
+        chk <- read_verified_checkpoint(ckpt_file, wflow_fps[i], checkpoint_mismatch = "recompute")
+        if (identical(chk$status, "hit")) {
+          results_list[[i]] <- chk$value
+        } else if (identical(chk$status, "mismatch")) {
+          warning(
+            "Cached result for workflow '", w_id, "' has a mismatched fingerprint and is ignored; ",
+            "this shard does not recompute it, so the workflow result is NULL for this run.",
+            call. = FALSE
+          )
+        }
       }
       next
     }
@@ -614,18 +662,21 @@ workflow_map_checkpointed <- function(object,
       } else {
         ckpt_file <- file.path(w_dir, "workflow_result.rds")
         if (file.exists(ckpt_file)) {
-          chk <- read_checkpoint_rds(ckpt_file)
-          if (!is.null(chk)) chk else {
+          chk <- read_verified_checkpoint(ckpt_file, wflow_fps[i], checkpoint_mismatch = checkpoint_mismatch)
+          if (identical(chk$status, "hit")) chk$value else {
+            if (!dir.exists(w_dir)) dir.create(w_dir, recursive = TRUE, showWarnings = FALSE)
             out_w <- workflowsets::workflow_map(object[i, , drop = FALSE], fn = fn, seed = seed, verbose = verbose, ...)
             res_w <- out_w$result[[1]]
-            save_checkpoint_rds(res_w, ckpt_file)
+            write_verified_checkpoint(res_w, ckpt_file, fingerprint = wflow_fps[i], run_fingerprint = run_fp,
+                                      meta = list(fn = "workflow_map_checkpointed", wflow_id = w_id))
             res_w
           }
         } else {
           if (!dir.exists(w_dir)) dir.create(w_dir, recursive = TRUE, showWarnings = FALSE)
           out_w <- workflowsets::workflow_map(object[i, , drop = FALSE], fn = fn, seed = seed, verbose = verbose, ...)
           res_w <- out_w$result[[1]]
-          save_checkpoint_rds(res_w, ckpt_file)
+          write_verified_checkpoint(res_w, ckpt_file, fingerprint = wflow_fps[i], run_fingerprint = run_fp,
+                                    meta = list(fn = "workflow_map_checkpointed", wflow_id = w_id))
           res_w
         }
       }
@@ -639,7 +690,8 @@ workflow_map_checkpointed <- function(object,
 
     results_list[[i]] <- res_i
     ckpt_file <- file.path(w_dir, "workflow_result.rds")
-    save_checkpoint_rds(res_i, ckpt_file)
+    write_verified_checkpoint(res_i, ckpt_file, fingerprint = wflow_fps[i], run_fingerprint = run_fp,
+                              meta = list(fn = "workflow_map_checkpointed", wflow_id = w_id))
   }
 
   res_set <- object
@@ -656,9 +708,13 @@ workflow_map_checkpointed <- function(object,
 #' @param resamples An `rset` resampling object.
 #' @param ... Arguments passed to [tune_race_survival()].
 #' @param checkpoint_dir Directory to store checkpoints.
-#' @param shard Optional shard specification.
+#' @param shard Optional shard specification. It is validated, but a single
+#'   race result cannot be sharded across machines: a non-`NULL` shard warns
+#'   and the full race is run (and cached) as one result.
 #' @param checkpoint_mismatch Mismatch handling action.
-#' @param progress Logical (default `FALSE`).
+#' @param progress Logical (default `FALSE`). Accepted for interface
+#'   consistency; the finetune race does not expose progress reporting, so it
+#'   currently has no effect.
 #' @return A racing tuning object.
 #' @seealso [tune_race_survival()], [tune_grid_checkpointed()]
 #' @export
@@ -670,6 +726,14 @@ tune_race_survival_checkpointed <- function(object,
                                             checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                             progress = FALSE) {
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
+  if (!is.null(shard)) {
+    warning(
+      "`shard` is ignored by tune_race_survival_checkpointed(): a single race result is evaluated over all ",
+      "resamples and cannot be split across shards. The full race is run and cached as one result.",
+      call. = FALSE
+    )
+  }
   if (is.null(checkpoint_dir)) {
     return(tune_race_survival(object, resamples = resamples, ...))
   }
@@ -679,11 +743,28 @@ tune_race_survival_checkpointed <- function(object,
   }
 
   ckpt_file <- file.path(checkpoint_dir, "race_survival_result.rds")
-  fp <- compute_tidymodels_split_fingerprint(
-    object = object,
-    split = resamples$splits[[1]],
-    control = list(...)
-  )
+  # Fingerprint every split, not just the first: changing folds 2..n must
+  # not reuse the cached race result.
+  race_dots <- list(...)
+  fp <- tryCatch({
+    split_fps <- vapply(seq_len(nrow(resamples)), function(i) {
+      compute_tidymodels_split_fingerprint(
+        object = object,
+        split = resamples$splits[[i]],
+        grid = race_dots$grid,
+        metrics = race_dots$metrics,
+        eval_time = race_dots$eval_time,
+        control = race_dots$control %||% list(...)
+      )
+    }, character(1))
+    paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, shard = shard), NULL))), collapse = "")
+  }, error = function(e) {
+    compute_tidymodels_split_fingerprint(
+      object = object,
+      split = resamples$splits[[1]],
+      control = list(...)
+    )
+  })
 
   if (file.exists(ckpt_file)) {
     chk <- read_verified_checkpoint(ckpt_file, fp, checkpoint_mismatch = checkpoint_mismatch)

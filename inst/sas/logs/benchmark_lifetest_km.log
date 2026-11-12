@@ -1,0 +1,148 @@
+1                                           The SAS System          22:42 Wednesday, November 11, 2026
+
+NOTE: Copyright (c) 2023 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M8) 
+      Licensed to TEMPLE UNIVERSITY - T&R - SFA, Site 70092167.
+NOTE: This session is executing on the X64_WIN+HOME  platform.
+
+
+
+NOTE: Analytical products:
+      
+      SAS/STAT 15.3
+      SAS/ETS 15.3
+      SAS/OR 15.3
+      SAS/IML 15.3
+      SAS/QC 15.3
+
+NOTE: Additional host information:
+
+ X64_WIN+HOME WIN 10.0.26300  Workstation
+
+NOTE: SAS initialization used:
+      real time           0.56 seconds
+      cpu time            0.40 seconds
+      
+1          /*==============================================================================
+2            TempleCBE SAS Validation Benchmark: PROC LIFETEST against
+3            km_lifetest_quantities() (R/sas_lifetest_parity.R)
+4          
+5            Twelve subjects in two strata, typed into this program (so R and SAS see
+6            the very same numbers; a test in tests/testthat/test-gaps-0811-w2-data.R
+7            checks the datalines against the R data frame used by
+8            km_lifetest_quantities()).
+9          
+10             Stratum A: times 5, 6, 6, 8, 10, 12 with events 1, 1, 0, 1, 1, 0.
+11               Product-limit survival: 0.8333 at 5, 0.6667 at 6, 0.4444 at 8,
+12               0.2222 at 10; median 8.
+13             Stratum B: times 3, 4, 7, 9, 9, 11 with events 1, 1, 1, 0, 1, 0.
+14               Product-limit survival: 0.8333 at 3, 0.6667 at 4, 0.5000 at 7,
+15               0.3333 at 9; median 8 (SAS reports the midpoint 8 of the flat step at 0.5).
+16         
+17           The survival and median values above are the hand-computed Kaplan-Meier
+18           values, verified in R (survfit) by the test file; they are NOT SAS output.
+19           The log-rank chi-square / p-value are not hand-computed here: compare them
+20           with compare_km_lifetest() once this program has been run in SAS.
+21         
+22           Status: DRAFT. This program has not been run in SAS yet (no SAS licence in
+23           the drafting environment), so no reference listing exists under
+24           inst/sas/list/ and no tests/testthat/reference/sas_lifetest_km.csv has been
+25           written. The next step is to run it once in SAS 9.4, store the listing,
+26           and add the Tier-1 reference test in the style of
+27           tests/testthat/test-sas_parity_reference.R. Until then the R quantities
+28           and the listing parser (parse_lifetest_lst) are tested against the
+29           hand-computed values and a synthetic listing in the layout SAS 9.4 prints.
+30         
+31           Can be executed directly from R:
+2                                           The SAS System          22:42 Wednesday, November 11, 2026
+
+32             TempleCBE::run_sas_script(
+33               TempleCBE::sas_macro_path("benchmark_lifetest_km.sas")
+34             )
+35         ==============================================================================*/
+36         
+37         options nodate nonumber linesize=100 pagesize=32767;
+38         
+39         /* 1. Load the %cbe_lifetest macro from the directory this program lives in
+40            (the pattern benchmark_brier_lung.sas uses). */
+41         %let script_dir = %sysfunc(tranwrd(%sysfunc(getoption(sysin)), benchmark_lifetest_km.sas,
+41       !  %str()));
+42         %macro _load_includes;
+43             %if %length(&script_dir) > 0 %then %do;
+44                 %include "&script_dir/cbe_lifetest.sas";
+45             %end;
+46         %mend _load_includes;
+47         %_load_includes;
+107        
+108        data work.lifetest_km;
+109            infile datalines dsd missover;
+110            length group $ 1;
+111            input group $ time status;
+112        datalines;
+
+NOTE: The data set WORK.LIFETEST_KM has 12 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+125        ;
+126        run;
+127        
+128        %cbe_lifetest(data=work.lifetest_km, time=time, status=status, group=group,
+129                      out_km=work.lifetest_km_est, out_quart=work.lifetest_km_quart,
+130                      out_test=work.lifetest_km_test);
+
+WARNING: ODS graphics must be enabled to obtain the full features of the PLOTS= option.
+NOTE: The LOGLOG transform is used to compute the confidence limits for the quartiles of the 
+      survivor distribution. To suppress using this transform, specify CONFTYPE=LINEAR in the PROC 
+      LIFETEST statement.
+NOTE: The data set WORK.LIFETEST_KM_TEST has 3 observations and 4 variables.
+NOTE: The data set WORK.LIFETEST_KM_QUART has 6 observations and 7 variables.
+NOTE: The data set WORK.LIFETEST_KM_EST has 14 observations and 9 variables.
+NOTE: The PROCEDURE LIFETEST printed pages 1-3.
+NOTE: PROCEDURE LIFETEST used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.03 seconds
+      
+
+131        
+132        /* Printed copies of the ODS output data sets, for the record. */
+133        proc print data=work.lifetest_km_est noobs;
+134            title "Product-Limit Survival Estimates (ODS ProductLimitEstimates)";
+135        run;
+
+NOTE: There were 14 observations read from the data set WORK.LIFETEST_KM_EST.
+NOTE: The PROCEDURE PRINT printed page 4.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+136        proc print data=work.lifetest_km_quart noobs;
+137            title "Quartiles (ODS Quartiles)";
+138        run;
+
+NOTE: There were 6 observations read from the data set WORK.LIFETEST_KM_QUART.
+NOTE: The PROCEDURE PRINT printed page 5.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+139        proc print data=work.lifetest_km_test noobs;
+140            title "Test of Equality over Strata (ODS HomTests)";
+141        run;
+
+NOTE: There were 3 observations read from the data set WORK.LIFETEST_KM_TEST.
+NOTE: The PROCEDURE PRINT printed page 6.
+NOTE: PROCEDURE PRINT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           0.72 seconds
+      cpu time            0.54 seconds
+      

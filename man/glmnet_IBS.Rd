@@ -26,6 +26,7 @@ glmnet_IBS(
   failure_ibs = NA_real_,
   parallel = FALSE,
   parallel_over = c("resamples", "everything"),
+  recurrent = c("error", "first", "gap"),
   ...
 )
 }
@@ -90,6 +91,14 @@ or [glmnet::cv.glmnet()]'s parallel mode. When \code{FALSE} (default), evaluates
 
 \item{parallel_over}{Tidymodels-compatible partition option: \code{"resamples"} (default) or \code{"everything"}.}
 
+\item{recurrent}{How recurrent (start/stop) data are scored, passed to
+[surv_subject_truth()] (or [surv_gap_truth()] for `"gap"`):
+`"error"` (default; a subject with an event before its last interval
+stops the fit with a failure row), `"first"` (score the time to the first
+event only), or `"gap"` (score the whole recurrent process by gap-time
+concordance; `IBS` is then `NA` and the result gains a `gap_concordance`
+column -- see Value).}
+
 \item{...}{Further arguments passed to [glmnet::glmnet()], such as
 `cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
 5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
@@ -99,7 +108,10 @@ versions.}
 A tibble with columns `IBS`, `lambda`, `term`, `estimate`, and
   `alpha`: one row per feature (including those the penalty set to 0). When
   the fit fails, a single row with `IBS = failure_ibs`, `lambda = NA`, and
-  `alpha`.
+  `alpha`. With `recurrent = "gap"` there is no integrated Brier score:
+  `IBS` is `NA` and the tibble gains a `gap_concordance` column (higher is
+  better); the fit-failure row then has `gap_concordance = NA`. A
+  recurrent-event Brier score is not computed; that is follow-up work.
 }
 \description{
 Tunes an elastic-net Cox model on the analysis set of one resampling split

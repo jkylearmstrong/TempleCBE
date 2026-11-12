@@ -7,9 +7,9 @@
 export_interactive_pipeline(
   all_objects,
   file = here::here("R", "workflow_viz", "full_compute_graph.html"),
-  direction = "LR",
+  direction = c("LR", "UD"),
   hierarchical = TRUE,
-  title = .pipeline_config_value("study_name", "Computational Pipeline"),
+  title = NULL,
   subtitle = "Computational Pipeline"
 )
 }

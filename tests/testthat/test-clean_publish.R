@@ -712,6 +712,21 @@ test_that("every option takes its value as '--flag value' or '--flag=value'", {
   expect_identical(parse_clean_publish_args("--message=- tidy")$commit_msg, "- tidy")
 })
 
+test_that("--allow-ignored takes one path per flag and never splits on commas", {
+  # a comma is a legal character in a file name, so one flag is one path (item 123)
+  expect_identical(
+    parse_clean_publish_args(c("--allow-ignored", "a,b.txt"))$allow_ignored,
+    "a,b.txt"
+  )
+  expect_identical(
+    parse_clean_publish_args(c(
+      "--allow-ignored", "a.txt", "--allow-ignored", "b.txt"
+    ))$allow_ignored,
+    c("a.txt", "b.txt")
+  )
+  expect_identical(parse_clean_publish_args(character())$allow_ignored, character())
+})
+
 test_that("an unknown or mistyped option is an error that lists the accepted options", {
   for (bad in c("--nopush", "--dry-run", "--no_push", "--remote-name", "-x", "--PUSH", "--push=yes", "-m=text", "--force")) {
     err <- tryCatch(parse_clean_publish_args(bad), error = function(e) conditionMessage(e))
@@ -2691,7 +2706,7 @@ test_that("every option reaches clean_publish() under the name the function take
   })
   res <- run_cli(c(
     "--push", "--remote", "pub", "--snapshot", "--branch", "release", "--private", "keep", "-m", "A message",
-    "--allow-ignored", "a.txt,b.txt", "--allow-other-refs", "--allow-overwrite-history", "--allow-submodules", "--no-disarm"
+    "--allow-ignored", "a.txt", "--allow-ignored", "b.txt", "--allow-other-refs", "--allow-overwrite-history", "--allow-submodules", "--no-disarm"
   ), fx$repo)
   expect_identical(res$status, 0L, info = res$text)
   expect_identical(seen$remote, "pub")

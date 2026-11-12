@@ -57,10 +57,13 @@ validate_secrets_dir <- function(dir) {
     )
   }
 
-  # Ensure directory exists with user-only permissions (0700)
+  # Ensure directory exists with user-only permissions (0700). The mode is
+  # set at creation, so the directory is never briefly world-readable before
+  # the chmod below; Sys.chmod() after creation still forces it (a umask can
+  # only remove bits, but a filesystem may ignore the mode at creation).
   created_dir <- FALSE
   if (!dir.exists(dir_norm)) {
-    dir.create(dir_norm, recursive = TRUE, showWarnings = FALSE)
+    dir.create(dir_norm, recursive = TRUE, showWarnings = FALSE, mode = "0700")
     if (!dir.exists(dir_norm)) {
       stop(
         "Failed to create secrets directory '", dir_norm, "'. Check path and permissions.",
@@ -81,6 +84,9 @@ validate_secrets_dir <- function(dir) {
         tryCatch(Sys.chmod(dir_norm, mode = "0700"), error = function(e) NULL)
         info_after <- file.info(dir_norm)
         if (bitwAnd(as.integer(info_after$mode), 63L) != 0L) {
+          # the directory was just created here and is empty: do not leave an
+          # insecure one behind for the caller to find and use
+          remove_dir_tree(dir_norm)
           stop(
             "Insecure permissions on created secrets directory '", dir_norm,
             "' (mode: ", format(info$mode), "). Directory must be user-only (0700).",
@@ -111,13 +117,38 @@ validate_secrets_dir <- function(dir) {
   pid <- as.integer(pid)
   # tools::psnice() safely queries process priority and returns NA/errors if process does not exist.
   # On Windows, tools::pskill(pid, 0L) invokes TerminateProcess!
+  # NOTE: psnice() returns NA when the niceness is unknown for any reason (R's
+  # documentation). Checked on Windows 11: it is NA for live processes the
+  # caller may not query (system services, other users' and elevated
+  # processes: 231 of 515 live processes), so NA alone must not mean "dead" or
+  # a live owner's lock could be stolen. On Windows the process table is
+  # asked instead (`tasklist`, which lists such processes too).
   res <- tryCatch(tools::psnice(pid), error = function(e) NA)
   if (!is.na(res)) return(TRUE)
   if (.Platform$OS.type != "windows") {
     return(tryCatch(isTRUE(tools::pskill(pid, 0L)), error = function(e) FALSE))
   }
-  FALSE
+  .windows_pid_listed(pid)
 }
+
+# TRUE when `tasklist` lists a process with this id. Any failure to ask (no
+# tasklist, a timeout) is FALSE, as before: a lock is then judged by its age.
+.windows_pid_listed <- function(pid) {
+  out <- tryCatch(
+    suppressWarnings(system2(
+      "tasklist", c("/FI", paste0("\"PID eq ", as.integer(pid), "\""), "/FO", "CSV", "/NH"),
+      stdout = TRUE, stderr = FALSE, timeout = 10
+    )),
+    error = function(e) character(0)
+  )
+  any(grepl(paste0("^\"[^\"]*\",\"", as.integer(pid), "\","), out))
+}
+
+# Counts the stale-lock renames of the session; part of the stale token, so
+# two renames in the same second never collide without touching the random
+# stream (sample.int() would consume it).
+.atomic_token_counter <- new.env(parent = emptyenv())
+.atomic_token_counter$n <- 0L
 
 #' Advisory File Locking
 #'
@@ -168,7 +199,8 @@ with_file_lock <- function(lock_path,
         }
         pid_alive <- .is_pid_alive(owner_pid)
         if (!pid_alive) {
-          stale_token <- paste0(lock_path, ".stale.", Sys.getpid(), ".", as.integer(Sys.time()), ".", sample.int(100000L, 1))
+          .atomic_token_counter$n <- .atomic_token_counter$n + 1L
+          stale_token <- paste0(lock_path, ".stale.", Sys.getpid(), ".", as.integer(Sys.time()), ".", .atomic_token_counter$n)
           if (suppressWarnings(file.rename(lock_path, stale_token))) {
             warning(
               "Removing stale advisory lock at '", lock_path, "' (age: ", round(age, 1),
@@ -260,7 +292,10 @@ atomic_write_file <- function(content, target_path) {
   # Atomically rename temporary file to target path
   success <- file.rename(tmp_file, target_path)
   if (!success) {
-    # Fallback in case of Windows file replacement lock
+    # Fallback in case of Windows file replacement lock: the copy is not
+    # atomic, so a reader can see a half-written file, and the caller should know
+    warning("The atomic rename of '", target_path, "' failed; falling back to a copy, which is not atomic.",
+            call. = FALSE)
     copied <- file.copy(tmp_file, target_path, overwrite = TRUE)
     if (!copied) {
       stop("Failed to atomically update target file '", target_path, "'.", call. = FALSE)

@@ -31,7 +31,8 @@ render_parameterized_study(
 
 \item{on_error}{`"continue"` (default; failures are reported in the result) or `"stop"`.}
 
-\item{dry_run}{Plan only; nothing is rendered.}
+\item{dry_run}{Plan only; nothing is rendered. With no documents to plan,
+the empty result (with the usual columns) is returned instead of an error.}
 
 \item{...}{Further arguments for [render_variants()] (`self_contained`, `check_params`, `renderer`, `quiet`).}
 }

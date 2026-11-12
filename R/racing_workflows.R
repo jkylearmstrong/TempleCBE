@@ -133,6 +133,7 @@ tune_race_survival <- function(object,
                                checkpoint_mismatch = c("recompute", "overwrite", "error"),
                                ...) {
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
   object <- apply_workflow_cox_ties(object)
   rlang::check_installed(c("finetune", "tune", "yardstick"), reason = "for tune_race_survival().")
   fn <- match.arg(fn)
@@ -150,6 +151,25 @@ tune_race_survival <- function(object,
   }
 
   eval_time <- eval_time %||% race_default_eval_time(object, resamples)
+
+  # Racing runs on parsnip workflows, which cannot fit start/stop data: stop
+  # early with the reason instead of failing deep in finetune/parsnip.
+  race_type <- tryCatch({
+    wflow <- if (inherits(object, "workflow_set")) object$info[[1]]$workflow[[1]] else object
+    pre <- tryCatch(workflows::extract_preprocessor(wflow), error = function(e) NULL)
+    rdata <- resamples$splits[[1]]$data
+    truth <- tryCatch(
+      if (inherits(pre, "recipe")) {
+        outcome <- pre$var_info$variable[pre$var_info$role == "outcome"]
+        rdata[[outcome[1]]]
+      } else if (inherits(pre, "formula")) {
+        rlang::eval_tidy(rlang::f_lhs(pre), data = rdata, env = rlang::f_env(pre))
+      },
+      error = function(e) NULL
+    )
+    if (inherits(truth, "Surv")) surv_components(truth)$type else NULL
+  }, error = function(e) NULL)
+  if (!is.null(race_type)) check_race_outcome_type(race_type, fn)
 
   if (is.null(metrics)) {
     metrics <- yardstick::metric_set(
@@ -190,9 +210,32 @@ tune_race_survival <- function(object,
   }
 
   fp <- if (!is.null(ckpt_file)) {
-    ckpt_schema <- checkpoint_schema_version()
-    payload <- list(schema = ckpt_schema, fn = call_fn, grid = grid, metrics = names(metrics), eval_time = eval_time, seed = seed)
-    paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    # The fingerprint must cover the workflow, the resamples and their data,
+    # not just the grid/metrics/seed: changing any of those must not reuse a
+    # cached race result. Per-split fingerprints (which hash the workflow,
+    # split, data, grid, metrics, eval_time and control) are combined here.
+    split_fps <- tryCatch(
+      vapply(seq_len(nrow(resamples)), function(i) {
+        compute_tidymodels_split_fingerprint(
+          object = object, split = resamples$splits[[i]], grid = grid,
+          metrics = metrics, eval_time = eval_time, control = control
+        )
+      }, character(1)),
+      error = function(e) NULL
+    )
+    if (is.null(split_fps)) {
+      ckpt_schema <- checkpoint_schema_version()
+      payload <- list(
+        schema = ckpt_schema, fn = call_fn, grid = grid,
+        metrics = metric_set_names(metrics), eval_time = eval_time, seed = seed,
+        object = paste0(as.character(openssl::sha256(serialize(object, NULL))), collapse = ""),
+        resamples = paste0(as.character(openssl::sha256(serialize(resamples, NULL))), collapse = ""),
+        shard = shard
+      )
+      paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
+    } else {
+      paste0(as.character(openssl::sha256(serialize(list(fps = split_fps, fn = call_fn, seed = seed, shard = shard), NULL))), collapse = "")
+    }
   } else {
     NULL
   }

@@ -89,20 +89,29 @@ sample_candidate_formulas <- function(predictors,
   if (!is.null(response) && (!is.character(response) || length(response) != 1L || !nzchar(response))) {
     stop("`response` must be one string such as \"Surv(time, status)\".", call. = FALSE)
   }
-  if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1) stop("`n` must be a positive whole number.", call. = FALSE)
+  if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1 || n != round(n)) {
+    stop("`n` must be a positive whole number.", call. = FALSE)
+  }
   n <- as.integer(n)
 
   for (tm in c(predictors, required)) {
+    if (trimws(tm) %in% c("1", "0")) {
+      stop("`", tm, "` is the intercept (or its removal), not a predictor term.", call. = FALSE)
+    }
     if (inherits(try(str2lang(tm), silent = TRUE), "try-error")) {
       stop("`", tm, "` is not a valid formula term.", call. = FALSE)
     }
   }
   pool <- setdiff(predictors, required)
   all_terms <- c(required, pool)
-  max_size <- if (is.null(max_size)) length(all_terms) else as.integer(max_size)
-  if (length(min_size) != 1L || length(max_size) != 1L) {
-    stop("`min_size` and `max_size` must be single whole numbers.", call. = FALSE)
+  if (!is.null(max_size) &&
+      (!is.numeric(max_size) || length(max_size) != 1L || is.na(max_size) || max_size != round(max_size))) {
+    stop("`max_size` must be single whole numbers.", call. = FALSE)
   }
+  if (!is.numeric(min_size) || length(min_size) != 1L || is.na(min_size) || min_size != round(min_size)) {
+    stop("`min_size` must be single whole numbers.", call. = FALSE)
+  }
+  max_size <- if (is.null(max_size)) length(all_terms) else as.integer(max_size)
   min_size <- as.integer(min_size)
   if (is.na(min_size) || is.na(max_size) || min_size < 1L) {
     stop("`min_size` and `max_size` must be whole numbers, with `min_size` at least 1.", call. = FALSE)
@@ -141,6 +150,15 @@ sample_candidate_formulas <- function(predictors,
     if (!is.list(exclude) || !all(vapply(exclude, is.character, logical(1)))) {
       stop("`exclude` must be a list of character vectors.", call. = FALSE)
     }
+    # An empty element bans every formula (`all(logical(0))` is TRUE), and an
+    # NA element can never match: both are almost certainly a group that
+    # filtered down to nothing, so reject them instead of failing later with
+    # a misleading "required terms break a constraint" error.
+    bad_ex <- vapply(exclude, function(ex) length(ex) == 0L || anyNA(ex), logical(1))
+    if (any(bad_ex)) {
+      stop("`exclude` must not contain empty or NA entries (element(s) ",
+           paste(which(bad_ex), collapse = ", "), ").", call. = FALSE)
+    }
   }
 
   degenerate <- character()
@@ -152,7 +170,13 @@ sample_candidate_formulas <- function(predictors,
     }
   }
 
-  parents_of <- function(term) if (grepl(":", term, fixed = TRUE)) trimws(strsplit(term, ":", fixed = TRUE)[[1]]) else character()
+  # Depth-aware: `log(a:b)` has no parents of its own (the ":" is inside the
+  # call), while `a:b` has parents `a` and `b`. The naive `strsplit(term, ":")`
+  # gave `log(a:b)` the parents `"log(a"` and `"b)"`, so it could never be sampled.
+  parents_of <- function(term) {
+    par <- .term_parents(term)
+    if (length(par) > 1L) par else character()
+  }
   valid <- function(terms) {
     if (isTRUE(hierarchy)) {
       for (tm in terms) {

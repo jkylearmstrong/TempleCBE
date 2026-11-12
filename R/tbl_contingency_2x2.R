@@ -68,10 +68,10 @@ tbl_contingency_2x2 <- function(data, row_var, col_var,
     out[[colnames(tab)[j]]] <- vapply(1:2, function(i) cell(tab[i, j], den_of(i, j)), "")
   }
   if (include_total) {
-    out$Total <- vapply(1:2, function(i) cell(sum(tab[i, ]), if (percent == "col") n else sum(tab[i, ])), "")
+    out$Total <- vapply(1:2, function(i) cell(sum(tab[i, ]), if (percent == "row") sum(tab[i, ]) else n), "")
     tot <- c(
       "Total",
-      vapply(1:2, function(j) cell(sum(tab[, j]), if (percent == "row") n else sum(tab[, j])), ""),
+      vapply(1:2, function(j) cell(sum(tab[, j]), if (percent == "col") sum(tab[, j]) else n), ""),
       cell(n, n)
     )
     out <- rbind(out, stats::setNames(as.list(tot), names(out)))

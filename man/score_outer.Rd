@@ -75,7 +75,10 @@ finishes or errors (defaults to `getOption("templecbe.on_complete", NULL)`).}
 \value{
 A tibble with columns `outer_fold`, `model`, `alpha`, `formula` (if provided),
   `IBS` (integrated Brier score), `lambda`, and `coefficients` (list column of
-  coefficient estimates).
+  coefficient estimates). With `recurrent = "gap"` (passed through `...` to
+  [glmnet_IBS()]) there is no IBS: `IBS` is `NA` and the tibble gains a
+  `gap_concordance` column (higher is better) with the gap-time concordance
+  of each outer-fold fit.
 }
 \description{
 A tidy wrapper around [glmnet_IBS()] using [furrr::future_map()] (or sequential

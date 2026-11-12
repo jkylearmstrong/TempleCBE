@@ -89,6 +89,14 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
   bar_position <- match.arg(bar_position)
   engine <- match.arg(engine)
   test <- match.arg(test)
+  if (!is.numeric(size_range) || length(size_range) != 2L || anyNA(size_range) ||
+      any(!is.finite(size_range)) || size_range[1] < 0 || size_range[1] > size_range[2]) {
+    stop("`size_range` must be two finite numbers with 0 <= min <= max.", call. = FALSE)
+  }
+  if (!is.character(fill_colors) || length(fill_colors) == 0L || anyNA(fill_colors) ||
+      any(!nzchar(fill_colors))) {
+    stop("`fill_colors` must be a non-empty character vector of colours.", call. = FALSE)
+  }
 
   # Extract contingency table
   if (is.matrix(data) || is.table(data)) {
@@ -107,6 +115,13 @@ cbe_contingency_plot <- function(data, var1 = NULL, var2 = NULL,
 
   dims <- dim(tab)
   is_2x2 <- identical(as.integer(dims), c(2L, 2L))
+  # An empty or all-zero table used to build plots that only failed at
+  # print/build time (mosaic: "Column 'xmin' not found") or plotted NaN
+  # percentages (2x2 square): stop up front instead.
+  if (sum(tab) == 0) {
+    stop("`data` has no observations for `", lbl1, "` x `", lbl2,
+         "` (the table is empty or all zero).", call. = FALSE)
+  }
   plot_title <- if (!is.null(title)) title else paste0(lbl1, " \u00d7 ", lbl2)
 
   # Compute test results for caption. The plot shows every level in `tab`, but
@@ -1095,6 +1110,22 @@ pairwise_combos <- function(data, cols = NULL, labels_df = NULL) {
       )
     }
     cat_cols <- intersect(cols, colnames(data))
+    # Explicit `cols` were never type-checked (unlike the NULL path, which
+    # selects only character/factor columns), so a numeric column was
+    # silently included.
+    non_cat <- cat_cols[!vapply(data[cat_cols], function(x) is.character(x) || is.factor(x), logical(1))]
+    if (length(non_cat) > 0L) {
+      stop("`cols` must name categorical (character or factor) columns; not categorical: ",
+           paste(non_cat, collapse = ", "), ".", call. = FALSE)
+    }
+  }
+
+  if (!is.null(labels_df) && all(c("variable", "label") %in% names(labels_df))) {
+    dup_lbl <- labels_df$variable[duplicated(labels_df$variable)]
+    if (length(dup_lbl) > 0L) {
+      stop("`labels_df` has duplicate `variable` entries: ",
+           paste(unique(dup_lbl), collapse = ", "), "; the first label was silently used.", call. = FALSE)
+    }
   }
 
   if (length(cat_cols) < 2) {

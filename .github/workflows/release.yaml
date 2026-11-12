@@ -131,6 +131,24 @@ jobs:
           Rscript -e 'desc::desc_set_version(Sys.getenv("RELEASE_TAG"), file = "DESCRIPTION", normalize = FALSE)'
           echo "Updated DESCRIPTION Version to: $(Rscript -e 'cat(as.character(desc::desc_get_version("DESCRIPTION")))')"
 
+      - name: Step 5b - Add NEWS entry for the release version
+        if: ${{ inputs.update_description }}
+        run: |
+          set -euo pipefail
+          # Step 5 bumps DESCRIPTION to $RELEASE_TAG; NEWS.md must head with the same
+          # version, or a release branch ships a DESCRIPTION whose version has no NEWS
+          # entry. Prepend a bare heading (the maintainer fills in the entries in the
+          # pull request); do nothing if the heading is already there.
+          heading="# TempleCBE ${RELEASE_TAG}"
+          if [ "$(head -n 1 NEWS.md)" = "$heading" ]; then
+            echo "NEWS.md is already headed '$heading'; nothing to add."
+          else
+            { printf '%s\n\n' "$heading"; cat NEWS.md; } > NEWS.md.new
+            mv NEWS.md.new NEWS.md
+            echo "Prepended '$heading' to NEWS.md."
+          fi
+          head -n 1 NEWS.md
+
       - name: Step 6a - Document package
         if: ${{ inputs.run_document }}
         run: Rscript -e "devtools::document()"

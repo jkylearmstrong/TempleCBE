@@ -52,7 +52,9 @@ common.
 For a binary outcome the table also has the calibration intercept (calibration-in-the-large,
 with the logit of the predicted risk as an offset) and slope (the coefficient of the
 logit of the predicted risk), and the Brier score, in `attr(x, "metrics")`. A slope below 1
-means the predictions are too extreme (overfitting). These are `NA` for Surv outcomes.
+means the predictions are too extreme (overfitting). These are `NA` for Surv outcomes,
+and also `NA` when the binary outcome has a single class (the logistic fits are then
+degenerate: separation makes the intercept/slope essentially arbitrary).
 }
 \examples{
 set.seed(1)

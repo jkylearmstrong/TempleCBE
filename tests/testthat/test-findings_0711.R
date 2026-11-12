@@ -319,7 +319,7 @@ test_that("render_pipeline() rejects a `workers` that is not a number", {
   withr::local_options(templecbe_suppress_renv_warning = TRUE)
   expect_error(
     suppressMessages(render_pipeline(f, workers = "two", renv_guard = FALSE, manifest = FALSE)),
-    "`workers` must be NULL or a single number"
+    "`workers` must be NULL or a single whole number"
   )
 })
 

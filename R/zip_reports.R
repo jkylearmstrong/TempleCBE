@@ -83,7 +83,12 @@ zip_reports <- function(reports,
   if (!requireNamespace("openxlsx", quietly = TRUE)) {
     stop("Package 'openxlsx' is required by zip_reports(). Install it with install.packages(\"openxlsx\").", call. = FALSE)
   }
-  stopifnot(all(c("name", "path") %in% names(reports)))
+  if (!is.data.frame(reports) || !all(c("name", "path") %in% names(reports))) {
+    stop("`reports` must be a data frame with columns `name` and `path`.", call. = FALSE)
+  }
+  if (nrow(reports) == 0L) {
+    stop("`reports` has no rows: there is nothing to zip.", call. = FALSE)
+  }
   if (!("stage" %in% names(reports))) reports$stage <- NA_character_
   if (!("description" %in% names(reports))) reports$description <- NA_character_
 
@@ -132,8 +137,10 @@ zip_reports <- function(reports,
     FALSE
   }
 
-  build_dir <- file.path(tempdir(), paste0("report_build_", format(Sys.time(), "%Y%m%d_%H%M%S")))
-  if (dir.exists(build_dir)) remove_dir_tree(build_dir)
+  # The staged build directory is unique per call: two runs in the same
+  # second used to share one (the name carried Sys.time() to the second),
+  # and the second deleted the first run's staged files.
+  build_dir <- tempfile("report_build_")
   dir.create(build_dir, recursive = TRUE)
   # The staged copies exist only to be zipped: a copy of every report would
   # otherwise stay in tempdir() until the R session ends.
@@ -159,11 +166,15 @@ zip_reports <- function(reports,
       `Modified Date` = NA_character_, Description = report$description
     )
 
-    pdf_output_path <- sub("\\.qmd$", ".pdf", report$path)
+    pdf_output_path <- sub("\\.(qmd|rmd)$", ".pdf", report$path, ignore.case = TRUE)
     pdf_exists <- file.exists(pdf_output_path)
 
+    # the index date is the newest of the formats actually shipped, not
+    # whichever format happened to be staged last
+    shipped_mtimes <- as.POSIXct(character())
+
     for (fmt in output_formats) {
-      output_path <- sub("\\.qmd$", paste0(".", fmt), report$path)
+      output_path <- sub("\\.(qmd|rmd)$", paste0(".", fmt), report$path, ignore.case = TRUE)
       staged_output_name <- paste0(staged_stems[i], ".", fmt)
 
       dest_dir <- file.path(build_dir, fmt, stage_folder)
@@ -171,7 +182,7 @@ zip_reports <- function(reports,
       if (fmt == "pdf") {
         if (pdf_exists && stage_copy(output_path, dest_dir, staged_output_name)) {
           row_data$`PDF Link` <- file.path(".", fmt, stage_folder, staged_output_name)
-          row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
+          shipped_mtimes <- c(shipped_mtimes, file.info(output_path)$mtime)
         }
       } else if (fmt == "docx") {
         # A DOCX is only shipped when it is as new as its PDF: one that is
@@ -185,18 +196,16 @@ zip_reports <- function(reports,
 
         if (pdf_exists && !ship_docx) {
           if (!is.null(docx_converter)) {
-            converted <- if (is.null(docx_from_pdf)) {
-              tryCatch(
-                docx_converter(pdf_output_path, output_path),
-                error = function(e) {
-                  if (isTRUE(docx_strict)) stop(e)
-                  warning("PDF -> DOCX conversion failed for '", report$name, "': ", conditionMessage(e), call. = FALSE)
-                  FALSE
-                }
-              )
-            } else {
-              docx_converter(pdf_output_path, output_path)
-            }
+            # a custom converter failing used to abort the whole run, while
+            # the built-in one only warned: both are guarded the same way
+            converted <- tryCatch(
+              docx_converter(pdf_output_path, output_path),
+              error = function(e) {
+                if (isTRUE(docx_strict)) stop(e)
+                warning("PDF -> DOCX conversion failed for '", report$name, "': ", conditionMessage(e), call. = FALSE)
+                FALSE
+              }
+            )
             ship_docx <- !isFALSE(converted) && docx_is_current()
             if (!ship_docx) {
               if (isTRUE(docx_strict)) {
@@ -217,7 +226,7 @@ zip_reports <- function(reports,
         if (ship_docx) {
           if (stage_copy(output_path, dest_dir, staged_output_name)) {
             row_data$`DOCX Link` <- file.path(".", fmt, stage_folder, staged_output_name)
-            row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
+            shipped_mtimes <- c(shipped_mtimes, file.info(output_path)$mtime)
           }
         } else if (pdf_exists) {
           # Asked for, the report was rendered, but there is no current DOCX
@@ -227,9 +236,12 @@ zip_reports <- function(reports,
       } else {
         if (file.exists(output_path) && stage_copy(output_path, dest_dir, staged_output_name)) {
           if (fmt == "html") row_data$`HTML Link` <- file.path(".", fmt, stage_folder, staged_output_name)
-          row_data$`Modified Date` <- format(file.info(output_path)$mtime, "%Y-%m-%d %H:%M")
+          shipped_mtimes <- c(shipped_mtimes, file.info(output_path)$mtime)
         }
       }
+    }
+    if (length(shipped_mtimes) > 0L) {
+      row_data$`Modified Date` <- format(max(shipped_mtimes), "%Y-%m-%d %H:%M")
     }
     index_data <- dplyr::bind_rows(index_data, row_data)
   }
@@ -271,6 +283,11 @@ zip_reports <- function(reports,
 
   if (is.null(zip_name) || !nzchar(zip_name)) {
     zip_name <- paste0("all_reports_", format(Sys.Date(), "%Y_%m_%d"), ".zip")
+  }
+  # a zip name is a file name, not a path: a separator would write the zip
+  # outside output_dir (or fail on Windows, where it is not a valid name)
+  if (grepl("[/\\\\]", zip_name)) {
+    stop("`zip_name` must be a file name, not a path: '", zip_name, "'.", call. = FALSE)
   }
   if (!grepl("\\.zip$", zip_name, ignore.case = TRUE)) zip_name <- paste0(zip_name, ".zip")
 

@@ -9,19 +9,28 @@ pipeline_config(
   stage_labels = NULL,
   stage_colors = NULL,
   default_formats = NULL,
-  reset = FALSE
+  reset = FALSE,
+  restore = NULL
 )
 }
 \arguments{
-\item{study_name}{Character string for the main study title.}
+\item{study_name}{Character string for the main study title. A single
+`NA` clears the setting (leaving it to the session option or the
+default); any other value must be a single non-empty string.}
 
-\item{stage_labels}{Named character vector mapping raw stage identifiers to human-readable labels.}
+\item{stage_labels}{Named character vector mapping raw stage identifiers to human-readable labels.
+A single `NA` clears the setting; otherwise every entry must be named
+and hold a single non-empty string.}
 
-\item{stage_colors}{Named list or character vector mapping stage identifiers to hex colors.}
+\item{stage_colors}{Named list or character vector mapping stage identifiers to hex colors.
+A single `NA` clears the setting; otherwise every entry must be named
+and hold a single non-empty string.}
 
 \item{default_formats}{Optional character vector of default output formats
 for pipeline renderers (e.g. \code{c("pdf", "docx")}). When set, this overrides
-the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.}
+the package default across \code{\link{render_pipeline}} and \code{\link{create_qmd_renderer}}.
+A single `NA` clears the setting; otherwise every entry must name a
+known output format (or `"yaml"` / `"auto"`).}
 
 \item{reset}{Logical (default `FALSE`). When `TRUE`, clears everything set
 with `pipeline_config()` and falls back to the session options (or the
@@ -29,16 +38,27 @@ package defaults when those are unset). It does not erase the options
 themselves. The reset is done first, so other arguments given in the same
 call are then set: `pipeline_config(study_name = "X", reset = TRUE)` leaves
 only the study name set.}
+
+\item{restore}{A value returned by an earlier `pipeline_config()` call:
+puts back exactly the package layer that call left behind (the session
+options are left alone). It cannot be combined with `reset` or with a
+value to set. This is the way to undo a call; `options(attr(cfg, "previous"))`
+only restores the option layer and must not be used for that, because
+`"previous"` holds the *effective* values (package setting over option),
+so restoring through `options()` would bake a package setting into a
+session option, where `pipeline_config(reset = TRUE)` can no longer clear it.}
 }
 \value{
 A list containing the current configuration options, with the
-  attribute `"previous"`: the configuration as it was before the call,
-  named the way [options()] names the session options
-  (`pipeline.study_name` and so on). `pipeline_config()` no longer writes
-  those options, so `options(attr(cfg, "previous"))` only restores the
-  option layer; to drop what a call set and fall back to the session
-  options, use `pipeline_config(reset = TRUE)`. A call with no arguments
-  returns the current configuration.
+  attributes `"previous"` and `"previous_env"`: the configuration as it
+  was before the call (the first named the way [options()] names the
+  session options, `pipeline.study_name` and so on; the second the raw
+  package layer, `NULL` where nothing was set). `"previous"` holds the
+  *effective* values, so it is for inspection (and for putting one value
+  back with a plain `pipeline_config()` call), not for `options()`: to undo
+  a whole call, use `pipeline_config(restore = cfg)`, which reads the
+  `"current_env"` attribute (the package layer the returned value
+  represents). A call with no arguments returns the current configuration.
 }
 \description{
 Decouples project-specific parameters (study name, stage display labels,

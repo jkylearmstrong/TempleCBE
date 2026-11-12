@@ -63,6 +63,28 @@
 #' }
 tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, folds = 5, grid = 10,
                                   race = TRUE, seed = 123, verbose = FALSE) {
+  if (!is.logical(race) || length(race) != 1L || is.na(race)) {
+    stop("`race` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+    stop("`seed` must be a single whole number or NULL.", call. = FALSE)
+  }
+  # `grid` is passed straight to workflow_map(): a non-integer, a data frame
+  # with no rows, or anything else would fail deep inside the tuning run.
+  if (is.numeric(grid)) {
+    if (length(grid) != 1L || is.na(grid) || grid < 1 || grid != round(grid)) {
+      stop("`grid` must be a single whole number of at least 1, or a grid data frame.", call. = FALSE)
+    }
+  } else if (is.data.frame(grid)) {
+    if (nrow(grid) < 1L) stop("`grid` must have at least one row.", call. = FALSE)
+  } else {
+    stop("`grid` must be a single whole number of at least 1, or a grid data frame.", call. = FALSE)
+  }
+  if (!inherits(folds, "rset") &&
+      (!is.numeric(folds) || length(folds) != 1L || is.na(folds) || !is.finite(folds) ||
+       folds < 2 || folds != round(folds))) {
+    stop("`folds` must be a whole number of at least 2 or an rset.", call. = FALSE)
+  }
   need <- c("workflowsets", "tune", "rsample", "parsnip", "workflows", "yardstick", if (isTRUE(race)) "finetune")
   miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
   if (length(miss)) {
@@ -99,8 +121,25 @@ tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, f
   if (!is.null(seed)) set.seed(seed)
   if (inherits(folds, "rset")) {
     resamples <- folds
+    # A user-supplied rset must be built on the observed-target rows: `.row`
+    # is mapped back with `which(observed)[preds$.row]`, so folds built on the
+    # full data silently mis-attribute predictions. A fold built on the full
+    # data has assessment/analysis rows whose target is missing, or row
+    # indices outside the observed-rows frame.
+    for (s in resamples$splits) {
+      in_id <- s$in_id
+      if (!is.null(in_id) && (anyNA(in_id) || any(in_id < 1L) || any(in_id > nrow(train)))) {
+        stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
+             "a split has row indices outside those rows.", call. = FALSE)
+      }
+      for (part in list(rsample::analysis(s), rsample::assessment(s))) {
+        if (target %in% names(part) && anyNA(part[[target]])) {
+          stop("`folds` (rset) must be built on the rows of `data` where `target` is observed: ",
+               "a split contains rows whose `target` is missing.", call. = FALSE)
+        }
+      }
+    }
   } else {
-    if (!is.numeric(folds) || length(folds) != 1L || folds < 2) stop("`folds` must be a number of at least 2 or an rset.", call. = FALSE)
     resamples <- rsample::vfold_cv(train, v = as.integer(folds))
   }
   if (isTRUE(race) && nrow(resamples) < 3L) stop("Racing needs at least three folds; use `race = FALSE`.", call. = FALSE)
@@ -125,6 +164,12 @@ tune_impute_workflows <- function(data, target, recipes = NULL, models = NULL, f
 
   all_metrics <- tibble::as_tibble(workflowsets::collect_metrics(res))
   all_metrics <- all_metrics[all_metrics$.metric == "rmse", , drop = FALSE]
+  # With no RMSE rows at all, `max(all_metrics$n)` is -Inf and the best-row /
+  # ranking chain below fails cryptically (empty `best_rows`, `best_id` NA).
+  if (nrow(all_metrics) == 0L) {
+    stop("No RMSE metrics were collected for any workflow; the tuning run produced nothing to rank.",
+         call. = FALSE)
+  }
   n_folds <- nrow(resamples)
   # a raced candidate that was dropped early was scored on fewer folds; only complete ones can win
   complete <- all_metrics[all_metrics$n == max(all_metrics$n), , drop = FALSE]
@@ -224,4 +269,163 @@ tbl_tune_best_model <- function(x, digits = 3) {
     rse = round(if (x$null_rmse > 0) (r$rmse / x$null_rmse)^2 else NA_real_, digits),
     selected = r$wflow_id == x$best_workflow_id
   )
+}
+
+#' Tune Imputation for a Whole Data Set
+#'
+#' Extends [tune_impute_workflows()] — which benchmarks recipes and models
+#' for predicting **one** numeric variable — to a whole data set, so the user
+#' does not have to loop it per variable. With `engine = "workflows"`
+#' (default), each incomplete numeric column is tuned in turn with
+#' [tune_impute_workflows()] (same `recipes`, `models`, `folds`, `grid` and
+#' `race`, with the seed advanced by one per variable so each variable's
+#' folds are reproducible and distinct), and the tuned imputations are
+#' combined into one completed data set. With `engine = "missforest"` or
+#' `"missranger"`, the whole data set is instead imputed by sweeping `mtry`
+#' with [missforest_sweep_mtry()] / [missranger_sweep_mtry()], which already
+#' operate on full data but only tune `mtry`; extra arguments (`mtry_values`,
+#' `ntree` / `num.trees`, `parallel`, `max_pct_missing`, `checkpoint_dir`,
+#' `shard`, ...) are passed through to the sweep.
+#'
+#' @section How the per-variable fits combine:
+#' Each variable is tuned against the **original** data (the other columns as
+#' they stand, with the recipe's own median/mode imputation of predictors),
+#' not against already-imputed values, so the result does not depend on the
+#' order variables are tuned in. The completed data takes each tuned
+#' variable's column from its own fit. A variable that is complete, or that
+#' is not numeric, is never a target for the `"workflows"` engine; the
+#' forest engines impute every column they are given (numeric, factor and
+#' character) except `exclude`d ones.
+#'
+#' @param data A data frame.
+#' @param targets Character vector of columns to impute, or `NULL` (default)
+#'   for every incomplete numeric column ( `"workflows"` engine) or every
+#'   incomplete column (`"missforest"` / `"missranger"` engines).
+#' @param engine `"workflows"`, `"missforest"` or `"missranger"`.
+#' @param exclude Character vector of columns to hold out of the imputation
+#'   entirely (identifiers, time columns). Passed through to the sweep for
+#'   the forest engines; for the `"workflows"` engine the columns are simply
+#'   never targets and are never used as predictors either (they are dropped
+#'   from the tuning data).
+#' @param recipes,models,folds,grid,race,seed,verbose Passed to
+#'   [tune_impute_workflows()] for the `"workflows"` engine.
+#' @param ... For the forest engines, passed to [missforest_sweep_mtry()] /
+#'   [missranger_sweep_mtry()] (for example `mtry_values`, `ntree`,
+#'   `num.trees`, `parallel`, `max_pct_missing`, `checkpoint_dir`, `shard`).
+#' @return A list of class `impute_tune_dataset` with
+#'   \item{per_variable}{named list of per-variable [tune_impute_workflows()]
+#'     results (`"workflows"` engine), or the single sweep result
+#'     (`"missforest"` / `"missranger"` engines, under `sweep`)}
+#'   \item{summary}{one row per imputed variable: `variable`, and for the
+#'     `"workflows"` engine `best_workflow_id`, `rmse`, `null_rmse`, `rse`
+#'     and `n_imputed`; for the forest engines `best_mtry` and `best_error`}
+#'   \item{data}{`data` with every target column filled in}
+#'   \item{engine, targets}{the engine used and the variables imputed}
+#' @seealso [tune_impute_workflows()], [missforest_sweep_mtry()],
+#'   [missranger_sweep_mtry()]
+#' @param x The object to print (the result of the function).
+#' @export
+#' @examples
+#' \donttest{
+#' ok <- vapply(c("workflowsets", "finetune", "tune", "rsample", "parsnip", "workflows", "yardstick"),
+#'              requireNamespace, logical(1), quietly = TRUE)
+#' if (all(ok)) {
+#'   d <- mtcars
+#'   d$mpg[c(3, 11, 20)] <- NA
+#'   d$hp[c(5, 15)] <- NA
+#'   res <- tune_impute_dataset(d, folds = 3, race = FALSE)
+#'   res$summary
+#' }
+#' }
+tune_impute_dataset <- function(data, targets = NULL, engine = c("workflows", "missforest", "missranger"),
+                                exclude = NULL, recipes = NULL, models = NULL, folds = 5, grid = 10,
+                                race = TRUE, seed = 123, verbose = FALSE, ...) {
+  engine <- match.arg(engine)
+  if (!is.data.frame(data)) stop("`data` must be a data frame.", call. = FALSE)
+  if (!is.null(exclude) && (!is.character(exclude) || any(!exclude %in% names(data)))) {
+    stop("`exclude` must name columns of `data`.", call. = FALSE)
+  }
+  if (!is.null(targets) && (!is.character(targets) || length(targets) == 0L || anyDuplicated(targets) ||
+                            any(!targets %in% names(data)))) {
+    stop("`targets` must name columns of `data`, without duplicates.", call. = FALSE)
+  }
+  if (!is.null(targets) && length(intersect(targets, exclude)) > 0L) {
+    stop("`targets` and `exclude` must not overlap.", call. = FALSE)
+  }
+
+  if (identical(engine, "workflows")) {
+    if (is.null(targets)) {
+      targets <- names(data)[vapply(data, function(z) is.numeric(z) && anyNA(z), logical(1))]
+      targets <- setdiff(targets, exclude)
+    } else if (any(!vapply(data[targets], is.numeric, logical(1)))) {
+      stop("The \"workflows\" engine imputes numeric columns only: non-numeric target(s): ",
+           paste(targets[!vapply(data[targets], is.numeric, logical(1))], collapse = ", "), ".", call. = FALSE)
+    }
+    if (length(targets) == 0L) {
+      stop("No incomplete numeric columns to impute.", call. = FALSE)
+    }
+    # Fail before fitting anything when a target cannot be tuned at all.
+    too_few <- targets[vapply(data[targets], function(z) sum(!is.na(z)) < 10L, logical(1))]
+    if (length(too_few) > 0L) {
+      stop("Target(s) need at least 10 observed rows: ", paste(too_few, collapse = ", "), ".", call. = FALSE)
+    }
+    tune_data <- if (length(exclude) > 0L) data[, setdiff(names(data), exclude), drop = FALSE] else data
+    per_variable <- list()
+    out_data <- data
+    for (i in seq_along(targets)) {
+      tg <- targets[i]
+      res <- tune_impute_workflows(
+        tune_data, tg, recipes = recipes, models = models, folds = folds, grid = grid,
+        race = race, seed = if (is.null(seed)) NULL else seed + i - 1L, verbose = verbose
+      )
+      per_variable[[tg]] <- res
+      out_data[[tg]] <- res$data[[tg]]
+    }
+    summary <- tibble::tibble(
+      variable = targets,
+      best_workflow_id = vapply(per_variable, function(r) r$best_workflow_id, character(1)),
+      rmse = vapply(per_variable, function(r) r$rmse, numeric(1)),
+      null_rmse = vapply(per_variable, function(r) r$null_rmse, numeric(1)),
+      rse = vapply(per_variable, function(r) r$rse, numeric(1)),
+      n_imputed = vapply(per_variable, function(r) r$n_imputed, integer(1))
+    )
+    out <- list(per_variable = per_variable, summary = summary, data = out_data,
+                engine = engine, targets = targets)
+  } else {
+    if (is.null(targets)) {
+      targets <- names(data)[vapply(data, anyNA, logical(1))]
+      targets <- setdiff(targets, exclude)
+    }
+    if (length(targets) == 0L) {
+      stop("No incomplete columns to impute.", call. = FALSE)
+    }
+    sweep_fn <- if (identical(engine, "missforest")) missforest_sweep_mtry else missranger_sweep_mtry
+    sweep <- sweep_fn(data, exclude = exclude, seed = seed, ...)
+    best <- sweep$best
+    summary <- tibble::tibble(
+      variable = targets,
+      best_mtry = vapply(targets, function(v) {
+        hit <- best$mtry[best$column == v]
+        if (length(hit) == 0L) NA_real_ else hit[1]
+      }, numeric(1)),
+      best_error = vapply(targets, function(v) {
+        hit <- best$error[best$column == v]
+        if (length(hit) == 0L) NA_real_ else hit[1]
+      }, numeric(1))
+    )
+    out <- list(per_variable = list(sweep = sweep), summary = summary, data = sweep$imp_data,
+                engine = engine, targets = targets)
+  }
+  class(out) <- c("impute_tune_dataset", "list")
+  out
+}
+
+#' @rdname tune_impute_dataset
+#' @export
+print.impute_tune_dataset <- function(x, ...) {
+  cat("<impute_tune_dataset> engine: ", x$engine,
+      "; imputed ", length(x$targets), " variable(s): ",
+      paste(x$targets, collapse = ", "), "\n", sep = "")
+  print(x$summary, n = nrow(x$summary))
+  invisible(x)
 }

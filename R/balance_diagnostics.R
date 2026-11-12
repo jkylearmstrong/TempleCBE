@@ -57,7 +57,8 @@ balance_one <- function(x, in_ref, in_cmp, w, denominator) {
 #'   `weights` column.
 #' @param weights `NULL` (default), the name of a numeric column of `data`, or a numeric vector
 #'   with one weight per row. When given, the table has an `"Adjusted"` row besides the
-#'   `"Unadjusted"` one for each covariate.
+#'   `"Unadjusted"` one for each covariate. Rows with a missing weight are dropped
+#'   from the Adjusted sample only; the Unadjusted sample keeps them.
 #' @param ref The reference level of `group`. Default: the first level (the first value, for
 #'   a non-factor).
 #' @param denominator `"pooled"` (default) or `"reference"` (the standard deviation of the
@@ -136,7 +137,10 @@ balance_smd <- function(data,
     } else if (is.numeric(x)) {
       cols[[v]] <- as.numeric(x)
     } else if (is.factor(x) || is.character(x)) {
-      lv <- if (is.factor(x)) levels(x) else sort(unique(x[!is.na(x)]))
+      # Drop levels that never occur in the data: an all-zero indicator for
+      # an absent level has zero variance, so its SMD is NA and it looks
+      # (wrongly) unbalanced.
+      lv <- if (is.factor(x)) levels(droplevels(x[!is.na(x)])) else sort(unique(x[!is.na(x)]))
       for (l in lv) cols[[paste0(v, " = ", l)]] <- ifelse(is.na(x), NA_real_, as.numeric(x == l))
     } else {
       stop("Covariate `", v, "` must be numeric, logical, factor or character.", call. = FALSE)

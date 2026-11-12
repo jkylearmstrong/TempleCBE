@@ -24,8 +24,9 @@ row get one censored interval.}
 \item{id, time, end}{Column names. `id` is looked up in both data frames; `time`
 in `events` and `end` in `followup`.}
 
-\item{min_gap}{Events that are no more than `min_gap` after the previous kept
-event are dropped (default `0`, which drops only ties and events at time zero).}
+\item{min_gap}{Events after the first that are no more than `min_gap` after the
+previous kept event are dropped (default `0`, which drops only ties and events
+at time zero). A subject's first event is always kept, whatever `min_gap` is.}
 }
 \value{
 A tibble with the subject identifier (named as `id`), `tstart`, `tstop`,
@@ -42,12 +43,13 @@ censored interval when follow-up continues after the last event.
 }
 \details{
 Events at or before time zero, events after the end of follow-up, and events
-that fall within `min_gap` of the previous kept event (a transfer or a duplicated
-record rather than a new readmission) are dropped, each with a warning that
-counts them. Death is a terminal event that is not a readmission: end the
-subject's follow-up at death. That treats death as censoring, which is the usual
-assumption of the Andersen-Gill and PWP models and is informative when death
-is common.
+(other than a subject's first event) that fall within `min_gap` of the previous
+kept event (a transfer or a duplicated record rather than a new readmission)
+are dropped, each with a warning that counts them. A subject's first event is
+always kept: there is no previous event for `min_gap` to apply to. Death is a
+terminal event that is not a readmission: end the subject's follow-up at death.
+That treats death as censoring, which is the usual assumption of the
+Andersen-Gill and PWP models and is informative when death is common.
 }
 \examples{
 events <- data.frame(id = c(1, 1, 3), time = c(12, 40, 25))

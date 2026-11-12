@@ -1,3 +1,55 @@
+# TempleCBE 0.9.0
+
+Draft fixes and features from the fresh review of 2026-11-11 (Part 1: 141 new findings; Part 2: feature gaps A1–A8 and B1–B7), on top of 0.8.2. No export is removed.
+
+## Changes in behaviour
+
+* **`zip_reports()`** treats a failing custom `docx_from_pdf` like the built-in converter: a warning, or an error with `docx_strict = TRUE`.
+* **`diff_deliverables()`** counts paragraphs left unpaired by the time budget as added/removed (`n_unpaired` says how many were not paired).
+* **`estimate_runtime()`** stops when every sample fit fails, instead of projecting from ~0 s timings.
+* **`write_sas_data()`** warns when it writes `.sas7bdat` (deprecated in haven); prefer `.xpt`.
+* **`clean_checkpoints()`** no longer deletes valid checkpoints that are not data frames.
+* **`truncate_start_stop()`** no longer fabricates events when `status` is a factor: the censored level is found by meaning (`"0"`, `"FALSE"`, `"censored"`), and it stops, rather than guess, when a cut interval has a factor status with no such level.
+* **Rendering** no longer silently produces nothing when an input file was deleted; a missing input is an error.
+* **A corrupt or unreadable review tracker** is no longer silently treated as empty: `load_existing_tracker()` warns, and the tracker is backed up before it is overwritten (the run stops if the backup cannot be made).
+* **`tbl_tune_coef()`** no longer accepts a `"proportion"` larger than 1.
+* **Help pages** of `create_qmd_renderer()`, `visualize_pipeline_interactive()`, `export_interactive_pipeline()` and `render_pipeline()` no longer show the internal `.pipeline_config_value(...)` call as an argument default; the configured value is resolved inside the function body.
+* **`visualize_pipeline_interactive()`** no longer errors on an edgeless graph (a single node with no dependencies).
+
+## New features (draft)
+
+* **Recurrent-event scoring (A1):** `cv_coxnet()`, `glmnet_IBS()`, `score_outer()`, `nested_cv_coxnet()` and `nested_survival_run()` accept `recurrent = "gap"` (and `recurrent = "first"` in `cv_coxnet()`), scoring gap times with Harrell's concordance via `surv_gap_truth()`; the internal `gap_time_concordance()` is used. In gap mode the IBS is `NA` and results carry `gap_concordance`. Recurrent-event IBS is not implemented yet (follow-up).
+* **Python export (A2):** `export_to_python()` exports data frames, matrices, `coxnet_model`, `cv_coxnet`, `joint_model`, named lists and dictionaries as CSV/JSON plus a manifest and a stdlib-only `<name>_load.py` loader; `format = "pickle"` saves via `reticulate::py_save_object()`.
+* **SAS I/O (A3):** `read_sas_data()` and `write_sas_data()` wrap haven for `.sas7bdat`/`.xpt`/`.csv`, with SAS-name and XPT limits validated up front; `sas_parity_boundary()` states the parity boundary per PROC.
+* **Calibration and decision curves from models (A4):** `extract_horizon_risk()`, `predict_event_risk()`, `calibration_from_model()` and `decision_curve_from_model()` adapt `predict()` output to `calibration_table()` / `decision_curve()`; `fine_gray()` and `predict_fine_gray()` fit a Fine-Gray model (`cmprsk::crr`) and predict cumulative incidence.
+* **Review tracker apply-back (A5):** `apply_review_tracker()` writes the closed tracker rows as a "Review resolutions" appendix in a `_reviewed` copy of a `.qmd`/`.Rmd`/`.md` report and lists every non-applied item with its reason; it does not edit the source DOCX or the report body.
+* **Joint readmission+death model (B1):** `joint_readmission_death()` fits a readmission sub-model plus a death Cox model with the number of prior readmissions as a time-varying covariate, with optional per-process gamma frailty. **This reverses the 0.8.0 NEWS decision, which declined joint readmission+death models on the grounds that death ends follow-up and is treated as censoring; the reversal is a draft for the maintainer to accept or reject.** A single shared frailty estimated by a joint likelihood is follow-up work.
+* **Multi-variable imputation tuning (B2):** `tune_impute_dataset()` tunes each incomplete numeric column in turn (workflows engine) or delegates to the missForest/missRanger mtry sweeps.
+* **Imputation sensitivity analysis (B4):** `imputation_sensitivity()` refits a model under two or more imputation strategies and summarises the per-term estimates, with a Rubin's-rules pool via `pool_imputations()` when all strategies report the same finite terms.
+* **SAS parity, first increment (B5):** `%cbe_lifetest` (`inst/sas/cbe_lifetest.sas`, loaded by `cbe_macros.sas`) with `km_lifetest_quantities()`, `parse_lifetest_lst()` and `compare_km_lifetest()`; the SAS-side benchmark program is in `inst/sas/benchmark_lifetest_km.sas`. PROC LOGISTIC, MIXED, FREQ and MEANS parity are follow-up work.
+* **Time-varying-coefficient Cox (B7):** `cox_time_varying()` fits `survival::coxph` with `tt()`; `hazard_ratio_at_time()` gives HR(t) with delta-method intervals.
+* **Documentation scope (A6, A7):** the README vignette table lists all 9 vignettes; the DESCRIPTION Description now covers SAS-procedure validation, Python interoperability, multi-table clinical databases and pipeline DAGs.
+* **Pipeline visualisation tests (A8):** `visualize_pipeline_interactive()` and `export_interactive_pipeline()` are covered by tests.
+* **Pipeline-to-publication journey (B6):** the README "From render to publication" subsection and Pattern 6 in `vignettes/compute_graph.Rmd` document the `render_pipeline()` → `package_deliverables()` → `clean_publish()` journey. No convenience wrapper was added: wrapping a force-push with three incompatible failure modes is a maintainer decision.
+
+## Open decisions and follow-up work
+
+* **B3 (shipped readmission dataset): no dataset was added.** No genuine hospital readmission dataset exists in the available sources and a simulated stand-in must not ship without explicit approval; the choice (real data vs. simulated vs. skip) is left to the maintainer.
+* **B1 (above):** the joint model reverses a documented 0.8.0 decision; accept or reject explicitly.
+* **B5:** the SAS benchmark program was run once on SAS 9.4 and the listing is stored (`inst/sas/list/benchmark_lifetest_km.lst`). The run corrected the ODS table name (`ProductLimitEstimates`), the median convention (SAS prints the midpoint of a flat step at exactly 0.5) and the listing parser, which had only been tested on a synthetic listing.
+* **A6:** the two newly listed vignettes both title themselves "08."; renumbering the vignette titles is a maintainer decision.
+* **B6:** a convenience wrapper around the publish journey is an open maintainer decision.
+* **A1:** recurrent-event IBS is not implemented; **B1:** a shared-frailty joint likelihood is not implemented.
+* **Unconfirmed at runtime:** item 23 (trigger not reproduced). Item 83 (tidymodels end to end) and item 131 (Windows `psnice()` is NA for system and other users' processes, so `.is_pid_alive()` now asks `tasklist` there) were checked.
+
+## Fixes (fresh-review Part 1, items 1–141 except item 37, which is in 0.8.2)
+
+* **Survival core (items 1–25, 27–29, 31–51, 136–137):** validation, start-stop and recurrent-event helpers, `cv_coxnet()` / `glmnet_IBS()` / nested-run scoring, and the checkpoint and censoring-weight machinery, including the behaviour changes listed above.
+* **Data and utilities (items 26, 30, 52–84):** dictionary, manifest, database and imputation helpers; `missforest_sweep_mtry()` / `missranger_sweep_mtry()` no longer error with "object 'fn' not found" on the empty/partial-shard path.
+* **Reporting, rendering and publishing (items 85–132):** Quarto/R Markdown rendering, `clean_publish()`, checkpoint handling and review-tracker handling, including the behaviour changes listed above; the `.pipeline_config_value()` help-page defaults are fixed here.
+* **Docs, exports and CI (items 133–135, 138–141):** README and vignette corrections and the pkgdown reference index, which now lists the new exports.
+* **Item 104** was a false positive (Quarto accepts `output_format = "all"`); **item 116** was a non-issue (R strings cannot hold NUL).
+
 # TempleCBE 0.8.2
 
 Follow-up to 0.8.1: the findings of the 2026-11-11 review that 0.8.1 left open. No export is removed.
@@ -7,6 +59,7 @@ Follow-up to 0.8.1: the findings of the 2026-11-11 review that 0.8.1 left open. 
 * **`pipeline_config()`** keeps its settings inside the package and no longer writes the session options `pipeline.study_name`, `pipeline.stage_labels`, `pipeline.stage_colors` and `pipeline.default_formats`. The options are still read, as the default for a value that was not set with `pipeline_config()`. Code that called `pipeline_config()` and then read `getOption("pipeline.*")` gets the option's own value now: read `pipeline_config()` instead. The restore that 0.8.1 documented, `options(attr(cfg, "previous"))`, no longer undoes a call; use `pipeline_config(reset = TRUE)`, which clears what was set (and then sets any other argument given in the same call).
 * **`tbl_tune_alpha(label_map = , style = )`** uses the two arguments, which it accepted and ignored: a column whose name is a term of the `label_map` given in the call is renamed to its label. The map set for the session with `cbe_labels()` is not used, so without `label_map` the column names are as before.
 * **`score_outer(checkpoint_mismatch = "overwrite")`** no longer deletes the `score_fold_*.rds` files of another run that shares `checkpoint_dir`. It removes only leftover files of the current run: files with the run's own fingerprint that are no longer among its tasks. A file whose run fingerprint cannot be read is kept.
+* **`recurrent_intervals(min_gap = )`** always keeps a subject's first event, even when it falls within `min_gap` of time zero. Previously the first event was dropped when it was no more than `min_gap` after time zero, on the grounds that time zero is the previous event; that was a bug, and the first event has no previous event for `min_gap` to apply to.
 
 ## Fixes
 

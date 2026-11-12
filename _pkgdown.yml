@@ -94,6 +94,9 @@ reference:
       - as_database
       - database_setops
       - database_to_igraph
+      - read_sas_data
+      - write_sas_data
+      - sas_parity_boundary
 
   - title: Normalization & Outlier Detection
     desc: Functions for scaling numeric features and flagging statistical outliers.
@@ -120,6 +123,7 @@ reference:
       - pca_percent_var_explained
       - pca_feature_loading_heatmap
       - rotation_matrix
+      - pca_loadings
       - pca_eqns
       - pca_loading_diff
       - pca_loading_diff_heatmap
@@ -161,6 +165,11 @@ reference:
       - glmnet_IBS
       - tune_over_alpha
       - tune_alpha_by_split
+      - surv_gap_truth
+      - cox_time_varying
+      - predict.cox_time_varying
+      - tidy.cox_time_varying
+      - hazard_ratio_at_time
       - checkpoint_map
       - tune_grid_checkpointed
       - get_templecbe_cox_ties
@@ -233,6 +242,10 @@ reference:
       - autoplot.cv_joint_model
       - extract_surv_components
       - step_lencode_joint_model
+      - joint_readmission_death
+      - predict.joint_readmission_death
+      - tidy.joint_readmission_death
+      - print.joint_readmission_death
 
   - title: Model Explainability & Variable Attributions
     desc: >
@@ -290,6 +303,8 @@ reference:
       - test_imputed_distributions
       - plot_imputed_ridgeline
       - imputation_diagnostics
+      - tune_impute_dataset
+      - imputation_sensitivity
 
   - title: Statistical Testing & EDA
     desc: Biostatistical test wrappers, correlation matrices, and distribution tests.
@@ -325,20 +340,6 @@ reference:
       - center
       - index_variable_table
 
-  - title: PCA & Dimensionality Reduction
-    desc: Principal Component Analysis utilities, loadings, and biplots.
-    contents:
-      - pca_loadings
-      - pca_eqns
-      - pca_percent_var_explained
-      - pca_feature_loading_heatmap
-      - plot_pca_bi
-      - pca_biplot
-      - pca_loading_diff
-      - pca_loading_diff_heatmap
-      - rotation_matrix
-      - pca_plot
-
   - title: Visualization & Reporting
     desc: Manhattan/volcano plots, report generation, and document conversions.
     contents:
@@ -350,7 +351,6 @@ reference:
       - create_toc_from_sas_pdf
       - read_excel_multiple_headers
       - read_workbook
-      - reexports
       - km_summary_to_prism
       - convert_pdf_to_docx
       - convert_pdfs_to_docx
@@ -374,7 +374,6 @@ reference:
       - repro_appendix_template
       - domain_children
       - check_renv_guard
-      - extract_yaml_formats
       - scan_data_io
       - find_read_calls
       - find_write_calls
@@ -517,6 +516,12 @@ reference:
       - plot_cox_marginal
       - cbe_theme_survival
       - tidy_tmerge_cox
+      - fine_gray
+      - predict.fine_gray_model
+      - predict_fine_gray
+      - km_lifetest_quantities
+      - parse_lifetest_lst
+      - compare_km_lifetest
 
   - title: Presentation Deck & Clinical Summary Plots
     desc: >
@@ -625,6 +630,8 @@ reference:
       - format_review_tracker
       - validate_review_tracker
       - review_config
+      - apply_review_tracker
+      - export_to_python
 
   - title: Covariate Balance & Model Validation
     desc: >
@@ -638,6 +645,10 @@ reference:
       - plot_calibration
       - decision_curve
       - plot_decision_curve
+      - extract_horizon_risk
+      - predict_event_risk
+      - calibration_from_model
+      - decision_curve_from_model
 
   - title: Example Datasets
     desc: Clinical oncology and time-to-event datasets for testing and vignette demonstrations.
@@ -691,3 +702,12 @@ reference:
       - guard_public_remote
       - find_deprecated_calls
       - update_deprecated_calls
+
+  - title: S3 Methods
+    desc: >
+      The package's S3 methods (print, tidy, summary, autoplot, prep, bake and
+      related generics) live on the single `templecbe_methods` help topic, which
+      is marked internal, so it is listed here explicitly to keep it reachable
+      from the reference index.
+    contents:
+      - templecbe_methods

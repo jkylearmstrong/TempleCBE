@@ -364,7 +364,7 @@ test_that("zip_reports removes its staging folder, also when it fails", {
   Sys.sleep(1.1)
   expect_error(
     zip_reports(rep$reports, c("pdf", "docx"), output_dir = rep$out,
-                docx_from_pdf = function(src_pdf, dest_docx) stop("no converter")),
+                docx_from_pdf = function(src_pdf, dest_docx) stop("no converter"), docx_strict = TRUE),
     "no converter"
   )
   expect_equal(new_staging(before), character(0))

@@ -22,8 +22,8 @@
 #' looked up (by file name, ignoring case and folders) in the index; the column `links` then holds,
 #' per question, the Excel formulas `=HYPERLINK("<path>", "<file>")` of the citations the index
 #' knows, as character strings (write them to a workbook cell with `openxlsx::writeFormula()`; Excel
-#' limits a string in a formula to 255 characters, so longer paths are reported with a warning and
-#' are not linked). A citation the index does not know is listed in `unresolved_citations`; an index
+#' limits a string in a formula to 255 characters, so a formula longer than that is reported with a warning and
+#' is not linked). A citation the index does not know is listed in `unresolved_citations`; an index
 #' with the same file name twice uses the first and warns.
 #'
 #' The question and answer text is returned as it is in the document. If you write it to a CSV or
@@ -126,12 +126,17 @@ extract_docx_qa <- function(docx_path,
       warning("`index_data` lists the file name(s) ", paste(dup, collapse = ", "),
               " more than once; the first entry is used.", call. = FALSE)
     }
-    # a citation counts as resolved only if the index gives it a path of a length Excel accepts
-    usable <- !is.na(idx_path) & nzchar(idx_path) & nchar(idx_path) <= 255L
-    too_long <- unique(idx_name[!is.na(idx_path) & nchar(idx_path) > 255L])
+    # a citation counts as resolved only if the HYPERLINK formula Excel would
+    # store fits its 255-character string limit: the path alone is not the
+    # measure, the whole `=HYPERLINK("path","text")` formula is
+    formula_len <- vapply(seq_along(idx_path), function(i) {
+      if (is.na(idx_path[i]) || !nzchar(idx_path[i])) NA_integer_ else nchar(.hyperlink_formula(idx_path[i], idx_name[i]))
+    }, integer(1))
+    usable <- !is.na(formula_len) & formula_len <= 255L
+    too_long <- unique(idx_name[!is.na(formula_len) & formula_len > 255L])
     if (length(too_long)) {
-      warning("Path(s) of more than 255 characters cannot go into an Excel HYPERLINK formula; not linked: ",
-              paste(too_long, collapse = ", "), call. = FALSE)
+      warning("The HYPERLINK formula would be more than 255 characters for: ",
+              paste(too_long, collapse = ", "), "; not linked.", call. = FALSE)
     }
     resolve <- function(cites) {
       pos <- match(tolower(basename(cites)), idx_file)
@@ -159,14 +164,23 @@ extract_docx_qa <- function(docx_path,
 
 # the paragraphs of word/document.xml, in order, as the document currently reads
 .docx_body_paragraphs <- function(docx_path) {
-  parts <- suppressWarnings(utils::unzip(docx_path, list = TRUE)$Name)
+  parts <- tryCatch(
+    suppressWarnings(utils::unzip(docx_path, list = TRUE)$Name),
+    error = function(e) stop("`docx_path` could not be read as a Word document: ", conditionMessage(e), call. = FALSE)
+  )
   if (!"word/document.xml" %in% parts) {
     stop("`docx_path` is not a Word document: it has no word/document.xml.", call. = FALSE)
   }
   exdir <- tempfile("docx_qa_")
   dir.create(exdir)
   on.exit(unlink(exdir, recursive = TRUE), add = TRUE)
-  utils::unzip(docx_path, files = "word/document.xml", exdir = exdir)
+  extracted <- tryCatch({
+    utils::unzip(docx_path, files = "word/document.xml", exdir = exdir)
+    file.exists(file.path(exdir, "word", "document.xml"))
+  }, error = function(e) FALSE)
+  if (!isTRUE(extracted)) {
+    stop("`docx_path` could not be read as a Word document: word/document.xml could not be extracted.", call. = FALSE)
+  }
   doc <- tryCatch(
     xml2::read_xml(file.path(exdir, "word", "document.xml")),
     error = function(e) stop("The Word document could not be read: ", conditionMessage(e), call. = FALSE)

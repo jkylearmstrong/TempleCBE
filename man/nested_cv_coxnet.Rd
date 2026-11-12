@@ -18,8 +18,10 @@ nested_cv_coxnet(
   metric = NULL,
   covariates = c("path", "baseline"),
   trunc = 0.05,
+  recurrent = c("error", "first", "gap"),
   parallel = FALSE,
   importance = c("none", "loco_mp"),
+  loco_mp_B = 30L,
   check_subject_overlap = TRUE,
   tune_method = c("grid", "race_anova", "race_win_loss"),
   checkpoint_dir = NULL,
@@ -61,6 +63,10 @@ in `metrics` by default.}
 
 \item{trunc}{Lower bound for the censoring probability in the Graf weights.}
 
+\item{recurrent}{How recurrent (start/stop) data are scored, as in
+[cv_coxnet()]: `"error"` (default), `"first"`, or `"gap"` (gap-time
+concordance; needs `tune_method = "grid"`).}
+
 \item{parallel}{If `TRUE`, fit folds with [furrr::future_map()]; set a
 [future::plan()] first.}
 
@@ -70,6 +76,9 @@ Options are `"none"` (default) or `"loco_mp"` (Leave-One-Covariate-Out with Mini
 and penalty chosen there, with the same glmnet arguments (see `...`). It
 draws its minipatches by subject, so `group` does not apply to it, and a
 warning says so when `group` is set.}
+
+\item{loco_mp_B}{Number of minipatch ensembles drawn by [loco_mp_coxnet()]
+when `importance = "loco_mp"` (default `30`).}
 
 \item{check_subject_overlap}{If `TRUE` (the default), stop when an outer
 split, or an inner resample, puts the same subject (or, when `group` is

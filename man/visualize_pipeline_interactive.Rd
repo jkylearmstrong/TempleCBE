@@ -6,9 +6,9 @@
 \usage{
 visualize_pipeline_interactive(
   all_objects,
-  direction = "LR",
+  direction = c("LR", "UD"),
   hierarchical = TRUE,
-  title = .pipeline_config_value("study_name", "Computational Pipeline"),
+  title = NULL,
   subtitle = "Computational Pipeline",
   font_size = 12,
   node_size = 25

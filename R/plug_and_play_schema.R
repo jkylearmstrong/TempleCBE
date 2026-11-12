@@ -40,6 +40,17 @@ validate_column_mapping <- function(mapping) {
       "Column(s) must be logical (TRUE/FALSE): ", paste(non_logical, collapse = ", ")
     ))
   }
+  na_roles <- role_cols[vapply(mapping[role_cols], function(v) anyNA(v), logical(1))]
+  if (length(na_roles) > 0) {
+    problems <- c(problems, paste0(
+      "Column(s) must not contain NA: ", paste(na_roles, collapse = ", ")
+    ))
+  }
+  for (col in c("INDEX", "old", "new")) {
+    if (anyNA(mapping[[col]])) {
+      problems <- c(problems, paste0("Column `", col, "` must not contain NA."))
+    }
+  }
 
   bad_action <- unique(stats::na.omit(mapping$duplicate_action))
   bad_action <- setdiff(bad_action, c("drop", "prefer"))
@@ -95,8 +106,17 @@ validate_column_mapping <- function(mapping) {
 #' @return File path.
 #' @export
 find_section_file <- function(data_dir, index) {
+  if (!is.character(data_dir) || length(data_dir) != 1L || is.na(data_dir) || !dir.exists(data_dir)) {
+    stop("`data_dir` '", paste(data_dir, collapse = ", "), "' is not an existing directory.", call. = FALSE)
+  }
+  if (!is.character(index) || length(index) != 1L || is.na(index) || !nzchar(index)) {
+    stop("`index` must be a single non-empty string.", call. = FALSE)
+  }
   files <- list.files(data_dir, pattern = "\\.(csv|xlsx)$", full.names = TRUE, ignore.case = TRUE)
-  matches <- files[grepl(index, basename(files), ignore.case = TRUE)]
+  # Literal match: `index` is a file-name token, not a regex, so an index such
+  # as "Demo (1)" matches the file `Demo (1).csv` instead of failing on its
+  # parentheses.
+  matches <- files[grepl(tolower(index), tolower(basename(files)), fixed = TRUE)]
   if (length(matches) == 0) {
     stop("No .csv or .xlsx file in '", data_dir, "' matching INDEX '", index, "'.", call. = FALSE)
   }
@@ -111,7 +131,15 @@ find_section_file <- function(data_dir, index) {
 #' @return A tibble with raw data.
 #' @export
 read_raw_table <- function(file, sheet = NULL, header_rows = 1) {
+  if (!is.character(file) || length(file) != 1L || is.na(file) || !file.exists(file)) {
+    stop("`file` must be an existing file.", call. = FALSE)
+  }
   is_xlsx <- grepl("\\.xlsx$", file, ignore.case = TRUE)
+  is_csv <- grepl("\\.csv$", file, ignore.case = TRUE)
+  if (!is_xlsx && !is_csv) {
+    stop("`file` must be a .csv or .xlsx file; got '", file,
+         "'. In particular, legacy .xls files are not read as CSV.", call. = FALSE)
+  }
 
   if (is_xlsx) {
     if (!requireNamespace("readxl", quietly = TRUE)) {
@@ -120,6 +148,15 @@ read_raw_table <- function(file, sheet = NULL, header_rows = 1) {
     raw <- if (is.null(sheet)) readxl::read_excel(file, col_names = FALSE) else readxl::read_excel(file, sheet = sheet, col_names = FALSE)
   } else {
     raw <- utils::read.csv(file, header = FALSE, stringsAsFactors = FALSE)
+  }
+
+  if (!is.numeric(header_rows) || length(header_rows) != 1L || is.na(header_rows) ||
+      !is.finite(header_rows) || header_rows < 1 || header_rows != round(header_rows)) {
+    stop("`header_rows` must be a single whole number of at least 1.", call. = FALSE)
+  }
+  if (header_rows > nrow(raw)) {
+    stop("`header_rows` (", header_rows, ") is larger than the number of rows in '", file,
+         "' (", nrow(raw), ").", call. = FALSE)
   }
 
   if (header_rows <= 1) {

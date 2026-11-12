@@ -281,7 +281,27 @@ update_deprecated_calls <- function(path, dry_run = TRUE, exclude_dirs = NULL, b
     file_matches <- file_matches[file_matches$call_type != "ambiguous", ]
     if (nrow(file_matches) == 0L) next
 
-    lines <- readLines(fpath, warn = FALSE, encoding = "UTF-8")
+    # Same latin-1 fallback as the scan path (.deprecated_matches): a file
+    # that is not valid UTF-8 would otherwise error here ("invalid multibyte
+    # string") after having been found correctly.
+    lines <- tryCatch({
+      l <- readLines(fpath, warn = FALSE, encoding = "UTF-8")
+      if (any(!validUTF8(l))) {
+        l_conv <- iconv(l, from = "latin1", to = "UTF-8", sub = "byte")
+        if (any(is.na(l_conv))) {
+          message("Skipping file with invalid UTF-8 characters: '", fpath, "'")
+          NULL
+        } else {
+          l_conv
+        }
+      } else {
+        l
+      }
+    }, error = function(e) {
+      message("Skipping unreadable file: '", fpath, "' (", conditionMessage(e), ")")
+      NULL
+    })
+    if (is.null(lines)) next
     # right to left within a line, so that earlier positions stay valid
     file_matches <- file_matches[order(file_matches$line, -file_matches$name_start), ]
     for (i in seq_len(nrow(file_matches))) {

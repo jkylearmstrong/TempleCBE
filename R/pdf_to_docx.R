@@ -253,6 +253,13 @@ find_soffice <- function() {
     )
   }
   candidates <- unique(candidates[nzchar(candidates)])
+  # a bare name from the option or environment ("soffice") is a program to
+  # find on PATH, not a path to a file: resolve it, as find_python() does,
+  # instead of dropping it because no such file exists in the working directory
+  resolved <- vapply(candidates, function(cand) {
+    if (file.exists(cand)) cand else unname(Sys.which(cand))
+  }, character(1))
+  candidates <- unique(resolved[nzchar(resolved)])
   hit <- candidates[file.exists(candidates)]
   if (length(hit)) hit[1] else NULL
 }
@@ -565,7 +572,11 @@ check_docx_toolchain <- function(quiet = FALSE) {
 }
 
 .run_word_com <- function(rscript, script, timeout) {
-  .run_status("powershell", c("-Command", shQuote(.word_com_command(rscript, script, timeout))))
+  # the timeout reaches PowerShell (Wait-Process) and, with a grace period,
+  # the outer call too: without the outer one a hung PowerShell would block
+  # forever, and without the grace period the outer one would kill PowerShell
+  # before it could stop the converter and report the timeout (exit 99) itself
+  .run_status("powershell", c("-Command", shQuote(.word_com_command(rscript, script, timeout))), timeout = timeout + 60)
 }
 
 # ---------------------------------------------------------------------------
@@ -604,6 +615,13 @@ check_docx_toolchain <- function(quiet = FALSE) {
 
     if (is.na(src_raw) || !is.character(src_raw) || !nzchar(trimws(src_raw)) || !file.exists(src_raw)) {
       reject(sprintf("Source PDF file '%s' does not exist", as.character(src_raw)))
+      next
+    }
+
+    # a directory exists, and is not empty, but it is not a PDF: the backend
+    # would fail on it cryptically, so it is a bad row here
+    if (dir.exists(src_raw)) {
+      reject(sprintf("Source PDF file '%s' is a directory, not a file", as.character(src_raw)))
       next
     }
 
@@ -824,12 +842,17 @@ convert_pdfs_to_docx <- function(conversions,
       warning("Conversion failed: ", basename(pdf), call. = FALSE)
     } else if (has_temp && !isTRUE(file.copy(from = docx, to = temp_dest, overwrite = TRUE))) {
       warning("Converted ", basename(pdf), " but could not copy the DOCX to temp_dest '", temp_dest, "'.", call. = FALSE)
+      # the copy is part of the delivery: a row whose second copy failed is
+      # not a converted row
+      ok <- FALSE
     }
     converted[i] <- ok
   }
 
-  if (!all(converted)) {
-    warning(sum(!converted), " of ", length(converted), " PDF -> DOCX conversion(s) failed.", call. = FALSE)
+  # only rows that were actually attempted count: invalid rows were never
+  # handed to a backend, and no warning fires when nothing was attempted
+  if (length(todo) > 0L && !all(converted[todo])) {
+    warning(sum(!converted[todo]), " of ", length(todo), " PDF -> DOCX conversion(s) failed.", call. = FALSE)
   }
 
   cbind(conversions, converted = converted)

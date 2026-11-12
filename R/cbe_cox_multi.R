@@ -36,6 +36,9 @@ NULL
 #' @seealso [cox_single()], [cox_check()], [cbe_cox_table()], [plot_cox_forest_multi()]
 #' @export
 cox_multi <- function(data, formula = NULL, outcome = "outcome", features = NULL, conf_level = 0.95, ...) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) || conf_level <= 0 || conf_level >= 1) {
+    stop("`conf_level` must be a single number between 0 and 1.", call. = FALSE)
+  }
   if (is.null(formula) && is.null(features)) {
     stop("Must supply either `formula` or `features`.", call. = FALSE)
   }

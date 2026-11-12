@@ -136,6 +136,9 @@ test_that("update_deprecated_calls() leaves method calls and names of other pack
 
 test_that("estimate_runtime() projects tune_alpha_by_split like the removed wrapper did", {
   args <- list(object = list(splits = list(1, 2)), num_alpha_values = 4, num_fixed = 2)
+  # A sample fit that fails is no longer timed, and a run where every sample
+  # fails stops; stand in for a successful fit so the projection is exercised.
+  testthat::local_mocked_bindings(glmnet_IBS = function(...) invisible(NULL))
   est <- estimate_runtime(tune_alpha_by_split, args, n_sample = 1, workers = 1, n_machines = 1)
   expect_equal(est$n_total_fits, 8L)
 })

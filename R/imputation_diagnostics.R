@@ -274,11 +274,8 @@ tune_impute_numeric <- function(data,
   }
 
   ckpt_schema <- checkpoint_schema_version()
-  active_mask <- if (!is.null(shard)) {
-    ((seq_along(target_cols) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-  } else {
-    rep(TRUE, length(target_cols))
-  }
+  shard <- validate_shard_spec(shard)
+  active_mask <- shard_active_mask(length(target_cols), shard)
 
   results <- list()
 
@@ -355,6 +352,14 @@ tune_impute_numeric <- function(data,
     results[[length(results) + 1]] <- col_tbl
   }
 
+  if (length(results) == 0L) {
+    warning(
+      "tune_impute_numeric(): no columns were evaluated",
+      if (!is.null(shard)) paste0(" (shard ", paste(shard, collapse = "/"), " covers none of the target columns)") else "",
+      "; the result is empty.",
+      call. = FALSE
+    )
+  }
   res_df <- dplyr::bind_rows(results)
   dplyr::arrange(res_df, .data$variable, .data$rse)
 }

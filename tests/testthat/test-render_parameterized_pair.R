@@ -82,7 +82,15 @@ test_that("output names must be two different names", {
   p <- list(impute = FALSE)
   expect_error(render_parameterized_pair(tpl, p, p, output_names = "a"), "two different")
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "a")), "two different")
-  expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "A")), "two different")
+  # case-differing names are one file on a case-insensitive file system, and
+  # two files on a case-sensitive one (item 129)
+  if (.case_insensitive_fs()) {
+    expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "A")), "two different")
+  } else {
+    plan <- render_parameterized_pair(tpl, p, p, output_names = c("a", "A"), dry_run = TRUE)
+    expect_identical(plan$variant, c("a", "A"))
+    expect_identical(unique(plan$status), "planned")
+  }
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "")), "two different")
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", NA)), "two different")
   expect_error(render_parameterized_pair(tpl, p, p, output_names = c("a", "b c")), "`output_names` may contain only")

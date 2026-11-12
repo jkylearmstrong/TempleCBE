@@ -55,6 +55,15 @@ NULL
   out <- out[stats::complete.cases(out), , drop = FALSE]
   if (nrow(out) == 0L) stop("No complete pairs in `data`.", call. = FALSE)
   out$diff <- out$second - out$first
+  # A pair such as Inf vs Inf gives a NaN difference, which used to fail
+  # cryptically inside t.test()/sd() ("missing value where TRUE/FALSE
+  # needed"): drop non-finite differences, with a count.
+  bad <- !is.finite(out$diff)
+  if (any(bad)) {
+    warning("Dropping ", sum(bad), " pair(s) with a non-finite difference.", call. = FALSE)
+    out <- out[!bad, , drop = FALSE]
+  }
+  if (nrow(out) == 0L) stop("No pairs with a finite difference in `data`.", call. = FALSE)
   out
 }
 
@@ -117,8 +126,9 @@ compare_paired_correlation <- function(data, first, second, labels = c("Original
                                        digits = 3, title = NULL) {
   labels <- .check_pair_labels(labels)
   df <- .paired_frame(data, first, second, id_col = id_col)
-  if (nrow(df) < 3L || length(unique(df$first)) < 2L) {
-    stop("At least three pairs and two distinct values of `", first, "` are needed.", call. = FALSE)
+  if (nrow(df) < 3L || length(unique(df$first)) < 2L || length(unique(df$second)) < 2L) {
+    stop("At least three pairs and two distinct values of both `", first, "` and `", second,
+         "` are needed.", call. = FALSE)
   }
   ct <- stats::cor.test(df$first, df$second)
   fit <- NULL
@@ -228,6 +238,10 @@ paired_diff_histogram <- function(data, first, second, labels = c("Original", "I
 #' @export
 paired_diff_ribbon_by_group <- function(data, first, second, group_col, labels = c("Original", "Imputed"),
                                         ribbon = c("ci", "sd", "quantile"), conf_level = 0.95, title = NULL) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) ||
+      conf_level <= 0 || conf_level >= 1) {
+    stop("`conf_level` must be a single number between 0 and 1.", call. = FALSE)
+  }
   ribbon <- match.arg(ribbon)
   labels <- .check_pair_labels(labels)
   if (missing(group_col) || is.null(group_col)) stop("`group_col` is required.", call. = FALSE)

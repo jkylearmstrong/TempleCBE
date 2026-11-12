@@ -36,7 +36,8 @@ write_database(
 \arguments{
 \item{x}{A named list of data frames (an R database) or a single data frame/tibble.}
 
-\item{path}{File path to save the \code{.xlsx} workbook.}
+\item{path}{File path to save the \code{.xlsx} workbook. The parent directory
+is created if it does not exist.}
 
 \item{include_metadata}{Logical; if \code{TRUE} (default), computes and appends
 a data dictionary sheet generated via \code{\link{get_dataset_info}}.}

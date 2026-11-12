@@ -25,10 +25,12 @@ An object of class \code{cbe_km} containing:
     \item \code{cox}: The \code{cbe_cox} object from [cox_single()].
     \item \code{km_fit}: The \code{survival::survfit} object for the Kaplan-Meier curve.
     \item \code{km_tidy}: \code{broom::tidy()} table of \code{km_fit}.
-    \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the Cox
-      hazard ratio direction.
+    \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the
+      unrounded Cox hazard ratio (not the table's HR rounded to 2 decimals).
     \item \code{summary}: One-row-per-stratum tidy summary combining Cox hazard ratios and
-      Kaplan-Meier median survival.
+      Kaplan-Meier median survival. For a numeric predictor the Cox side is a
+      single continuous HR, labelled as such (`HR_continuous`); it is the same
+      value on every stratum row, not a per-stratum HR.
     \item \code{feature}: Feature name string.
     \item \code{var_label}: Human-readable variable label.
   }

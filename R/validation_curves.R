@@ -95,7 +95,9 @@ wilson_interval <- function(k, n, conf_level) {
 #' For a binary outcome the table also has the calibration intercept (calibration-in-the-large,
 #' with the logit of the predicted risk as an offset) and slope (the coefficient of the
 #' logit of the predicted risk), and the Brier score, in `attr(x, "metrics")`. A slope below 1
-#' means the predictions are too extreme (overfitting). These are `NA` for Surv outcomes.
+#' means the predictions are too extreme (overfitting). These are `NA` for Surv outcomes,
+#' and also `NA` when the binary outcome has a single class (the logistic fits are then
+#' degenerate: separation makes the intercept/slope essentially arbitrary).
 #'
 #' @param truth The outcome: 0/1, logical, a two-level factor, or a right-censored
 #'   [survival::Surv()] object.
@@ -166,10 +168,18 @@ calibration_table <- function(truth,
       mets[[nm]] <- tibble::tibble(model = nm, n = inp$n, intercept = NA_real_, slope = NA_real_, brier = NA_real_)
     } else {
       yy <- inp$y$y
-      pc <- pmin(pmax(p, 1e-8), 1 - 1e-8)
-      lp <- stats::qlogis(pc)
-      slope <- tryCatch(unname(stats::coef(suppressWarnings(stats::glm(yy ~ lp, family = stats::binomial())))[2L]), error = function(e) NA_real_)
-      icpt <- tryCatch(unname(stats::coef(suppressWarnings(stats::glm(yy ~ 1 + offset(lp), family = stats::binomial())))[1L]), error = function(e) NA_real_)
+      if (length(unique(yy)) < 2L) {
+        # A single-class outcome: both logistic fits are degenerate (the
+        # slope/intercept are driven by separation, not by calibration), so
+        # report them as NA rather than e.g. intercept -28 / slope ~0.
+        slope <- NA_real_
+        icpt <- NA_real_
+      } else {
+        pc <- pmin(pmax(p, 1e-8), 1 - 1e-8)
+        lp <- stats::qlogis(pc)
+        slope <- tryCatch(unname(stats::coef(suppressWarnings(stats::glm(yy ~ lp, family = stats::binomial())))[2L]), error = function(e) NA_real_)
+        icpt <- tryCatch(unname(stats::coef(suppressWarnings(stats::glm(yy ~ 1 + offset(lp), family = stats::binomial())))[1L]), error = function(e) NA_real_)
+      }
       mets[[nm]] <- tibble::tibble(model = nm, n = inp$n, intercept = icpt, slope = slope, brier = mean((p - yy)^2))
     }
   }
@@ -286,7 +296,20 @@ decision_curve <- function(truth,
   inp <- validation_inputs(truth, pred, horizon, event_level)
   odds <- thresholds / (1 - thresholds)
 
+  beyond_followup <- inp$is_surv && isTRUE(inp$horizon > max(inp$y$time, na.rm = TRUE))
+  if (beyond_followup) {
+    warning(
+      "`horizon` (", inp$horizon, ") is beyond the maximum follow-up time (", max(inp$y$time, na.rm = TRUE),
+      "): the Kaplan-Meier risk at the horizon is NA, so `treat_all` and most `net_benefit` values are NA. ",
+      "Choose a horizon within the observed follow-up.",
+      call. = FALSE
+    )
+  }
   all_risk <- if (inp$is_surv) km_risk_at(inp$y$time, inp$y$event, inp$horizon, 0.95)[["risk"]] else mean(inp$y$y)
+  # the beyond-follow-up case is already reported above
+  if (inp$is_surv && is.na(all_risk) && !beyond_followup) {
+    warning("The Kaplan-Meier risk at `horizon` is NA (follow-up ends before the horizon); `treat_all` is NA.", call. = FALSE)
+  }
   treat_all <- all_risk - (1 - all_risk) * odds
 
   out <- lapply(names(inp$preds), function(nm) {

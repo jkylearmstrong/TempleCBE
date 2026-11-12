@@ -22,10 +22,12 @@ NULL
 #'     \item \code{cox}: The \code{cbe_cox} object from [cox_single()].
 #'     \item \code{km_fit}: The \code{survival::survfit} object for the Kaplan-Meier curve.
 #'     \item \code{km_tidy}: \code{broom::tidy()} table of \code{km_fit}.
-#'     \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the Cox
-#'       hazard ratio direction.
+#'     \item \code{direction}: \code{"increases"} or \code{"decreases"}, pulled from the
+#'       unrounded Cox hazard ratio (not the table's HR rounded to 2 decimals).
 #'     \item \code{summary}: One-row-per-stratum tidy summary combining Cox hazard ratios and
-#'       Kaplan-Meier median survival.
+#'       Kaplan-Meier median survival. For a numeric predictor the Cox side is a
+#'       single continuous HR, labelled as such (`HR_continuous`); it is the same
+#'       value on every stratum row, not a per-stratum HR.
 #'     \item \code{feature}: Feature name string.
 #'     \item \code{var_label}: Human-readable variable label.
 #'   }
@@ -58,7 +60,15 @@ km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
   km_fit <- survival::survfit(surv_fmla, data = strata_data)
   km_tidy <- broom::tidy(km_fit)
 
-  hr_val <- if (cox$is_numeric) cox$table$HR[1] else cox$table$HR[cox$table$Role == "Comparison"][1]
+  # Direction from the unrounded estimate: the table HR is rounded to 2 dp,
+  # so a true HR of 1.004 shows as 1.00 and would read as "decreases".
+  hr_val <- tryCatch(
+    unname(exp(stats::coef(cox$model)[1])),
+    error = function(e) NA_real_
+  )
+  if (length(hr_val) == 0L || is.na(hr_val)) {
+    hr_val <- if (cox$is_numeric) cox$table$HR[1] else cox$table$HR[cox$table$Role == "Comparison"][1]
+  }
   # NA when the Cox model has no estimate for the feature (see cox_single())
   direction <- if (length(hr_val) == 0L || is.na(hr_val)) {
     NA_character_
@@ -88,10 +98,14 @@ km_single <- function(data, outcome = "outcome", feature, conf_level = 0.95) {
   if (is.na(ci_col)) ci_col <- "95% CI"
 
   summary_tbl <- if (cox$is_numeric) {
-    dplyr::bind_cols(
-      km_summary,
-      cox$table[rep(1, nrow(km_summary)), c("Variable", "HR", ci_col, "p.value")]
-    )
+    cont <- cox$table[rep(1, nrow(km_summary)), c("Variable", "HR", ci_col, "p.value")]
+    # The Cox HR for a numeric predictor is one continuous (per-1-unit) HR,
+    # not a per-stratum HR: label it as such so the repeated value on every
+    # stratum row is not read as a stratum-specific estimate.
+    names(cont)[names(cont) == "HR"] <- "HR_continuous"
+    names(cont)[names(cont) == ci_col] <- paste0(ci_col, " (continuous)")
+    names(cont)[names(cont) == "p.value"] <- "p.value (continuous)"
+    dplyr::bind_cols(km_summary, cont)
   } else {
     dplyr::left_join(km_summary, cox$table, by = "Level")
   }

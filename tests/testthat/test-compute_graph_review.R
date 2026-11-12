@@ -235,11 +235,12 @@ test_that("R-CG-03: a declared input that is not on disk is reported", {
 
   expect_warning(
     plan <- quiet_plan(list(gone, report, f_pdf, builder)),
-    "^1 declared file\\(s\\) were not found on disk.*treated as unchanged: input$"
+    "^1 declared file\\(s\\) were not found on disk.*treated as out of date: input$"
   )
-  # a file that is not there is left out of the comparison, as before: the report stays fresh,
-  # while the report with the unbuilt output is planned
-  expect_equal(names(plan), "builder")
+  # a file that is not there cannot be shown to be older than the output, so
+  # the report that reads it is out of date and is planned too; the report
+  # with the unbuilt output is planned as before
+  expect_equal(names(plan), c("builder", "report"))
 })
 
 test_that("R-CG-03: a mistyped report path is reported", {
@@ -251,7 +252,9 @@ test_that("R-CG-03: a mistyped report path is reported", {
     plan <- quiet_plan(list(report, f_pdf)),
     "not found on disk.*: report$"
   )
-  expect_equal(plan, list())
+  # the mistyped report path cannot be shown to be older than its output,
+  # so the report is out of date and is planned
+  expect_equal(names(plan), "report")
 })
 
 test_that("R-CG-03: relative paths built from the wrong working directory are reported", {
@@ -267,7 +270,11 @@ test_that("R-CG-03: relative paths built from the wrong working directory are re
   from_project <- withr::with_dir(project, build())
   from_elsewhere <- withr::with_dir(withr::local_tempdir(), build())
 
-  expect_no_warning(plan_here <- quiet_plan(from_project))
+  # The objects were built from the project directory, so the plan has to be
+  # built from there too: refresh_pipeline() now sets the mtime of a file it
+  # cannot find from the working directory to NA, so a plan built from
+  # elsewhere (correctly) warns and plans the report.
+  expect_no_warning(plan_here <- withr::with_dir(project, quiet_plan(from_project)))
   expect_equal(plan_here, list())
   expect_warning(
     quiet_plan(from_elsewhere),
@@ -305,8 +312,9 @@ test_that("R-CG-03: a missing file declared only inside `dependencies` is report
   warns <- testthat::capture_warnings(plan <- quiet_plan(list(report, f_pdf)))
   expect_length(warns, 1L)
   expect_match(warns, "1 declared file(s) were not found on disk", fixed = TRUE)
-  expect_match(warns, "treated as unchanged: input", fixed = TRUE)
-  expect_equal(plan, list())
+  expect_match(warns, "treated as out of date: input", fixed = TRUE)
+  # the missing dependency makes the report out of date, so it is planned
+  expect_equal(names(plan), "report")
 
   # listed both ways, it is still one file and one warning
   warns_both <- testthat::capture_warnings(quiet_plan(list(gone, report, f_pdf)))

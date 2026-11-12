@@ -258,6 +258,7 @@ missforest_sweep_mtry <- function(data,
                                   shard = NULL,
                                   checkpoint_mismatch = c("recompute", "overwrite", "error")) {
   checkpoint_mismatch <- resolve_checkpoint_mismatch(checkpoint_mismatch)
+  shard <- validate_shard_spec(shard)
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame or tibble.", call. = FALSE)
   }
@@ -322,11 +323,7 @@ missforest_sweep_mtry <- function(data,
     }, character(1))
     run_fp <- paste0(as.character(openssl::sha256(serialize(list(fps = fps, mtry = mtry_values), NULL))), collapse = "")
 
-    active_mask <- if (!is.null(shard)) {
-      ((seq_along(mtry_values) - 1L) %% as.integer(shard[2])) + 1L == as.integer(shard[1])
-    } else {
-      rep(TRUE, length(mtry_values))
-    }
+    active_mask <- shard_active_mask(length(mtry_values), shard)
     ckpt_file <- function(idx) {
       file.path(checkpoint_dir, sprintf("missforest_mtry_%03d.rds", as.integer(mtry_values[[idx]])))
     }
@@ -356,6 +353,28 @@ missforest_sweep_mtry <- function(data,
     parallel_reason = "to run the `mtry` sweep in parallel.",
     parallel_reason_no_checkpoint = "to run the `mtry` sweep in parallel (or set `parallel = FALSE`)."
   )
+
+  # A shard that evaluates no mtry value must not silently return the
+  # unimputed data as a success. (When no column has missing values, an
+  # empty sweep is a legitimate success and is left alone.)
+  n_sweep_done <- sum(!vapply(sweep, is.null, logical(1)))
+  shard_lbl <- if (is.null(shard)) "" else paste0("shard ", paste(shard, collapse = "/"), " ")
+  if (n_sweep_done == 0L && any(vapply(dt, anyNA, logical(1)))) {
+    stop(
+      "`missforest_sweep_mtry()`: ", shard_lbl,
+      "evaluated none of the ", length(mtry_values),
+      " mtry value(s), so no column could be imputed. Run the other shards (or a shard that covers these values).",
+      call. = FALSE
+    )
+  }
+  if (n_sweep_done < length(mtry_values)) {
+    warning(
+      "`missforest_sweep_mtry()`: ", shard_lbl,
+      "evaluated only ", n_sweep_done, " of ", length(mtry_values),
+      " mtry value(s); the sweep is partial.",
+      call. = FALSE
+    )
+  }
 
   oob_error <- purrr::list_rbind(purrr::map(sweep, "oob_error"))
 

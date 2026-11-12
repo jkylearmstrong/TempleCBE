@@ -123,6 +123,11 @@ resolve_hmac_key <- function(key, allow_default_key = FALSE, hint = "") {
     stop("`allow_default_key` must be TRUE or FALSE.", call. = FALSE)
   }
   if (nzchar(key)) {
+    # A whitespace-only key is no key at all: stop instead of keying the HMAC
+    # with three spaces (the old code warned and then returned the key).
+    if (!nzchar(trimws(key))) {
+      stop("`key` must not be empty or whitespace-only.", call. = FALSE)
+    }
     # `allow_default_key` is about a MISSING key (it lets the public key stand in for one). It
     # says nothing about a key the caller did supply, so it does not silence this warning.
     if (nchar(trimws(key)) < 16L && !isTRUE(getOption("templecbe_suppress_weak_key_warning", FALSE))) {
@@ -234,6 +239,13 @@ generate_last_names <- function(n = 10,
     stop("`n` must be a single whole number, 0 or more.", call. = FALSE)
   }
   n <- as.integer(n)
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+    stop("`seed` must be a single whole number.", call. = FALSE)
+  }
+  if (!is.numeric(max_tries) || length(max_tries) != 1L || is.na(max_tries) ||
+      max_tries < 1 || max_tries != round(max_tries)) {
+    stop("`max_tries` must be a single whole number of at least 1.", call. = FALSE)
+  }
   if (n == 0L) return(character(0))
 
   onsets  <- c("b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "r", "s", "t", "v", "w", "z",
@@ -368,9 +380,21 @@ generate_pseudonym_token <- function(name = NULL,
     stop("`rename_fn` must be a function or NULL.")
   }
   if (!is.null(n_chars)) {
-    n_chars <- as.integer(n_chars)
-    if (length(n_chars) != 1 || is.na(n_chars) || n_chars < 1) {
+    if (!is.numeric(n_chars) || length(n_chars) != 1L || is.na(n_chars)) {
       stop("`n_chars` must be a positive integer or NULL for full hash.")
+    }
+    if (n_chars != round(n_chars)) {
+      stop("`n_chars` must be a positive integer or NULL for full hash.")
+    }
+    n_chars <- as.integer(n_chars)
+    if (n_chars < 1) {
+      stop("`n_chars` must be a positive integer or NULL for full hash.")
+    }
+    # A SHA-256 digest has 64 hex characters: asking for more silently
+    # returned a 64-character token.
+    if (n_chars > 64L) {
+      warning("`n_chars` (", n_chars, ") exceeds the 64 hex characters of a SHA-256 digest; ",
+              "tokens are capped at 64 characters.", call. = FALSE)
     }
     if (n_chars < 6L && !isTRUE(allow_collisions)) {
       stop(
@@ -423,6 +447,9 @@ generate_pseudonym_token <- function(name = NULL,
     }
     n <- as.integer(n)
     if (!is.null(seed)) {
+      if (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed)) {
+        stop("`seed` must be a single whole number.", call. = FALSE)
+      }
       # No key enters these tokens: the seed is the only input, and seeds are small numbers.
       if (!isTRUE(getOption("templecbe_suppress_weak_key_warning", FALSE))) {
         warning(
@@ -507,6 +534,9 @@ generate_pi_names <- function(n = 1,
     stop("`n` must be a positive integer.", call. = FALSE)
   }
   n <- as.integer(n)
+  if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || seed != round(seed))) {
+    stop("`seed` must be a single whole number.", call. = FALSE)
+  }
 
   format_arg <- if (is.character(format) && length(format) >= 1L) tolower(trimws(format[1L])) else "synthetic"
   if (format_arg == "surname") format_arg <- "synthetic"
@@ -854,6 +884,18 @@ anonymize_pi <- function(name,
     }
 
     mapping_data <- jsonlite::fromJSON(secrets_path)
+    # A `mappings` element that is not a JSON object (e.g. a JSON array) used
+    # to be silently treated as empty, minting fresh tokens and overwriting
+    # the file. Stop instead: the existing content is not in the expected shape.
+    if (!is.list(mapping_data)) {
+      stop("The mapping file '", secrets_path, "' is not a JSON object.", call. = FALSE)
+    }
+    if (!is.null(mapping_data$mappings) &&
+        !(is.list(mapping_data$mappings) &&
+          (length(mapping_data$mappings) == 0L || !is.null(names(mapping_data$mappings))))) {
+      stop("The mapping file '", secrets_path,
+           "' has a `mappings` element that is not a JSON object; refusing to overwrite it.", call. = FALSE)
+    }
     mapping <- if (is.list(mapping_data$mappings)) mapping_data$mappings else list()
 
     # Track modifications

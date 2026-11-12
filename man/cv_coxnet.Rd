@@ -27,7 +27,9 @@ cv_coxnet(x, ...)
   metric = NULL,
   covariates = c("path", "baseline"),
   trunc = 0.05,
+  recurrent = c("error", "first", "gap"),
   parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   check_subject_overlap = TRUE,
   checkpoint_dir = NULL,
   shard = NULL,
@@ -51,7 +53,9 @@ cv_coxnet(x, ...)
   metric = NULL,
   covariates = c("path", "baseline"),
   trunc = 0.05,
+  recurrent = c("error", "first", "gap"),
   parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   check_subject_overlap = TRUE,
   checkpoint_dir = NULL,
   shard = NULL,
@@ -75,7 +79,9 @@ cv_coxnet(x, ...)
   metric = NULL,
   covariates = c("path", "baseline"),
   trunc = 0.05,
+  recurrent = c("error", "first", "gap"),
   parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   check_subject_overlap = TRUE,
   checkpoint_dir = NULL,
   shard = NULL,
@@ -99,7 +105,9 @@ cv_coxnet(x, ...)
   metric = NULL,
   covariates = c("path", "baseline"),
   trunc = 0.05,
+  recurrent = c("error", "first", "gap"),
   parallel = FALSE,
+  parallel_over = c("resamples", "everything"),
   check_subject_overlap = TRUE,
   checkpoint_dir = NULL,
   shard = NULL,
@@ -154,8 +162,19 @@ in `metrics` by default.}
 
 \item{trunc}{Lower bound for the censoring probability in the Graf weights.}
 
+\item{recurrent}{How recurrent (start/stop) data are scored: `"error"`
+(default; a subject with an event before its last interval stops the fit),
+`"first"` (score the time to the first event only), or `"gap"` (score the
+whole recurrent process by gap-time concordance; see Details). In gap
+mode `metrics` must contain only `concordance_survival` (the default
+there), and `eval_time` is used only for the refit model's predictions,
+not for scoring.}
+
 \item{parallel}{If `TRUE`, fit folds with [furrr::future_map()]; set a
 [future::plan()] first.}
+
+\item{parallel_over}{How to parallelize when `parallel` is `TRUE`:
+`"resamples"` (default) or `"everything"`, as in [glmnet_IBS()].}
 
 \item{check_subject_overlap}{If `TRUE` (the default), stop when a supplied
 `resamples` puts the same subject (or, when `group` is set, the same group)
@@ -195,7 +214,8 @@ A `cv_coxnet` object, with:
   * `mixture`, `lambda_min`, `lambda_1se`, `metric`, `direction`;
   * `fit`: a [coxnet()] model fit to all of `data` at the chosen `mixture`,
     with `lambda_min` as its default penalty;
-  * `eval_time`, `resamples`, and `covariates`.
+  * `eval_time`, `resamples`, `covariates`, and `recurrent` (how recurrent
+    data were scored: `"error"`, `"first"`, or `"gap"`).
 
   Use `predict()`, `tidy()`, `autoplot()`, and `tune::collect_metrics()` on
   it.
@@ -246,8 +266,14 @@ the analysis set never saw, cannot be predicted: it is left out at every
 penalty, so all penalties are scored on the same subjects, with one warning
 per resample that gives the count. A resample with no subject left is skipped.
 Recurrent events (an event before a subject's last interval) stop with an
-error: the metrics need one event time per subject. See
-[surv_subject_truth()] (`recurrent = "first"`) and [recurrent_cox()].
+error unless `recurrent` says otherwise: `"first"` scores the time to first
+event ([surv_subject_truth()]), and `"gap"` scores the whole recurrent
+process by gap-time concordance (see [surv_gap_truth()]). Gap-time
+concordance is Harrell's C over gaps, using each interval's linear
+predictor as its risk: it treats a subject's gaps as independent
+observations, needs no censoring weights, and is the only metric in gap
+mode. A recurrent-event Brier score is not computed; that is follow-up
+work, not part of this draft.
 
 **Selection.** `lambda.min` is the penalty, across all `mixture` values,
 with the best mean `metric` over folds (for time-specific metrics, at the

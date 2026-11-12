@@ -24,7 +24,8 @@ balance_smd(
 
 \item{weights}{`NULL` (default), the name of a numeric column of `data`, or a numeric vector
 with one weight per row. When given, the table has an `"Adjusted"` row besides the
-`"Unadjusted"` one for each covariate.}
+`"Unadjusted"` one for each covariate. Rows with a missing weight are dropped
+from the Adjusted sample only; the Unadjusted sample keeps them.}
 
 \item{ref}{The reference level of `group`. Default: the first level (the first value, for
 a non-factor).}

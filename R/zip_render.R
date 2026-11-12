@@ -7,6 +7,10 @@
 #'
 #' @param input Path to the input \code{.qmd} file.
 #' @param formats Character vector of output formats (e.g. \code{c("html","pdf","docx")} or \code{"all"}).
+#'   \code{"all"} renders the formats declared in the document's YAML front matter
+#'   (or \code{"html"} when it declares none), as \code{quarto render --to all} does;
+#'   it is resolved to those formats before rendering, so the rendered outputs
+#'   are matched by exactly the extensions those formats write.
 #' @param resources Optional character vector of extra files to include, absolute or project-relative.
 #' @param detect \code{"heuristic"} (default; scans the \code{.qmd} for likely file paths) or \code{"none"}.
 #' @details
@@ -40,9 +44,16 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   input_dir <- dirname(input)
   input_stem <- sub("\\.qmd$", "", basename(input), ignore.case = TRUE)
 
+  formats <- .resolve_all_formats(formats, input)
+
   if (is.null(zip_name)) zip_name <- paste0(input_stem, ".zip")
+  # a zip name is a file name, not a path: a separator would write the zip
+  # outside copy_back_dir (or fail on Windows, where it is not a valid name)
+  if (grepl("[/\\\\]", zip_name)) {
+    stop("`zip_name` must be a file name, not a path: '", zip_name, "'.", call. = FALSE)
+  }
   if (is.null(copy_back_dir)) copy_back_dir <- input_dir
-  if (is.null(build_dir)) build_dir <- file.path(tempdir(), paste0("qbuild-", input_stem, "-", as.integer(Sys.time())))
+  if (is.null(build_dir)) build_dir <- tempfile(paste0("qbuild-", input_stem, "-"))
   # The working directory moves to build_dir below, so a relative build_dir or
   # copy_back_dir has to be pinned to the caller's folder first: afterwards it
   # would be read relative to the build folder (the zip landing in a folder
@@ -59,24 +70,64 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
     rel <- NA_character_
     if (!is.null(root) && dir.exists(root)) {
       root_norm <- normalizePath(root, winslash = "/", mustWork = TRUE)
-      if (startsWith(src_norm, paste0(root_norm, "/"))) {
+      # the relative path is found by a prefix match, which is case-sensitive
+      # as written: on a case-insensitive file system (Windows, macOS) a root
+      # spelled with different case would miss and the file would land flat
+      under_root <- if (.case_insensitive_fs()) {
+        startsWith(tolower(src_norm), paste0(tolower(root_norm), "/"))
+      } else {
+        startsWith(src_norm, paste0(root_norm, "/"))
+      }
+      if (under_root) {
         rel <- substr(src_norm, nchar(root_norm) + 2L, nchar(src_norm))
       }
     }
     dest <- if (is.na(rel)) file.path(build_dir, basename(src_norm)) else file.path(build_dir, rel)
     dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
-    if (file.copy(src_norm, dest, overwrite = TRUE)) dest else character(0)
+    if (file.copy(src_norm, dest, overwrite = TRUE)) {
+      dest
+    } else {
+      warning("Could not copy '", src, "' into the build directory; it is left out of the zip.", call. = FALSE)
+      character(0)
+    }
+  }
+
+  # Split a here::here(...) argument list on commas that are not inside
+  # quotes: strsplit(h, ",") splits "data/a,b.csv" into two paths
+  split_here_args <- function(h) {
+    chars <- strsplit(h, "", fixed = TRUE)[[1]]
+    parts <- character()
+    cur <- ""
+    quote <- ""
+    for (ch in chars) {
+      if (nzchar(quote)) {
+        cur <- paste0(cur, ch)
+        if (identical(ch, quote)) quote <- ""
+      } else if (ch %in% c("'", '"')) {
+        quote <- ch
+        cur <- paste0(cur, ch)
+      } else if (ch == ",") {
+        parts <- c(parts, cur)
+        cur <- ""
+      } else {
+        cur <- paste0(cur, ch)
+      }
+    }
+    c(parts, cur)
   }
 
   detected <- character(0)
   if (detect == "heuristic") {
     qmd_lines <- readLines(input, warn = FALSE, encoding = "UTF-8")
 
-    # Parse YAML front-matter if present (--- at top)
-    if (length(qmd_lines) > 0 && grepl("^---$", qmd_lines[1])) {
-      end_yaml <- which(qmd_lines == "---")
-      if (length(end_yaml) >= 2) {
-        yaml_block <- paste(qmd_lines[2:(end_yaml[2]-1)], collapse = "\n")
+    # Parse YAML front-matter if present (--- at top). A UTF-8 byte-order mark
+    # on the first line, or trailing spaces after a fence, would hide it from
+    # an exact "---" match.
+    if (length(qmd_lines) > 0) qmd_lines[1] <- sub("^\uFEFF", "", qmd_lines[1])
+    if (length(qmd_lines) > 0 && grepl("^---\\s*$", qmd_lines[1])) {
+      fence <- which(grepl("^---\\s*$", qmd_lines))
+      if (length(fence) >= 2) {
+        yaml_block <- paste(qmd_lines[2:(fence[2] - 1)], collapse = "\n")
         if (requireNamespace("yaml", quietly = TRUE)) {
           y <- tryCatch(yaml::read_yaml(text = yaml_block), error = function(e) NULL)
           if (!is.null(y) && !is.null(y$resources)) {
@@ -95,7 +146,7 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
     if (length(here_calls)) {
       inner <- sub("^here::here\\((.*)\\)$", "\\1", here_calls)
       for (h in inner) {
-        parts <- trimws(gsub("^['\"]|['\"]$", "", strsplit(h, ",")[[1]]))
+        parts <- trimws(gsub("^['\"]|['\"]$", "", split_here_args(h)))
         parts <- parts[nzchar(parts)]
         if (length(parts)) cand2 <- c(cand2, do.call(file.path, as.list(parts)))
       }
@@ -111,7 +162,10 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
 
   copied_main <- file.path(build_dir, basename(input))
   dir.create(dirname(copied_main), recursive = TRUE, showWarnings = FALSE)
-  file.copy(input, copied_main, overwrite = TRUE)
+  # without the source in the build directory there is nothing to render
+  if (!isTRUE(file.copy(input, copied_main, overwrite = TRUE))) {
+    stop("Could not copy '", input, "' into the build directory '", build_dir, "'.", call. = FALSE)
+  }
 
   sidecars <- character(0)
   if (include_sources) {
@@ -133,7 +187,9 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   for (i in seq_along(project_files)) {
     dest <- file.path(build_dir, project_rel[i])
     dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
-    file.copy(project_files[i], dest, overwrite = TRUE)
+    if (!isTRUE(file.copy(project_files[i], dest, overwrite = TRUE))) {
+      warning("Could not copy '", project_files[i], "' into the build directory; the document may not render as it does in place.", call. = FALSE)
+    }
   }
 
   project_root <- tryCatch(here::here(), error = function(e) NULL)
@@ -177,6 +233,11 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
   include_in_zip <- include_in_zip[file.exists(include_in_zip)]
 
   zip_path_tmp <- file.path(build_dir, zip_name)
+  # a zip name that is also a rendered output (zip_name = "report.pdf", say)
+  # would delete that output just before zipping: refuse it instead
+  if (tolower(basename(zip_path_tmp)) %in% tolower(basename(include_in_zip))) {
+    stop("`zip_name` ('", zip_name, "') is the name of a rendered output; choose another name.", call. = FALSE)
+  }
   if (file.exists(zip_path_tmp)) file.remove(zip_path_tmp)
 
   # Project files keep their relative paths (e.g. _extensions/<name>/...) so the
@@ -200,6 +261,18 @@ zip_render <- function(input, formats = c("html", "pdf", "docx"), resources = NU
 
   invisible(list(build_dir = build_dir, input = input, formats = formats,
                  copied_resources = copied_resources, outputs = out_glob, zip = dest_zip))
+}
+
+# "all" is a valid quarto_render value (it renders the formats the YAML
+# declares), but the rendered outputs are matched below by the extensions
+# of `formats`: leaving "all" there would expand to every known extension
+# and count any build-dir file sharing the stem (a report.png figure, say)
+# as a rendered output. Resolve it to the declared formats first.
+#' @noRd
+.resolve_all_formats <- function(formats, input) {
+  if (!"all" %in% formats) return(formats)
+  declared <- extract_yaml_formats(input)
+  unique(c(setdiff(formats, "all"), if (length(declared) > 0L) declared else "html"))
 }
 
 #' Quarto Output Format Name -> File Extension

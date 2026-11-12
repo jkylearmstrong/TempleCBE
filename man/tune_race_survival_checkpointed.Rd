@@ -23,11 +23,15 @@ tune_race_survival_checkpointed(
 
 \item{checkpoint_dir}{Directory to store checkpoints.}
 
-\item{shard}{Optional shard specification.}
+\item{shard}{Optional shard specification. It is validated, but a single
+race result cannot be sharded across machines: a non-`NULL` shard warns
+and the full race is run (and cached) as one result.}
 
 \item{checkpoint_mismatch}{Mismatch handling action.}
 
-\item{progress}{Logical (default `FALSE`).}
+\item{progress}{Logical (default `FALSE`). Accepted for interface
+consistency; the finetune race does not expose progress reporting, so it
+currently has no effect.}
 }
 \value{
 A racing tuning object.

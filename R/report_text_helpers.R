@@ -43,7 +43,12 @@
   if (form == "short") return(ifelse(is.na(short), full, short))
   lab <- ifelse(is.na(full), short, full)
   if (form == "full") return(lab)
-  has_unit <- !is.na(lab) & !is.na(unit) & !endsWith(lab, paste0("(", unit, ")"))
+  # A label already ending in the unit — "(mmHg)" or the bare " mmHg" —
+  # must not get the unit appended a second time.
+  has_unit <- !is.na(lab) & !is.na(unit) &
+    !endsWith(lab, paste0("(", unit, ")")) &
+    !endsWith(lab, paste0(" ", unit)) &
+    lab != unit
   ifelse(has_unit, paste0(lab, " (", unit, ")"), lab)
 }
 

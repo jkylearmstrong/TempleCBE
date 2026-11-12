@@ -79,18 +79,31 @@ pretty_name <- function(x, acronyms = c("BMI", "ID", "IBS", "HR", "SD", "IQR", "
 excel_colnames <- function(names, max_char = NULL, replacement = "_") {
   if (is.null(names)) return(character())
   names <- as.character(names)
+  if (!is.character(replacement) || length(replacement) != 1L || is.na(replacement)) {
+    stop("`replacement` must be a single non-missing string.", call. = FALSE)
+  }
+  if (!is.null(max_char) &&
+      (!is.numeric(max_char) || length(max_char) != 1L || is.na(max_char) ||
+       !is.finite(max_char) || max_char != round(max_char))) {
+    stop("`max_char` must be a single whole number.", call. = FALSE)
+  }
 
   # Forbidden Excel characters: \ / ? * : [ ]
   cleaned <- gsub("[\\\\/?*:\\[\\]]", replacement, names, perl = TRUE)
-  # Remove duplicate replacement characters
+  # Remove duplicate replacement characters. `replacement` is user-supplied text,
+  # so escape it before using it as a regex (a replacement of "." used to turn
+  # every name into ".").
   if (nzchar(replacement)) {
-    pattern <- paste0(replacement, "+")
-    cleaned <- gsub(pattern, replacement, cleaned)
+    escaped <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", replacement)
+    cleaned <- gsub(paste0(escaped, "+"), replacement, cleaned)
   }
   cleaned <- trimws(cleaned)
 
-  if (!is.null(max_char) && is.numeric(max_char) && max_char > 0) {
+  if (!is.null(max_char) && max_char > 0) {
+    # A non-positive limit is ignored (no truncation).
     cleaned <- substr(cleaned, 1L, as.integer(max_char))
+    # Truncation can make distinct names identical: keep them unique.
+    cleaned <- make.unique(cleaned, sep = "_")
   }
 
   # Ensure names are non-empty
@@ -154,12 +167,19 @@ as_cbe_label_map <- function(map, style = c("short", "full")) {
     return(NULL)
   }
   if (inherits(map, "cbe_label_map") && is.data.frame(map) && all(c("term", "short", "full") %in% names(map))) {
+    if (anyDuplicated(map$term)) {
+      stop("`label_map` has duplicate term(s): ",
+           paste(unique(map$term[duplicated(map$term)]), collapse = ", "), ".", call. = FALSE)
+    }
     attr(map, "style") <- style
     return(map)
   }
   if (is.data.frame(map)) {
     nms <- tolower(names(map))
-    term_idx <- match(TRUE, nms %in% c("term", "variable", "var", "name", "id"), nomatch = 1L)
+    if (!any(nms %in% c("term", "variable", "var", "name", "id"))) {
+      stop("A data frame `label_map` must have a term column (`term`, `variable`, `var`, `name` or `id`).", call. = FALSE)
+    }
+    term_idx <- match(TRUE, nms %in% c("term", "variable", "var", "name", "id"))
     short_idx <- match(TRUE, nms %in% c("short", "short_label", "label", "short_name"), nomatch = min(2L, ncol(map)))
     full_idx <- match(TRUE, nms %in% c("full", "full_label", "long", "description", "full_name"), nomatch = NA_integer_)
     if (ncol(map) < 2L) {
@@ -206,6 +226,10 @@ as_cbe_label_map <- function(map, style = c("short", "full")) {
     stop("`map` must be a named character vector, a named list of `c(short, full)`, or a data frame with `term`, `short`, and `full` columns.", call. = FALSE)
   }
 
+  if (anyDuplicated(out$term)) {
+    stop("`label_map` has duplicate term(s): ",
+         paste(unique(out$term[duplicated(out$term)]), collapse = ", "), ".", call. = FALSE)
+  }
   attr(out, "style") <- style
   class(out) <- c("cbe_label_map", class(out))
   out
@@ -279,9 +303,15 @@ cbe_labels <- function(map = NULL,
   }
 
   cur <- .cbe_label_env$map %||% getOption("templecbe.label_map")
-  if (!is.null(cur) && has_style) {
-    attr(cur, "style") <- style
-    .cbe_label_env$map <- cur
+  # The option may hold any documented map form (e.g. a named character vector):
+  # normalize it, so callers always get a `cbe_label_map` tibble and never a
+  # raw vector that downstream code (resolve_cbe_labels(), tbl_label_map())
+  # cannot subset.
+  if (!is.null(cur)) {
+    cur <- as_cbe_label_map(cur, style = style)
+    if (has_style) {
+      .cbe_label_env$map <- cur
+    }
   }
   cur
 }
@@ -411,10 +441,32 @@ resolve_cbe_formula_labels <- function(formulas, label_map = NULL, style = NULL)
 
   vapply(f_chr, function(f) {
     if (is.na(f) || !nzchar(trimws(f))) return(f)
-    parts <- trimws(strsplit(f, "\\+")[[1]])
+    # Split at top-level "+" only: a "+" inside a call such as log(a + b) is
+    # part of the term, not a separator between terms.
+    parts <- trimws(.split_top_level_plus(f))
     mapped <- resolve_cbe_labels(parts, label_map = label_map, style = style)
     paste(mapped, collapse = " + ")
   }, character(1), USE.NAMES = FALSE)
+}
+
+# Split `s` on "+" characters that are not inside brackets, so
+# `log(a + b) + c` splits into `log(a + b)` and `c`.
+.split_top_level_plus <- function(s) {
+  ch <- strsplit(s, "", fixed = TRUE)[[1L]]
+  parts <- character()
+  cur <- character()
+  depth <- 0L
+  for (c1 in ch) {
+    if (c1 %in% c("(", "[")) depth <- depth + 1L
+    if (c1 %in% c(")", "]")) depth <- depth - 1L
+    if (depth == 0L && c1 == "+") {
+      parts <- c(parts, paste(cur, collapse = ""))
+      cur <- character()
+    } else {
+      cur <- c(cur, c1)
+    }
+  }
+  c(parts, paste(cur, collapse = ""))
 }
 
 #' The Variable Label of a Column, or a Default

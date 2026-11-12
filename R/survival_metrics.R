@@ -64,6 +64,13 @@
 #'   evaluates internal CV folds in parallel using [furrr::future_map2()] for \code{tune_engine = "yardstick"}
 #'   or [glmnet::cv.glmnet()]'s parallel mode. When \code{FALSE} (default), evaluates sequentially.
 #' @param parallel_over Tidymodels-compatible partition option: \code{"resamples"} (default) or \code{"everything"}.
+#' @param recurrent How recurrent (start/stop) data are scored, passed to
+#'   [surv_subject_truth()] (or [surv_gap_truth()] for `"gap"`):
+#'   `"error"` (default; a subject with an event before its last interval
+#'   stops the fit with a failure row), `"first"` (score the time to the first
+#'   event only), or `"gap"` (score the whole recurrent process by gap-time
+#'   concordance; `IBS` is then `NA` and the result gains a `gap_concordance`
+#'   column -- see Value).
 #' @param ... Further arguments passed to [glmnet::glmnet()], such as
 #'   `cox.ties` (`"breslow"` or `"efron"`). glmnet 5.0 defaults to Breslow and
 #'   5.1 to Efron, so pass `cox.ties` to keep results stable across glmnet
@@ -71,7 +78,10 @@
 #' @return A tibble with columns `IBS`, `lambda`, `term`, `estimate`, and
 #'   `alpha`: one row per feature (including those the penalty set to 0). When
 #'   the fit fails, a single row with `IBS = failure_ibs`, `lambda = NA`, and
-#'   `alpha`.
+#'   `alpha`. With `recurrent = "gap"` there is no integrated Brier score:
+#'   `IBS` is `NA` and the tibble gains a `gap_concordance` column (higher is
+#'   better); the fit-failure row then has `gap_concordance = NA`. A
+#'   recurrent-event Brier score is not computed; that is follow-up work.
 #' @references Graf E, Schmoor C, Sauerbrei W, Schumacher M (1999). Assessment
 #'   and comparison of prognostic classification schemes for survival data.
 #'   *Statistics in Medicine*, 18(17-18), 2529-2545.
@@ -123,7 +133,9 @@ glmnet_IBS <- function(object,
                        failure_ibs = NA_real_,
                        parallel = FALSE,
                        parallel_over = c("resamples", "everything"),
+                       recurrent = c("error", "first", "gap"),
                        ...) {
+  recurrent <- match.arg(recurrent)
   censoring_weights <- match.arg(censoring_weights)
   if (censoring_weights == "none") {
     rlang::warn(
@@ -178,6 +190,19 @@ glmnet_IBS <- function(object,
     eval_time <- eval_time[eval_time > 0]
   }
   if (!is.null(eval_time)) check_eval_time(eval_time)
+  # Gap mode scores gap-time concordance only: the IBS metric cannot score
+  # recurrent data, so a non-concordance `metric` is an error here rather
+  # than a silent failure row from the fit.
+  if (identical(recurrent, "gap")) {
+    if (!missing(metric) && !identical(metric, "concordance_survival")) {
+      stop(
+        "`recurrent = \"gap\"` scores gap-time concordance only; set ",
+        "`metric = \"concordance_survival\"`. A recurrent-event Brier score is not implemented.",
+        call. = FALSE
+      )
+    }
+    metric <- "concordance_survival"
+  }
   select_metrics <- yardstick_metric_set(metric)
   ibs_metrics <- yardstick_metric_set("brier_survival_integrated")
 
@@ -259,8 +284,13 @@ glmnet_IBS <- function(object,
       # subject, but keep a subject's copies in the same internal fold.
       subject_train <- subject_keys(y_train, train[[id_col]])
       subject_test <- subject_keys(y_test, test[[id_col]])
-      truth_train <- surv_subject_truth(y_train, subject_train)
-      truth_test <- surv_subject_truth(y_test, subject_test)
+      if (identical(recurrent, "gap")) {
+        truth_train <- surv_gap_truth(y_train, subject_train)
+        truth_test <- surv_gap_truth(y_test, subject_test)
+      } else {
+        truth_train <- surv_subject_truth(y_train, subject_train, recurrent = recurrent)
+        truth_test <- surv_subject_truth(y_test, subject_test, recurrent = recurrent)
+      }
       censor_km_train <- NULL
     }
 
@@ -291,6 +321,19 @@ glmnet_IBS <- function(object,
           dots
         )
       )
+      if (identical(recurrent, "gap")) {
+        # No IBS for recurrent data: report the gap-time concordance of the
+        # refit on the assessment gaps instead.
+        gap_scored <- score_gap_path(
+          fit_cox$fit, predictors_matrix(test[selected]), y_test, subject_test,
+          penalty = chosen
+        )
+        coefs <- tidy.coxnet_model(fit_cox, penalty = chosen)
+        return(tibble::tibble(
+          IBS = NA_real_, gap_concordance = gap_scored$.estimate[1],
+          lambda = chosen, term = coefs$term, estimate = coefs$estimate, alpha = alpha
+        ))
+      }
       effective_eval_time <- if (!is.null(eval_time)) eval_time else default_eval_time(truth_train$.truth)
       weights <- if (censoring_weights == "ipcw") {
         ckm <- censor_km_train %||% censoring_km(truth_train$.truth)
@@ -313,12 +356,26 @@ glmnet_IBS <- function(object,
           spec_xy(as.data.frame(train[selected]), y_train, subject_train, train[[id_col]]),
           mixture = alpha, v = internal_folds, metrics = select_metrics,
           eval_time = eval_time, metric = metric, covariates = covariates,
+          recurrent = recurrent,
           parallel = is_parallel, parallel_over = parallel_over
         ),
         dots
       ))
       chosen <- if (rule == "min") cv$lambda_min else cv$lambda_1se
 
+      if (identical(recurrent, "gap")) {
+        # No IBS for recurrent data: report the gap-time concordance of the
+        # refit on the assessment gaps instead.
+        gap_scored <- score_gap_path(
+          cv$fit$fit, predictors_matrix(test[selected]), y_test, subject_test,
+          penalty = chosen
+        )
+        coefs <- tidy.coxnet_model(cv$fit, penalty = chosen)
+        return(tibble::tibble(
+          IBS = NA_real_, gap_concordance = gap_scored$.estimate[1],
+          lambda = chosen, term = coefs$term, estimate = coefs$estimate, alpha = alpha
+        ))
+      }
       weights <- if (censoring_weights == "ipcw") {
         ckm <- censor_km_train %||% censoring_km(truth_train$.truth)
         graf_weights(truth_test$.truth, cv$eval_time, ckm)
@@ -339,7 +396,11 @@ glmnet_IBS <- function(object,
 
   tryCatch(fit_and_score(), error = function(e) {
     warning("glmnet_IBS() could not fit alpha = ", alpha, " and returned `failure_ibs`: ", conditionMessage(e), call. = FALSE)
-    tibble::tibble(IBS = failure_ibs, lambda = NA_real_, alpha = alpha)
+    if (identical(recurrent, "gap")) {
+      tibble::tibble(IBS = NA_real_, gap_concordance = NA_real_, lambda = NA_real_, alpha = alpha)
+    } else {
+      tibble::tibble(IBS = failure_ibs, lambda = NA_real_, alpha = alpha)
+    }
   })
 }
 
@@ -548,9 +609,17 @@ prepare_split_for_ibs <- function(split, dots) {
     y_test <- survival::Surv(test[[start_col]], test[[stop_col]], test[[status_col]])
     subject_train <- subject_keys(y_train, train[[id_col]])
     subject_test <- subject_keys(y_test, test[[id_col]])
-    truth_train <- surv_subject_truth(y_train, subject_train)
-    truth_test <- surv_subject_truth(y_test, subject_test)
-    censor_km <- censoring_km(truth_train$.truth)
+    recurrent_arg <- dots$recurrent %||% "error"
+    if (identical(recurrent_arg, "gap")) {
+      truth_train <- surv_gap_truth(y_train, subject_train)
+      truth_test <- surv_gap_truth(y_test, subject_test)
+      # Gap-time concordance needs no censoring weights.
+      censor_km <- NULL
+    } else {
+      truth_train <- surv_subject_truth(y_train, subject_train, recurrent = recurrent_arg)
+      truth_test <- surv_subject_truth(y_test, subject_test, recurrent = recurrent_arg)
+      censor_km <- censoring_km(truth_train$.truth)
+    }
 
     list(
       train = train,
@@ -817,7 +886,8 @@ canonicalize_dots_for_hash <- function(dots) {
     eval_time = NULL,
     metric = "brier_survival_integrated",
     rule = "min",
-    covariates = "path"
+    covariates = "path",
+    recurrent = "error"
   )
   merged <- utils::modifyList(defaults, dots, keep.null = TRUE)
   # Remove execution-only flags that do not change model outputs
@@ -1392,6 +1462,23 @@ tune_over_alpha <- function(object,
   })
 }
 
+#' Whether a Tuning Task Produced a Usable Score
+#'
+#' A task is usable when at least one row has a non-missing score: the IBS,
+#' or, with `recurrent = "gap"`, the gap-time concordance (whose IBS is
+#' always `NA`).
+#'
+#' @param df A [glmnet_IBS()] result tibble.
+#' @keywords internal
+#' @noRd
+tune_task_ok <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0L || !"IBS" %in% names(df)) {
+    return(FALSE)
+  }
+  gap_ok <- "gap_concordance" %in% names(df) && !all(is.na(df$gap_concordance))
+  !all(is.na(df$IBS)) || gap_ok
+}
+
 #' Tune Over `alpha` for Every Split of a Resample
 #'
 #' Evaluates candidate `(split, alpha)` (or `(split, formula)`) combinations
@@ -1601,6 +1688,14 @@ tune_alpha_by_split <- function(object,
       active_mask <- rep(TRUE, n_tasks)
     }
     active_indices <- which(active_mask)
+    if (length(active_indices) == 0L) {
+      stop(
+        "tune_alpha_by_split(): shard ", paste(shard, collapse = "/"),
+        " has no tasks assigned to it (", n_tasks, " task(s) in total), so nothing was tuned. ",
+        "Check the shard specification.",
+        call. = FALSE
+      )
+    }
     active_splits <- unique(tasks$split_idx[active_indices])
 
     split_cache <- vector("list", n_splits)
@@ -1687,7 +1782,7 @@ tune_alpha_by_split <- function(object,
         if (nrow(sub_df) > 0L) {
           return(list(
             task_idx = k, split_idx = sp_idx, split_id = s_id, item_idx = item_idx,
-            ok = !all(is.na(sub_df$IBS)), error_msg = NULL, result = sub_df
+            ok = tune_task_ok(sub_df), error_msg = NULL, result = sub_df
           ))
         }
       }
@@ -1704,7 +1799,7 @@ tune_alpha_by_split <- function(object,
         if (identical(chk$status, "hit")) {
           val <- chk$value
           err_reason <- attr(val, "failure_reason", exact = TRUE)
-          is_ok <- is.data.frame(val) && nrow(val) > 0L && !all(is.na(val$IBS))
+          is_ok <- tune_task_ok(val)
           return(list(
             task_idx = k, split_idx = sp_idx, split_id = s_id, item_idx = item_idx,
             ok = is_ok, error_msg = err_reason, result = val
@@ -1764,7 +1859,7 @@ tune_alpha_by_split <- function(object,
         err_reason <- fit_warns[1]
       }
 
-      is_ok <- is.data.frame(res) && nrow(res) > 0L && !all(is.na(res$IBS))
+      is_ok <- tune_task_ok(res)
       if (is_ok && !is.null(tk_file)) {
         res_to_save <- res
         res_to_save$inner_resamples_splits <- s_id
@@ -1978,8 +2073,20 @@ tune_alpha_by_split <- function(object,
     }
 
     res_all <- dplyr::bind_rows(res_by_split)
-    if (!is.data.frame(res_all) || nrow(res_all) == 0L || all(is.na(res_all$IBS))) {
+    if (!is.data.frame(res_all) || nrow(res_all) == 0L || !tune_task_ok(res_all)) {
       stop("All model fits across all splits failed in tune_alpha_by_split().", call. = FALSE)
+    }
+    if (!is.null(shard) && length(active_indices) < n_tasks) {
+      warning(
+        sprintf("tune_alpha_by_split(): shard %d/%d tuned only %d of %d task(s); the result is partial. ",
+                shard[1], shard[2], length(active_indices), n_tasks),
+        "Collect the other shards' checkpoints to complete it; see `attr(x, 'shard_partial')`.",
+        call. = FALSE
+      )
+      attr(res_all, "shard_partial") <- list(
+        shard = shard, n_tasks = n_tasks, n_evaluated = length(active_indices),
+        evaluated_tasks = active_indices
+      )
     }
 
     attr(res_all, "checkpoint_run_fingerprint") <- run_fp
@@ -2111,18 +2218,36 @@ collect_checkpoints <- function(checkpoint_dir,
   }
 
   metas <- lapply(objs, function(x) attr(x, "checkpoint_meta", exact = TRUE))
-  task_ids <- vapply(seq_along(objs), function(i) {
-    m <- metas[[i]]
-    if (!is.null(m$task_idx)) as.integer(m$task_idx) else i
-  }, integer(1))
-  n_expected <- metas[[1]]$n_tasks
+  # Split-level checkpoints (tune_split_*.rds, written by tune_alpha_by_split()
+  # with meta split_idx/split_id/n_splits/n_tasks and no task_idx) cover whole
+  # splits, not tasks: comparing their 1..n_splits ids against the total task
+  # count falsely reports the set incomplete. For them, completeness is
+  # judged against n_splits using split_idx.
+  is_split_file <- vapply(metas, function(m) {
+    !is.null(m$split_idx) && is.null(m$task_idx)
+  }, logical(1))
+  if (all(is_split_file)) {
+    task_ids <- vapply(seq_along(objs), function(i) {
+      m <- metas[[i]]
+      if (!is.null(m$split_idx)) as.integer(m$split_idx) else i
+    }, integer(1))
+    n_expected <- metas[[1]]$n_splits
+    what <- "split(s)"
+  } else {
+    task_ids <- vapply(seq_along(objs), function(i) {
+      m <- metas[[i]]
+      if (!is.null(m$task_idx)) as.integer(m$task_idx) else i
+    }, integer(1))
+    n_expected <- metas[[1]]$n_tasks
+    what <- "task(s)"
+  }
 
   if (!is.null(n_expected) && !is.na(n_expected)) {
     missing_tasks <- setdiff(seq_len(as.integer(n_expected)), task_ids)
     if (length(missing_tasks) > 0L) {
       msg <- sprintf(
-        "Checkpoint collection is incomplete: %d of %d task(s) missing (%s).",
-        length(missing_tasks), as.integer(n_expected),
+        "Checkpoint collection is incomplete: %d of %d %s missing (%s).",
+        length(missing_tasks), as.integer(n_expected), what,
         paste(utils::head(missing_tasks, 10), collapse = ", ")
       )
       if (!isTRUE(allow_incomplete)) {
@@ -2251,7 +2376,12 @@ clean_checkpoints <- function(dir,
       attr(obj, "checkpoint_meta", exact = TRUE)$fn %||% "checkpoint"
     }
     inner_val <- if (is_envelope) obj$value else obj
-    valid_obj <- is.data.frame(inner_val) && nrow(inner_val) > 0L
+    # Validity is "readable and fingerprinted", not "a non-empty data frame":
+    # workflow_map_checkpointed() / checkpointed_resamples() /
+    # tune_race_survival_checkpointed() legitimately store lists (and other
+    # non-data-frame values), and a fingerprinted empty data frame is a valid
+    # (if empty) checkpoint, not a corrupt one.
+    valid_obj <- !is.null(obj)
     run_fp <- if (is_envelope) {
       obj$checkpoint_run_fingerprint %||% obj$checkpoint_fingerprint %||% NA_character_
     } else if (!is.null(obj)) {
@@ -2306,7 +2436,9 @@ clean_checkpoints <- function(dir,
     actions[] <- "removed"
     reasons[] <- "keep_none"
   } else {
-    # Mark unreadable or unfingerprinted files for removal
+    # Mark unreadable or unfingerprinted files for removal. `valid_obj` is
+    # FALSE only when the file could not be read at all (readRDS() failed);
+    # a readable, fingerprinted file is kept whatever its value's type.
     bad_mask <- !df$valid_obj | is.na(df$run_fingerprint) | !nzchar(df$run_fingerprint)
     actions[bad_mask] <- "removed"
     reasons[bad_mask] <- "invalid_or_missing_fingerprint"
@@ -2417,6 +2549,12 @@ estimate_runtime <- function(fn,
     stop("`n_sample` must be a positive integer.", call. = FALSE)
   }
 
+  check_positive_int <- function(x, name) {
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) || x < 1 || x != round(x)) {
+      stop("`", name, "` must be a single positive whole number.", call. = FALSE)
+    }
+    as.integer(x)
+  }
   if (is.null(workers)) {
     workers <- if (requireNamespace("future", quietly = TRUE)) {
       max(1L, as.integer(future::nbrOfWorkers()))
@@ -2424,21 +2562,25 @@ estimate_runtime <- function(fn,
       1L
     }
   } else {
-    workers <- max(1L, as.integer(workers))
+    workers <- check_positive_int(workers, "workers")
   }
 
   if (is.null(n_machines)) {
     if (!is.null(args$shard) && length(args$shard) == 2L) {
-      n_machines <- max(1L, as.integer(args$shard[2]))
+      shard_n <- suppressWarnings(as.integer(args$shard[2]))
+      n_machines <- if (length(shard_n) == 1L && !is.na(shard_n) && shard_n >= 1L) shard_n else 1L
+      if (!is.null(args$shard) && (is.na(shard_n) || shard_n < 1L)) {
+        warning("`args$shard` is not a valid shard specification; `n_machines` defaults to 1.", call. = FALSE)
+      }
     } else {
       n_machines <- 1L
     }
   } else {
-    n_machines <- max(1L, as.integer(n_machines))
+    n_machines <- check_positive_int(n_machines, "n_machines")
   }
 
-  n_outer_folds <- max(1L, as.integer(n_outer_folds))
-  n_domains <- max(1L, as.integer(n_domains))
+  n_outer_folds <- check_positive_int(n_outer_folds, "n_outer_folds")
+  n_domains <- check_positive_int(n_domains, "n_domains")
 
   # Determine total tasks in `args` and build sample calls
   is_summarize <- identical(fn, tune_alpha_by_split) ||
@@ -2533,11 +2675,25 @@ estimate_runtime <- function(fn,
     }
   }
 
-  sample_times <- vapply(sample_calls, function(sc) {
+  sample_ok <- logical(length(sample_calls))
+  sample_times <- vapply(seq_along(sample_calls), function(i) {
+    sc <- sample_calls[[i]]
     t0 <- proc.time()[["elapsed"]]
-    suppressWarnings(tryCatch(do.call(sc$fn, sc$args), error = function(e) NULL))
+    ok <- suppressWarnings(tryCatch({ do.call(sc$fn, sc$args); TRUE }, error = function(e) FALSE))
+    sample_ok[i] <<- isTRUE(ok)
     max(0, proc.time()[["elapsed"]] - t0)
   }, numeric(1))
+  # A fit that errors instantly used to be timed at ~0 s and averaged in,
+  # dragging the projection down. Failed samples are dropped (and counted),
+  # not timed.
+  n_failed <- sum(!sample_ok)
+  if (n_failed > 0L) {
+    warning(n_failed, " of ", length(sample_calls), " sample fit(s) failed and were left out of the timing (their ~0 s would understate the projection).", call. = FALSE)
+    sample_times <- sample_times[sample_ok]
+  }
+  if (length(sample_times) == 0L) {
+    stop("All sample fits failed in estimate_runtime(); no timing could be estimated.", call. = FALSE)
+  }
 
   mean_sec <- mean(sample_times)
   med_sec <- stats::median(sample_times)
@@ -2634,6 +2790,25 @@ alpha_grid <- function(num_alpha_values = 10, num_fixed = 6) {
   n_random <- num_alpha_values - num_fixed
   gap <- (seq_len(n_random) - 1) %% (num_fixed - 1) + 1
   sort(c(fixed, stats::runif(n_random, min = fixed[gap], max = fixed[gap + 1])))
+}
+
+#' Names of the Metrics in a yardstick Metric Set
+#'
+#' `names(metric_set(...))` is `NULL`: the metric names live in
+#' `attr(metrics, "metrics")`. Fingerprints that used `names(metrics)` were
+#' therefore fingerprinting `NULL` and never distinguished metric sets.
+#'
+#' @param metrics A `yardstick::metric_set()` object, or `NULL`.
+#' @return A character vector of metric names, or `NULL` when `metrics` is
+#'   `NULL` or carries no metric names.
+#' @keywords internal
+#' @noRd
+metric_set_names <- function(metrics) {
+  if (is.null(metrics)) return(NULL)
+  m_attr <- attr(metrics, "metrics", exact = TRUE)
+  if (!is.null(m_attr)) return(sort(names(m_attr)))
+  nm <- names(metrics)
+  if (is.null(nm)) NULL else sort(nm)
 }
 
 #' A yardstick Metric Set From Metric Names

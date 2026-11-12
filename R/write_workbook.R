@@ -5,7 +5,8 @@
 #' worksheet.
 #'
 #' @param x A named list of data frames (an R database) or a single data frame/tibble.
-#' @param path File path to save the \code{.xlsx} workbook.
+#' @param path File path to save the \code{.xlsx} workbook. The parent directory
+#'   is created if it does not exist.
 #' @param include_metadata Logical; if \code{TRUE} (default), computes and appends
 #'   a data dictionary sheet generated via \code{\link{get_dataset_info}}.
 #' @param metadata Optional pre-computed metadata data frame. If \code{NULL} and
@@ -25,6 +26,19 @@ write_database_to_excel <- function(x, path,
                                     metadata = NULL,
                                     metadata_sheet = "METADATA",
                                     ...) {
+  if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
+    stop("`path` must be a single non-empty string.", call. = FALSE)
+  }
+  if (tolower(tools::file_ext(path)) != "xlsx") {
+    stop("`path` must end in `.xlsx`: write_database_to_excel writes an Excel workbook.", call. = FALSE)
+  }
+  parent <- dirname(path)
+  if (!dir.exists(parent) && !suppressWarnings(dir.create(parent, recursive = TRUE)) && !dir.exists(parent)) {
+    stop("Could not create the directory for `path`: ", parent, ".", call. = FALSE)
+  }
+  if (!is.character(metadata_sheet) || length(metadata_sheet) != 1L || is.na(metadata_sheet) || !nzchar(metadata_sheet)) {
+    stop("`metadata_sheet` must be a single non-empty string.", call. = FALSE)
+  }
   if (is.data.frame(x)) {
     nm <- deparse(substitute(x))
     if (!nzchar(nm) || grepl("[\\(\\)]", nm)) nm <- "Data"
@@ -39,8 +53,21 @@ write_database_to_excel <- function(x, path,
     stop("`x` is empty; nothing to write.", call. = FALSE)
   }
 
+  # every element must already be a data frame: as.data.frame() below would
+  # silently turn a vector into a one-column table and a matrix into a frame
+  bad <- which(!vapply(x, is.data.frame, logical(1)))
+  if (length(bad)) {
+    nm <- names(x)
+    lbl <- if (is.null(nm)) paste0("element ", bad) else ifelse(nzchar(nm[bad]), paste0("`", nm[bad], "`"), paste0("element ", bad))
+    stop("Every element of `x` must be a data frame; not a data frame: ",
+         paste(lbl, collapse = ", "), ".", call. = FALSE)
+  }
+
   # Ensure names exist and sanitize worksheet names for Excel (max 31 chars, valid chars)
   sheet_names <- names(x)
+  if (!is.null(sheet_names) && anyNA(sheet_names)) {
+    stop("Sheet names must not be NA.", call. = FALSE)
+  }
   if (is.null(sheet_names)) {
     sheet_names <- paste0("Table", seq_along(x))
   } else {
@@ -117,6 +144,7 @@ write_database <- write_database_to_excel
 #'   \code{metadata_sheet} is found, it is separated and attached as attribute
 #'   \code{"metadata"} on the returned database list.
 #' @param metadata_sheet Name of the metadata sheet to recognize (default: \code{"METADATA"}).
+#'   More than one sheet matching it (ignoring case) is an error.
 #' @param ... Additional arguments passed to \code{\link[readxl]{read_excel}}.
 #' @return A named list of tibbles. If \code{include_metadata = TRUE} and the metadata sheet
 #'   was found, it is accessible via \code{attr(result, "metadata")}.
@@ -131,12 +159,21 @@ read_database_from_excel <- function(path,
                                      include_metadata = TRUE,
                                      metadata_sheet = "METADATA",
                                      ...) {
+  if (!is.character(metadata_sheet) || length(metadata_sheet) != 1L || is.na(metadata_sheet) || !nzchar(metadata_sheet)) {
+    stop("`metadata_sheet` must be a single non-empty string.", call. = FALSE)
+  }
   sheets <- readxl::excel_sheets(path)
   names(sheets) <- sheets
   out <- purrr::map(sheets, \(sheet) readxl::read_excel(path = path, sheet = sheet, ...))
 
   if (isTRUE(include_metadata)) {
     meta_idx <- which(tolower(names(out)) == tolower(metadata_sheet))
+    if (length(meta_idx) > 1) {
+      # two sheets that differ only by case are both the metadata sheet, and
+      # taking the first would silently drop the other one's rows
+      stop("More than one sheet matches the metadata sheet name `", metadata_sheet, "`: ",
+           paste(names(out)[meta_idx], collapse = ", "), ".", call. = FALSE)
+    }
     if (length(meta_idx) > 0) {
       meta_data <- out[[meta_idx[1]]]
       out[[meta_idx[1]]] <- NULL
@@ -157,14 +194,21 @@ read_database <- read_database_from_excel
 #' \code{.xlsx} formats for in-place review and editing.
 #'
 #' @param metadata A tibble/data.frame of dataset metadata (e.g. from \code{\link{get_dataset_info}}).
-#' @param path File path ending in \code{.csv} or \code{.xlsx}.
+#' @param path File path ending in \code{.csv}, \code{.xlsx} or \code{.xls}.
 #' @param sheet Optional sheet name when reading from Excel (defaults to 1 or \code{"METADATA"}).
 #' @param ... Additional arguments passed to the underlying writer/reader.
 #' @return For writers, \code{path} invisibly. For readers, a tibble of metadata.
 #' @name database_metadata_io
 #' @export
 write_database_metadata <- function(metadata, path, ...) {
+  if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
+    stop("`path` must be a single non-empty string.", call. = FALSE)
+  }
   ext <- tolower(tools::file_ext(path))
+  if (!ext %in% c("csv", "xlsx", "xls")) {
+    # anything else used to get CSV content under a misleading extension
+    stop("`path` must end in `.csv`, `.xlsx` or `.xls`.", call. = FALSE)
+  }
   if (ext %in% c("xlsx", "xls")) {
     writexl::write_xlsx(list(METADATA = as.data.frame(metadata)), path = path, ...)
   } else {
@@ -196,6 +240,8 @@ read_database_metadata <- function(path, sheet = NULL, ...) {
 #'
 #' Synchronizes updated metadata (such as variable labels, dataset descriptions,
 #' database names, and variable roles) back into a database list or data frame.
+#' A single data frame keeps the name it was called with, so metadata rows with
+#' that \code{dataset_name} match it.
 #'
 #' @param db A named list of data frames (an R database) or a single data frame.
 #' @param metadata A data frame/tibble of metadata containing columns \code{columns}
@@ -209,11 +255,19 @@ read_database_metadata <- function(path, sheet = NULL, ...) {
 #' meta$labels[meta$columns == "age"] <- "Age at Enrollment (years)"
 #' db <- apply_database_metadata(db, meta)
 apply_database_metadata <- function(db, metadata) {
-  if (is.null(metadata) || nrow(metadata) == 0) return(db)
+  if (is.null(metadata)) return(db)
+  if (!is.data.frame(metadata)) {
+    stop("`metadata` must be a data frame.", call. = FALSE)
+  }
+  if (nrow(metadata) == 0) return(db)
 
   is_single_df <- is.data.frame(db)
   if (is_single_df) {
-    db_list <- list(Data = db)
+    # keep the name the caller used, so metadata rows with that dataset_name
+    # match it: wrapping it as "Data" meant its metadata never applied
+    nm <- deparse(substitute(db))
+    if (!nzchar(nm) || grepl("[\\(\\)]", nm)) nm <- "Data"
+    db_list <- stats::setNames(list(db), nm)
   } else {
     db_list <- db
   }

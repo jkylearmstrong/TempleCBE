@@ -37,6 +37,15 @@ package_deliverables <- function(pipeline_objects = list(),
                                  zip_path = NULL,
                                  include_pipeline_graph = TRUE,
                                  stamp = FALSE) {
+  if (!is.character(output_formats) || length(output_formats) == 0L || anyNA(output_formats) || any(!nzchar(output_formats))) {
+    stop("`output_formats` must be a non-empty character vector of report formats.", call. = FALSE)
+  }
+  output_formats <- tolower(output_formats)
+  unknown_fmts <- setdiff(output_formats, c("pdf", "docx", "html", "all"))
+  if (length(unknown_fmts) > 0L) {
+    stop("Unknown output format(s) in `output_formats`: ", paste(unknown_fmts, collapse = ", "),
+         ". Known formats: pdf, docx, html, all.", call. = FALSE)
+  }
   if ("all" %in% output_formats) {
     output_formats <- c("pdf", "docx", "html")
   }
@@ -69,14 +78,17 @@ package_deliverables <- function(pipeline_objects = list(),
   # folder, which is deleted below -- so the archive would be silently destroyed.
   # Resolve against the caller's working directory up front.
   zip_path <- file.path(normalizePath(dirname(zip_path), winslash = "/", mustWork = FALSE), basename(zip_path))
+  # the archive's folder may not exist yet (a new "deliverables/2026-11-11", say)
+  dir.create(dirname(zip_path), recursive = TRUE, showWarnings = FALSE)
 
   # A name of its own from tempfile(): a name built from the clock (to the
   # second) was shared by two calls in the same second, and the second call
   # deleted the staging folder the first was still filling.
   temp_staging <- tempfile("stage_")
   dir.create(temp_staging, recursive = TRUE)
-  # Removed on every way out, including a zip::zip() that fails.
-  on.exit(unlink(temp_staging, recursive = TRUE), add = TRUE)
+  # Removed on every way out, including a zip::zip() that fails. remove_dir_tree()
+  # (not unlink()) so a junction in the staging folder is removed as a link.
+  on.exit(remove_dir_tree(temp_staging), add = TRUE)
 
   copied_files <- character(0)
   # Copies one deliverable into the staging folder and records it; a copy that
@@ -92,11 +104,22 @@ package_deliverables <- function(pipeline_objects = list(),
   # 1. Gather Reports from Pipeline
   for (obj in pipeline_objects) {
     if (inherits(obj, "FileOutputs") && obj@renders) {
+      # a source with no extension has no output name to derive: swapping its
+      # (absent) extension would leave the source path itself, and the source
+      # would be packaged as if it were a rendered report
+      if (!nzchar(tools::file_ext(obj@path))) {
+        warning("Skipping '", obj@name, "': its source '", obj@path, "' has no file extension, so no rendered output can be found for it.", call. = FALSE)
+        next
+      }
       dest_stage <- file.path(temp_staging, safe_stage_dir(obj@stage, "Reports"))
       if (!dir.exists(dest_stage)) dir.create(dest_stage, recursive = TRUE)
 
       for (fmt in output_formats) {
-        expected_path <- sub("\\.[^.]+$", paste0(".", fmt), obj@path)
+        # the extension a format writes is not always the format's name
+        # (revealjs writes .html, beamer writes .pdf)
+        fmt_ext <- .format_extension(fmt)
+        if (is.na(fmt_ext)) fmt_ext <- fmt
+        expected_path <- sub("\\.[^.]+$", paste0(".", fmt_ext), obj@path)
         if (file.exists(expected_path)) {
           dest_file <- unique_staging_path(dest_stage, basename(expected_path), copied_files)
           stage_deliverable(expected_path, dest_file)
@@ -257,14 +280,17 @@ audit_report_deliverables <- function(analysis_path = ".", file_pattern = "\\.(x
 
   xml_file <- file.path(tmp_dir, "word", "document.xml")
   if (!isTRUE(ok) || !file.exists(xml_file)) {
-    # Fallback if the file is plain text in tests
-    lines <- tryCatch(readLines(docx_path, warn = FALSE), error = function(e) character())
-    return(trimws(lines[nzchar(trimws(lines))]))
+    # the archive cannot be opened, so its text is unknown: reading the raw
+    # .docx as plain text (the old fallback) returned binary bytes as
+    # "paragraphs". Returning NULL treats the file as binary instead.
+    warning("Could not open '", docx_path, "' as a Word document; it is treated as a binary file.", call. = FALSE)
+    return(NULL)
   }
 
   doc <- tryCatch(xml2::read_xml(xml_file), error = function(e) NULL)
   if (is.null(doc)) {
-    return(character())
+    warning("Could not parse the document XML of '", docx_path, "'; it is treated as a binary file.", call. = FALSE)
+    return(NULL)
   }
   ns <- xml2::xml_ns(doc)
   # Strip tracked deletions, comment ranges, and deletion text so markup is ignored
@@ -313,8 +339,16 @@ audit_report_deliverables <- function(analysis_path = ".", file_pattern = "\\.(x
 #'   `file` (relative path in the bundle), `status` (`"unchanged"`, `"modified"`,
 #'   `"added"`, or `"removed"`), `hash_changed` (logical), `text_changed`
 #'   (logical), `n_added` (integer count of added paragraphs/lines), `n_removed`
-#'   (integer count of removed paragraphs/lines), `diff_summary` (concise text
-#'   summary of changes), and `diff_lines` (list column of `-`/`+` diff lines).
+#'   (integer count of removed paragraphs/lines), `n_edited` (integer count of
+#'   edited paragraphs), `n_unpaired` (integer count of paragraphs that could
+#'   not be paired), `budget_exceeded` (logical; the paragraph pairing ran out
+#'   of time, so the unpaired paragraphs are counted as added/removed but were
+#'   not classified as edits), `diff_summary` (concise text summary of changes),
+#'   `diff_lines` (list column of `-`/`+` diff lines), `section_summary`
+#'   (list column of per-section counts) and `largest_changes` (list column of
+#'   the largest paragraph changes). Every row carries every column (zeros,
+#'   `FALSE` or an empty tibble where a count does not apply), so the table
+#'   can be summed and filtered without `NA`.
 #' @seealso [package_deliverables()]
 #' @export
 diff_deliverables <- function(old_zip, new_zip) {
@@ -332,11 +366,15 @@ diff_deliverables <- function(old_zip, new_zip) {
     td <- tempfile(prefix)
     dir.create(td, recursive = TRUE, showWarnings = FALSE)
     # An entry such as "../x" or "/x" would be written outside `td` (zip slip).
-    entries <- if (requireNamespace("zip", quietly = TRUE)) {
-      zip::zip_list(src)$filename
-    } else {
-      utils::unzip(src, list = TRUE)$Name
-    }
+    # zip::unzip also follows symbolic-link entries, so a link pointing outside
+    # `td` plus a file written through it would escape the same way: links are
+    # refused before anything is extracted (zip::zip_list reports the entry
+    # type). utils::unzip has no such listing, and it does not create links
+    # (it stores one as a regular file), so the extracted tree is scanned for
+    # links afterwards instead, as defence in depth.
+    has_zip <- requireNamespace("zip", quietly = TRUE)
+    listing <- if (has_zip) zip::zip_list(src) else NULL
+    entries <- if (has_zip) listing$filename else utils::unzip(src, list = TRUE)$Name
     entries <- gsub("\\\\", "/", entries)
     unsafe <- grepl("^(/|[A-Za-z]:)", entries) |
       vapply(strsplit(entries, "/", fixed = TRUE), function(parts) any(parts == ".."), logical(1))
@@ -347,10 +385,36 @@ diff_deliverables <- function(old_zip, new_zip) {
         call. = FALSE
       )
     }
-    if (requireNamespace("zip", quietly = TRUE)) {
+    if (has_zip && "type" %in% names(listing) && any(listing$type == "symlink")) {
+      stop(
+        "'", src, "' has ", sum(listing$type == "symlink"), " symbolic link entry/ies (",
+        paste(utils::head(entries[listing$type == "symlink"], 3), collapse = ", "),
+        "); it was not extracted, because a link pointing outside the folder would let a later entry escape it.",
+        call. = FALSE
+      )
+    }
+    if (has_zip) {
       zip::unzip(src, exdir = td)
     } else {
       utils::unzip(src, exdir = td)
+    }
+    # no link may be left in the extracted tree (a link the listing did not
+    # report, or one made by the other backend): walk without descending into
+    # a linked directory, so the scan itself cannot follow one out
+    find_link <- function(dir) {
+      for (e in list.files(dir, all.files = TRUE, recursive = FALSE, include.dirs = TRUE, no.. = TRUE)) {
+        p <- file.path(dir, e)
+        if (nzchar(Sys.readlink(p))) return(p)
+        if (dir.exists(p)) {
+          hit <- find_link(p)
+          if (!is.null(hit)) return(hit)
+        }
+      }
+      NULL
+    }
+    bad_link <- find_link(td)
+    if (!is.null(bad_link)) {
+      stop("'", src, "' left a symbolic link ('", bad_link, "') in the extracted files; the archive is rejected.", call. = FALSE)
     }
     list(dir = normalizePath(td, winslash = "/"), cleanup = TRUE)
   }
@@ -377,8 +441,13 @@ diff_deliverables <- function(old_zip, new_zip) {
       text_changed = logical(),
       n_added = integer(),
       n_removed = integer(),
+      n_edited = integer(),
+      n_unpaired = integer(),
+      budget_exceeded = logical(),
       diff_summary = character(),
-      diff_lines = list()
+      diff_lines = list(),
+      section_summary = list(),
+      largest_changes = list()
     )
     class(out) <- c("cbe_deliverable_diff", class(out))
     return(out)
@@ -405,15 +474,23 @@ diff_deliverables <- function(old_zip, new_zip) {
     if (!in_old && in_new) {
       tu <- extract_text_units(new_p)
       n_add <- if (!is.null(tu)) length(tu) else 0L
+      # every row carries the same columns (a caller summing n_added or
+      # filtering on budget_exceeded must not find NA): an added file's
+      # paragraphs are all unpaired, and a binary file has no text to change
       return(tibble::tibble(
         file = rel_f,
         status = "added",
         hash_changed = TRUE,
-        text_changed = TRUE,
+        text_changed = !is.null(tu) && length(tu) > 0L,
         n_added = as.integer(n_add),
         n_removed = 0L,
+        n_edited = 0L,
+        n_unpaired = as.integer(n_add),
+        budget_exceeded = FALSE,
         diff_summary = "New deliverable added",
-        diff_lines = list(if (!is.null(tu) && length(tu) > 0L) paste0("+ ", utils::head(tu, 20)) else character())
+        diff_lines = list(if (!is.null(tu) && length(tu) > 0L) paste0("+ ", utils::head(tu, 20)) else character()),
+        section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer(), unpaired = integer())),
+        largest_changes = list(tibble::tibble(section = character(), old = character(), new = character(), score = numeric()))
       ))
     }
     if (in_old && !in_new) {
@@ -423,11 +500,16 @@ diff_deliverables <- function(old_zip, new_zip) {
         file = rel_f,
         status = "removed",
         hash_changed = TRUE,
-        text_changed = TRUE,
+        text_changed = !is.null(tu) && length(tu) > 0L,
         n_added = 0L,
         n_removed = as.integer(n_rem),
+        n_edited = 0L,
+        n_unpaired = as.integer(n_rem),
+        budget_exceeded = FALSE,
         diff_summary = "Deliverable removed",
-        diff_lines = list(if (!is.null(tu) && length(tu) > 0L) paste0("- ", utils::head(tu, 20)) else character())
+        diff_lines = list(if (!is.null(tu) && length(tu) > 0L) paste0("- ", utils::head(tu, 20)) else character()),
+        section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer(), unpaired = integer())),
+        largest_changes = list(tibble::tibble(section = character(), old = character(), new = character(), score = numeric()))
       ))
     }
 
@@ -449,9 +531,11 @@ diff_deliverables <- function(old_zip, new_zip) {
           n_added = 0L,
           n_removed = 0L,
           n_edited = 0L,
+          n_unpaired = 0L,
+          budget_exceeded = FALSE,
           diff_summary = "No text changes",
           diff_lines = list(character()),
-          section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer())),
+          section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer(), unpaired = integer())),
           largest_changes = list(tibble::tibble(section = character(), old = character(), new = character(), score = numeric()))
         ))
       }
@@ -484,8 +568,13 @@ diff_deliverables <- function(old_zip, new_zip) {
       text_changed = h_changed,
       n_added = 0L,
       n_removed = 0L,
+      n_edited = 0L,
+      n_unpaired = 0L,
+      budget_exceeded = FALSE,
       diff_summary = if (h_changed) "Binary file modified" else "Unchanged",
-      diff_lines = list(character())
+      diff_lines = list(character()),
+      section_summary = list(tibble::tibble(section = character(), edited = integer(), added = integer(), removed = integer(), unpaired = integer())),
+      largest_changes = list(tibble::tibble(section = character(), old = character(), new = character(), score = numeric()))
     )
   })
 
@@ -695,10 +784,14 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
     unmatched_unpaired_old <- which(!matched_old)
     unmatched_unpaired_new <- which(!matched_new)
     n_unpaired <- length(unmatched_unpaired_old) + length(unmatched_unpaired_new)
-    unmatched_rem <- integer()
-    unmatched_add <- integer()
-    n_removed <- 0L
-    n_added <- 0L
+    # the unpaired paragraphs are added and removed all the same; only the
+    # pairing (edit versus add/remove) is unknown, which n_unpaired records.
+    # Reporting them as 0 understated the change: a caller summing n_added
+    # and n_removed would miss every unpaired paragraph.
+    unmatched_rem <- unmatched_unpaired_old
+    unmatched_add <- unmatched_unpaired_new
+    n_removed <- length(unmatched_rem)
+    n_added <- length(unmatched_add)
   } else {
     unmatched_unpaired_old <- integer()
     unmatched_unpaired_new <- integer()
@@ -737,8 +830,8 @@ pair_paragraphs_by_similarity <- function(old_tu, new_tu, time_budget_sec = 6.0)
       section = all_secs,
       edited = vapply(all_secs, function(s) sum(vapply(edited_pairs, function(x) x$section == s, logical(1))), integer(1)),
       unpaired = vapply(all_secs, function(s) sum(old_sec[unmatched_unpaired_old] == s) + sum(new_sec[unmatched_unpaired_new] == s), integer(1)),
-      added = 0L,
-      removed = 0L
+      added = vapply(all_secs, function(s) sum(new_sec[unmatched_add] == s), integer(1)),
+      removed = vapply(all_secs, function(s) sum(old_sec[unmatched_rem] == s), integer(1))
     )
   } else {
     tibble::tibble(
