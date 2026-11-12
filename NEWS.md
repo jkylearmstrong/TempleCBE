@@ -1,4 +1,4 @@
-# TempleCBE 0.9.0
+# TempleCBE 0.10.0
 
 Draft fixes and features from the fresh review of 2026-11-11 (Part 1: 141 new findings; Part 2: feature gaps A1–A8 and B1–B7), on top of 0.8.2. No export is removed.
 
