@@ -1,3 +1,14 @@
+# Shared horizon guard: a horizon must be a single finite, positive time.
+# Used by extract_horizon_risk(), predict_event_risk() and
+# .model_validation_inputs(), so the error message is identical at every
+# entry point. The reject-0 rule is a settled maintainer decision.
+.check_horizon <- function(horizon) {
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
+    stop("`horizon` must be a single finite, positive time.", call. = FALSE)
+  }
+  invisible(horizon)
+}
+
 #' Event Risk at One Horizon from Survival Predictions
 #'
 #' Adapters from the survival-probability output of `predict()` on a
@@ -19,9 +30,9 @@
 #'   `.pred_survival`; or a tibble from `predict()` on a [fine_gray()] fit,
 #'   with a `.pred` list-column whose elements are tibbles with `.eval_time`
 #'   and `.pred_cif`.
-#' @param horizon A single time: the horizon the risk applies to. It must be
-#'   one of the `.eval_time` values in `pred`; otherwise an error lists the
-#'   available times.
+#' @param horizon A single finite, positive time: the horizon the risk applies
+#'   to. It must be one of the `.eval_time` values in `pred`; otherwise an
+#'   error lists the available times.
 #' @return `extract_horizon_risk()`: a numeric vector of event probabilities
 #'   by `horizon`, one per row of `pred` — one minus survival for survival
 #'   predictions, the CIF itself for Fine-Gray predictions. A row whose
@@ -42,9 +53,7 @@ extract_horizon_risk <- function(pred, horizon) {
   if (!is.data.frame(pred)) {
     stop("`pred` must be a tibble from `predict(..., type = \"survival\")`.", call. = FALSE)
   }
-  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
-    stop("`horizon` must be a single finite, positive time.", call. = FALSE)
-  }
+  .check_horizon(horizon)
   pred_col <- if (".pred" %in% names(pred)) {
     ".pred"
   } else if (".pred_survival" %in% names(pred)) {
@@ -157,9 +166,7 @@ extract_horizon_risk <- function(pred, horizon) {
 predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
   # Validated up front: the branches below that return early (rows with a
   # missing predictor) would otherwise never reach a downstream check.
-  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
-    stop("`horizon` must be a single finite, positive time.", call. = FALSE)
-  }
+  .check_horizon(horizon)
   if (inherits(object, "coxnet_model")) {
     pred <- stats::predict(object, new_data, type = "survival", eval_time = horizon, penalty = penalty)
   } else if (inherits(object, "cv_coxnet")) {
@@ -202,9 +209,7 @@ predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
       stop("`", v, "` is not a column of `new_data`.", call. = FALSE)
     }
   }
-  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
-    stop("`horizon` must be a single positive time.", call. = FALSE)
-  }
+  .check_horizon(horizon)
   if (!is.numeric(new_data[[time_col]])) stop("`time_col` must be numeric.", call. = FALSE)
   event <- new_data[[event_col]]
   if (inherits(object, "fine_gray_model")) {
@@ -259,7 +264,7 @@ predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
 #' @param time_col,event_col Outcome columns in `new_data`: follow-up time
 #'   and the 0/1 event indicator (or, for a `fine_gray_model` fit, the event
 #'   codes).
-#' @param horizon A single positive time: the horizon the calibration applies
+#' @param horizon A single finite, positive time: the horizon the calibration applies
 #'   to.
 #' @param penalty Passed to [predict_event_risk()]; ignored for `joint_model`,
 #'   `cox_time_varying` and `fine_gray_model`.
@@ -304,7 +309,7 @@ calibration_from_model <- function(object, new_data, time_col, event_col, horizo
 #' @param time_col,event_col Outcome columns in `new_data`: follow-up time
 #'   and the 0/1 event indicator (or, for a `fine_gray_model` fit, the event
 #'   codes).
-#' @param horizon A single positive time: the horizon the decision curve
+#' @param horizon A single finite, positive time: the horizon the decision curve
 #'   applies to.
 #' @param penalty Passed to [predict_event_risk()]; ignored for `joint_model`,
 #'   `cox_time_varying` and `fine_gray_model`.

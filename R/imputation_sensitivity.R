@@ -49,8 +49,9 @@
 #'   \item{n_imputed}{a tibble with `strategy`, `n_imputed` (missing cells
 #'     filled; `NA` when a strategy reordered the rows and changed values,
 #'     so its rows cannot be aligned with `data` without a row id; an
-#'     observed numeric cell counts as unchanged when it is within a
-#'     relative tolerance of 1e-8, and infinite cells must match exactly) and
+#'     observed numeric cell counts as unchanged when it is within 1e-8
+#'     (absolute for values below 1, relative above — that is, within
+#'     `1e-8 * max(1, |value|)`), and infinite cells must match exactly) and
 #'     `n_dropped` (rows dropped; non-zero only for `"complete_cases"`, and
 #'     never negative: rows a strategy adds are not counted)}
 #'   \item{estimates}{a tibble with `term`, `strategy`, `estimate` and
@@ -288,9 +289,10 @@ print.imputation_sensitivity <- function(x, ...) {
 }
 
 # TRUE when every cell observed in `data` is unchanged, in the same row
-# position, in `comp` (numeric cells within a small relative tolerance). The
-# two data frames must have the same rows and columns. Row names are not
-# consulted, so this is the same for data frames and tibbles.
+# position, in `comp` (numeric cells within 1e-8 — absolute for values below
+# 1, relative above). The two data frames must have the same rows and
+# columns. Row names are not consulted, so this is the same for data frames
+# and tibbles.
 .observed_cells_aligned <- function(comp, data) {
   for (nm in names(data)) {
     d <- data[[nm]]
@@ -299,8 +301,11 @@ print.imputation_sensitivity <- function(x, ...) {
     if (!any(obs)) next
     if (anyNA(cc[obs])) return(FALSE)
     same <- if (is.numeric(d) && is.numeric(cc)) {
-      dv <- d[obs]
-      cv <- cc[obs]
+      # Coerced to double before differencing: differencing integers near
+      # +/-.Machine$integer.max overflows to NA, which would abort the
+      # analysis; doubles overflow to Inf instead, and Inf <= tol is FALSE.
+      dv <- as.numeric(d[obs])
+      cv <- as.numeric(cc[obs])
       # Infinite cells are compared exactly: Inf - Inf is NaN, which would
       # make the test NA and abort the analysis.
       dv == cv | (is.finite(dv) & is.finite(cv) & abs(dv - cv) <= 1e-8 * pmax(1, abs(dv)))

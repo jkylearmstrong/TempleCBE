@@ -15,9 +15,9 @@ subject, with a `.pred` list-column (from [coxnet()] / [cv_coxnet()] /
 with a `.pred` list-column whose elements are tibbles with `.eval_time`
 and `.pred_cif`.}
 
-\item{horizon}{A single time: the horizon the risk applies to. It must be
-one of the `.eval_time` values in `pred`; otherwise an error lists the
-available times.}
+\item{horizon}{A single finite, positive time: the horizon the risk applies
+to. It must be one of the `.eval_time` values in `pred`; otherwise an
+error lists the available times.}
 }
 \value{
 `extract_horizon_risk()`: a numeric vector of event probabilities

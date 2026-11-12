@@ -26,7 +26,7 @@ holds the competing-risk event codes, as in [fine_gray()].}
 and the 0/1 event indicator (or, for a `fine_gray_model` fit, the event
 codes).}
 
-\item{horizon}{A single positive time: the horizon the decision curve
+\item{horizon}{A single finite, positive time: the horizon the decision curve
 applies to.}
 
 \item{penalty}{Passed to [predict_event_risk()]; ignored for `joint_model`,
