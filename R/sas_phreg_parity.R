@@ -33,6 +33,10 @@
 #' `tests/testthat/test-round2-0911-sas.R`), so [sas_parity_boundary()] lists
 #' this as `"parity"`. The claim covers the two fits and the `COVS(AGGREGATE)`
 #' / `COVM` standard errors on `survival::cgd` with Efron ties only.
+#' The stored log echoes the program's pre-run "DRAFT -- never been run"
+#' header comment, because the `.sas` file was edited after the run; the
+#' log's SAS header (version, licence, date) and the absence of any
+#' `ERROR:` or `WARNING:` line are what record that the run happened.
 #'
 #' @section How to run it (on a machine with SAS 9.4):
 #' Export the data from R with
@@ -186,8 +190,9 @@ parse_recurrent_phreg_lst <- function(lines) {
     stop("`lines` must be a character vector of listing lines, or a path to a listing file.", call. = FALSE)
   }
   # Listings from a Windows SAS session can carry non-ASCII line-drawing bytes;
-  # they are never part of a number, so blank them rather than fail on them.
-  lines <- iconv(lines, from = "UTF-8", to = "ASCII", sub = " ")
+  # they are never part of a number, so drop them rather than fail on them
+  # (dropped, not blanked: a stray byte inside a number must not split it).
+  lines <- iconv(lines, from = "UTF-8", to = "ASCII", sub = "")
   lines[is.na(lines)] <- ""
   # NOTE: the test helper parse_phreg_lst() in tests/testthat/helper-sas-reference.R
   # parses a single PHREG table given its terms; this exported parser is a
@@ -300,12 +305,14 @@ parse_recurrent_phreg_lst <- function(lines) {
 #' @param r,sas Quantity tables as returned by
 #'   [recurrent_phreg_quantities()] and [parse_recurrent_phreg_lst()].
 #' @param atol,rtol Absolute and relative tolerances for the estimates and
-#'   standard errors (SAS prints those to 5 decimals). P-values use an
+#'   standard errors (SAS prints those to 5 decimals, so the absolute
+#'   tolerance alone covers the rounding; `rtol` defaults to 0 so a
+#'   relative allowance cannot hide a real discrepancy). P-values use an
 #'   absolute tolerance of 1e-4 and hazard ratios an absolute 6e-4,
 #'   because SAS prints p-values to 4 decimals and hazard ratios to 3
 #'   (half a unit in the last place is 5e-5 and 5e-4 respectively).
 #' @export
-compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 5e-4) {
+compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 0) {
   for (nm in c("r", "sas")) {
     tbl <- get(nm)
     if (!is.data.frame(tbl)) {
@@ -321,9 +328,7 @@ compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 5e-4) {
   if (!all(need_sas %in% names(sas))) {
     stop("`sas` must have columns: ", paste(need_sas, collapse = ", "), ".", call. = FALSE)
   }
-  if (!is.numeric(atol) || length(atol) != 1L || atol < 0 || !is.numeric(rtol) || length(rtol) != 1L || rtol < 0) {
-    stop("`atol` and `rtol` must be single non-negative numbers.", call. = FALSE)
-  }
+  .check_compare_tolerances(atol, rtol)
   sas_key <- paste(sas$model, sas$se_type, sas$term)
   find_sas <- function(model, term, se_type) {
     hit <- match(paste(model, se_type, term), sas_key)

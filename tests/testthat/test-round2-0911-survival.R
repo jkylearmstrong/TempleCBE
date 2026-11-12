@@ -221,20 +221,15 @@ test_that("tune_race_survival_checkpointed warns when it falls back to the first
   resamples <- tibble::tibble(splits = list(1, 2))
   ckpt_dir <- file.path(tempdir(), "r2-race-fallback")
   if (dir.exists(ckpt_dir)) unlink(ckpt_dir, recursive = TRUE)
-  warns <- character()
-  tryCatch(
-    withCallingHandlers(
-      tune_race_survival_checkpointed(list(), resamples, checkpoint_dir = ckpt_dir),
-      warning = function(w) {
-        warns <<- c(warns, conditionMessage(w))
-        invokeRestart("muffleWarning")
-      }
-    ),
-    error = function(e) e
-  )
   # the per-split computation failed on split 2, so the fallback (and its
   # warning) must have run; the race itself cannot run here, which is fine
-  expect_true(any(grepl("first split only", warns)))
-  expect_true(any(grepl("split 2 fingerprint failed", warns)))
+  w <- expect_warning(
+    tryCatch(
+      tune_race_survival_checkpointed(list(), resamples, checkpoint_dir = ckpt_dir),
+      error = function(e) e
+    ),
+    "first split only"
+  )
+  expect_match(conditionMessage(w), "split 2 fingerprint failed")
   expect_false(file.exists(file.path(ckpt_dir, "race_survival_result.rds")))
 })

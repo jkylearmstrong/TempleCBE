@@ -565,20 +565,20 @@ print.docx_review_extract <- function(x, ...) {
   cat("\n", strrep("=", 70), "\n", sep = "")
   cat("REVIEW EXTRACTION & WORKFLOW TRACKER UPDATE COMPLETE\n")
   cat(strrep("=", 70), "\n", sep = "")
-  cat(sprintf("Master Tracker:      %s\n", x$paths$master))
+  cat(sprintf("Master Tracker:      %s\n", paste(x$paths$master, collapse = ", ")))
   if (length(x$paths$forks) > 0) {
     for (i in seq_along(x$paths$forks)) {
-      cat(sprintf("Reviewer Fork (%s): %s\n", names(x$paths$forks)[i], x$paths$forks[[i]]))
+      cat(sprintf("Reviewer Fork (%s): %s\n", names(x$paths$forks)[i], paste(x$paths$forks[[i]], collapse = ", ")))
     }
   }
   if (!is.null(x$paths$comments_csv)) {
-    cat(sprintf("Comments CSV:        %s\n", x$paths$comments_csv))
+    cat(sprintf("Comments CSV:        %s\n", paste(x$paths$comments_csv, collapse = ", ")))
   }
   if (!is.null(x$paths$tracked_changes_csv)) {
-    cat(sprintf("Tracked Changes CSV: %s\n", x$paths$tracked_changes_csv))
+    cat(sprintf("Tracked Changes CSV: %s\n", paste(x$paths$tracked_changes_csv, collapse = ", ")))
   }
   if (!is.null(x$paths$suggested_changes_csv)) {
-    cat(sprintf("Suggested Changes CSV: %s\n", x$paths$suggested_changes_csv))
+    cat(sprintf("Suggested Changes CSV: %s\n", paste(x$paths$suggested_changes_csv, collapse = ", ")))
   }
 
   n_comments <- nrow(x$comments)

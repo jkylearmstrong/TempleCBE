@@ -24,7 +24,7 @@ recurrent_phreg_quantities(
 
 parse_recurrent_phreg_lst(lines)
 
-compare_recurrent_phreg(r, sas, atol = 6e-06, rtol = 5e-04)
+compare_recurrent_phreg(r, sas, atol = 6e-06, rtol = 0)
 
 \method{print}{recurrent_phreg_comparison}(x, ...)
 }
@@ -50,19 +50,21 @@ of the SAS program). Passed to [recurrent_cox()].}
 \item{lines}{Character vector of listing lines (from a `.lst` file, as
 read by [readLines()]), or a single path to one.}
 
-\item{x}{A `recurrent_phreg_comparison` returned by
-[compare_recurrent_phreg()].}
-
-\item{...}{Unused; present for consistency with [print()].}
-
 \item{r, sas}{Quantity tables as returned by
 [recurrent_phreg_quantities()] and [parse_recurrent_phreg_lst()].}
 
 \item{atol, rtol}{Absolute and relative tolerances for the estimates and
-standard errors (SAS prints those to 5 decimals). P-values use an
+standard errors (SAS prints those to 5 decimals, so the absolute
+tolerance alone covers the rounding; `rtol` defaults to 0 so a
+relative allowance cannot hide a real discrepancy). P-values use an
 absolute tolerance of 1e-4 and hazard ratios an absolute 6e-4,
 because SAS prints p-values to 4 decimals and hazard ratios to 3
 (half a unit in the last place is 5e-5 and 5e-4 respectively).}
+
+\item{x}{A `recurrent_phreg_comparison` returned by
+[compare_recurrent_phreg()].}
+
+\item{...}{Unused; present for consistency with [print()].}
 }
 \value{
 [cgd_recurrent_data()]: a tibble with `id`, `tstart`, `tstop`,
@@ -117,6 +119,10 @@ tolerances of [compare_recurrent_phreg()] (Tier-1 test in
 `tests/testthat/test-round2-0911-sas.R`), so [sas_parity_boundary()] lists
 this as `"parity"`. The claim covers the two fits and the `COVS(AGGREGATE)`
 / `COVM` standard errors on `survival::cgd` with Efron ties only.
+The stored log echoes the program's pre-run "DRAFT -- never been run"
+header comment, because the `.sas` file was edited after the run; the
+log's SAS header (version, licence, date) and the absence of any
+`ERROR:` or `WARNING:` line are what record that the run happened.
 }
 
 \section{How to run it (on a machine with SAS 9.4)}{

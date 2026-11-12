@@ -99,7 +99,7 @@ zip_reports <- function(reports,
   bad_path <- is.na(reports$path) | !grepl("\\.(qmd|rmd)$", reports$path, ignore.case = TRUE)
   if (any(bad_path)) {
     stop("Every `reports$path` must end in `.qmd` or `.Rmd` (the `.qmd` source); ",
-         "these do not: ", paste(reports$path[bad_path], collapse = ", "), ".", call. = FALSE)
+         "these do not: ", paste(ifelse(is.na(reports$path[bad_path]), paste0("<NA> (row ", which(bad_path), ")"), reports$path[bad_path]), collapse = ", "), ".", call. = FALSE)
   }
   if (!("stage" %in% names(reports))) reports$stage <- NA_character_
   if (!("description" %in% names(reports))) reports$description <- NA_character_

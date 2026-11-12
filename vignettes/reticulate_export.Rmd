@@ -57,7 +57,7 @@ To resolve these challenges, **Gan, Zheng, & Allen (2022)** introduced **LOCO-MP
 
 This vignette demonstrates:
 - How `TempleCBE::loco_mp_coxnet()` translates the Python `LOCOMP` framework into **censored survival analysis** using Inverse Probability of Censoring Weighting (IPCW) Graf Integrated Brier Score loss.
-- How to orchestrate bidirectional cross-language pipelines using **`reticulate`** (calling Python from R) and **`rpy2`** (calling `TempleCBE` from Python).
+- How to orchestrate cross-language pipelines using **`reticulate`** (calling Python from R) and **`rpy2`** (calling `TempleCBE` from Python).
 - How to hand a fitted model to Python as plain files with `export_to_python()` (Part 7).
 - Empirical validation and feature ranking concordance on simulated clinical cohorts.
 
@@ -146,7 +146,7 @@ $$p_j = 1 - \Phi(Z_j), \qquad \text{CI}_{1-\alpha}(j) = \left[ \bar{D}_j - z_{1-
 
 ## Part 3: Workflow A: Calling Python `DataSlingers/LOCOMP` from R via `reticulate`
 
-In hybrid scientific teams, statistical analysts often evaluate continuous biomarker targets in Python using `DataSlingers/LOCOMP`. `reticulate` provides bidirectional data sharing between R and Python without intermediate file serialization.
+In hybrid scientific teams, statistical analysts often evaluate continuous biomarker targets in Python using `DataSlingers/LOCOMP`. `reticulate` itself (not a `TempleCBE` feature) can share data in both directions between R and Python without intermediate file serialization.
 
 ### Python Environment Verification
 
@@ -405,5 +405,5 @@ inspected, versioned, or read outside Python.
 By combining the distribution-free inference principles of **`DataSlingers/LOCOMP`** with **IPCW survival theory**, `TempleCBE` provides:
 
 1. **Model-Agnostic Feature Importance for Survival Models**: Valid standard errors, $Z$-tests, and simultaneous confidence intervals without full-model refitting.
-2. **Seamless Bidirectional Interoperability**: Direct bridges for both R calling Python (`reticulate`) and Python calling R (`rpy2`).
+2. **Cross-Language Bridges**: a one-way R-to-Python export with `export_to_python()`; for the reverse direction, use `reticulate` (R calling Python) and `rpy2` (Python calling R) directly.
 3. **Audit-Ready Validation**: Automated cell-by-cell discrepancy reporting via `compare_df()`.

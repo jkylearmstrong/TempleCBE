@@ -279,13 +279,15 @@ test_that("render_pipeline() warns on unnamed ... arguments, including dry runs 
   # positional extra would fill `pattern` instead (ordinary R matching), so
   # all formals are named here. renv_guard = FALSE keeps the unrelated
   # renv-lockfile warning out of these assertions.
-  full_args <- list(
-    path = q, formats = "html", pattern = "\\.(qmd|Rmd|rmd)$", engine = "auto",
-    workers = 1, only_stale = TRUE, from = NULL, to = NULL, dry_run = TRUE,
-    cache = "keep", on_error = "continue", resume = NULL, manifest = TRUE,
-    renv_guard = FALSE, seed = NULL, skip_downstream = TRUE, rerun = "none",
-    stale_by = "mtime", hash_file = NULL, on_complete = NULL
-  )
+  # Every formal is named from the function itself, so an added or renamed
+  # formal cannot break this test; only what the test needs is overridden.
+  fm <- formals(render_pipeline)
+  fm <- fm[setdiff(names(fm), "...")]
+  full_args <- lapply(fm, function(e) if (identical(e, quote(expr = ))) NULL else eval(e, baseenv()))
+  full_args$path <- q
+  full_args$formats <- "html"
+  full_args$dry_run <- TRUE
+  full_args$renv_guard <- FALSE
   expect_warning(
     res <- do.call(render_pipeline, c(full_args, list("bogus_value"))),
     "unnamed.*bogus_value"
@@ -308,19 +310,13 @@ test_that(".ask_item() reports a huge item number plainly (29)", {
     .package = "TempleCBE"
   )
   # no coercion warning leaks out alongside the error
-  warns <- character()
-  err <- tryCatch(
-    withCallingHandlers(
+  expect_no_warning(
+    err <- tryCatch(
       .ask_item(c("a", "b"), "Render which item? "),
-      warning = function(w) {
-        warns <<- c(warns, conditionMessage(w))
-        invokeRestart("muffleWarning")
-      }
-    ),
-    error = function(e) conditionMessage(e)
+      error = function(e) conditionMessage(e)
+    )
   )
   expect_match(err, "No item number 99999999999999999999 \\(1 to 2\\)")
-  expect_length(warns, 0L)
 })
 
 test_that(".ask_item() still resolves ordinary numbers and names (29)", {

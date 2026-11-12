@@ -322,7 +322,26 @@ render_pipeline <- function(path,
   # it at all. Warn once, up front, so dry runs warn too.
   if (length(dots) > 0L) {
     dot_names <- names(dots)
-    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(!nzchar(dot_names))
+    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(is.na(dot_names) | !nzchar(dot_names))
+    # A named argument that neither engine accepts is dropped at every call
+    # site too, but its per-document warning lives in the render loop, which
+    # a dry run or an empty plan never reaches: warn here as well. Skipped
+    # when no engine is installed (there are no formals to compare with).
+    named_dots <- setdiff(seq_along(dots), unnamed)
+    if (length(named_dots) > 0L) {
+      engine_formals <- c(
+        if (requireNamespace("quarto", quietly = TRUE)) c(names(formals(quarto::quarto_render)), "params"),
+        if (requireNamespace("rmarkdown", quietly = TRUE)) names(formals(rmarkdown::render))
+      )
+      if (length(engine_formals) > 0L) {
+        unknown <- setdiff(dot_names[named_dots], engine_formals)
+        if (length(unknown) > 0L) {
+          warning("Ignoring `...` argument(s) to `render_pipeline()` that neither ",
+                  "quarto::quarto_render nor rmarkdown::render accepts: ",
+                  paste(unknown, collapse = ", "), ".", call. = FALSE)
+        }
+      }
+    }
     if (length(unnamed) > 0L) {
       shown <- vapply(dots[unnamed], function(x) {
         txt <- paste(deparse(x, width.cutoff = 60L), collapse = " ")

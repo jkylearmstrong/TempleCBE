@@ -69,7 +69,7 @@ test_that("extract_horizon_risk() takes one horizon's event risk from predict() 
 
   expect_error(extract_horizon_risk(pr, 7), "not one of the predicted")
   expect_error(extract_horizon_risk(pr, c(5, 10)), "single")
-  expect_error(extract_horizon_risk(d[1:5, ], 10), "neither a `.pred` nor a `.pred_survival`")
+  expect_error(extract_horizon_risk(d[1:5, ], 10), "neither a `.pred`, a `.pred_survival`")
 })
 
 test_that("predict_event_risk() works for coxnet, cv_coxnet and joint_model fits (A4)", {

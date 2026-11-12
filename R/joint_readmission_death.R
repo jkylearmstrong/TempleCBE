@@ -153,9 +153,9 @@ joint_readmission_death <- function(data,
   if (length(gone_pred)) {
     stop("`data` is missing predictor column(s): ", paste(gone_pred, collapse = ", "), call. = FALSE)
   }
-  not_numeric <- death_vars[!vapply(data[death_vars], is.numeric, logical(1))]
-  if (length(not_numeric)) {
-    stop("Death-model predictors must be numeric columns in this draft; not numeric: ", paste(not_numeric, collapse = ", "), ".", call. = FALSE)
+  not_numeric_death <- death_vars[!vapply(data[death_vars], is.numeric, logical(1))]
+  if (length(not_numeric_death)) {
+    stop("Death-model predictors must be numeric columns in this draft; not numeric: ", paste(not_numeric_death, collapse = ", "), ".", call. = FALSE)
   }
   # The readmission predictors need the same check: predict() (via
   # joint_lp()) can only use numeric predictors, and a factor readmission

@@ -261,8 +261,10 @@ compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
       stop("`", nm, "` must be a data frame with `quantity`, `term`, `time` and `value`.", call. = FALSE)
     }
   }
-  if (!is.numeric(atol) || length(atol) != 1L || atol < 0 || !is.numeric(rtol) || length(rtol) != 1L || rtol < 0) {
-    stop("`atol` and `rtol` must be single non-negative numbers.", call. = FALSE)
+  .check_compare_tolerances(atol, rtol)
+  # Two empty tables would compare as a vacuous match.
+  if (nrow(r) == 0L || nrow(sas) == 0L) {
+    stop("`r` and `sas` must each have at least one row to compare.", call. = FALSE)
   }
   key_r <- paste(r$quantity, r$term, ifelse(is.na(r$time), "NA", format(r$time, digits = 12)))
   key_s <- paste(sas$quantity, sas$term, ifelse(is.na(sas$time), "NA", format(sas$time, digits = 12)))
@@ -293,6 +295,17 @@ compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
   )
   class(out) <- c("km_lifetest_comparison", "list")
   out
+}
+
+# Shared by compare_km_lifetest() and compare_recurrent_phreg(): the
+# tolerances must be single finite, non-negative numbers (NA or Inf would
+# error cryptically or match everything).
+.check_compare_tolerances <- function(atol, rtol) {
+  ok <- function(v) is.numeric(v) && length(v) == 1L && is.finite(v) && v >= 0
+  if (!ok(atol) || !ok(rtol)) {
+    stop("`atol` and `rtol` must be single finite, non-negative numbers.", call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 #' @rdname km_lifetest_quantities

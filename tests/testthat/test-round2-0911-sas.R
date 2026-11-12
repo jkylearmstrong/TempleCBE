@@ -1,12 +1,12 @@
-# SAS recurrent-admission baseline (round 2, draft only).
-# The SAS half is a draft -- no SAS licence is available here, so the
-# program has never been run and no stored listing exists yet. The tests
-# below check the R fits, the export the user will run, and the listing
-# parser + comparison against a SYNTHETIC listing: R values formatted the
-# way SAS 9.4 prints them, built from recurrent_phreg_quantities() at test
-# time. That listing is NOT SAS output and the tests claim no agreement
-# with SAS. The Tier-1 test at the end skips cleanly until the real stored
-# listing exists, then exercises it (LIFETEST pattern).
+# SAS recurrent-admission baseline (round 2).
+# The SAS 9.4 run has happened (12 Nov 2026): the listing and log are stored
+# under inst/sas/list/ and inst/sas/logs/. The R-side unit tests below use a
+# SYNTHETIC listing (R values formatted the way SAS 9.4 prints them, built
+# from recurrent_phreg_quantities() at test time); that listing is NOT SAS
+# output and those tests claim no agreement with SAS. The Tier-1 test at the
+# end parses the STORED listing and asserts agreement with R -- it is the
+# test that grounds the "parity" claim in sas_parity_boundary()
+# (LIFETEST pattern, test-gaps-0811-w2-data.R).
 
 # A synthetic PROC PHREG listing for the benchmark: the R quantities,
 # formatted as SAS 9.4 prints them (5 decimals for estimates and standard
@@ -99,9 +99,15 @@ test_that("cgd_recurrent_data() is the cgd benchmark data, recoded 0/1", {
   # enum is 1 + the number of earlier events of the patient (the SAS
   # program derives the same number from (tstart, tstop, status)).
   d <- d[order(d$id, d$tstart), , drop = FALSE]
-  prior <- as.numeric(stats::ave(
-    d$status, d$id, FUN = function(v) c(0, cumsum(v)[-length(v)])
-  ))
+  # derived independently of the implementation: count earlier events per
+  # patient in a plain loop
+  prior <- numeric(nrow(d))
+  seen <- list()
+  for (i in seq_len(nrow(d))) {
+    key <- as.character(d$id[i])
+    prior[i] <- if (is.null(seen[[key]])) 0 else seen[[key]]
+    seen[[key]] <- prior[i] + d$status[i]
+  }
   expect_equal(d$enum, prior + 1)
 })
 
@@ -266,7 +272,7 @@ test_that("sas_parity_boundary() lists recurrent PHREG as parity, with the store
 
 test_that("the stored SAS 9.4 recurrent PHREG listing parses and agrees with R (Tier 1)", {
   lst <- system.file("sas", "list", "benchmark_recurrent_phreg.lst", package = "TempleCBE")
-  skip_if(!nzchar(lst), "stored SAS listing not installed")
+  expect_true(nzchar(lst), info = "stored SAS listing missing from inst/sas/list")
   sas <- parse_recurrent_phreg_lst(lst)
   # Real SAS output: two fits x two SE tables x three terms.
   expect_equal(nrow(sas), 12)

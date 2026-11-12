@@ -56,7 +56,7 @@
 #' @param eval_time,new_data Passed to [predict()] for `coxnet_model` /
 #'   `cv_coxnet` / `joint_model` objects to also export a survival matrix.
 #'   Both must be given together; otherwise no survival matrix is written.
-#'   `eval_time` must be finite and non-negative.
+#'   `eval_time` must be finite, non-negative, sorted and free of duplicates.
 #' @param penalty Penalty passed to [generics::tidy()] / [predict()] for
 #'   `coxnet_model` objects. Defaults to the model's own penalty.
 #' @param dictionary Optional data frame (a column dictionary) to export
@@ -105,8 +105,14 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
     stop("`eval_time` and `new_data` must be given together to export a survival matrix.", call. = FALSE)
   }
   if (!is.null(eval_time) &&
-      (!is.numeric(eval_time) || any(!is.finite(eval_time)) || any(eval_time < 0))) {
-    stop("`eval_time` must be finite, non-negative numbers.", call. = FALSE)
+      (!is.numeric(eval_time) || length(eval_time) < 1L ||
+       any(!is.finite(eval_time)) || any(eval_time < 0))) {
+    stop("`eval_time` must be one or more finite, non-negative numbers.", call. = FALSE)
+  }
+  # predict() rejects unsorted or duplicated evaluation times; fail here
+  # rather than shipping an export that silently lacks survival.csv.
+  if (!is.null(eval_time) && (anyDuplicated(eval_time) || is.unsorted(eval_time))) {
+    stop("`eval_time` must be sorted in increasing order with no duplicates.", call. = FALSE)
   }
   # A classed list (a fitted model object such as `fine_gray_model`,
   # `cox_time_varying` or `joint_readmission_death`) is a list, so without
@@ -125,7 +131,7 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
   stem <- file.path(path, name)
-  existing <- paste0(stem, c("_data.csv", "_load.py", ".json", ".pkl", "coefficients.csv"))
+  existing <- paste0(stem, c("_data.csv", "_load.py", ".json", ".pkl", "_coefficients.csv"))
   if (!isTRUE(overwrite) && any(file.exists(existing))) {
     stop(
       "An export named '", name, "' already exists in ", path, ". ",
@@ -149,6 +155,7 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
   payload <- list()
 
   if (is.data.frame(object) || is.matrix(object)) {
+    .check_csv_writable(object, "`object`")
     write_csv(object, paste0(stem, "_data.csv"))
     payload$data <- as.data.frame(object)
   } else if (inherits(object, "coxnet_model")) {
@@ -212,6 +219,19 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
   } else if (is.list(object)) {
     if (is.null(names(object)) || any(!nzchar(names(object)))) {
       stop("A list `object` must be named to export to Python.", call. = FALSE)
+    }
+    # The names become file stems (`<name>_<element>.csv`), so each must be
+    # unique and free of path separators or a mid-export failure/overwrite
+    # follows.
+    if (anyNA(names(object)) || anyDuplicated(names(object)) ||
+        any(grepl("[/\\\\]", names(object)))) {
+      stop("The names of a list `object` must be unique, not missing, and free of ",
+           "path separators ('/' or '\\').", call. = FALSE)
+    }
+    for (nm in names(object)) {
+      if (is.data.frame(object[[nm]])) {
+        .check_csv_writable(object[[nm]], paste0("element `", nm, "`"))
+      }
     }
     # Serialise before writing anything: an element jsonlite cannot handle
     # (for example a fitted model object) must fail here, not after the
@@ -290,6 +310,26 @@ print.python_export <- function(x, ...) {
   cat("  files:\n")
   for (f in x$files) cat("   - ", basename(f), "\n", sep = "")
   invisible(x)
+}
+
+# Trial-write a data frame as CSV to a temporary file so an unwritable
+# element (for example a list-column) fails with a clear message before any
+# export file exists, instead of leaving a partial CSV behind.
+.check_csv_writable <- function(df, label) {
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp), add = TRUE)
+  res <- tryCatch(
+    {
+      utils::write.csv(as.data.frame(df), tmp, row.names = FALSE, na = "")
+      TRUE
+    },
+    error = function(e) e
+  )
+  if (inherits(res, "error")) {
+    stop("Cannot export ", label, " as CSV (for example a list-column): ",
+         conditionMessage(res), call. = FALSE)
+  }
+  invisible(TRUE)
 }
 
 # Predict a survival matrix and flatten the list-column of per-subject tibbles

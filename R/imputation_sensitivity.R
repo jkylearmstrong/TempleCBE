@@ -157,24 +157,23 @@ imputation_sensitivity <- function(data, fit_fn, strategies, conf_level = 0.95, 
     }
     # Cells filled are only countable when the completed data has the same
     # rows and columns as `data` (a strategy that drops rows, such as
-    # "complete_cases", reports its dropped rows instead), and only when the
-    # rows are still in the same order: a positional comparison miscounts
-    # when a strategy reorders rows. Row names identify the order for data
-    # frames; a pure reordering fills nothing (0), while a reordering
-    # combined with changed values cannot be aligned without a row id, so
-    # it reports NA rather than a positional guess. (Tibbles carry no row
-    # names, so only the pure-reordering case is detected for them.)
+    # "complete_cases", reports its dropped rows instead). The rows must also
+    # still line up: every cell observed in `data` must be unchanged in the
+    # same position of the completed data (this holds whatever the row names
+    # or tibble/data-frame class, so a strategy that resets row names is
+    # still counted). When it does not hold, a pure reordering fills nothing
+    # (0); a reordering combined with changed values cannot be aligned
+    # without a row id, so it reports NA rather than a positional guess.
     comp <- NULL
     n_filled <- if (identical(nrow(completed), nrow(data)) &&
                    all(names(data) %in% names(completed))) {
       comp <- completed[, names(data), drop = FALSE]
-      if (.same_row_multiset(comp, data) && !.same_row_sequence(comp, data)) {
-        0L
-      } else if (!is.null(rownames(comp)) && !is.null(rownames(data)) &&
-                 !identical(rownames(comp), rownames(data))) {
-        NA_integer_
-      } else {
+      if (.observed_cells_aligned(comp, data)) {
         sum(is.na(data) & !is.na(comp))
+      } else if (.same_row_multiset(comp, data)) {
+        0L
+      } else {
+        NA_integer_
       }
     } else {
       0L
@@ -285,14 +284,25 @@ print.imputation_sensitivity <- function(x, ...) {
   identical(sort(ka), sort(kb))
 }
 
-# TRUE when `a` and `b` hold the same rows in the same order.
-.same_row_sequence <- function(a, b) {
-  ka <- .row_keys(a)
-  kb <- .row_keys(b)
-  if (is.null(ka) || is.null(kb)) {
-    return(FALSE)
+# TRUE when every cell observed in `data` is unchanged, in the same row
+# position, in `comp` (numeric cells within a small relative tolerance). The
+# two data frames must have the same rows and columns. Row names are not
+# consulted, so this is the same for data frames and tibbles.
+.observed_cells_aligned <- function(comp, data) {
+  for (nm in names(data)) {
+    d <- data[[nm]]
+    cc <- comp[[nm]]
+    obs <- !is.na(d)
+    if (!any(obs)) next
+    if (anyNA(cc[obs])) return(FALSE)
+    same <- if (is.numeric(d) && is.numeric(cc)) {
+      abs(d[obs] - cc[obs]) <= 1e-8 * pmax(1, abs(d[obs]))
+    } else {
+      as.character(d[obs]) == as.character(cc[obs])
+    }
+    if (!all(same)) return(FALSE)
   }
-  identical(ka, kb)
+  TRUE
 }
 
 # Fill numeric columns with a constant summary (median/mean) and

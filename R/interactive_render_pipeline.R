@@ -91,6 +91,9 @@ interactive_render_pipeline <- function(all_file_objects, ...) {
   if (!nzchar(answer)) {
     stop("No item given; nothing was rendered.", call. = FALSE)
   }
+  # A number takes precedence over a plan name that merely looks like one.
+  # Anything numeric-looking ("2.5", "-1", "+2", "1e2") is a number, so it
+  # is reported as a bad item number, not as an unknown name.
   if (grepl("^[0-9]+$", answer)) {
     # a number too large for an integer coerces to NA (with a warning):
     # say so plainly instead of erroring on `if (NA)` below
@@ -99,6 +102,9 @@ interactive_render_pipeline <- function(all_file_objects, ...) {
       stop("No item number ", answer, " (1 to ", length(items), "); nothing was rendered.", call. = FALSE)
     }
     return(i)
+  }
+  if (!is.na(suppressWarnings(as.numeric(answer))) && !answer %in% items) {
+    stop("No item number ", answer, " (1 to ", length(items), "); nothing was rendered.", call. = FALSE)
   }
   i <- match(answer, items)
   if (is.na(i)) {
