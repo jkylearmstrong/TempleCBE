@@ -134,3 +134,10 @@ test_that("render_pipeline() does not warn about execute_params on a dry run (RP
                     execute_params = list(a = 1))
   )
 })
+
+test_that("the SAS compare functions reject a non-data-frame or a table missing columns (Y-07)", {
+  tbl <- data.frame(quantity = "surv", term = "all", time = 1, value = 0.5, stringsAsFactors = FALSE)
+  expect_error(compare_km_lifetest(list(), tbl), "must be a data frame with columns")
+  expect_error(compare_km_lifetest(tbl, tbl[, c("quantity", "term")]), "must be a data frame with columns")
+  expect_error(compare_recurrent_phreg(tbl, tbl), "must be a data frame with columns")
+})
