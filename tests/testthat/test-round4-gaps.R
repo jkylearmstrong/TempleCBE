@@ -89,10 +89,10 @@ test_that("compare_recurrent_phreg() refuses empty tables (DC-01)", {
 # --- X-01 / X-02 ---------------------------------------------------------------------
 
 test_that("predict_event_risk() validates the horizon before dispatch (X-01)", {
-  for (h in list(Inf, -5, NA_real_, c(1, 2), "x")) {
+  for (h in list(Inf, -5, 0, NA_real_, c(1, 2), "x")) {
     expect_error(predict_event_risk(structure(list(), class = "cox_time_varying"),
                                     data.frame(a = NA_real_), horizon = h),
-                 "single finite")
+                 "single finite, positive")
   }
 })
 

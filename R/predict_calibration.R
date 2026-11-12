@@ -42,8 +42,8 @@ extract_horizon_risk <- function(pred, horizon) {
   if (!is.data.frame(pred)) {
     stop("`pred` must be a tibble from `predict(..., type = \"survival\")`.", call. = FALSE)
   }
-  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon < 0) {
-    stop("`horizon` must be a single finite, non-negative time.", call. = FALSE)
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
+    stop("`horizon` must be a single finite, positive time.", call. = FALSE)
   }
   pred_col <- if (".pred" %in% names(pred)) {
     ".pred"
@@ -136,7 +136,7 @@ extract_horizon_risk <- function(pred, horizon) {
 #' @param object A fitted `coxnet_model`, `cv_coxnet`, `joint_model`,
 #'   `cox_time_varying` or `fine_gray_model` object.
 #' @param new_data A data frame of new predictors, as for `predict()`.
-#' @param horizon A single time: the horizon the risk applies to.
+#' @param horizon A single finite, positive time: the horizon the risk applies to.
 #' @param penalty For `coxnet_model`: the penalty to predict at; defaults to
 #'   the model's `penalty`. For `cv_coxnet`: `"lambda.min"` (default),
 #'   `"lambda.1se"`, or a number. Ignored for `joint_model`,
@@ -157,8 +157,8 @@ extract_horizon_risk <- function(pred, horizon) {
 predict_event_risk <- function(object, new_data, horizon, penalty = NULL, ...) {
   # Validated up front: the branches below that return early (rows with a
   # missing predictor) would otherwise never reach a downstream check.
-  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon < 0) {
-    stop("`horizon` must be a single finite, non-negative time.", call. = FALSE)
+  if (!is.numeric(horizon) || length(horizon) != 1L || !is.finite(horizon) || horizon <= 0) {
+    stop("`horizon` must be a single finite, positive time.", call. = FALSE)
   }
   if (inherits(object, "coxnet_model")) {
     pred <- stats::predict(object, new_data, type = "survival", eval_time = horizon, penalty = penalty)

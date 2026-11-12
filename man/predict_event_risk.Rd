@@ -12,7 +12,7 @@ predict_event_risk(object, new_data, horizon, penalty = NULL, ...)
 
 \item{new_data}{A data frame of new predictors, as for `predict()`.}
 
-\item{horizon}{A single time: the horizon the risk applies to.}
+\item{horizon}{A single finite, positive time: the horizon the risk applies to.}
 
 \item{penalty}{For `coxnet_model`: the penalty to predict at; defaults to
 the model's `penalty`. For `cv_coxnet`: `"lambda.min"` (default),
