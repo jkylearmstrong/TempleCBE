@@ -101,6 +101,17 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
   if (!is.null(dictionary) && !is.data.frame(dictionary)) {
     stop("`dictionary` must be a data frame.", call. = FALSE)
   }
+  # Probe the dictionary before anything is written, as for `object`: a
+  # list-column would otherwise fail mid-export and leave partial files.
+  if (!is.null(dictionary)) {
+    .check_csv_writable(dictionary, "`dictionary`")
+    # I(list(...)) writes to CSV without error but flattens each cell to a
+    # string, and the JSON copy would differ from the CSV: reject it too.
+    if (any(vapply(dictionary, is.list, logical(1)))) {
+      stop("`dictionary` must not have list-columns (they cannot be exported to CSV without loss).",
+           call. = FALSE)
+    }
+  }
   if (xor(is.null(eval_time), is.null(new_data))) {
     stop("`eval_time` and `new_data` must be given together to export a survival matrix.", call. = FALSE)
   }
@@ -227,6 +238,12 @@ export_to_python <- function(object, path, name = "templecbe_export", eval_time 
         any(grepl("[/\\\\]", names(object)))) {
       stop("The names of a list `object` must be unique, not missing, and free of ",
            "path separators ('/' or '\\').", call. = FALSE)
+    }
+    # `<name>_dictionary.csv` is the dictionary argument's file: an element of
+    # that name would be overwritten by it and listed twice in the manifest.
+    if (!is.null(dictionary) && "dictionary" %in% names(object)) {
+      stop("A list `object` cannot have an element named 'dictionary' when ",
+           "`dictionary` is given: both would be written to the same file.", call. = FALSE)
     }
     for (nm in names(object)) {
       if (is.data.frame(object[[nm]])) {

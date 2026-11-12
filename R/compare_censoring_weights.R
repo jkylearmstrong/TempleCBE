@@ -1421,7 +1421,8 @@ print.templecbe_run_comparison <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 .safe_spearman_cor <- function(x, y, method = "spearman") {
-  ok <- stats::complete.cases(x, y)
+  method <- match.arg(method, c("spearman", "kendall"))
+  ok <-stats::complete.cases(x, y)
   if (sum(ok) < 2L) {
     return(NA_real_)
   }

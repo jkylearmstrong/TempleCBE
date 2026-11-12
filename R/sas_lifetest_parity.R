@@ -92,7 +92,8 @@ km_lifetest_quantities <- function(data, time, status, group = NULL, conf_level 
   if (!is.numeric(s) || anyNA(s) || !all(s %in% c(0, 1))) {
     stop("`", status, "` must be 0/1 (or TRUE/FALSE) with no missing values.", call. = FALSE)
   }
-  if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
+  if (!is.numeric(conf_level) || length(conf_level) != 1L || is.na(conf_level) ||
+      conf_level <= 0 || conf_level >= 1) {
     stop("`conf_level` must be in (0, 1).", call. = FALSE)
   }
   strata <- if (is.null(group)) rep("all", nrow(data)) else as.character(data[[group]])
@@ -255,17 +256,11 @@ parse_lifetest_lst <- function(lines) {
 #'   different value.
 #' @export
 compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
-  for (nm in c("r", "sas")) {
-    tbl <- get(nm)
-    if (!is.data.frame(tbl) || !all(c("quantity", "term", "time", "value") %in% names(tbl))) {
-      stop("`", nm, "` must be a data frame with `quantity`, `term`, `time` and `value`.", call. = FALSE)
-    }
-  }
-  .check_compare_tolerances(atol, rtol)
-  # Two empty tables would compare as a vacuous match.
-  if (nrow(r) == 0L || nrow(sas) == 0L) {
-    stop("`r` and `sas` must each have at least one row to compare.", call. = FALSE)
-  }
+  .check_compare_inputs(
+    r, sas, need_r = c("quantity", "term", "time", "value"),
+    need_sas = c("quantity", "term", "time", "value"),
+    numeric_cols = c("time", "value"), atol = atol, rtol = rtol
+  )
   key_r <- paste(r$quantity, r$term, ifelse(is.na(r$time), "NA", format(r$time, digits = 12)))
   key_s <- paste(sas$quantity, sas$term, ifelse(is.na(sas$time), "NA", format(sas$time, digits = 12)))
   m <- match(key_r, key_s)
@@ -291,7 +286,7 @@ compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
   )
   out <- list(
     table = table, matched = all(matched),
-    max_abs_diff = if (all(is.na(abs_diff))) NA_real_ else max(abs_diff, na.rm = TRUE)
+    max_abs_diff = .max_abs_diff(abs_diff)
   )
   class(out) <- c("km_lifetest_comparison", "list")
   out
@@ -306,6 +301,39 @@ compare_km_lifetest <- function(r, sas, atol = 6e-5, rtol = 5e-4) {
     stop("`atol` and `rtol` must be single finite, non-negative numbers.", call. = FALSE)
   }
   invisible(TRUE)
+}
+
+# Shared input validation for the two SAS compare functions: both tables are
+# data frames with the needed columns (the `numeric_cols` of them numeric),
+# neither is empty (two empty tables would compare as a vacuous match), and
+# the tolerances are valid.
+.check_compare_inputs <- function(r, sas, need_r, need_sas, numeric_cols = character(),
+                                  atol, rtol) {
+  tables <- list(r = r, sas = sas)
+  needs <- list(r = need_r, sas = need_sas)
+  for (nm in names(tables)) {
+    tbl <- tables[[nm]]
+    if (!is.data.frame(tbl) || !all(needs[[nm]] %in% names(tbl))) {
+      stop("`", nm, "` must be a data frame with columns: ",
+           paste(needs[[nm]], collapse = ", "), ".", call. = FALSE)
+    }
+    bad <- intersect(numeric_cols, names(tbl))
+    bad <- bad[!vapply(tbl[bad], is.numeric, logical(1))]
+    if (length(bad) > 0L) {
+      stop("`", nm, "` column(s) must be numeric: ", paste(bad, collapse = ", "), ".",
+           call. = FALSE)
+    }
+  }
+  .check_compare_tolerances(atol, rtol)
+  if (nrow(r) == 0L || nrow(sas) == 0L) {
+    stop("`r` and `sas` must each have at least one row to compare.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+# The largest absolute difference, or NA when every difference is NA.
+.max_abs_diff <- function(abs_diff) {
+  if (all(is.na(abs_diff))) NA_real_ else max(abs_diff, na.rm = TRUE)
 }
 
 #' @rdname km_lifetest_quantities

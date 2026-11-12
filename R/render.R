@@ -320,9 +320,15 @@ render_pipeline <- function(path,
   # site below and would otherwise vanish silently: warn_dropped_dots()
   # only sees named arguments, and the dry-run return below never reaches
   # it at all. Warn once, up front, so dry runs warn too.
+  # Names already warned about up front; the per-document warning in
+  # render_single() skips them so one bogus argument warns once, not 1 + n times.
+  upfront_warned <- character()
   if (length(dots) > 0L) {
     dot_names <- names(dots)
-    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(is.na(dot_names) | !nzchar(dot_names))
+    # (R stringifies an NA name to "NA" when `...` is captured, so is.na() on
+    # the names never fires. An empty name or the literal name "NA" is the
+    # unnamed case: neither engine has an argument called `NA`.)
+    unnamed <- if (is.null(dot_names)) seq_along(dots) else which(!nzchar(dot_names) | dot_names == "NA")
     # A named argument that neither engine accepts is dropped at every call
     # site too, but its per-document warning lives in the render loop, which
     # a dry run or an empty plan never reaches: warn here as well. Skipped
@@ -331,11 +337,13 @@ render_pipeline <- function(path,
     if (length(named_dots) > 0L) {
       engine_formals <- c(
         if (requireNamespace("quarto", quietly = TRUE)) c(names(formals(quarto::quarto_render)), "params"),
-        if (requireNamespace("rmarkdown", quietly = TRUE)) names(formals(rmarkdown::render))
+        # render_single() translates `execute_params` to rmarkdown's `params`.
+        if (requireNamespace("rmarkdown", quietly = TRUE)) c(names(formals(rmarkdown::render)), "execute_params")
       )
       if (length(engine_formals) > 0L) {
         unknown <- setdiff(dot_names[named_dots], engine_formals)
         if (length(unknown) > 0L) {
+          upfront_warned <- unknown
           warning("Ignoring `...` argument(s) to `render_pipeline()` that neither ",
                   "quarto::quarto_render nor rmarkdown::render accepts: ",
                   paste(unknown, collapse = ", "), ".", call. = FALSE)
@@ -683,6 +691,7 @@ render_pipeline <- function(path,
     # engine instead of once per format (and instead of never)
     dropped_warned <- character()
     warn_dropped_dots <- function(dropped, engine_label) {
+      dropped <- setdiff(dropped, upfront_warned)
       if (length(dropped) == 0L || engine_label %in% dropped_warned) return()
       dropped_warned <<- c(dropped_warned, engine_label)
       warning(

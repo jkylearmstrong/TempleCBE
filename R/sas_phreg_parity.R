@@ -313,22 +313,13 @@ parse_recurrent_phreg_lst <- function(lines) {
 #'   (half a unit in the last place is 5e-5 and 5e-4 respectively).
 #' @export
 compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 0) {
-  for (nm in c("r", "sas")) {
-    tbl <- get(nm)
-    if (!is.data.frame(tbl)) {
-      stop("`", nm, "` must be a data frame.", call. = FALSE)
-    }
-  }
-  need_r <- c("model", "term", "estimate", "std_error", "std_error_model",
-              "hazard_ratio", "p_value", "p_value_model")
-  need_sas <- c("model", "se_type", "term", "estimate", "std_error", "p_value")
-  if (!all(need_r %in% names(r))) {
-    stop("`r` must have columns: ", paste(need_r, collapse = ", "), ".", call. = FALSE)
-  }
-  if (!all(need_sas %in% names(sas))) {
-    stop("`sas` must have columns: ", paste(need_sas, collapse = ", "), ".", call. = FALSE)
-  }
-  .check_compare_tolerances(atol, rtol)
+  .check_compare_inputs(
+    r, sas,
+    need_r = c("model", "term", "estimate", "std_error", "std_error_model",
+               "hazard_ratio", "p_value", "p_value_model"),
+    need_sas = c("model", "se_type", "term", "estimate", "std_error", "p_value"),
+    atol = atol, rtol = rtol
+  )
   sas_key <- paste(sas$model, sas$se_type, sas$term)
   find_sas <- function(model, term, se_type) {
     hit <- match(paste(model, se_type, term), sas_key)
@@ -378,7 +369,7 @@ compare_recurrent_phreg <- function(r, sas, atol = 6e-6, rtol = 0) {
     }
   }
   table <- dplyr::bind_rows(rows)
-  max_abs_diff <- if (all(is.na(table$abs_diff))) NA_real_ else max(table$abs_diff, na.rm = TRUE)
+  max_abs_diff <- .max_abs_diff(table$abs_diff)
   out <- list(table = table, matched = all(table$matched), max_abs_diff = max_abs_diff)
   class(out) <- c("recurrent_phreg_comparison", "list")
   out

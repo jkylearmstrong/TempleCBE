@@ -405,5 +405,5 @@ inspected, versioned, or read outside Python.
 By combining the distribution-free inference principles of **`DataSlingers/LOCOMP`** with **IPCW survival theory**, `TempleCBE` provides:
 
 1. **Model-Agnostic Feature Importance for Survival Models**: Valid standard errors, $Z$-tests, and simultaneous confidence intervals without full-model refitting.
-2. **Cross-Language Bridges**: a one-way R-to-Python export with `export_to_python()`; for the reverse direction, use `reticulate` (R calling Python) and `rpy2` (Python calling R) directly.
+2. **Cross-Language Bridges**: a one-way R-to-Python export with `export_to_python()`; for the reverse direction (Python calling R), use `rpy2` directly; `reticulate` covers R calling Python.
 3. **Audit-Ready Validation**: Automated cell-by-cell discrepancy reporting via `compare_df()`.
