@@ -1,0 +1,64 @@
+# Event Risk at One Horizon from Survival Predictions
+
+Adapters from the survival-probability output of \`predict()\` on a
+\[coxnet()\], \[cv_coxnet()\] or \[joint_model()\] fit — or from the
+cumulative-incidence output of \`predict()\` on a \[fine_gray()\] fit —
+to the predicted-risk inputs of \[calibration_table()\] and
+\[decision_curve()\], so a fitted model can be validated without
+hand-extracting one horizon's probabilities. \`predict()\` returns
+survival probabilities; calibration and decision curves take event
+probabilities, so the risk at a horizon is one minus the survival
+probability at that horizon. For a Fine-Gray fit the risk is the
+cumulative incidence (CIF) at the horizon itself: the \`.pred_cif\`
+column of the predict output is returned as-is, not subtracted from one.
+
+## Usage
+
+``` r
+extract_horizon_risk(pred, horizon)
+```
+
+## Arguments
+
+- pred:
+
+  A tibble from \`predict(..., type = "survival")\`: one row per
+  subject, with a \`.pred\` list-column (from \[coxnet()\] /
+  \[cv_coxnet()\] / \[cox_time_varying()\]) or a \`.pred_survival\`
+  list-column (from \[joint_model()\]) whose elements are tibbles with
+  \`.eval_time\` and \`.pred_survival\`; or a tibble from \`predict()\`
+  on a \[fine_gray()\] fit, with a \`.pred\` list-column whose elements
+  are tibbles with \`.eval_time\` and \`.pred_cif\`.
+
+- horizon:
+
+  A single finite, positive time: the horizon the risk applies to. It
+  must be one of the \`.eval_time\` values in \`pred\`; otherwise an
+  error lists the available times.
+
+## Value
+
+\`extract_horizon_risk()\`: a numeric vector of event probabilities by
+\`horizon\`, one per row of \`pred\` — one minus survival for survival
+predictions, the CIF itself for Fine-Gray predictions. A row whose
+predicted survival is \`NA\` returns \`NA\` risk, so the result always
+aligns with \`pred\`.
+
+## See also
+
+\[predict_event_risk()\], \[calibration_from_model()\],
+\[decision_curve_from_model()\], \[calibration_table()\],
+\[decision_curve()\]
+
+## Examples
+
+``` r
+set.seed(1)
+n <- 120
+d <- data.frame(time = rexp(n, 0.05), status = rbinom(n, 1, 0.6),
+                age = rnorm(n, 60, 10), sex = rbinom(n, 1, 0.5))
+fit <- coxnet(survival::Surv(time, status) ~ age + sex, data = d, penalty = 0.1)
+pr <- predict(fit, d[1:5, ], type = "survival", eval_time = c(5, 10, 20))
+extract_horizon_risk(pr, 10)
+#> [1] 0.215163 0.215163 0.215163 0.215163 0.215163
+```

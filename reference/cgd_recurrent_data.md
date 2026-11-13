@@ -1,0 +1,198 @@
+# Recurrent-Event PROC PHREG Parity (SAS Recurrent-Admission Baseline)
+
+The SAS recurrent-admission baseline: a \`PROC PHREG\` counterpart to
+the package's recurrent-event Cox fits. The SAS side is the benchmark
+program \`inst/sas/benchmark_recurrent_phreg.sas\` (plain \`PROC
+PHREG\`, no macro); the R side here fits the same models from
+\[recurrent_cox()\], parses a SAS listing back into the same shape, and
+compares the two.
+
+## Usage
+
+``` r
+cgd_recurrent_data()
+
+recurrent_phreg_quantities(
+  data,
+  predictors = c("treat", "sex", "age"),
+  id = "id",
+  start = "tstart",
+  stop = "tstop",
+  status = "status",
+  models = c("ag", "pwp_gap"),
+  max_events = 3L,
+  conf_level = 0.95
+)
+
+parse_recurrent_phreg_lst(lines)
+
+compare_recurrent_phreg(r, sas, atol = 6e-06, rtol = 0)
+
+# S3 method for class 'recurrent_phreg_comparison'
+print(x, ...)
+```
+
+## Arguments
+
+- data:
+
+  A data frame of counting-process intervals.
+
+- predictors:
+
+  Covariates: a character vector of column names, or a one-sided formula
+  such as \`~ treat + sex + age\`. Default \`c("treat", "sex", "age")\`,
+  the benchmark model.
+
+- id, start, stop, status:
+
+  Column names (strings) of the subject identifier, the interval start
+  and stop, and the event indicator (0/1 or logical).
+
+- models:
+
+  Which fits to run: any subset of \`"ag"\` and \`"pwp_gap"\`.
+
+- max_events:
+
+  For the \`"pwp_gap"\` fit, event numbers above \`max_events\` are
+  pooled into one stratum (default \`3\`, the strata of the SAS
+  program). Passed to \[recurrent_cox()\].
+
+- conf_level:
+
+  Confidence level of the hazard ratios (default \`0.95\`).
+
+- lines:
+
+  Character vector of listing lines (from a \`.lst\` file, as read by
+  \[readLines()\]), or a single path to one.
+
+- r, sas:
+
+  Quantity tables as returned by \[recurrent_phreg_quantities()\] and
+  \[parse_recurrent_phreg_lst()\].
+
+- atol, rtol:
+
+  Absolute and relative tolerances for the estimates and standard errors
+  (SAS prints those to 5 decimals, so the absolute tolerance alone
+  covers the rounding; \`rtol\` defaults to 0 so a relative allowance
+  cannot hide a real discrepancy). P-values use an absolute tolerance of
+  1e-4 and hazard ratios an absolute 6e-4, because SAS prints p-values
+  to 4 decimals and hazard ratios to 3 (half a unit in the last place is
+  5e-5 and 5e-4 respectively).
+
+- x:
+
+  A \`recurrent_phreg_comparison\` returned by
+  \[compare_recurrent_phreg()\].
+
+- ...:
+
+  Unused; present for consistency with \[print()\].
+
+## Value
+
+\[cgd_recurrent_data()\]: a tibble with \`id\`, \`tstart\`, \`tstop\`,
+\`status\`, \`treat\` (1 = rIFN-g), \`sex\` (1 = female), \`age\` and
+\`enum\`. \[recurrent_phreg_quantities()\]: a tibble with \`model\`,
+\`term\`, \`estimate\` (log hazard ratio), \`std_error\` (robust
+sandwich), \`std_error_model\` (model-based, from the fit's naive
+covariance), \`hazard_ratio\`, \`p_value\` (robust Wald) and
+\`p_value_model\` (model-based Wald). \[parse_recurrent_phreg_lst()\]: a
+tibble with \`model\`, \`se_type\` (\`"robust"\` or \`"model"\`),
+\`term\`, \`estimate\`, \`std_error\`, \`std_error_ratio\` (\`NA\` for
+model-based rows), \`statistic\` (Wald chi-square), \`p_value\` and
+\`hazard_ratio\`. \[compare_recurrent_phreg()\]: a list of class
+\`recurrent_phreg_comparison\` with \`table\` (one row per compared
+quantity, with \`r_value\`, \`sas_value\`, \`abs_diff\` and \`matched\`)
+and \`matched\` (single \`TRUE\`/\`FALSE\`).
+
+## Benchmark data and model
+
+Both sides fit \`survival::cgd\`, the chronic granulomatous disease
+trial (203 counting-process intervals for 128 patients, 76 recurrent
+infections), as returned by \[cgd_recurrent_data()\]: \`treat\` recoded
+to 1 = rIFN-g, 0 = placebo, \`sex\` to 1 = female, 0 = male, \`age\` in
+years. The model on both sides is \`(tstart, tstop) \* status(0) = treat
+sex age\`, with \`TIES=EFRON\` in SAS (matching \[recurrent_cox()\],
+which fits with Efron ties – not the SAS default Breslow, which moves
+the coefficients in the 4th-5th decimal) and \`COVS(AGGREGATE)\` with
+\`ID id\` in SAS (the Lin-Wei robust sandwich standard errors that
+\[recurrent_cox()\] reports). Two fits are compared: \`"ag"\`
+(Andersen-Gill, total time, one baseline hazard) and \`"pwp_gap"\`
+(Prentice-Williams-Peterson gap time, baseline hazard per event number,
+event numbers pooled at \`max_events = 3\` – strata 1, 2 and 3-or-later,
+holding 44, 17 and 15 events – on gap times that restart at the previous
+infection). No other \`recurrent_cox()\` model has a SAS counterpart in
+this benchmark.
+
+## Status
+
+The program was run once on SAS 9.4 (TS1M8, Windows) on 12 Nov 2026; the
+listing is stored as \`inst/sas/list/benchmark_recurrent_phreg.lst\` and
+the log as \`inst/sas/logs/benchmark_recurrent_phreg.log\` (no errors or
+warnings). The R quantities agree with that listing at the per-quantity
+tolerances of \[compare_recurrent_phreg()\] (Tier-1 test in
+\`tests/testthat/test-round2-0911-sas.R\`), so \[sas_parity_boundary()\]
+lists this as \`"parity"\`. The claim covers the two fits and the
+\`COVS(AGGREGATE)\` / \`COVM\` standard errors on \`survival::cgd\` with
+Efron ties only. The stored log echoes the program's pre-run "DRAFT –
+never been run" header comment, because the \`.sas\` file was edited
+after the run; the log's SAS header (version, licence, date) and the
+absence of any \`ERROR:\` or \`WARNING:\` line are what record that the
+run happened.
+
+## How to run it (on a machine with SAS 9.4)
+
+Export the data from R with \`write_sas_data(cgd_recurrent_data(),
+"cgdrec.xpt")\`, put \`cgdrec.xpt\` beside
+\`inst/sas/benchmark_recurrent_phreg.sas\`, and run the program with
+\`run_sas_script(sas_macro_path("benchmark_recurrent_phreg.sas"))\` (or
+in SAS directly – the program header gives the batch command). Store the
+listing and log as \`inst/sas/list/benchmark_recurrent_phreg.lst\` and
+\`inst/sas/logs/benchmark_recurrent_phreg.log\`. Then, in R,
+\`parse_recurrent_phreg_lst()\` the stored listing and
+\`compare_recurrent_phreg()\` it against
+\`recurrent_phreg_quantities(cgd_recurrent_data())\`; a Tier-1 test in
+\`tests/testthat/test-round2-0911-sas.R\` does exactly that once the
+listing exists.
+
+## What the listing must contain
+
+Each \`PROC PHREG\` run prints two "Analysis of Maximum Likelihood
+Estimates" tables – one "with Model-Based Variance Estimate" (from
+\`COVM\`) and one "with Sandwich Variance Estimate" (from
+\`COVS(AGGREGATE)\`, with an extra StdErr Ratio column). The parser keys
+each table to its fit by the program's title lines (\`"Recurrent PHREG –
+Andersen-Gill ..."\` / \`"Recurrent PHREG – PWP gap time ..."\`), and to
+its standard-error type by the table subtitle, falling back to the
+number of columns when a subtitle is absent. A p-value SAS prints as
+\`\<.0001\` parses to \`NA\` and matches when the R p-value is below
+1e-4, as in \[compare_km_lifetest()\].
+
+## See also
+
+\[sas_parity_boundary()\], \[recurrent_cox()\],
+\[compare_km_lifetest()\], \[sas_macro_path()\], \[run_sas_script()\],
+\[write_sas_data()\]
+
+## Examples
+
+``` r
+cgd <- cgd_recurrent_data()
+nrow(cgd)
+#> [1] 203
+recurrent_phreg_quantities(cgd)
+#> # A tibble: 6 × 8
+#>   model   term  estimate std_error std_error_model hazard_ratio  p_value
+#>   <chr>   <chr>    <dbl>     <dbl>           <dbl>        <dbl>    <dbl>
+#> 1 ag      treat  -1.12      0.310           0.261         0.327 0.000309
+#> 2 ag      sex    -0.0828    0.366           0.331         0.921 0.821   
+#> 3 ag      age    -0.0300    0.0141          0.0133        0.970 0.0339  
+#> 4 pwp_gap treat  -0.931     0.280           0.278         0.394 0.000870
+#> 5 pwp_gap sex    -0.214     0.321           0.338         0.808 0.506   
+#> 6 pwp_gap age    -0.0227    0.0109          0.0136        0.978 0.0370  
+#> # ℹ 1 more variable: p_value_model <dbl>
+```

@@ -1,0 +1,101 @@
+# Survival Cutpoints at Several Landmark Times
+
+For each landmark time, keeps the subjects still at risk (follow-up
+beyond the landmark), restarts their clock at the landmark, splits a
+feature into low and high groups and compares the survival of the two.
+One call replaces a copy of the analysis per landmark.
+
+## Usage
+
+``` r
+tbl_landmark_cutpoints(
+  data,
+  feature,
+  time_col = "survival_time_min",
+  status_col = "status",
+  landmarks = c(15, 30, 60, 90, 120),
+  method = c("surv_cutpoint", "median", "quantile"),
+  probs = 0.75,
+  min_prop = 0.1,
+  id_col = NULL,
+  measure_time_col = NULL
+)
+```
+
+## Arguments
+
+- data:
+
+  A data frame, one row per subject, or long with \`measure_time_col\`.
+
+- feature:
+
+  Numeric feature column.
+
+- time_col, status_col:
+
+  Survival time (same unit as \`landmarks\`) and event indicator.
+
+- landmarks:
+
+  Landmark times.
+
+- method:
+
+  \`"surv_cutpoint"\`, \`"median"\` or \`"quantile"\`.
+
+- probs:
+
+  Probability of the cut for \`method = "quantile"\` (default 0.75, so
+  the top quarter is "high").
+
+- min_prop:
+
+  Smallest share of subjects per group for \`"surv_cutpoint"\`.
+
+- id_col, measure_time_col:
+
+  See Feature values; long data only.
+
+## Value
+
+A tibble with one row per landmark: \`landmark\`, \`n\`, \`events\`,
+\`cutpoint\`, \`n_low\`, \`n_high\`, \`hr\`, \`conf.low\`,
+\`conf.high\`, \`p.value\`, \`status\` (\`"ok"\` or why the landmark was
+not analysed).
+
+## Feature values
+
+By default \`feature\` is one value per subject (a baseline value). With
+\`measure_time_col\` (and \`id_col\`) the data are long: for each
+landmark the value used is each subject's last measurement at or before
+the landmark, so nothing measured after the landmark is used.
+
+## Cutpoints and p-values
+
+\`"surv_cutpoint"\` picks the cutpoint with \[km_cutpoint_search()\]
+(smallest log-rank p-value among candidates with at least \`min_prop\`
+of the subjects in each group). That p-value is then optimistic, because
+the cut was chosen on the same data; use it for description, or validate
+the cut elsewhere. \`"median"\` and \`"quantile"\` (cut at \`probs\`)
+are not data-driven. The hazard ratio is high versus low, from a Cox
+model; the p-value is the log-rank test.
+
+## See also
+
+\[km_cutpoint_search()\], \[batch_cutpoint_survdiff()\]
+
+## Examples
+
+``` r
+set.seed(1)
+d <- data.frame(time = rexp(200, 1 / 80), status = rbinom(200, 1, 0.7), x = rnorm(200))
+tbl_landmark_cutpoints(d, "x", "time", "status", landmarks = c(15, 30, 60), method = "median")
+#> # A tibble: 3 × 11
+#>   landmark     n events cutpoint n_low n_high    hr conf.low conf.high p.value
+#>      <dbl> <int>  <int>    <dbl> <int>  <int> <dbl>    <dbl>     <dbl>   <dbl>
+#> 1       15   177    122 -0.00831    89     88  1.16    0.811      1.66   0.412
+#> 2       30   148    101 -0.0133     74     74  1.22    0.822      1.81   0.322
+#> 3       60   107     71 -0.0250     54     53  1.15    0.717      1.85   0.557
+#> # ℹ 1 more variable: status <chr>
+```

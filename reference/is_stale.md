@@ -1,0 +1,70 @@
+# Check if an Output File is Stale
+
+Stale when the output is missing, or older than its producer script, one
+of the producer's dependencies, or anything those dependencies read
+(through helper scripts); and, when \`all_objects\` is given, when any
+dependency is itself the output of a stale producer, however far up the
+pipeline and whether or not that producer renders a document. Without
+\`all_objects\` only the direct sources are compared.
+
+## Usage
+
+``` r
+is_stale(
+  output_file,
+  producer_script,
+  all_objects = NULL,
+  seen = character(),
+  cache = NULL,
+  stale_by = c("mtime", "hash"),
+  hash_file = NULL,
+  hash_store = NULL
+)
+```
+
+## Arguments
+
+- output_file:
+
+  A \[FilePath\] object representing the output file to check.
+
+- producer_script:
+
+  A \[FileOutputs\] object representing the producer.
+
+- all_objects:
+
+  Optional list of pipeline objects to check upstream staleness.
+
+- seen:
+
+  Internal character vector of visited node names to prevent cycles.
+
+- cache:
+
+  Internal environment caching staleness decisions.
+
+- stale_by:
+
+  Staleness strategy: \`"mtime"\` (default; compares modification times)
+  or \`"hash"\` (compares SHA-256 content hashes against
+  \`pipeline_hashes.json\`).
+
+- hash_file:
+
+  Optional path to \`pipeline_hashes.json\` when \`stale_by = "hash"\`.
+
+- hash_store:
+
+  Internal pre-loaded hash store list.
+
+## Value
+
+Logical \`TRUE\` if stale, \`FALSE\` otherwise.
+
+## Details
+
+When \`stale_by = "hash"\`, file modification timestamps are ignored and
+staleness is determined by comparing SHA-256 content hashes of the
+output, producer script, and all declared inputs against
+\`pipeline_hashes.json\`.
