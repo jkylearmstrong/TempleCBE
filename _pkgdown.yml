@@ -528,6 +528,7 @@ reference:
       - km_lifetest_quantities
       - parse_lifetest_lst
       - compare_km_lifetest
+      - cgd_recurrent_data
 
   - title: Presentation Deck & Clinical Summary Plots
     desc: >
