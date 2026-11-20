@@ -1,0 +1,87 @@
+# Build Counting-Process Intervals From Recurrent Event Times
+
+Turns one row per event (for example one row per readmission) and one
+row per subject (the end of follow-up) into the \`(tstart, tstop,
+status)\` intervals that \[recurrent_cox()\] fits. Time zero is the
+start of risk, such as the index discharge. A subject with \`k\` events
+gets \`k\` event intervals, plus a final censored interval when
+follow-up continues after the last event.
+
+## Usage
+
+``` r
+recurrent_intervals(
+  events,
+  followup,
+  id = "id",
+  time = "time",
+  end = "end",
+  min_gap = 0
+)
+```
+
+## Arguments
+
+- events:
+
+  A data frame with one row per event, holding the subject identifier
+  (\`id\`) and the event time (\`time\`), measured from time zero.
+
+- followup:
+
+  A data frame with one row per subject, holding \`id\` and the end of
+  follow-up (\`end\`, same time scale as \`time\`). Subjects without any
+  event row get one censored interval.
+
+- id, time, end:
+
+  Column names. \`id\` is looked up in both data frames; \`time\` in
+  \`events\` and \`end\` in \`followup\`.
+
+- min_gap:
+
+  Events after the first that are no more than \`min_gap\` after the
+  previous kept event are dropped (default \`0\`, which drops only ties
+  and events at time zero). A subject's first event is always kept,
+  whatever \`min_gap\` is.
+
+## Value
+
+A tibble with the subject identifier (named as \`id\`), \`tstart\`,
+\`tstop\`, \`status\` (1 = event, 0 = censored at the end of follow-up)
+and \`event_number\` (1 for the first interval, 2 for the second, and so
+on), sorted by subject and time.
+
+## Details
+
+Events at or before time zero, events after the end of follow-up, and
+events (other than a subject's first event) that fall within \`min_gap\`
+of the previous kept event (a transfer or a duplicated record rather
+than a new readmission) are dropped, each with a warning that counts
+them. A subject's first event is always kept: there is no previous event
+for \`min_gap\` to apply to. Death is a terminal event that is not a
+readmission: end the subject's follow-up at death. That treats death as
+censoring, which is the usual assumption of the Andersen-Gill and PWP
+models and is informative when death is common.
+
+## See also
+
+\[recurrent_cox()\], \[truncate_start_stop()\],
+\[validate_start_stop()\]
+
+## Examples
+
+``` r
+events <- data.frame(id = c(1, 1, 3), time = c(12, 40, 25))
+followup <- data.frame(id = 1:3, end = c(90, 60, 30))
+recurrent_intervals(events, followup)
+#> # A tibble: 6 × 5
+#>      id tstart tstop status event_number
+#>   <dbl>  <dbl> <dbl>  <int>        <int>
+#> 1     1      0    12      1            1
+#> 2     1     12    40      1            2
+#> 3     1     40    90      0            3
+#> 4     2      0    60      0            1
+#> 5     3      0    25      1            1
+#> 6     3     25    30      0            2
+```
