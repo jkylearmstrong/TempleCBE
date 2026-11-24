@@ -35,7 +35,7 @@ for each element of `.x`. Defaults to names of `.x`, or `item_0001`, `item_0002`
 
 \item{fingerprint}{Optional character vector of pre-computed fingerprints
 per item, or a function `function(x, ...)` returning a fingerprint string.
-When `NULL`, fingerprints are derived from `.x[[i]]`, `...`, and package version.}
+When `NULL`, fingerprints are derived from `.x[[i]]`, `.f`, `...`, and package version.}
 
 \item{shard}{Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
 evaluate shard `i` of `n`. Anything else is an error.}

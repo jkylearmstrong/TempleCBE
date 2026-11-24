@@ -1252,6 +1252,22 @@ tbl_censoring_comparison <- function(data,
   display_df
 }
 
+# Both labels must be single non-empty strings and different. Identical
+# labels make the join suffixes collide, so the two runs' columns collapse
+# into one and a run is silently compared against itself (R7-05).
+check_compare_labels <- function(label1, label2) {
+  if (!is.character(label1) || length(label1) != 1L || is.na(label1) || !nzchar(label1)) {
+    stop("`label1` must be a single non-empty string.", call. = FALSE)
+  }
+  if (!is.character(label2) || length(label2) != 1L || is.na(label2) || !nzchar(label2)) {
+    stop("`label2` must be a single non-empty string.", call. = FALSE)
+  }
+  if (identical(label1, label2)) {
+    stop("`label1` and `label2` must be different.", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
 #' Compare and Diff Outer-Fold Runs Across Platforms With Tolerance
 #'
 #' Evaluates reproducibility between two sets of model evaluation runs (e.g. from
@@ -1276,6 +1292,7 @@ compare_runs <- function(run1,
                          coef_tolerance = tolerance,
                          label1 = "run1",
                          label2 = "run2") {
+  check_compare_labels(label1, label2)
   if (is.character(run1) && length(run1) == 1L && file.exists(run1)) {
     run1 <- readRDS(run1)
   }
@@ -1480,6 +1497,7 @@ compare_tuning_runs <- function(tune1,
                                 label2 = "run2",
                                 match = c("exact", "nearest", "binned"),
                                 n_bins = 10) {
+  check_compare_labels(label1, label2)
   match <- match.arg(match)
   tune1 <- as_tuning_results(tune1)
   tune2 <- as_tuning_results(tune2)

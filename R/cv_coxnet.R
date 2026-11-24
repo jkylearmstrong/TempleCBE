@@ -670,6 +670,12 @@ cv_coxnet_impl <- function(spec, data = spec$data, mixture = 1, penalty = NULL, 
         covariates = covariates,
         recurrent = recurrent,
         trunc = trunc,
+        # The predictor set is not in the data hash (the same data frame
+        # feeds `~ x1 + x2` and `~ x1 + x3`), so the canonicalised
+        # preprocessor belongs in the fingerprint (R7-02). The `paths`
+        # entry is no proxy for it: glmnet's path is a fixed geometric
+        # sequence, bit-identical for either predictor set.
+        preprocessor = canonicalize_preprocessor_for_hash(spec$preprocessor),
         # Every glmnet `...` argument changes the fits (R6-01), so it
         # belongs in the fingerprint. It is always present, so checkpoints
         # written before this fix mismatch once and are recomputed: they
@@ -1274,6 +1280,10 @@ spec_xy <- function(x, y, subject_id, group) {
     data = data,
     subject_col = subject_col,
     group_col = group_col %||% subject_col,
+    # The predictor names are the `x`/`y` spec's preprocessor: the data
+    # hash alone cannot tell two column sets apart when the data frame
+    # carries extra columns, so the fingerprint hashes these (R7-02).
+    preprocessor = pred_cols,
     fit_frame = function(d) {
       m <- mold_xy(d[pred_cols])
       list(x = predictors_matrix(m$predictors), y = d[[".outcome"]], blueprint = m$blueprint)
@@ -1294,6 +1304,9 @@ spec_formula <- function(formula, data, subject_id, group) {
     data = data,
     subject_col = subject_id,
     group_col = group %||% subject_id,
+    # Kept for the checkpoint fingerprint: the data hash alone cannot tell
+    # `~ x1 + x2` from `~ x1 + x3` on the same data frame (R7-02).
+    preprocessor = formula,
     fit_frame = function(d) {
       m <- hardhat::mold(formula, model_data(d), blueprint = coxnet_formula_blueprint())
       list(x = predictors_matrix(m$predictors), y = surv_outcome(m$outcomes), blueprint = m$blueprint)
@@ -1331,6 +1344,9 @@ spec_recipe <- function(recipe, data, subject_id, group) {
     data = data,
     subject_col = subject_id,
     group_col = group %||% subject_id,
+    # Kept for the checkpoint fingerprint: the data hash alone cannot tell
+    # two recipes apart on the same data frame (R7-02).
+    preprocessor = recipe,
     fit_frame = function(d) {
       m <- hardhat::mold(recipe, d)
       check_not_predictor(m$predictors)

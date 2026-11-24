@@ -268,11 +268,23 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
 
     if (tune_method %in% c("race_anova", "race_win_loss") && !native_race) {
       rlang::check_installed(c("finetune", "parsnip", "workflows", "tune"), reason = "for racing in nested_cv_coxnet.")
-      mix_param <- if (length(mixture) == 1) mixture else tune::tune()
-      spec_cox <- parsnip::set_engine(
-        parsnip::proportional_hazards(penalty = tune::tune(), mixture = mix_param),
-        "coxnet", ...
-      ) |> parsnip::set_mode("censored regression")
+      # `mixture` is tuned only when several values are supplied. The
+      # `tune()` marker must appear inline in the spec: tune_args() only
+      # detects `tune()` calls in the captured expression, so a variable
+      # holding `tune()` left `mixture` unmarked and an explicit grid with
+      # a `mixture` column was rejected (R7-04, mixture half). Each branch
+      # builds its own spec so the fixed case stays untuned.
+      spec_cox <- if (length(mixture) == 1) {
+        parsnip::set_engine(
+          parsnip::proportional_hazards(penalty = tune::tune(), mixture = mixture),
+          "coxnet", ...
+        ) |> parsnip::set_mode("censored regression")
+      } else {
+        parsnip::set_engine(
+          parsnip::proportional_hazards(penalty = tune::tune(), mixture = tune::tune()),
+          "coxnet", ...
+        ) |> parsnip::set_mode("censored regression")
+      }
       wflow <- workflows::workflow() |>
         workflows::add_model(spec_cox)
       wflow <- if (inherits(preprocessor, "recipe")) {
@@ -284,7 +296,7 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
         wflow,
         resamples = object$inner_resamples[[i]],
         fn = if (tune_method == "race_anova") "tune_race_anova" else "tune_race_win_loss",
-        grid = if (is.numeric(penalty)) length(penalty) else 20,
+        grid = race_explicit_grid(penalty, mixture),
         metrics = metrics,
         eval_time = eval_time,
         control = race_finetune_control(control)
@@ -412,6 +424,16 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
   if (!is.null(checkpoint_dir)) {
     ckpt_schema <- checkpoint_schema_version()
     data_fp <- paste0(as.character(openssl::sha256(serialize(full_data, NULL))), collapse = "")
+    # The selection metric chooses the penalties, so the *effective*
+    # metric belongs in the fingerprint (R7-01): `metric` as passed is
+    # NULL for the default, and the default differs by tuning path — the
+    # grid path selects by the first metric in `metrics`, the finetune
+    # race by IBS.
+    selection_metric <- if (tune_method %in% c("race_anova", "race_win_loss") && !native_race) {
+      metric %||% "brier_survival_integrated"
+    } else {
+      metric %||% info$metric[1]
+    }
     split_fps <- vapply(seq_len(n_outer), function(i) {
       payload <- list(
         schema = ckpt_schema,
@@ -424,6 +446,14 @@ nested_cv_coxnet <- function(object, preprocessor, subject_id = NULL, group = NU
         penalty = penalty,
         tune_method = tune_method,
         control = if (tune_method == "grid") NULL else race_coxnet_control(control),
+        # `race_coxnet_control()` drops `num_ties`, but the finetune
+        # win-loss race uses it, so it is fingerprinted separately.
+        control_num_ties = if (tune_method == "grid") NULL else race_control_num_ties(control),
+        metric = selection_metric,
+        # The predictor set is not in the data hash (the same data frame
+        # feeds `~ x1 + x2` and `~ x1 + x3`), so the canonicalised
+        # preprocessor belongs in the fingerprint (R7-02).
+        preprocessor = canonicalize_preprocessor_for_hash(preprocessor),
         importance = importance,
         loco_mp_B = loco_mp_B,
         metrics = metric_set_names(metrics),
@@ -538,6 +568,23 @@ race_summary_finetune <- function(race_res, n_resamples) {
   # `.race$candidates` schemas identical.
   per$.config <- NULL
   race_summary(tibble::as_tibble(per), n_resamples)
+}
+
+# The finetune grid, built from the user-supplied `penalty` (and
+# `mixture`) values: only their length used to reach
+# tune_race_survival(), so the race ran dials' own grid and the supplied
+# values were silently discarded (R7-04). With no supplied penalty the
+# dials grid size (20) is unchanged.
+race_explicit_grid <- function(penalty, mixture) {
+  if (!is.numeric(penalty)) {
+    return(20)
+  }
+  pens <- sort(unique(penalty))
+  if (is.numeric(mixture) && length(mixture) > 1) {
+    expand.grid(penalty = pens, mixture = sort(unique(mixture)))
+  } else {
+    data.frame(penalty = pens)
+  }
 }
 
 # A `control` for tune_race_survival(): NULL keeps its default; a plain list

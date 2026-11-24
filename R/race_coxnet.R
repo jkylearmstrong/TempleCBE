@@ -40,6 +40,22 @@ race_coxnet_control <- function(control = NULL) {
   out
 }
 
+#' Effective `num_ties` of a Race Control, for Fingerprinting
+#'
+#' `race_coxnet_control()` drops `num_ties` — the native ANOVA race never
+#' uses it — but the finetune win-loss race does, so the fingerprint needs
+#' the effective value: the supplied one, or finetune's default of 10
+#' (R7-01 sub-item).
+#'
+#' @param control `NULL`, a list, or a [finetune::control_race()] object.
+#' @return A single integer.
+#' @keywords internal
+#' @noRd
+race_control_num_ties <- function(control = NULL) {
+  n <- if (is.list(control)) control$num_ties else NULL
+  if (is.numeric(n) && length(n) == 1 && !is.na(n)) as.integer(n) else 10L
+}
+
 #' Race the Candidates of a cv_coxnet() Grid Over Resamples
 #'
 #' @param splits,ids The resamples' splits and ids.

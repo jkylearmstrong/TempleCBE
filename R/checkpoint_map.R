@@ -23,7 +23,7 @@
 #'   for each element of `.x`. Defaults to names of `.x`, or `item_0001`, `item_0002`, etc.
 #' @param fingerprint Optional character vector of pre-computed fingerprints
 #'   per item, or a function `function(x, ...)` returning a fingerprint string.
-#'   When `NULL`, fingerprints are derived from `.x[[i]]`, `...`, and package version.
+#'   When `NULL`, fingerprints are derived from `.x[[i]]`, `.f`, `...`, and package version.
 #' @param shard Optional integer vector `c(i, n)` or string `"i/n"` with `1 <= i <= n`:
 #'   evaluate shard `i` of `n`. Anything else is an error.
 #' @param checkpoint_mismatch Action when an existing checkpoint file has a
@@ -95,11 +95,18 @@ checkpoint_map <- function(.x,
       stop("`fingerprint` must be a function or a vector of length 1 or length(.x).", call. = FALSE)
     }
   } else {
+    # The mapped function is part of the fingerprint: without it, changing
+    # `.f` silently reuses the previous function's cached results (R7-03).
+    # Deparse the (already `as_function()`-converted) function so the
+    # fingerprint covers its formals and body; a user-supplied `fingerprint`
+    # argument bypasses this path entirely.
+    f_repr <- paste(deparse(.f), collapse = "\n")
     vapply(seq_len(n), function(i) {
       payload <- list(
         schema = ckpt_schema,
         seed_scheme = current_seed_scheme(),
         item = .x[[i]],
+        f = f_repr,
         dots = dots
       )
       paste0(as.character(openssl::sha256(serialize(payload, NULL))), collapse = "")
