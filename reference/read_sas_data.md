@@ -1,0 +1,90 @@
+# Read or Write a SAS Data Set
+
+General R-to-SAS data-exchange wrappers. Before them, the only SAS
+reading in the package was \[rossi_data(format = "sas")\] for the one
+bundled file, and the R-to-SAS vignette used a bare
+\`haven::write_sas()\` call with no TempleCBE function around it. These
+wrappers add the checks that bare \`haven\` calls do not: the file must
+exist and have a SAS extension when reading, the data must be a data
+frame and the target extension must be a SAS format when writing, and
+SAS date/time variables are converted on the way in (see Details).
+
+## Usage
+
+``` r
+read_sas_data(path, format = c("auto", "sas7bdat", "xpt", "csv"), ...)
+
+write_sas_data(data, path, format = c("auto", "sas7bdat", "xpt"), ...)
+```
+
+## Arguments
+
+- path:
+
+  Path to a \`.sas7bdat\` or \`.xpt\` file (\`.csv\` is also accepted by
+  \[read_sas_data()\], as the plain-text interchange fallback). For
+  \[write_sas_data()\], the extension decides the format when \`format =
+  "auto"\`.
+
+- format:
+
+  \`"auto"\` (default: infer from the extension), \`"sas7bdat"\`,
+  \`"xpt"\` (SAS Version 5 transport, the FDA submission format), or,
+  for reading only, \`"csv"\`.
+
+- ...:
+
+  Passed to \[haven::read_sas()\] / \[haven::read_xpt()\] when reading
+  (for example \`col_select\`), or to \[haven::write_sas()\] /
+  \[haven::write_xpt()\] when writing.
+
+- data:
+
+  A data frame to write.
+
+## Value
+
+\[read_sas_data()\]: a tibble. \[write_sas_data()\]: invisibly, the
+normalized path written.
+
+## Details
+
+\`haven\` preserves SAS variable labels, formats and date/time classes
+as R attributes. \[read_sas_data()\] additionally converts SAS date
+variables (class \`Date\` already, from \`haven\`) and leaves SAS
+datetimes as \`POSIXct\`; it does not strip labels. SAS missing values
+(\`.\`, \`.A\`–\`.Z\`) arrive as \`NA\`; SAS special missing values are
+not distinguished on the way in, matching the parity boundary in
+\[sas_parity_boundary()\] - see the \`PROC COMPARE\` row there.
+
+SAS variable names are at most 32 characters; \[write_sas_data()\] stops
+when a column name is longer, rather than letting \`haven\` truncate it
+silently and collide two variables. Names that are not valid SAS names
+(starting with a digit, containing spaces or symbols) are likewise an
+error: rename first, for example with \[reconcile_column_dictionary()\].
+
+Note that \`haven\` 2.5.2 deprecated writing \`.sas7bdat\` files
+(\[haven::write_sas()\]) in favour of transport files, so a
+\`.sas7bdat\` write warns (with TempleCBE's own message, once per call,
+rather than haven's once-in-a-while lifecycle warning); the write itself
+still works. Prefer \`.xpt\` for new exports (with its 8-character name
+limits, checked above).
+
+## See also
+
+\[rossi_data()\], \[sas_macro_path()\], \[run_sas_script()\],
+\[sas_parity_boundary()\], \[reconcile_column_dictionary()\]
+
+## Examples
+
+``` r
+# \donttest{
+if (requireNamespace("haven", quietly = TRUE)) {
+  p <- file.path(tempdir(), "rossi.xpt")
+  write_sas_data(rossi_data(), p)
+  back <- read_sas_data(p)
+  nrow(back)
+}
+#> [1] 432
+# }
+```

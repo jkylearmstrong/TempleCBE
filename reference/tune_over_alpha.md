@@ -1,0 +1,119 @@
+# Tune a Penalized Cox Model Over a Grid of \`alpha\` Values
+
+Runs \[glmnet_IBS()\] on one resampling split for each value in an
+\`alpha\` grid, or for each of a set of candidate formulas, in parallel
+via \[furrr::future_map()\]. Set a \[future::plan()\] first to run in
+parallel; this function never sets one.
+
+## Usage
+
+``` r
+tune_over_alpha(
+  object,
+  ...,
+  num_alpha_values = 10,
+  num_fixed = 6,
+  alphas = NULL,
+  formulas = NULL,
+  progress = FALSE,
+  seed = NULL,
+  checkpoint_dir = NULL,
+  checkpoint_mismatch = c("recompute", "overwrite", "error"),
+  shard = NULL,
+  on_complete = getOption("templecbe.on_complete", NULL)
+)
+```
+
+## Arguments
+
+- object:
+
+  An \`rsplit\`.
+
+- ...:
+
+  Arguments passed to \[glmnet_IBS()\] (\`recipe\`, \`feature_names\`,
+  \`time_data\`, \`id_col\`, \`cox.ties\`, ...).
+
+- num_alpha_values:
+
+  Total number of \`alpha\` values in the grid.
+
+- num_fixed:
+
+  Number of evenly spaced values from 0 to 1 in the grid.
+
+- alphas:
+
+  Optional numeric vector of \`alpha\` values to use instead of the
+  generated grid; in formula mode, one per formula.
+
+- formulas:
+
+  Optional character vector of \`+\`-separated feature sets, or a list
+  of one-sided formulas, each fit as a separate model (see
+  \[glmnet_IBS()\]'s \`formula\`).
+
+- progress:
+
+  Show a progress bar.
+
+- seed:
+
+  Optional integer seed for reproducible random draws of \`alpha\` and
+  formulas.
+
+- checkpoint_dir:
+
+  Optional directory path to save per-alpha checkpoint files. Finished
+  fits are loaded from disk on rerun, skipping recomputation when their
+  checkpoint fingerprint matches.
+
+- checkpoint_mismatch:
+
+  Action when a checkpoint file exists in \`checkpoint_dir\` but its
+  stored fingerprint does not match the current inputs/settings:
+  \`"recompute"\` (default; warns and recomputes the task),
+  \`"overwrite"\` (overwrites mismatched files in place and cleans up
+  stale checkpoint files from previous runs), or \`"error"\` (stops
+  immediately).
+
+- shard:
+
+  Optional integer vector \`c(i, n)\` or string \`'i/n'\` specifying
+  that this execution evaluates shard \`i\` of \`n\` items.
+
+- on_complete:
+
+  Optional callback \`function(result)\` (or option
+  \`templecbe.on_complete\`) invoked when the run finishes or errors.
+
+## Value
+
+A list named by \`alpha\`, one element per fit, each the output of
+\[purrr::safely()\]: a list with \`result\` (the \[glmnet_IBS()\]
+tibble, or \`NULL\`) and \`error\` (\`NULL\`, or the condition).
+
+## Details
+
+\*\*Grid mode\*\* (the default). The grid is \`num_fixed\` evenly spaced
+values from 0 to 1, plus \`num_alpha_values - num_fixed\` values drawn
+uniformly at random, one per gap between consecutive fixed values
+(cycling through the gaps if there are more random draws than gaps).
+
+\*\*Formula mode\*\* (\`formulas\` given). One fit per formula, each
+with its own \`alpha\`: the matching element of \`alphas\`, or a value
+drawn uniformly from 0 to 1 when \`alphas\` is \`NULL\`. Each result
+gains a \`formula\` column.
+
+Random draws use the R session's random number stream, so call
+\[set.seed()\] first for reproducible values. Model fits run with
+\`furrr_options(seed = TRUE)\`, so they are reproducible too.
+
+To tune \`alpha\` and the penalty together in one call, see
+\[cv_coxnet()\].
+
+## See also
+
+\[glmnet_IBS()\], \[tune_alpha_by_split()\], \[clean_checkpoints()\],
+\[cv_coxnet()\]
